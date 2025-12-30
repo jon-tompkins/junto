@@ -225,3 +225,4 @@ When ready to deploy to Vercel:
 ---
 
 *Last updated: December 2024*
+# Junto
