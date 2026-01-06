@@ -85,7 +85,7 @@ export default function Home() {
       {/* Header */}
       <header className="px-8 py-6 border-b border-neutral-800">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-sm font-medium tracking-widest uppercase">Joonto</h1>
+          <h1 className="text-sm font-medium tracking-widest uppercase">MyJunto</h1>
         </div>
       </header>
 
@@ -111,7 +111,7 @@ export default function Home() {
               // Not logged in - show Connect button
               <button
                 onClick={handleConnect}
-                className="w-full sm:w-auto px-8 py-4 bg-white text-black hover:bg-neutral-200 transition-colors flex items-center justify-center gap-3"
+                className="w-full sm:w-auto px-8 py-4 bg-white text-black hover:bg-neutral-200 active:bg-neutral-300 transition-all duration-150 cursor-pointer flex items-center justify-center gap-3"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -156,7 +156,7 @@ export default function Home() {
                     <button
                       type="submit"
                       disabled={submitStatus === 'loading'}
-                      className="px-8 py-3 bg-white text-black hover:bg-neutral-200 transition-colors disabled:bg-neutral-600"
+                      className="px-8 py-3 bg-white text-black hover:bg-neutral-200 active:bg-neutral-300 transition-all duration-150 cursor-pointer disabled:bg-neutral-600 disabled:cursor-not-allowed"
                     >
                       {submitStatus === 'loading' ? '...' : 'Join Waitlist'}
                     </button>
@@ -223,7 +223,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="px-8 py-6 border-t border-neutral-800">
         <div className="max-w-2xl mx-auto text-sm text-neutral-600">
-          © 2024 Joonto
+          © 2024 MyJunto
         </div>
       </footer>
     </main>

@@ -27,7 +27,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
         {/* Logo */}
         <div className="px-6 py-6 border-b border-neutral-800">
           <Link href="/dashboard" className="text-sm font-medium tracking-widest uppercase">
-            Joonto
+            MyJunto
           </Link>
         </div>
 

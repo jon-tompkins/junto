@@ -3,7 +3,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Joonto",
+  title: "MyJunto",
   description: "Daily intelligence briefings from the voices you trust",
 };
 

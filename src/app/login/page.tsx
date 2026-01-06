@@ -9,7 +9,7 @@ export default function LoginPage() {
       <header className="px-8 py-6 border-b border-neutral-800">
         <div className="max-w-2xl mx-auto">
           <a href="/" className="text-sm font-medium tracking-widest uppercase">
-            Joonto
+            MyJunto
           </a>
         </div>
       </header>
