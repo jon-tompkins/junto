@@ -10,6 +10,8 @@ export default function DashboardPage() {
   const router = useRouter();
   const [profiles, setProfiles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [generationResult, setGenerationResult] = useState<{ success: boolean; message: string } | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -32,6 +34,35 @@ export default function DashboardPage() {
       console.error('Failed to fetch profiles:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGenerateNewsletter = async () => {
+    setGenerating(true);
+    setGenerationResult(null);
+    
+    try {
+      const res = await fetch('/api/newsletter/generate');
+      const data = await res.json();
+      
+      if (data.success) {
+        setGenerationResult({ 
+          success: true, 
+          message: `Newsletter generated: "${data.newsletter?.subject || 'Success'}"` 
+        });
+      } else {
+        setGenerationResult({ 
+          success: false, 
+          message: data.error || data.message || 'Failed to generate' 
+        });
+      }
+    } catch (err) {
+      setGenerationResult({ 
+        success: false, 
+        message: 'Failed to generate newsletter' 
+      });
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -81,15 +112,23 @@ export default function DashboardPage() {
         {/* Manual trigger for testing */}
         <div className="border border-dashed border-neutral-700 p-6 text-center">
           <p className="text-neutral-500 text-sm mb-4">Testing</p>
+          
+          {generationResult && (
+            <div className={`mb-4 p-3 text-sm ${
+              generationResult.success 
+                ? 'border border-green-500 text-green-500' 
+                : 'border border-red-500 text-red-500'
+            }`}>
+              {generationResult.message}
+            </div>
+          )}
+          
           <button
-            onClick={async () => {
-              const res = await fetch('/api/newsletter/generate');
-              const data = await res.json();
-              alert(data.success ? 'Newsletter generated!' : 'Error: ' + data.error);
-            }}
-            className="px-6 py-2 border border-neutral-600 text-sm hover:border-white transition-colors"
+            onClick={handleGenerateNewsletter}
+            disabled={generating}
+            className="px-6 py-2 border border-neutral-600 text-sm hover:border-white hover:bg-white hover:text-black transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-neutral-600 disabled:hover:bg-transparent disabled:hover:text-white"
           >
-            Generate Newsletter Now
+            {generating ? 'Generating...' : 'Generate Newsletter Now'}
           </button>
         </div>
       </div>
