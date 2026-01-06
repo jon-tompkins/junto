@@ -3,7 +3,7 @@ import { getSupabase } from '@/lib/db/client';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const { email, twitter_handle } = await request.json();
 
     if (!email || !email.includes('@')) {
       return NextResponse.json(
@@ -16,7 +16,10 @@ export async function POST(request: NextRequest) {
 
     const { error } = await supabase
       .from('waitlist')
-      .insert({ email: email.toLowerCase().trim() });
+      .insert({ 
+        email: email.toLowerCase().trim(),
+        twitter_handle: twitter_handle || null
+      });
 
     if (error) {
       // Duplicate email
