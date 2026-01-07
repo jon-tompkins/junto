@@ -70,6 +70,14 @@ export async function POST(request: NextRequest) {
 }
 
 // GET for simple testing without body
-export async function GET() {
-  return POST(new NextRequest('http://localhost/api/newsletter/generate'));
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const hoursAgo = parseInt(searchParams.get('hours') || '48');
+  
+  const mockRequest = new NextRequest('http://localhost/api/newsletter/generate', {
+    method: 'POST',
+    body: JSON.stringify({ hoursAgo }),
+  });
+  
+  return POST(mockRequest);
 }
