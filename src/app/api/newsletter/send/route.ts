@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const newsletterId = body.newsletterId;
-    const to = body.to || config.resend.toEmail;
+    const to = body.to || config.app.newsletterRecipient;
     
     if (!newsletterId) {
       return NextResponse.json(
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     
     if (!to) {
       return NextResponse.json(
-        { error: 'No recipient email configured. Set RESEND_TO_EMAIL in .env.local or pass "to" in request body' },
+        { error: 'No recipient email configured. Set NEWSLETTER_RECIPIENT in env or pass "to" in request body' },
         { status: 400 }
       );
     }
@@ -75,11 +75,11 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const to = searchParams.get('to') || config.resend.toEmail;
+    const to = searchParams.get('to') || config.app.newsletterRecipient;
     
     if (!to) {
       return NextResponse.json(
-        { error: 'No recipient email. Set RESEND_TO_EMAIL or pass ?to=email@example.com' },
+        { error: 'No recipient email. Set NEWSLETTER_RECIPIENT or pass ?to=email@example.com' },
         { status: 400 }
       );
     }
