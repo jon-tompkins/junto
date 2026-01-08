@@ -1,5 +1,5 @@
 import { GroupedTweets } from '@/types';
-import { getAnthropicClient } from './client';
+import { getAnthropic } from './client';
 import { NEWSLETTER_SYSTEM_PROMPT, buildUserPrompt, parseNewsletterResponse, PROMPT_VERSION } from './prompts';
 
 export { PROMPT_VERSION };
@@ -17,7 +17,7 @@ export async function generateNewsletter(
   endDate: string,
   contextTweets?: GroupedTweets
 ): Promise<NewsletterResult> {
-  const client = getAnthropicClient();
+  const client = getAnthropic();
   
   const dateRange = `${startDate} to ${endDate}`;
   const userPrompt = buildUserPrompt(recentTweets, dateRange, undefined, contextTweets);
