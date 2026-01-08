@@ -1,59 +1,40 @@
-import { getAnthropic, DEFAULT_MODEL, MAX_TOKENS } from './client';
-import { 
-  NEWSLETTER_SYSTEM_PROMPT, 
-  PROMPT_VERSION, 
-  buildUserPrompt, 
-  parseNewsletterResponse 
-} from './prompts';
-import { GroupedTweets, SynthesisResult } from '@/types';
-import { formatDate } from '@/lib/utils/date';
+import { GroupedTweets } from '@/types';
+import { getAnthropicClient } from './client';
+import { NEWSLETTER_SYSTEM_PROMPT, buildUserPrompt, parseNewsletterResponse, PROMPT_VERSION } from './prompts';
+
+export { PROMPT_VERSION };
+
+interface NewsletterResult {
+  subject: string;
+  content: string;
+  input_tokens: number;
+  output_tokens: number;
+}
 
 export async function generateNewsletter(
-  tweets: GroupedTweets,
-  dateRangeStart: string,
-  dateRangeEnd: string
-): Promise<SynthesisResult> {
-  const anthropic = getAnthropic();
+  recentTweets: GroupedTweets,
+  startDate: string,
+  endDate: string,
+  contextTweets?: GroupedTweets
+): Promise<NewsletterResult> {
+  const client = getAnthropicClient();
   
-  // Format date range for prompt
-  const dateRange = `${formatDate(dateRangeStart, 'MMM D')} - ${formatDate(dateRangeEnd, 'MMM D, YYYY')}`;
+  const dateRange = `${startDate} to ${endDate}`;
+  const userPrompt = buildUserPrompt(recentTweets, dateRange, undefined, contextTweets);
   
-  // Count tweets for logging
-  const tweetCount = Object.values(tweets).reduce((sum, arr) => sum + arr.length, 0);
-  console.log(`Generating newsletter from ${tweetCount} tweets across ${Object.keys(tweets).length} profiles`);
-  
-  if (tweetCount === 0) {
-    return {
-      subject: 'No New Updates',
-      content: 'No tweets from your selected profiles in the last 24 hours.',
-      input_tokens: 0,
-      output_tokens: 0,
-    };
-  }
-  
-  const userPrompt = buildUserPrompt(tweets, dateRange);
-  
-  const response = await anthropic.messages.create({
-    model: DEFAULT_MODEL,
-    max_tokens: MAX_TOKENS,
+  const response = await client.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 2000,
     system: NEWSLETTER_SYSTEM_PROMPT,
     messages: [
-      {
-        role: 'user',
-        content: userPrompt,
-      },
+      { role: 'user', content: userPrompt }
     ],
   });
   
-  // Extract text content
-  const textContent = response.content.find((block) => block.type === 'text');
-  if (!textContent || textContent.type !== 'text') {
-    throw new Error('No text content in response');
-  }
+  const textContent = response.content.find(c => c.type === 'text');
+  const rawContent = textContent?.text || '';
   
-  const { subject, content } = parseNewsletterResponse(textContent.text);
-  
-  console.log(`Generated newsletter: "${subject}" (${response.usage.input_tokens} in, ${response.usage.output_tokens} out)`);
+  const { subject, content } = parseNewsletterResponse(rawContent);
   
   return {
     subject,
@@ -62,5 +43,3 @@ export async function generateNewsletter(
     output_tokens: response.usage.output_tokens,
   };
 }
-
-export { PROMPT_VERSION };
