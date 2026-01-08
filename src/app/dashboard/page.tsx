@@ -11,7 +11,9 @@ export default function DashboardPage() {
   const [profiles, setProfiles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [sending, setSending] = useState(false);
   const [generationResult, setGenerationResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -42,7 +44,11 @@ export default function DashboardPage() {
     setGenerationResult(null);
     
     try {
-      const res = await fetch('/api/newsletter/generate');
+      const res = await fetch('/api/newsletter/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recentHours: 48, contextDays: 180 }),
+      });
       const data = await res.json();
       
       if (data.success) {
@@ -63,6 +69,35 @@ export default function DashboardPage() {
       });
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleSendNewsletter = async () => {
+    setSending(true);
+    setSendResult(null);
+    
+    try {
+      const res = await fetch('/api/newsletter/send');
+      const data = await res.json();
+      
+      if (data.success) {
+        setSendResult({ 
+          success: true, 
+          message: `Newsletter sent to ${data.sentTo?.join(', ') || 'recipient'}` 
+        });
+      } else {
+        setSendResult({ 
+          success: false, 
+          message: data.error || 'Failed to send' 
+        });
+      }
+    } catch (err) {
+      setSendResult({ 
+        success: false, 
+        message: 'Failed to send newsletter' 
+      });
+    } finally {
+      setSending(false);
     }
   };
 
@@ -110,8 +145,8 @@ export default function DashboardPage() {
         </div>
 
         {/* Manual trigger for testing */}
-        <div className="border border-dashed border-neutral-700 p-6 text-center">
-          <p className="text-neutral-500 text-sm mb-4">Testing</p>
+        <div className="border border-dashed border-neutral-700 p-6">
+          <p className="text-neutral-500 text-sm mb-4 text-center">Testing</p>
           
           {generationResult && (
             <div className={`mb-4 p-3 text-sm ${
@@ -123,13 +158,33 @@ export default function DashboardPage() {
             </div>
           )}
           
-          <button
-            onClick={handleGenerateNewsletter}
-            disabled={generating}
-            className="px-6 py-2 border border-neutral-600 text-sm hover:border-white hover:bg-white hover:text-black transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-neutral-600 disabled:hover:bg-transparent disabled:hover:text-white"
-          >
-            {generating ? 'Generating...' : 'Generate Newsletter Now'}
-          </button>
+          {sendResult && (
+            <div className={`mb-4 p-3 text-sm ${
+              sendResult.success 
+                ? 'border border-green-500 text-green-500' 
+                : 'border border-red-500 text-red-500'
+            }`}>
+              {sendResult.message}
+            </div>
+          )}
+          
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={handleGenerateNewsletter}
+              disabled={generating}
+              className="px-6 py-2 border border-neutral-600 text-sm hover:border-white hover:bg-white hover:text-black transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-neutral-600 disabled:hover:bg-transparent disabled:hover:text-white"
+            >
+              {generating ? 'Generating...' : 'Generate Newsletter'}
+            </button>
+            
+            <button
+              onClick={handleSendNewsletter}
+              disabled={sending}
+              className="px-6 py-2 border border-neutral-600 text-sm hover:border-white hover:bg-white hover:text-black transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-neutral-600 disabled:hover:bg-transparent disabled:hover:text-white"
+            >
+              {sending ? 'Sending...' : 'Send Most Recent'}
+            </button>
+          </div>
         </div>
       </div>
     </SidebarLayout>
