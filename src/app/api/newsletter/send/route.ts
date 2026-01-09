@@ -1,13 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { getSupabase } from '@/lib/db/client';
 import { sendNewsletter } from '@/lib/email/sender';
-import { config } from '@/lib/utils/config';
 
 export async function POST(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json().catch(() => ({}));
     const newsletterId = body.newsletterId;
-    const to = body.to || config.app.newsletterRecipient;
+    
+    const supabase = getSupabase();
+    const twitterHandle = (session.user as any).twitterHandle;
+    
+    // Get user's email
+    const { data: user } = await supabase
+      .from('users')
+      .select('email')
+      .eq('twitter_handle', twitterHandle)
+      .single();
+    
+    const to = body.to || user?.email;
     
     if (!newsletterId) {
       return NextResponse.json(
@@ -18,13 +36,12 @@ export async function POST(request: NextRequest) {
     
     if (!to) {
       return NextResponse.json(
-        { error: 'No recipient email configured. Set NEWSLETTER_RECIPIENT in env or pass "to" in request body' },
+        { error: 'No email configured. Please add your email in settings.' },
         { status: 400 }
       );
     }
     
     // Fetch the newsletter
-    const supabase = getSupabase();
     const { data: newsletter, error } = await supabase
       .from('newsletters')
       .select('*')
@@ -71,21 +88,36 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET to send the most recent newsletter
+// GET to send the most recent newsletter to the logged-in user
 export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
+    const supabase = getSupabase();
+    const twitterHandle = (session.user as any).twitterHandle;
+    
+    // Get user's email
+    const { data: user } = await supabase
+      .from('users')
+      .select('email')
+      .eq('twitter_handle', twitterHandle)
+      .single();
+    
     const { searchParams } = new URL(request.url);
-    const to = searchParams.get('to') || config.app.newsletterRecipient;
+    const to = searchParams.get('to') || user?.email;
     
     if (!to) {
       return NextResponse.json(
-        { error: 'No recipient email. Set NEWSLETTER_RECIPIENT or pass ?to=email@example.com' },
+        { error: 'No email configured. Please add your email in settings.' },
         { status: 400 }
       );
     }
     
     // Get most recent newsletter
-    const supabase = getSupabase();
     const { data: newsletter, error } = await supabase
       .from('newsletters')
       .select('*')
