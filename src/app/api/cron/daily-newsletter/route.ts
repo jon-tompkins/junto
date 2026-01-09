@@ -11,52 +11,19 @@ import { getSupabase } from '@/lib/db/client';
 
 export const maxDuration = 300; // 5 minutes
 
-interface UserDue {
+interface User {
   id: string;
   email: string;
   twitter_handle: string;
-  settings: {
-    delivery_time?: string;
-    timezone?: string;
-    frequency?: string;
-  };
 }
 
-// Check if a user is due for newsletter based on their settings
-function isUserDue(user: UserDue, currentHour: number, currentMinute: number): boolean {
-  const settings = user.settings || {};
-  const deliveryTime = settings.delivery_time || '07:00';
-  const frequency = settings.frequency || 'daily';
-  
-  // Skip if not daily frequency (for now)
-  if (frequency !== 'daily') return false;
-  
-  // Parse delivery time (format: "HH:MM")
-  const [targetHour, targetMinute] = deliveryTime.split(':').map(Number);
-  
-  // Check if current time is within 30 min window of target time
-  // This allows for cron running every 30 min to catch users
-  const targetTotalMinutes = targetHour * 60 + (targetMinute || 0);
-  const currentTotalMinutes = currentHour * 60 + currentMinute;
-  
-  // User is due if we're within 0-29 minutes after their target time
-  const diff = currentTotalMinutes - targetTotalMinutes;
-  return diff >= 0 && diff < 30;
-}
-
-// Get users who are due for a newsletter
-async function getUsersDue(): Promise<UserDue[]> {
+// Get all users with access and email
+async function getUsersWithAccess(): Promise<User[]> {
   const supabase = getSupabase();
   
-  // Get current time in UTC
-  const now = new Date();
-  const currentHour = now.getUTCHours();
-  const currentMinute = now.getUTCMinutes();
-  
-  // Get all users with email and access
   const { data: users, error } = await supabase
     .from('users')
-    .select('id, email, twitter_handle, settings')
+    .select('id, email, twitter_handle')
     .eq('has_access', true)
     .not('email', 'is', null);
   
@@ -65,14 +32,7 @@ async function getUsersDue(): Promise<UserDue[]> {
     return [];
   }
   
-  // Filter to users who are due
-  const usersDue = users.filter(user => 
-    user.email && isUserDue(user as UserDue, currentHour, currentMinute)
-  );
-  
-  console.log(`Found ${usersDue.length} users due for newsletter (UTC ${currentHour}:${currentMinute.toString().padStart(2, '0')})`);
-  
-  return usersDue as UserDue[];
+  return users.filter(u => u.email) as User[];
 }
 
 // Get a user's selected profile handles
@@ -100,18 +60,19 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log('Starting newsletter cron check...');
+    console.log('Starting daily newsletter cron...');
     
-    // Get users who are due for newsletter
-    const usersDue = await getUsersDue();
+    // Get all users with access
+    const users = await getUsersWithAccess();
     
-    if (usersDue.length === 0) {
+    if (users.length === 0) {
       return NextResponse.json({ 
         success: true, 
-        message: 'No users due for newsletter at this time',
-        usersChecked: 0,
+        message: 'No users with access found',
       });
     }
+    
+    console.log(`Found ${users.length} users with access`);
     
     // Step 1: Fetch fresh tweets for all active profiles
     console.log('Fetching fresh tweets...');
@@ -131,10 +92,10 @@ export async function GET(request: NextRequest) {
     
     console.log(`Fetched ${totalFetched} tweets from ${profiles.length} profiles`);
     
-    // Step 2: Generate and send newsletter for each user due
+    // Step 2: Generate and send newsletter for each user
     const results: Record<string, { success: boolean; error?: string }> = {};
     
-    for (const user of usersDue) {
+    for (const user of users) {
       try {
         console.log(`Processing newsletter for ${user.email}...`);
         
@@ -226,7 +187,7 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      usersProcessed: usersDue.length,
+      usersProcessed: users.length,
       newslettersSent: successCount,
       tweetsFetched: totalFetched,
       results,
