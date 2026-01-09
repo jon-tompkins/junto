@@ -24,9 +24,10 @@ export async function GET() {
       return NextResponse.json({ settings: null });
     }
 
+    // Merge email into settings for convenience
     const settings = {
       ...(user.settings || {}),
-      email: user.email || '',
+      email: user.email || user.settings?.email || '',
     };
 
     return NextResponse.json({ settings });
@@ -49,12 +50,13 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabase();
     const twitterHandle = (session.user as any).twitterHandle;
 
+    // Extract email to store in dedicated column
     const { email, ...otherSettings } = settings;
 
     const { error } = await supabase
       .from('users')
       .update({
-        email,
+        email: email || null,
         settings: otherSettings,
         updated_at: new Date().toISOString(),
       })

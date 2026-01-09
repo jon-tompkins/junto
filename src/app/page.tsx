@@ -7,32 +7,37 @@ import { useState, useEffect } from 'react';
 export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [message, setMessage] = useState('');
-  const [showWaitlist, setShowWaitlist] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(false);
 
-  // If logged in, check if user has access
   useEffect(() => {
     if (session?.user) {
-      checkUserAccess();
+      checkUserStatus();
     }
   }, [session]);
 
-  const checkUserAccess = async () => {
+  const checkUserStatus = async () => {
     setCheckingAccess(true);
     try {
-      const res = await fetch('/api/user/access');
-      const data = await res.json();
+      // Check if user has completed onboarding (has profiles set up)
+      const profilesRes = await fetch('/api/user/profiles');
+      const profilesData = await profilesRes.json();
       
-      if (data.hasAccess) {
+      const settingsRes = await fetch('/api/user/settings');
+      const settingsData = await settingsRes.json();
+      
+      const hasProfiles = profilesData.profiles && profilesData.profiles.length > 0;
+      const hasEmail = settingsData.settings?.email;
+      
+      if (hasProfiles && hasEmail) {
+        // Fully onboarded - go to dashboard
         router.push('/dashboard');
       } else {
-        setShowWaitlist(true);
+        // Needs onboarding
+        router.push('/onboarding');
       }
     } catch (err) {
-      setShowWaitlist(true);
+      // If error, send to onboarding
+      router.push('/onboarding');
     } finally {
       setCheckingAccess(false);
     }
@@ -42,40 +47,19 @@ export default function Home() {
     signIn('twitter', { callbackUrl: '/' });
   };
 
-  const handleWaitlistSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitStatus('loading');
-
-    try {
-      const res = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email,
-          twitter_handle: (session?.user as any)?.twitterHandle 
-        }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setSubmitStatus('success');
-        setMessage('You\'re on the list.');
-        setEmail('');
-      } else {
-        setSubmitStatus('error');
-        setMessage(data.error || 'Something went wrong.');
-      }
-    } catch {
-      setSubmitStatus('error');
-      setMessage('Something went wrong.');
-    }
-  };
-
   if (status === 'loading' || checkingAccess) {
     return (
       <main className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-neutral-400">Loading...</div>
+      </main>
+    );
+  }
+
+  // If logged in, the useEffect will redirect
+  if (session) {
+    return (
+      <main className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-neutral-400">Redirecting...</div>
       </main>
     );
   }
@@ -105,78 +89,30 @@ export default function Home() {
             </p>
           </div>
 
-          {/* CTA Section */}
+          {/* CTA */}
           <div className="mb-16">
-            {!session ? (
-              // Not logged in - show Connect button
-              <button
-                onClick={handleConnect}
-                className="w-full sm:w-auto px-8 py-4 bg-white text-black hover:bg-neutral-200 active:bg-neutral-300 transition-all duration-150 cursor-pointer flex items-center justify-center gap-3"
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                </svg>
-                Connect with X
-              </button>
-            ) : showWaitlist ? (
-              // Logged in but no access - show waitlist
-              <div className="border border-neutral-800 p-8 bg-neutral-950">
-                <div className="mb-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center">
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <div className="font-medium">@{(session.user as any)?.twitterHandle}</div>
-                      <div className="text-sm text-neutral-500">Connected</div>
-                    </div>
-                  </div>
-                  <p className="text-neutral-400">
-                    We're not live yet. Join the waitlist and we'll notify you when you can start building your briefing.
-                  </p>
-                </div>
-
-                {submitStatus === 'success' ? (
-                  <div className="py-4">
-                    <p className="text-lg">{message}</p>
-                    <p className="text-neutral-500 text-sm mt-2">We'll be in touch soon.</p>
-                  </div>
-                ) : (
-                  <form onSubmit={handleWaitlistSubmit} className="flex flex-col sm:flex-row gap-4">
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email"
-                      required
-                      className="flex-1 px-4 py-3 bg-transparent border border-neutral-700 focus:border-white focus:outline-none transition-colors placeholder-neutral-600"
-                    />
-                    <button
-                      type="submit"
-                      disabled={submitStatus === 'loading'}
-                      className="px-8 py-3 bg-white text-black hover:bg-neutral-200 active:bg-neutral-300 transition-all duration-150 cursor-pointer disabled:bg-neutral-600 disabled:cursor-not-allowed"
-                    >
-                      {submitStatus === 'loading' ? '...' : 'Join Waitlist'}
-                    </button>
-                  </form>
-                )}
-                {submitStatus === 'error' && (
-                  <p className="text-red-500 text-sm mt-2">{message}</p>
-                )}
-              </div>
-            ) : null}
+            <button
+              onClick={handleConnect}
+              className="w-full sm:w-auto px-8 py-4 bg-white text-black hover:bg-neutral-200 active:bg-neutral-300 transition-all duration-150 cursor-pointer flex items-center justify-center gap-3"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              Connect with X
+            </button>
+            <p className="mt-4 text-sm text-neutral-600">
+              To use a different account, log out of X first or use a private window.
+            </p>
           </div>
 
-          {/* How it works - Vertical */}
+          {/* How it works */}
           <div className="mb-16 py-8 border-t border-b border-neutral-800">
             <div className="space-y-6 text-sm">
               <div className="flex gap-6">
                 <div className="text-neutral-600 w-8">01</div>
                 <div>
                   <div className="font-medium mb-1">Choose your sources</div>
-                  <div className="text-neutral-500">Select 3-5 Twitter accounts you trust</div>
+                  <div className="text-neutral-500">Select up to 5 Twitter accounts you trust</div>
                 </div>
               </div>
               <div className="flex gap-6">
@@ -203,14 +139,14 @@ export default function Home() {
               <div>
                 <div className="font-medium mb-1">Sentiment Check</div>
                 <p className="text-neutral-400">
-                  Consensus shifting bearish on altcoins. @cburniske and @krugman87 both noting 
+                  Consensus shifting bearish on altcoins. Multiple sources noting 
                   diminishing returns this cycle. Macro concerns outweighing sector-specific catalysts.
                 </p>
               </div>
               <div>
                 <div className="font-medium mb-1">Actionable</div>
                 <p className="text-neutral-400">
-                  $BTC — accumulating on dips per @crypto_condom
+                  $BTC — accumulating on dips
                   <br />
                   $SOL — reducing exposure, watching $180 support
                 </p>
@@ -223,7 +159,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="px-8 py-6 border-t border-neutral-800">
         <div className="max-w-2xl mx-auto text-sm text-neutral-600">
-          © 2024 MyJunto
+          © 2025 MyJunto
         </div>
       </footer>
     </main>
