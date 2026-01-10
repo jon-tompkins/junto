@@ -1,6 +1,6 @@
 import { GroupedTweets } from '@/types';
 import { getAnthropic } from './client';
-import { NEWSLETTER_SYSTEM_PROMPT, buildUserPrompt, parseNewsletterResponse, PROMPT_VERSION } from './prompts';
+import { NEWSLETTER_SYSTEM_PROMPT, buildUserPrompt, parseNewsletterResponse, PROMPT_VERSION, buildCustomSystemPrompt } from './prompts';
 
 export { PROMPT_VERSION };
 
@@ -15,17 +15,24 @@ export async function generateNewsletter(
   recentTweets: GroupedTweets,
   startDate: string,
   endDate: string,
-  contextTweets?: GroupedTweets
+  contextTweets?: GroupedTweets,
+  keywords?: string[],
+  customPrompt?: string | null
 ): Promise<NewsletterResult> {
   const client = getAnthropic();
   
   const dateRange = `${startDate} to ${endDate}`;
-  const userPrompt = buildUserPrompt(recentTweets, dateRange, undefined, contextTweets);
+  const userPrompt = buildUserPrompt(recentTweets, dateRange, keywords, contextTweets);
+  
+  // Use custom prompt if provided, otherwise default
+  const systemPrompt = customPrompt 
+    ? buildCustomSystemPrompt(customPrompt, keywords)
+    : NEWSLETTER_SYSTEM_PROMPT;
   
   const response = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 2000,
-    system: NEWSLETTER_SYSTEM_PROMPT,
+    system: systemPrompt,
     messages: [
       { role: 'user', content: userPrompt }
     ],

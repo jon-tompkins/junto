@@ -12,11 +12,24 @@ export async function GET() {
 
   try {
     const supabase = getSupabase();
+    const twitterHandle = (session.user as any).twitterHandle;
     
-    // For now, return all newsletters (later we can filter by user)
+    // Get user
+    const { data: user } = await supabase
+      .from('users')
+      .select('id')
+      .eq('twitter_handle', twitterHandle)
+      .single();
+    
+    if (!user) {
+      return NextResponse.json({ newsletters: [] });
+    }
+    
+    // Get only this user's newsletters
     const { data: newsletters, error } = await supabase
       .from('newsletters')
-      .select('id, subject, content, generated_at, tweet_count')
+      .select('id, subject, content, generated_at, tweet_count, metadata')
+      .eq('user_id', user.id)
       .order('generated_at', { ascending: false })
       .limit(50);
 

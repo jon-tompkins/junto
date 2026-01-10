@@ -15,6 +15,10 @@ interface User {
   id: string;
   email: string;
   twitter_handle: string;
+  settings: {
+    keywords?: string[];
+  } | null;
+  custom_prompt: string | null;
 }
 
 // Get all users with access and email
@@ -23,7 +27,7 @@ async function getUsersWithAccess(): Promise<User[]> {
   
   const { data: users, error } = await supabase
     .from('users')
-    .select('id, email, twitter_handle')
+    .select('id, email, twitter_handle, settings, custom_prompt')
     .eq('has_access', true)
     .not('email', 'is', null);
   
@@ -92,7 +96,15 @@ export async function GET(request: NextRequest) {
     
     console.log(`Fetched ${totalFetched} tweets from ${profiles.length} profiles`);
     
-    // Step 2: Generate and send newsletter for each user
+    // Step 2: Get all tweets (we'll filter per user)
+    const recentHours = 48;
+    const contextDays = 180;
+    const { start, end } = getDateRange(recentHours);
+    
+    const allRecentTweets = await getRecentTweetsGrouped(recentHours);
+    const allContextTweets = await getTweetsForContext(contextDays, recentHours);
+    
+    // Step 3: Generate and send newsletter for each user
     const results: Record<string, { success: boolean; error?: string }> = {};
     
     for (const user of users) {
@@ -108,15 +120,7 @@ export async function GET(request: NextRequest) {
           continue;
         }
         
-        // Get tweets for user's profiles
-        const recentHours = 48;
-        const contextDays = 180;
-        const { start, end } = getDateRange(recentHours);
-        
-        const allRecentTweets = await getRecentTweetsGrouped(recentHours);
-        const allContextTweets = await getTweetsForContext(contextDays, recentHours);
-        
-        // Filter to only user's selected profiles
+        // Filter tweets to only user's selected profiles
         const recentTweets: Record<string, any[]> = {};
         const contextTweets: Record<string, any[]> = {};
         
@@ -138,11 +142,23 @@ export async function GET(request: NextRequest) {
           continue;
         }
         
-        // Generate newsletter
-        const synthesis = await generateNewsletter(recentTweets, start, end, contextTweets);
+        // Get user's keywords and custom prompt
+        const keywords = user.settings?.keywords || [];
+        const customPrompt = user.custom_prompt || null;
         
-        // Store newsletter
+        // Generate newsletter with user's settings
+        const synthesis = await generateNewsletter(
+          recentTweets, 
+          start, 
+          end, 
+          contextTweets,
+          keywords,
+          customPrompt
+        );
+        
+        // Store newsletter with user_id
         const newsletter = await storeNewsletter({
+          user_id: user.id,
           subject: synthesis.subject,
           content: synthesis.content,
           tweet_ids: [],
@@ -156,9 +172,10 @@ export async function GET(request: NextRequest) {
           sent_at: null,
           sent_to: [],
           metadata: {
-            user_id: user.id,
             recent_tweets: recentCount,
             context_tweets: contextCount,
+            profiles: userProfileHandles,
+            keywords,
           },
         });
         

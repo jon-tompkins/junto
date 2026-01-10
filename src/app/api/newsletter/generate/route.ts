@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { getSupabase } from '@/lib/db/client';
 import { getRecentTweetsGrouped, getTweetsForContext } from '@/lib/db/tweets';
 import { storeNewsletter } from '@/lib/db/newsletters';
 import { generateNewsletter, PROMPT_VERSION } from '@/lib/synthesis/generator';
@@ -7,44 +10,99 @@ import { getDateRange } from '@/lib/utils/date';
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json().catch(() => ({}));
-    
-    // Recent tweets (last 24-48 hours) - primary focus
     const recentHours = body.recentHours || 48;
-    // Context tweets (last 6 months) - background context
     const contextDays = body.contextDays || 180;
     
-    console.log(`Generating newsletter: ${recentHours}hr recent + ${contextDays} day context...`);
+    const supabase = getSupabase();
+    const twitterHandle = (session.user as any).twitterHandle;
     
-    const { start: recentStart, end } = getDateRange(recentHours);
+    // Get user
+    const { data: user } = await supabase
+      .from('users')
+      .select('id, settings, custom_prompt')
+      .eq('twitter_handle', twitterHandle)
+      .single();
     
-    // Get recent tweets (primary focus)
-    const recentTweets = await getRecentTweetsGrouped(recentHours);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    
+    // Get user's selected profiles
+    const { data: userProfiles } = await supabase
+      .from('user_profiles')
+      .select('profiles(twitter_handle)')
+      .eq('user_id', user.id);
+    
+    const profileHandles = userProfiles?.map((p: any) => p.profiles?.twitter_handle).filter(Boolean) || [];
+    
+    if (profileHandles.length === 0) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'No profiles selected. Add profiles in Sources.',
+      });
+    }
+    
+    console.log(`Generating newsletter for ${twitterHandle} with profiles: ${profileHandles.join(', ')}`);
+    
+    const { start, end } = getDateRange(recentHours);
+    
+    // Get all tweets then filter to user's profiles
+    const allRecentTweets = await getRecentTweetsGrouped(recentHours);
+    const allContextTweets = await getTweetsForContext(contextDays, recentHours);
+    
+    const recentTweets: Record<string, any[]> = {};
+    const contextTweets: Record<string, any[]> = {};
+    
+    for (const handle of profileHandles) {
+      if (allRecentTweets[handle]) {
+        recentTweets[handle] = allRecentTweets[handle];
+      }
+      if (allContextTweets[handle]) {
+        contextTweets[handle] = allContextTweets[handle];
+      }
+    }
+    
     const recentCount = Object.values(recentTweets).reduce((sum, arr) => sum + arr.length, 0);
-    
-    // Get older context tweets (6 months, excluding recent)
-    const contextTweets = await getTweetsForContext(contextDays, recentHours);
     const contextCount = Object.values(contextTweets).reduce((sum, arr) => sum + arr.length, 0);
-    
     const totalCount = recentCount + contextCount;
     
     if (totalCount === 0) {
       return NextResponse.json({ 
         success: false, 
-        message: 'No tweets found in the specified time range',
+        message: 'No tweets found for your selected profiles in the specified time range',
       });
     }
     
-    // Pass both recent and context tweets to generator
-    const synthesis = await generateNewsletter(recentTweets, recentStart, end, contextTweets);
+    // Get user's keywords and custom prompt
+    const keywords = user.settings?.keywords || [];
+    const customPrompt = user.custom_prompt || null;
     
+    // Generate newsletter
+    const synthesis = await generateNewsletter(
+      recentTweets, 
+      start, 
+      end, 
+      contextTweets,
+      keywords,
+      customPrompt
+    );
+    
+    // Store newsletter with user_id
     const newsletter = await storeNewsletter({
+      user_id: user.id,
       subject: synthesis.subject,
       content: synthesis.content,
       tweet_ids: [],
       tweet_count: totalCount,
-      date_range_start: recentStart,
+      date_range_start: start,
       date_range_end: end,
       model_used: 'claude-sonnet-4-20250514',
       prompt_version: PROMPT_VERSION,
@@ -55,6 +113,8 @@ export async function POST(request: NextRequest) {
       metadata: {
         recent_tweets: recentCount,
         context_tweets: contextCount,
+        profiles: profileHandles,
+        keywords,
       },
     });
     
@@ -69,7 +129,7 @@ export async function POST(request: NextRequest) {
         tweetCount: totalCount,
         recentTweets: recentCount,
         contextTweets: contextCount,
-        profiles: Object.keys(recentTweets),
+        profiles: profileHandles,
         tokens: {
           input: synthesis.input_tokens,
           output: synthesis.output_tokens,
@@ -88,14 +148,5 @@ export async function POST(request: NextRequest) {
 
 // GET for simple testing
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const recentHours = parseInt(searchParams.get('recent') || '48');
-  const contextDays = parseInt(searchParams.get('context') || '180');
-  
-  const mockRequest = new NextRequest('http://localhost/api/newsletter/generate', {
-    method: 'POST',
-    body: JSON.stringify({ recentHours, contextDays }),
-  });
-  
-  return POST(mockRequest);
+  return POST(request);
 }

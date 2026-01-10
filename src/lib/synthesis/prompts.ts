@@ -1,6 +1,6 @@
 import { GroupedTweets } from '@/types';
 
-export const PROMPT_VERSION = 'v3.0';
+export const PROMPT_VERSION = 'v3.1';
 
 export const NEWSLETTER_SYSTEM_PROMPT = `You are a synthesis engine creating a daily intelligence briefing for a crypto/finance professional.
 
@@ -73,6 +73,17 @@ If no specific actionable calls, note what sources are watching.
 - Written for someone who already understands markets
 - No filler or generic statements`;
 
+export function buildCustomSystemPrompt(customPrompt: string, keywords?: string[]): string {
+  let prompt = customPrompt;
+  
+  // Replace {{keywords}} placeholder if present
+  if (keywords && keywords.length > 0 && prompt.includes('{{keywords}}')) {
+    prompt = prompt.replace('{{keywords}}', keywords.join(', '));
+  }
+  
+  return prompt;
+}
+
 export function buildUserPrompt(
   recentTweets: GroupedTweets, 
   dateRange: string,
@@ -118,7 +129,7 @@ export function buildUserPrompt(
 
   let focusSection = '';
   if (focusKeywords && focusKeywords.length > 0) {
-    focusSection = `\n\n**USER FOCUS AREAS:** Pay special attention to: ${focusKeywords.join(', ')}\n`;
+    focusSection = `\n\n**USER FOCUS AREAS:** Pay special attention to content related to: ${focusKeywords.join(', ')}\n`;
   }
 
   return `Generate today's briefing based on tweets from ${dateRange}.
