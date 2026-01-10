@@ -18,14 +18,18 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabase();
     const twitterHandle = (session.user as any).twitterHandle;
     
-    // Get user's email
+    // Get user
     const { data: user } = await supabase
       .from('users')
-      .select('email')
+      .select('id, email')
       .eq('twitter_handle', twitterHandle)
       .single();
     
-    const to = body.to || user?.email;
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    
+    const to = body.to || user.email;
     
     if (!newsletterId) {
       return NextResponse.json(
@@ -41,11 +45,12 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Fetch the newsletter
+    // Fetch the newsletter - ensure it belongs to this user
     const { data: newsletter, error } = await supabase
       .from('newsletters')
       .select('*')
       .eq('id', newsletterId)
+      .eq('user_id', user.id)
       .single();
     
     if (error || !newsletter) {
@@ -88,7 +93,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET to send the most recent newsletter to the logged-in user
+// GET to send the most recent newsletter for the logged-in user
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   
@@ -100,15 +105,19 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabase();
     const twitterHandle = (session.user as any).twitterHandle;
     
-    // Get user's email
+    // Get user
     const { data: user } = await supabase
       .from('users')
-      .select('email')
+      .select('id, email')
       .eq('twitter_handle', twitterHandle)
       .single();
     
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    
     const { searchParams } = new URL(request.url);
-    const to = searchParams.get('to') || user?.email;
+    const to = searchParams.get('to') || user.email;
     
     if (!to) {
       return NextResponse.json(
@@ -117,10 +126,11 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // Get most recent newsletter
+    // Get most recent newsletter FOR THIS USER
     const { data: newsletter, error } = await supabase
       .from('newsletters')
       .select('*')
+      .eq('user_id', user.id)
       .order('generated_at', { ascending: false })
       .limit(1)
       .single();
