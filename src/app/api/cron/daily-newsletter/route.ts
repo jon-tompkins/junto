@@ -17,12 +17,21 @@ interface User {
   twitter_handle: string;
   settings: {
     keywords?: string[];
+    delivery_time?: string;
   } | null;
   custom_prompt: string | null;
 }
 
-// Get all users with access and email
-async function getUsersWithAccess(): Promise<User[]> {
+// Map delivery_time setting to slot hour
+const TIME_SLOT_MAP: Record<string, number> = {
+  '05:00': 5,
+  '11:00': 11,
+  '17:00': 17,
+  '23:00': 23,
+};
+
+// Get users who should receive newsletter at this slot
+async function getUsersForSlot(slot: number | null): Promise<User[]> {
   const supabase = getSupabase();
   
   const { data: users, error } = await supabase
@@ -36,7 +45,19 @@ async function getUsersWithAccess(): Promise<User[]> {
     return [];
   }
   
-  return users.filter(u => u.email) as User[];
+  // Filter to users with email
+  let filteredUsers = users.filter(u => u.email) as User[];
+  
+  // If slot is specified, filter to users who want that time
+  if (slot !== null) {
+    filteredUsers = filteredUsers.filter(user => {
+      const deliveryTime = user.settings?.delivery_time || '05:00';
+      const userSlot = TIME_SLOT_MAP[deliveryTime] || 5;
+      return userSlot === slot;
+    });
+  }
+  
+  return filteredUsers;
 }
 
 // Get a user's selected profile handles
@@ -64,19 +85,25 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log('Starting daily newsletter cron...');
+    // Get slot from query param (5, 11, 17, or 23)
+    const { searchParams } = new URL(request.url);
+    const slotParam = searchParams.get('slot');
+    const slot = slotParam ? parseInt(slotParam) : null;
     
-    // Get all users with access
-    const users = await getUsersWithAccess();
+    console.log(`Starting newsletter cron for slot: ${slot || 'all'}...`);
+    
+    // Get users for this time slot
+    const users = await getUsersForSlot(slot);
     
     if (users.length === 0) {
       return NextResponse.json({ 
         success: true, 
-        message: 'No users with access found',
+        message: `No users scheduled for slot ${slot || 'all'}`,
+        slot,
       });
     }
     
-    console.log(`Found ${users.length} users with access`);
+    console.log(`Found ${users.length} users for slot ${slot || 'all'}`);
     
     // Step 1: Fetch fresh tweets for all active profiles
     console.log('Fetching fresh tweets...');
@@ -176,6 +203,7 @@ export async function GET(request: NextRequest) {
             context_tweets: contextCount,
             profiles: userProfileHandles,
             keywords,
+            slot,
           },
         });
         
@@ -204,6 +232,7 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
+      slot,
       usersProcessed: users.length,
       newslettersSent: successCount,
       tweetsFetched: totalFetched,

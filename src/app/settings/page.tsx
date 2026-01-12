@@ -13,6 +13,13 @@ interface UserSettings {
   email: string;
 }
 
+const TIME_OPTIONS = [
+  { value: '05:00', label: '5:00 AM ET', description: 'Early morning' },
+  { value: '11:00', label: '11:00 AM ET', description: 'Late morning' },
+  { value: '17:00', label: '5:00 PM ET', description: 'End of day' },
+  { value: '23:00', label: '11:00 PM ET', description: 'Night owl' },
+];
+
 const KEYWORD_OPTIONS = [
   'crypto',
   'macro',
@@ -31,7 +38,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const [settings, setSettings] = useState<UserSettings>({
     frequency: 'daily',
-    delivery_time: '07:00',
+    delivery_time: '05:00',
     timezone: 'America/New_York',
     keywords: [],
     email: '',
@@ -58,7 +65,10 @@ export default function SettingsPage() {
       const res = await fetch('/api/user/settings');
       const data = await res.json();
       if (data.settings) {
-        setSettings(data.settings);
+        setSettings({
+          ...settings,
+          ...data.settings,
+        });
       }
     } catch (err) {
       console.error('Failed to fetch settings:', err);
@@ -151,47 +161,34 @@ export default function SettingsPage() {
           />
         </div>
 
-        {/* Frequency */}
-        <div className="mb-8">
-          <label className="block text-sm font-medium mb-2">Frequency</label>
-          <div className="flex gap-4">
-            <button
-              onClick={() => setSettings({ ...settings, frequency: 'daily' })}
-              className={`flex-1 px-4 py-3 border transition-colors ${
-                settings.frequency === 'daily'
-                  ? 'border-white bg-white text-black'
-                  : 'border-neutral-700 hover:border-neutral-500'
-              }`}
-            >
-              Daily
-            </button>
-            <button
-              onClick={() => setSettings({ ...settings, frequency: 'weekly' })}
-              className={`flex-1 px-4 py-3 border transition-colors ${
-                settings.frequency === 'weekly'
-                  ? 'border-white bg-white text-black'
-                  : 'border-neutral-700 hover:border-neutral-500'
-              }`}
-            >
-              Weekly
-            </button>
-          </div>
-        </div>
-
         {/* Delivery Time */}
         <div className="mb-8">
-          <label className="block text-sm font-medium mb-2">Delivery Time (ET)</label>
-          <select
-            value={settings.delivery_time}
-            onChange={(e) => setSettings({ ...settings, delivery_time: e.target.value })}
-            className="w-full px-4 py-3 bg-black border border-neutral-700 focus:border-white focus:outline-none transition-colors"
-          >
-            <option value="06:00">6:00 AM</option>
-            <option value="07:00">7:00 AM</option>
-            <option value="08:00">8:00 AM</option>
-            <option value="09:00">9:00 AM</option>
-            <option value="10:00">10:00 AM</option>
-          </select>
+          <label className="block text-sm font-medium mb-2">Delivery Time</label>
+          <p className="text-sm text-neutral-500 mb-4">
+            Choose when you want to receive your daily briefing.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {TIME_OPTIONS.map(option => (
+              <button
+                key={option.value}
+                onClick={() => setSettings({ ...settings, delivery_time: option.value })}
+                className={`p-4 border transition-colors text-left ${
+                  settings.delivery_time === option.value
+                    ? 'border-white bg-white text-black'
+                    : 'border-neutral-700 hover:border-neutral-500'
+                }`}
+              >
+                <div className="font-medium">{option.label}</div>
+                <div className={`text-sm ${
+                  settings.delivery_time === option.value 
+                    ? 'text-neutral-600' 
+                    : 'text-neutral-500'
+                }`}>
+                  {option.description}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Focus Keywords */}
