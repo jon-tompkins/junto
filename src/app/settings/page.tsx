@@ -11,13 +11,27 @@ interface UserSettings {
   timezone: string;
   keywords: string[];
   email: string;
+  use_custom_time: boolean;
 }
 
 const TIME_OPTIONS = [
-  { value: '05:00', label: '5:00 AM ET', description: 'Early morning' },
-  { value: '11:00', label: '11:00 AM ET', description: 'Late morning' },
-  { value: '17:00', label: '5:00 PM ET', description: 'End of day' },
-  { value: '23:00', label: '11:00 PM ET', description: 'Night owl' },
+  { value: '05:00', label: '5:00 AM', description: 'Early morning' },
+  { value: '11:00', label: '11:00 AM', description: 'Late morning' },
+  { value: '17:00', label: '5:00 PM', description: 'End of day' },
+  { value: '23:00', label: '11:00 PM', description: 'Night owl' },
+];
+
+const COMMON_TIMEZONES = [
+  { value: 'America/New_York', label: 'Eastern Time (ET)' },
+  { value: 'America/Chicago', label: 'Central Time (CT)' },
+  { value: 'America/Denver', label: 'Mountain Time (MT)' },
+  { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+  { value: 'Europe/London', label: 'London (GMT/BST)' },
+  { value: 'Europe/Paris', label: 'Paris (CET/CEST)' },
+  { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+  { value: 'Asia/Shanghai', label: 'Shanghai (CST)' },
+  { value: 'Australia/Sydney', label: 'Sydney (AEST/AEDT)' },
+  { value: 'UTC', label: 'UTC' },
 ];
 
 const KEYWORD_OPTIONS = [
@@ -42,7 +56,9 @@ export default function SettingsPage() {
     timezone: 'America/New_York',
     keywords: [],
     email: '',
+    use_custom_time: false,
   });
+  const [userTimezone, setUserTimezone] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
@@ -57,8 +73,23 @@ export default function SettingsPage() {
   useEffect(() => {
     if (session) {
       fetchSettings();
+      detectTimezone();
     }
-  }, [session]);
+  }, [session, fetchSettings, detectTimezone]);
+
+  const detectTimezone = () => {
+    try {
+      const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      setUserTimezone(detectedTz);
+      
+      // If user hasn't set a timezone, use the detected one
+      if (settings.timezone === 'America/New_York' && !settings.use_custom_time) {
+        setSettings(prev => ({ ...prev, timezone: detectedTz }));
+      }
+    } catch (error) {
+      console.error('Error detecting timezone:', error);
+    }
+  };
 
   const fetchSettings = async () => {
     try {
@@ -161,34 +192,84 @@ export default function SettingsPage() {
           />
         </div>
 
+        {/* Timezone */}
+        <div className="mb-8">
+          <label className="block text-sm font-medium mb-2">Timezone</label>
+          <p className="text-sm text-neutral-500 mb-4">
+            Detected: {userTimezone || 'Detecting...'}
+          </p>
+          <select
+            value={settings.timezone}
+            onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
+            className="w-full px-4 py-3 bg-transparent border border-neutral-700 focus:border-white focus:outline-none transition-colors"
+          >
+            {COMMON_TIMEZONES.map(tz => (
+              <option key={tz.value} value={tz.value}>
+                {tz.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Custom Time Toggle */}
+        <div className="mb-8">
+          <label className="flex items-center space-x-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.use_custom_time}
+              onChange={(e) => setSettings({ ...settings, use_custom_time: e.target.checked })}
+              className="w-4 h-4 text-white bg-transparent border-neutral-600 rounded focus:ring-white focus:ring-2"
+            />
+            <span className="text-sm font-medium">Use custom delivery time</span>
+          </label>
+          <p className="text-sm text-neutral-500 mt-2">
+            Choose a specific time instead of preset options.
+          </p>
+        </div>
+
         {/* Delivery Time */}
         <div className="mb-8">
-          <label className="block text-sm font-medium mb-2">Delivery Time</label>
+          <label className="block text-sm font-medium mb-2">
+            Delivery Time ({settings.timezone})
+          </label>
           <p className="text-sm text-neutral-500 mb-4">
-            Choose when you want to receive your daily briefing.
+            {settings.use_custom_time 
+              ? 'Select any time you prefer for your daily briefing.'
+              : 'Choose when you want to receive your daily briefing.'
+            }
           </p>
-          <div className="grid grid-cols-2 gap-3">
-            {TIME_OPTIONS.map(option => (
-              <button
-                key={option.value}
-                onClick={() => setSettings({ ...settings, delivery_time: option.value })}
-                className={`p-4 border transition-colors text-left ${
-                  settings.delivery_time === option.value
-                    ? 'border-white bg-white text-black'
-                    : 'border-neutral-700 hover:border-neutral-500'
-                }`}
-              >
-                <div className="font-medium">{option.label}</div>
-                <div className={`text-sm ${
-                  settings.delivery_time === option.value 
-                    ? 'text-neutral-600' 
-                    : 'text-neutral-500'
-                }`}>
-                  {option.description}
-                </div>
-              </button>
-            ))}
-          </div>
+          
+          {settings.use_custom_time ? (
+            <input
+              type="time"
+              value={settings.delivery_time}
+              onChange={(e) => setSettings({ ...settings, delivery_time: e.target.value })}
+              className="w-full px-4 py-3 bg-transparent border border-neutral-700 focus:border-white focus:outline-none transition-colors"
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {TIME_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  onClick={() => setSettings({ ...settings, delivery_time: option.value })}
+                  className={`p-4 border transition-colors text-left ${
+                    settings.delivery_time === option.value
+                      ? 'border-white bg-white text-black'
+                      : 'border-neutral-700 hover:border-neutral-500'
+                  }`}
+                >
+                  <div className="font-medium">{option.label}</div>
+                  <div className={`text-sm ${
+                    settings.delivery_time === option.value 
+                      ? 'text-neutral-600' 
+                      : 'text-neutral-500'
+                  }`}>
+                    {option.description}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Focus Keywords */}

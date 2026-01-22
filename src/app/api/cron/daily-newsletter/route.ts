@@ -8,6 +8,12 @@ import { sendNewsletter } from '@/lib/email/sender';
 import { config } from '@/lib/utils/config';
 import { getDateRange } from '@/lib/utils/date';
 import { getSupabase } from '@/lib/db/client';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export const maxDuration = 300; // 5 minutes
 
@@ -18,20 +24,14 @@ interface User {
   settings: {
     keywords?: string[];
     delivery_time?: string;
+    timezone?: string;
+    use_custom_time?: boolean;
   } | null;
   custom_prompt: string | null;
 }
 
-// Map delivery_time setting to slot hour
-const TIME_SLOT_MAP: Record<string, number> = {
-  '05:00': 5,
-  '11:00': 11,
-  '17:00': 17,
-  '23:00': 23,
-};
-
-// Get users who should receive newsletter at this slot
-async function getUsersForSlot(slot: number | null): Promise<User[]> {
+// Get users who should receive newsletter at the current time in their timezone
+async function getUsersForCurrentTime(): Promise<User[]> {
   const supabase = getSupabase();
   
   const { data: users, error } = await supabase
@@ -46,18 +46,57 @@ async function getUsersForSlot(slot: number | null): Promise<User[]> {
   }
   
   // Filter to users with email
-  let filteredUsers = users.filter(u => u.email) as User[];
+  const filteredUsers = users.filter(u => u.email) as User[];
   
-  // If slot is specified, filter to users who want that time
-  if (slot !== null) {
-    filteredUsers = filteredUsers.filter(user => {
-      const deliveryTime = user.settings?.delivery_time || '05:00';
-      const userSlot = TIME_SLOT_MAP[deliveryTime] || 5;
-      return userSlot === slot;
-    });
+  // Check each user's local time
+  const usersForCurrentTime: User[] = [];
+  
+  for (const user of filteredUsers) {
+    const userTimezone = user.settings?.timezone || 'America/New_York';
+    const deliveryTime = user.settings?.delivery_time || '05:00';
+    
+    // Get current time in user's timezone
+    const nowInUserTimezone = dayjs().tz(userTimezone);
+    const [hour, minute] = deliveryTime.split(':').map(Number);
+    
+    // Check if current time matches delivery time (within same hour)
+    const currentHour = nowInUserTimezone.hour();
+    const currentMinute = nowInUserTimezone.minute();
+    
+    // Allow 5-minute window for delivery
+    const isDeliveryTime = Math.abs(currentHour - hour) === 0 && Math.abs(currentMinute - minute) < 5;
+    
+    // Check if we've already sent a newsletter today to this user
+    const today = nowInUserTimezone.format('YYYY-MM-DD');
+    const alreadySentToday = await checkIfNewsletterSentToday(user.id, today);
+    
+    if (isDeliveryTime && !alreadySentToday) {
+      usersForCurrentTime.push(user);
+      console.log(`User ${user.email} scheduled for ${deliveryTime} ${userTimezone}, current local time: ${nowInUserTimezone.format('HH:mm')}`);
+    }
   }
   
-  return filteredUsers;
+  return usersForCurrentTime;
+}
+
+// Check if newsletter was already sent to user today
+async function checkIfNewsletterSentToday(userId: string, today: string): Promise<boolean> {
+  const supabase = getSupabase();
+  
+  const { data, error } = await supabase
+    .from('newsletters')
+    .select('id, sent_at')
+    .eq('user_id', userId)
+    .gte('sent_at', today + 'T00:00:00.000Z')
+    .lt('sent_at', today + 'T23:59:59.999Z')
+    .limit(1);
+  
+  if (error) {
+    console.error('Error checking newsletter status:', error);
+    return false;
+  }
+  
+  return (data?.length || 0) > 0;
 }
 
 // Get a user's selected profile handles
@@ -85,25 +124,19 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Get slot from query param (5, 11, 17, or 23)
-    const { searchParams } = new URL(request.url);
-    const slotParam = searchParams.get('slot');
-    const slot = slotParam ? parseInt(slotParam) : null;
+    console.log('Starting newsletter cron with timezone-aware scheduling...');
     
-    console.log(`Starting newsletter cron for slot: ${slot || 'all'}...`);
-    
-    // Get users for this time slot
-    const users = await getUsersForSlot(slot);
+    // Get users for current time in their respective timezones
+    const users = await getUsersForCurrentTime();
     
     if (users.length === 0) {
       return NextResponse.json({ 
         success: true, 
-        message: `No users scheduled for slot ${slot || 'all'}`,
-        slot,
+        message: 'No users scheduled for current time',
       });
     }
     
-    console.log(`Found ${users.length} users for slot ${slot || 'all'}`);
+    console.log(`Found ${users.length} users for current time across all timezones`);
     
     // Step 1: Fetch fresh tweets for all active profiles
     console.log('Fetching fresh tweets...');
@@ -232,7 +265,6 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      slot,
       usersProcessed: users.length,
       newslettersSent: successCount,
       tweetsFetched: totalFetched,

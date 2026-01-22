@@ -1,6 +1,6 @@
 import { GroupedTweets } from '@/types';
 import { getAnthropic } from './client';
-import { NEWSLETTER_SYSTEM_PROMPT, buildUserPrompt, parseNewsletterResponse, PROMPT_VERSION, buildCustomSystemPrompt } from './prompts';
+import { NEWSLETTER_SYSTEM_PROMPT, buildUserPrompt, parseNewsletterResponse, extractTweetReferences, PROMPT_VERSION, buildCustomSystemPrompt } from './prompts';
 
 export { PROMPT_VERSION };
 
@@ -41,7 +41,8 @@ export async function generateNewsletter(
   const textContent = response.content.find(c => c.type === 'text');
   const rawContent = textContent?.text || '';
   
-  const { subject, content } = parseNewsletterResponse(rawContent);
+  const { subject } = parseNewsletterResponse(rawContent);
+  const { content } = extractTweetReferences(rawContent, recentTweets, contextTweets);
   
   return {
     subject,
