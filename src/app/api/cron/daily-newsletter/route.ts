@@ -236,7 +236,6 @@ export async function GET(request: NextRequest) {
             context_tweets: contextCount,
             profiles: userProfileHandles,
             keywords,
-            slot,
           },
         });
         

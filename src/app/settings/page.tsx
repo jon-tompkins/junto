@@ -70,14 +70,7 @@ export default function SettingsPage() {
     }
   }, [status, router]);
 
-  useEffect(() => {
-    if (session) {
-      fetchSettings();
-      detectTimezone();
-    }
-  }, [session, fetchSettings, detectTimezone]);
-
-  const detectTimezone = () => {
+const detectTimezone = () => {
     try {
       const detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       setUserTimezone(detectedTz);
@@ -90,6 +83,13 @@ export default function SettingsPage() {
       console.error('Error detecting timezone:', error);
     }
   };
+
+  useEffect(() => {
+    if (session) {
+      fetchSettings();
+      detectTimezone();
+    }
+  }, [session]);
 
   const fetchSettings = async () => {
     try {
