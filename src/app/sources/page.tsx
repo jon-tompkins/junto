@@ -18,12 +18,13 @@ interface TwitterUser {
 export default function SourcesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [following, setFollowing] = useState<TwitterUser[]>([]);
+const [following, setFollowing] = useState<TwitterUser[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
-  const [search, setSearch] = useState('');
-  const [manualHandle, setManualHandle] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [manualHandle, setManualHandle] = useState('');
   const [addingManual, setAddingManual] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -228,14 +229,57 @@ export default function SourcesPage() {
           </div>
         </div>
 
-        {/* Search */}
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search your following..."
-          className="w-full px-4 py-3 mb-4 bg-transparent border border-neutral-700 focus:border-white focus:outline-none transition-colors placeholder-neutral-600"
-        />
+        {/* Search with Dropdown */}
+        <div className="relative mb-4">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onFocus={() => setShowDropdown(true)}
+            onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+            placeholder="Search your following..."
+            className="w-full px-4 py-3 bg-transparent border border-neutral-700 focus:border-white focus:outline-none transition-colors placeholder-neutral-600"
+          />
+          
+          {/* Dropdown suggestions */}
+          {showDropdown && search && (
+            <div className="absolute z-10 w-full bg-neutral-900 border border-neutral-700 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1">
+              {filtered.slice(0, 10).map(user => (
+                <button
+                  key={user.id}
+                  onClick={() => {
+                    toggleSelect(user.username);
+                    setSearch('');
+                    setShowDropdown(false);
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-neutral-800 transition-colors flex items-center gap-3"
+                >
+                  <img
+                    src={user.profile_image_url}
+                    alt={user.name}
+                    className="w-8 h-8 rounded-full"
+                  />
+                  <div>
+                    <div className="font-medium">{user.name}</div>
+                    <div className="text-sm text-neutral-500">@{user.username}</div>
+                  </div>
+                </button>
+              ))}
+              {filtered.length === 0 && (
+                <div className="px-4 py-3 text-neutral-500 text-sm">
+                  No matches found
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Following list header */}
+        {!showDropdown && (
+          <div className="mb-4 text-sm text-neutral-500">
+            {search ? `Found ${filtered.length} match${filtered.length !== 1 ? 'es' : ''}` : `Showing ${following.length} accounts`}
+          </div>
+        )}
 
         {/* Following list */}
         <div className="border border-neutral-800 divide-y divide-neutral-800 max-h-80 overflow-y-auto mb-6">
@@ -243,11 +287,11 @@ export default function SourcesPage() {
             <div className="p-8 text-center text-neutral-500">
               Loading your following list...
             </div>
-          ) : filtered.length === 0 ? (
+          ) : !showDropdown && filtered.length === 0 ? (
             <div className="p-8 text-center text-neutral-500">
               {search ? 'No matches found' : 'No accounts found'}
             </div>
-          ) : (
+          ) : !showDropdown && (
             filtered.map(user => (
               <button
                 key={user.id}
