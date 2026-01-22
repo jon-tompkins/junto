@@ -121,7 +121,7 @@ export function buildUserPrompt(
     .map(([handle, handleTweets]) => {
       const tweetList = handleTweets
         .map((t) => {
-          const line = `- [${citationNumber}] [${t.likes} likes] ${t.content}`;
+          let line = `- [${citationNumber}] [${t.likes} likes] ${t.content}`;
           if (t.quoted_tweet_content) {
             line += `\n  > Quoting: "${t.quoted_tweet_content}"`;
           }
