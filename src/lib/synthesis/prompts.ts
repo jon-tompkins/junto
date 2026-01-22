@@ -10,16 +10,18 @@ You have access to tweets from a curated group of analysts and thinkers the read
 
 Your job is to create a newsletter that reads as if these minds collaborated to brief the reader on what matters TODAY.
 
-## CRITICAL: Citations Required
+## CRITICAL: In-Text Citations Required
 
-You MUST include numbered citations [1], [2], [3], etc. throughout your newsletter content whenever you reference specific tweets or information from them. Place citations in the top right of sections like this:
+You MUST include numbered citations [1], [2], [3], etc. throughout your newsletter content whenever you reference specific tweets or information from them. Place citations as superscript immediately after the specific claim like this:
 
-## Sentiment Check [1]
+## Sentiment Check
 
-**Consensus:** Bullish on Bitcoin [2,3]
-**Shift from recent:** More bearish [4]
+Markets are showing risk-off behavior with renewed Bitcoin optimism² and profit-taking in alts³.
 
-Each citation number corresponds to a specific tweet that will be listed in the References section at the bottom.
+**Consensus:** Bullish on Bitcoin², neutral on alts³
+**Shift from recent:** More bullish than last week⁴
+
+Each citation number corresponds to a specific tweet that will be listed in the References section at the bottom. Citations should be subtle and academic, not disruptive to reading flow.
 
 ## Required Structure
 
@@ -27,57 +29,58 @@ SUBJECT: [Punchy subject line based on TODAY's most important insight]
 
 ---
 
-## Sentiment Check [citation numbers]
+## Sentiment Check
 
 [2-3 sentences on the current mood based on RECENT tweets. Include citations for specific claims. Is sentiment shifting from where it was? Note if today's takes represent a change from historical positions.]
 
-**Consensus:** [Bullish / Bearish / Mixed / Neutral] on [what specifically] [citations]
-**Shift from recent:** [More bullish / More bearish / Unchanged / Diverging] [citations]
+**Consensus:** [Bullish / Bearish / Mixed / Neutral] on [what specifically]
+**Shift from recent:** [More bullish / More bearish / Unchanged / Diverging]
 
 ---
 
-## Actionable Intelligence [citations]
+## Actionable Intelligence
 
 [What are sources saying RIGHT NOW? Any specific buys, sells, or positions mentioned in recent tweets? Include citations.]
 
-- **Ticker mentions with sentiment:** e.g., "$BTC - accumulating (per @handle)" [citation]
-- **Entry/exit levels** if mentioned [citations]
-- **Timeframes** if specified [citations]
+- **Ticker mentions with sentiment:** e.g., "$BTC - accumulating (per @handle)"
+- **Entry/exit levels** if mentioned
+- **Timeframes** if specified
 
-If no specific actionable calls, note what sources are watching [citations].
+If no specific actionable calls, note what sources are watching.
 
 ---
 
-## Key Narratives [citations]
+## Key Narratives
 
 [Main themes from RECENT tweets. Synthesize - don't summarize. Find connections and tensions. Include citations for specific claims.]
 
-**Cross-reference where sources align or disagree.** Note if current views differ from their historical positions (using context tweets) [citations].
+**Cross-reference where sources align or disagree.** Note if current views differ from their historical positions (using context tweets).
 
 ---
 
-## What's NOT Being Discussed [citations]
+## What's NOT Being Discussed
 
-[Notable silences - what would you expect these sources to be talking about that they're not? Include citations if relevant.]
+[Notable silences - what would you expect these sources to be talking about that they're not?]
 
 ---
 
-## What to Watch [citations]
+## What to Watch
 
-- [Specific item 1 with why it matters] [citation]
-- [Specific item 2] [citation]
-- [Specific item 3] [citation]
+- [Specific item 1 with why it matters]
+- [Specific item 2]
+- [Specific item 3]
 
 ---
 
 ## References
 
-List each citation number with the corresponding tweet information:
+List each citation number with the corresponding tweet information in this clean format:
 
-[1] @handle - "Tweet content..." (XX likes)
-[2] @handle - "Tweet content..." (XX likes)
-[3] @handle - "Tweet content..." (XX likes)
-etc.
+[1] @handle: "Tweet content..." (XX likes)
+[2] @handle: "Tweet content..." (XX likes)
+[3] @handle: "Tweet content..." (XX likes)
+
+Note: Do NOT include actual tweet URLs in references - just the handle, content, and like count. The system will automatically make them clickable.
 
 ---
 
@@ -227,11 +230,11 @@ export function extractTweetReferences(
   }
   
   // Extract citations from the response (before content extraction)
-  const citationRegex = /\[(\d+)\]/g;
+  const citationRegexOriginal = /\[(\d+)\]/g;
   const citations = new Set<number>();
   let match;
   
-  while ((match = citationRegex.exec(response)) !== null) {
+  while ((match = citationRegexOriginal.exec(response)) !== null) {
     citations.add(parseInt(match[1]));
   }
   
@@ -244,29 +247,47 @@ export function extractTweetReferences(
     if (tweet) {
       // Truncate very long tweets
       let tweetContent = tweet.content;
-      if (tweetContent.length > 100) {
-        tweetContent = tweetContent.substring(0, 97) + '...';
+      if (tweetContent.length > 150) {
+        tweetContent = tweetContent.substring(0, 147) + '...';
       }
-      references.push(`[${citation}] @${tweet.handle} - "${tweetContent}" (${tweet.likes} likes)`);
+      references.push(`[${citation}] @${tweet.handle}: "${tweetContent}" (${tweet.likes} likes)`);
     }
   }
   
   // Get the content part without subject
   const { content } = parseNewsletterResponse(response);
   
+  // Convert citations to superscript and make them clickable
+  let contentWithSuperscripts = content;
+  const citationRegex = /\[(\d+)\]/g;
+  const usedCitations = new Set<number>();
+  
+  contentWithSuperscripts = contentWithSuperscripts.replace(citationRegex, (match, num) => {
+    usedCitations.add(parseInt(num));
+    return `<sup><a href="#ref-${num}" style="text-decoration: none; color: inherit; font-size: 0.7em; vertical-align: super;">${num}</a></sup>`;
+  });
+  
+  // Build clean references section with anchors
+  const cleanReferences = references.map((ref, index) => {
+    const citationNum = index + 1;
+    return `<div id="ref-${citationNum}" style="margin-bottom: 8px; padding: 8px; background: #1a1a1a; border-radius: 4px;">
+      <strong>${ref}</strong>
+    </div>`;
+  });
+  
   // If no References section exists, add one
-  let finalContent = content;
+  let finalContent = contentWithSuperscripts;
   if (!content.includes('## References')) {
     if (references.length > 0) {
-      finalContent += '\n\n---\n\n## References\n\n' + references.join('\n');
+      finalContent += '\n\n---\n\n## References\n\n' + cleanReferences.join('\n');
     }
   } else {
     // Replace existing References section
     const referencesSection = references.length > 0 
-      ? '\n\n## References\n\n' + references.join('\n')
+      ? '\n\n## References\n\n' + cleanReferences.join('\n')
       : '\n\n## References\n\nNo references found.';
     
-    finalContent = content.replace(/## References[\s\S]*$/m, referencesSection);
+    finalContent = contentWithSuperscripts.replace(/## References[\s\S]*$/m, referencesSection);
   }
   
   return {
