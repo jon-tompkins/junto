@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRecentTweetsGrouped, getTweetsForContext, storeTweets } from '@/lib/db/tweets';
-import { getActiveProfiles, updateProfileFetchTime } from '@/lib/db/profiles';
+import { getProfileByHandle, updateProfileFetchTime } from '@/lib/db/profiles';
 import { fetchTweetsForProfile } from '@/lib/twitter/client';
 import { storeNewsletter, updateNewsletterSentStatus } from '@/lib/db/newsletters';
 import { generateNewsletter, PROMPT_VERSION } from '@/lib/synthesis/generator';
@@ -138,25 +138,37 @@ export async function GET(request: NextRequest) {
     
     console.log(`Found ${users.length} users for current time across all timezones`);
     
-    // Step 1: Fetch fresh tweets for all active profiles
-    console.log('Fetching fresh tweets...');
-    const profiles = await getActiveProfiles();
+    // Step 1: Get all profiles that users actually follow
+    console.log('Finding profiles that users actually follow...');
+    const allProfileHandles = new Set<string>();
+    
+    for (const user of users) {
+      const userProfileHandles = await getUserProfiles(user.id);
+      userProfileHandles.forEach(handle => allProfileHandles.add(handle));
+    }
+    
+    console.log(`Found ${allProfileHandles.size} unique profiles followed by users`);
+    
+    // Step 2: Fetch fresh tweets for only followed profiles
     let totalFetched = 0;
     
-    for (const profile of profiles) {
+    for (const profileHandle of allProfileHandles) {
       try {
-        const tweets = await fetchTweetsForProfile(profile.twitter_handle, 30);
-        await storeTweets(profile.id, tweets);
-        await updateProfileFetchTime(profile.id);
-        totalFetched += tweets.length;
+        const profile = await getProfileByHandle(profileHandle);
+        if (profile) {
+          const tweets = await fetchTweetsForProfile(profile.twitter_handle, 30);
+          await storeTweets(profile.id, tweets);
+          await updateProfileFetchTime(profile.id);
+          totalFetched += tweets.length;
+        }
       } catch (error) {
-        console.error(`Error fetching @${profile.twitter_handle}:`, error);
+        console.error(`Error fetching @${profileHandle}:`, error);
       }
     }
     
-    console.log(`Fetched ${totalFetched} tweets from ${profiles.length} profiles`);
+    console.log(`Fetched ${totalFetched} tweets from ${allProfileHandles.size} followed profiles`);
     
-    // Step 2: Get all tweets (we'll filter per user)
+    // Step 3: Get all tweets (we'll filter per user)
     const recentHours = 48;
     const contextDays = 180;
     const { start, end } = getDateRange(recentHours);
