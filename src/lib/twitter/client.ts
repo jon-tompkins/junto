@@ -1,39 +1,3 @@
-import { config } from '@/lib/utils/config';
-
-const RAPIDAPI_HOST = 'twitter154.p.rapidapi.com';
-
-interface TwitterUser {
-  user_id: string;
-  username: string;
-  name: string;
-  profile_pic_url?: string;
-  description?: string;
-}
-
-interface Tweet154Result {
-  tweet_id: string;
-  text: string;
-  creation_date: string;
-  favorite_count: number;
-  retweet_count: number;
-  reply_count: number;
-  quote_count?: number;
-  is_retweet?: boolean;
-  is_reply?: boolean;
-  is_quote?: boolean;
-  quoted_tweet?: {
-    text: string;
-  };
-  in_reply_to_status_id?: string;
-  conversation_id?: string;
-  user?: TwitterUser;
-}
-
-interface UserTweetsResponse {
-  results: Tweet154Result[];
-  continuation_token?: string;
-}
-
 export interface FetchedTweet {
   twitter_id: string;
   content: string;
@@ -50,98 +14,103 @@ export interface FetchedTweet {
   raw_data: Record<string, unknown>;
 }
 
+interface BirdTweet {
+  id: string;
+  text: string;
+  createdAt: string;
+  likeCount: number;
+  retweetCount: number;
+  replyCount: number;
+  author?: {
+    username: string;
+    name: string;
+  };
+  conversationId?: string;
+  inReplyToStatusId?: string;
+  quotedTweet?: {
+    text: string;
+  };
+}
+
+interface ProxyResponse {
+  success: boolean;
+  handle: string;
+  count: number;
+  tweets: BirdTweet[];
+  error?: string;
+}
+
 export async function fetchTweetsForProfile(
   handle: string,
-  maxTweets = 20
+  maxTweets = 30
 ): Promise<FetchedTweet[]> {
-  if (!config.apify.apiKey) {
-    // Check for RAPIDAPI_KEY instead
-    const rapidApiKey = process.env.RAPIDAPI_KEY;
-    if (!rapidApiKey) {
-      throw new Error('RAPIDAPI_KEY not configured');
-    }
-  }
-  
-  const rapidApiKey = process.env.RAPIDAPI_KEY;
-  if (!rapidApiKey) {
-    throw new Error('RAPIDAPI_KEY not configured');
-  }
-  
   const cleanHandle = handle.replace('@', '');
-  console.log(`Fetching tweets for @${cleanHandle} via RapidAPI...`);
+  console.log(`Fetching tweets for @${cleanHandle} via proxy...`);
   
-  // First, we need to get the user ID from username
-  const userResponse = await fetch(
-    `https://${RAPIDAPI_HOST}/user/details?username=${cleanHandle}`,
-    {
-      method: 'GET',
-      headers: {
-        'x-rapidapi-host': RAPIDAPI_HOST,
-        'x-rapidapi-key': rapidApiKey,
-      },
+  const proxyUrl = process.env.TWITTER_PROXY_URL;
+  const proxyToken = process.env.TWITTER_PROXY_TOKEN;
+  
+  if (!proxyUrl || !proxyToken) {
+    throw new Error('TWITTER_PROXY_URL and TWITTER_PROXY_TOKEN must be configured');
+  }
+  
+  try {
+    const response = await fetch(
+      `${proxyUrl}/tweets?handle=${cleanHandle}&count=${maxTweets}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${proxyToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Proxy error: ${response.status} - ${error}`);
     }
-  );
-  
-  if (!userResponse.ok) {
-    const error = await userResponse.text();
-    console.error('User lookup error:', error);
-    throw new Error(`Failed to find user @${cleanHandle}: ${userResponse.status}`);
-  }
-  
-  const userData = await userResponse.json();
-  const userId = userData.user_id;
-  
-  if (!userId) {
-    throw new Error(`Could not find user ID for @${cleanHandle}`);
-  }
-  
-  console.log(`Found user ID: ${userId} for @${cleanHandle}`);
-  
-  // Now fetch tweets
-  const tweetsResponse = await fetch(
-    `https://${RAPIDAPI_HOST}/user/tweets?user_id=${userId}&limit=${maxTweets}&include_replies=false&include_pinned=false`,
-    {
-      method: 'GET',
-      headers: {
-        'x-rapidapi-host': RAPIDAPI_HOST,
-        'x-rapidapi-key': rapidApiKey,
-      },
+    
+    const data: ProxyResponse = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.error || 'Unknown proxy error');
     }
-  );
-  
-  if (!tweetsResponse.ok) {
-    const error = await tweetsResponse.text();
-    console.error('Tweets fetch error:', error);
-    throw new Error(`Failed to fetch tweets: ${tweetsResponse.status}`);
+    
+    console.log(`Fetched ${data.tweets.length} tweets for @${cleanHandle}`);
+    
+    // Transform to our format
+    return data.tweets.map((tweet, index) => {
+      const isRetweet = tweet.text?.startsWith('RT @') || false;
+      const isReply = !!tweet.inReplyToStatusId;
+      const isQuote = !!tweet.quotedTweet;
+      
+      return {
+        twitter_id: tweet.id,
+        content: tweet.text || '',
+        posted_at: parseDate(tweet.createdAt),
+        likes: tweet.likeCount || 0,
+        retweets: tweet.retweetCount || 0,
+        replies: tweet.replyCount || 0,
+        is_retweet: isRetweet,
+        is_reply: isReply,
+        is_quote_tweet: isQuote,
+        quoted_tweet_content: tweet.quotedTweet?.text || null,
+        thread_id: tweet.conversationId || null,
+        thread_position: tweet.conversationId ? index : null,
+        raw_data: tweet as unknown as Record<string, unknown>,
+      };
+    });
+    
+  } catch (error) {
+    console.error(`Error fetching tweets for @${cleanHandle}:`, error);
+    throw error;
   }
-  
-  const tweetsData: UserTweetsResponse = await tweetsResponse.json();
-  const tweets = tweetsData.results || [];
-  
-  console.log(`Fetched ${tweets.length} tweets for @${cleanHandle}`);
-  
-  // Transform to our format
-  return tweets.map((tweet, index) => ({
-    twitter_id: tweet.tweet_id,
-    content: tweet.text || '',
-    posted_at: parseDate(tweet.creation_date),
-    likes: tweet.favorite_count || 0,
-    retweets: tweet.retweet_count || 0,
-    replies: tweet.reply_count || 0,
-    is_retweet: tweet.is_retweet || false,
-    is_reply: tweet.is_reply || !!tweet.in_reply_to_status_id,
-    is_quote_tweet: tweet.is_quote || false,
-    quoted_tweet_content: tweet.quoted_tweet?.text || null,
-    thread_id: tweet.conversation_id || null,
-    thread_position: tweet.conversation_id ? index : null,
-    raw_data: tweet as unknown as Record<string, unknown>,
-  }));
 }
 
 function parseDate(dateStr?: string): string {
   if (!dateStr) return new Date().toISOString();
   try {
-    // The API returns dates like "Wed Oct 30 14:23:45 +0000 2024"
     return new Date(dateStr).toISOString();
   } catch {
     return new Date().toISOString();
