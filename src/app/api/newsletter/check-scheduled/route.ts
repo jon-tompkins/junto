@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const maxDuration = 300; // 5 minutes for cron job
 
-// Simple test endpoint - called by cron
+// Simple test endpoint - called by cron - URGENT FIX for Jon's 10:18am schedule
 export async function GET(request: NextRequest) {
   console.log('🕐 Scheduled newsletter check - basic test');
   
