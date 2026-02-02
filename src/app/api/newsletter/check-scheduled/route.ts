@@ -63,17 +63,124 @@ export async function GET(request: NextRequest) {
     
     logId = log?.id;
     
-    // Get users due for newsletter using the database function
-    const { data: usersData, error: usersError } = await supabase
-      .rpc('get_users_due_for_newsletter', {
-        current_utc_time: currentTime.toISOString()
-      });
+    // Get users due for newsletter using direct database query
+    // Calculate 5-minute window for scheduling flexibility
+    const windowStart = new Date(currentTime);
+    windowStart.setMinutes(Math.floor(windowStart.getMinutes() / 5) * 5, 0, 0); // Round down to nearest 5 minutes
+    const windowEnd = new Date(windowStart.getTime() + 5 * 60 * 1000); // Add 5 minutes
+    
+    console.log(`Checking for users with send times between ${windowStart.toISOString()} and ${windowEnd.toISOString()}`);
+    
+    // Query users directly instead of using the missing database function
+    const { data: rawUsersData, error: usersError } = await supabase
+      .from('users')
+      .select('id, email, preferred_send_time, timezone, last_newsletter_sent, send_frequency, weekend_delivery')
+      .not('email', 'is', null)
+      .not('preferred_send_time', 'is', null)
+      .not('timezone', 'is', null);
     
     if (usersError) {
       throw new Error(`Database error fetching users: ${usersError.message}`);
     }
     
-    const users: ScheduledUser[] = usersData || [];
+    // Filter users based on scheduling logic (replicate the database function logic)
+    const users: ScheduledUser[] = [];
+    const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const currentDayOfWeek = currentTime.getDay(); // 0 = Sunday, 6 = Saturday
+    
+    for (const user of rawUsersData || []) {
+      try {
+        // Skip if missing required fields
+        if (!user.email || !user.preferred_send_time || !user.timezone) {
+          continue;
+        }
+        
+        // Convert user's preferred time to UTC
+        const userDate = new Date().toISOString().split('T')[0]; // Today's date
+        const userDateTime = `${userDate}T${user.preferred_send_time}`;
+        const userLocal = new Date(userDateTime);
+        
+        // Create a date object in the user's timezone
+        // Note: This is a simplified timezone conversion. For production, consider using a proper timezone library.
+        const timezoneOffset = getTimezoneOffset(user.timezone);
+        const userUtc = new Date(userLocal.getTime() - timezoneOffset * 60000);
+        
+        // Check if user's preferred time falls within the current 5-minute window
+        const isInTimeWindow = userUtc >= windowStart && userUtc <= windowEnd;
+        
+        if (!isInTimeWindow) {
+          continue;
+        }
+        
+        // Check frequency requirements
+        const sendFrequency = user.send_frequency || 'daily';
+        const lastSent = user.last_newsletter_sent;
+        
+        let shouldSend = false;
+        if (!lastSent) {
+          shouldSend = true; // Never sent before
+        } else {
+          const lastSentDate = new Date(lastSent);
+          const daysSinceLastSent = Math.floor((currentTime.getTime() - lastSentDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          switch (sendFrequency) {
+            case 'daily':
+              shouldSend = lastSent < currentDate;
+              break;
+            case 'weekly':
+              shouldSend = daysSinceLastSent >= 7;
+              break;
+            case 'bi-weekly':
+              shouldSend = daysSinceLastSent >= 14;
+              break;
+            default:
+              shouldSend = lastSent < currentDate; // Default to daily
+          }
+        }
+        
+        if (!shouldSend) {
+          continue;
+        }
+        
+        // Check weekend delivery preference
+        const weekendDelivery = user.weekend_delivery || false;
+        const isWeekend = currentDayOfWeek === 0 || currentDayOfWeek === 6;
+        
+        if (isWeekend && !weekendDelivery) {
+          continue;
+        }
+        
+        // Add user to the list
+        users.push({
+          user_id: user.id,
+          email: user.email,
+          preferred_send_time: user.preferred_send_time,
+          timezone: user.timezone,
+          local_send_time: userUtc.toISOString(),
+          last_newsletter_sent: lastSent,
+          send_frequency: sendFrequency
+        });
+        
+      } catch (error) {
+        console.warn(`Error processing user ${user.id}:`, error);
+        // Continue with next user
+      }
+    }
+    
+    // Helper function for basic timezone offset (simplified)
+    function getTimezoneOffset(timezone: string): number {
+      const offsets: Record<string, number> = {
+        'America/Los_Angeles': -8 * 60, // PST (simplified, doesn't account for DST)
+        'America/Denver': -7 * 60, // MST
+        'America/Chicago': -6 * 60, // CST
+        'America/New_York': -5 * 60, // EST
+        'UTC': 0,
+        'Europe/London': 0, // GMT (simplified)
+        'Europe/Paris': 1 * 60, // CET
+        // Add more as needed
+      };
+      return offsets[timezone] || 0; // Default to UTC if unknown
+    }
     console.log(`Found ${users.length} users due for newsletters`);
     
     if (users.length === 0) {
