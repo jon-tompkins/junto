@@ -225,4 +225,7 @@ When ready to deploy to Vercel:
 ---
 
 *Last updated: December 2024*
+
+<!-- Deployment trigger: 2026-02-02 21:08:45 UTC - Testing Vercel Pro deployment -->
+
 # Junto
