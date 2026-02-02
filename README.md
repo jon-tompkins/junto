@@ -1,6 +1,6 @@
 # Junto
 
-> A "shared consciousness" newsletter that synthesizes tweets from curated profiles into daily intelligence briefings.
+> A "shared consciousness" newsletter that synthesizes tweets from curated profiles into daily intelligence briefings!
 
 Named after Ben Franklin's intellectual discussion groups (Junto), this app takes the voices you trust on Twitter and synthesizes their insights into a polished daily newsletter - as if they collaborated to brief you personally.
 
