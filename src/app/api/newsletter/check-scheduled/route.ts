@@ -95,15 +95,15 @@ export async function GET(request: NextRequest) {
           continue;
         }
         
-        // Convert user's preferred time to UTC
-        const userDate = new Date().toISOString().split('T')[0]; // Today's date
+        // Convert user's preferred time (stored in their local timezone) to UTC
+        const userDate = new Date().toISOString().split('T')[0]; // Today's date in UTC
         const userDateTime = `${userDate}T${user.preferred_send_time}`;
-        const userLocal = new Date(userDateTime);
         
-        // Create a date object in the user's timezone
-        // Note: This is a simplified timezone conversion. For production, consider using a proper timezone library.
+        // Now we need to convert FROM user's timezone TO UTC
+        // The time stored is in user's local time, so we need to add the offset to get UTC
         const timezoneOffset = getTimezoneOffset(user.timezone);
-        const userUtc = new Date(userLocal.getTime() - timezoneOffset * 60000);
+        const userLocalTime = new Date(userDateTime);
+        const userUtc = new Date(userLocalTime.getTime() - timezoneOffset * 60000);
         
         // Check if user's preferred time falls within the current 5-minute window
         const isInTimeWindow = userUtc >= windowStart && userUtc <= windowEnd;

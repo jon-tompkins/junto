@@ -53,34 +53,15 @@ export async function POST(request: NextRequest) {
     // Extract email to store in dedicated column
     const { email, delivery_time, timezone, ...otherSettings } = settings;
 
-    // Convert local delivery time to UTC
-    let utcTime = '09:00:00'; // Default
-    if (delivery_time && timezone) {
-      try {
-        // Create a date with the user's local time
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        const localDateTime = `${today}T${delivery_time}:00`;
-        
-        // Parse as local time in user's timezone
-        const localDate = new Date(localDateTime + (timezone === 'UTC' ? 'Z' : ''));
-        
-        if (timezone !== 'UTC') {
-          // Convert timezone offset
-          const tempDate = new Date(`${today}T${delivery_time}:00`);
-          const utcDate = new Date(tempDate.toLocaleString('en-US', {timeZone: 'UTC'}));
-          const localDateInUserTz = new Date(tempDate.toLocaleString('en-US', {timeZone: timezone}));
-          const offsetMs = utcDate.getTime() - localDateInUserTz.getTime();
-          
-          // Apply offset to get UTC time
-          const utcDateTime = new Date(tempDate.getTime() + offsetMs);
-          utcTime = utcDateTime.toTimeString().split(' ')[0]; // HH:MM:SS
-        } else {
-          utcTime = delivery_time + ':00';
-        }
-      } catch (error) {
-        console.error('Timezone conversion error:', error);
-        // Keep default time if conversion fails
-      }
+    // Store delivery_time as-is in the user's preferred timezone
+    // The scheduling API will handle timezone conversion at execution time
+    let preferredSendTime = '09:00:00'; // Default
+    if (delivery_time) {
+      // Simply store the time as provided by frontend (HH:MM format) 
+      // Convert to HH:MM:SS format
+      preferredSendTime = delivery_time.includes(':') 
+        ? (delivery_time.length === 5 ? delivery_time + ':00' : delivery_time)
+        : '09:00:00';
     }
 
     const { error } = await supabase
@@ -88,7 +69,7 @@ export async function POST(request: NextRequest) {
       .update({
         email: email || null,
         settings: otherSettings,
-        preferred_send_time: utcTime,
+        preferred_send_time: preferredSendTime,
         timezone: timezone || 'UTC',
         send_frequency: settings.frequency || 'daily',
         updated_at: new Date().toISOString(),
