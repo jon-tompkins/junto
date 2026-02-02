@@ -1,0 +1,18 @@
+
+> junto@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.31.15.218:3000
+- Environments: .env.local
+
+✓ Starting...
+✓ Ready in 1421ms
+🕐 Starting scheduled newsletter check...
+❌ Scheduled newsletter check failed: Resend API key missing. Set RESEND_API_KEY
+ GET /api/newsletter/check-scheduled 500 in 403ms (compile: 374ms, render: 29ms)
+🕐 Starting scheduled newsletter check...
+Checking for users with send times between 2026-02-02T21:30:00.000Z and 2026-02-02T21:35:00.000Z
+Found 0 users due for newsletters
+ GET /api/newsletter/check-scheduled 200 in 1019ms (compile: 113ms, render: 905ms)
