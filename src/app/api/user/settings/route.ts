@@ -95,9 +95,9 @@ export async function POST(request: NextRequest) {
         : '09:00:00';
     }
 
-    const updateData = {
+    // Build update data - DON'T overwrite name if userId is provided (preserve existing user linkage)
+    const updateData: Record<string, any> = {
       email: email || null,
-      name: twitterHandle, // Store twitter handle in name field for future lookups
       settings: otherSettings,
       preferred_send_time: preferredSendTime,
       timezone: timezone || 'America/Los_Angeles',
@@ -110,19 +110,24 @@ export async function POST(request: NextRequest) {
     
     // If we have a userId passed from frontend, use that (most reliable)
     if (userId) {
+      console.log('Updating user by explicit userId:', userId, 'data:', JSON.stringify(updateData));
       updateResult = await supabase
         .from('users')
         .update(updateData)
-        .eq('id', userId);
+        .eq('id', userId)
+        .select();
+      console.log('Update result:', JSON.stringify(updateResult));
     } else {
       // Try to find existing user
       const existingUser = await findUser(supabase, session);
       
       if (existingUser) {
+        console.log('Found existing user by session lookup:', existingUser.id);
         updateResult = await supabase
           .from('users')
           .update(updateData)
-          .eq('id', existingUser.id);
+          .eq('id', existingUser.id)
+          .select();
       } else {
         // Create new user if email is provided
         if (!email) {
@@ -132,12 +137,16 @@ export async function POST(request: NextRequest) {
           }, { status: 400 });
         }
         
+        // For new users, store twitter handle in name for future lookups
         updateResult = await supabase
           .from('users')
           .insert({
             ...updateData,
+            name: twitterHandle,
             created_at: new Date().toISOString(),
-          });
+          })
+          .select();
+        console.log('Created new user with twitter handle:', twitterHandle);
       }
     }
 
@@ -146,8 +155,12 @@ export async function POST(request: NextRequest) {
       throw updateResult.error;
     }
 
-    // Verify the update worked by re-fetching
-    const verifyUser = await findUser(supabase, session);
+    // Verify the update worked - prefer getting by ID from the result
+    let verifyUser = updateResult?.data?.[0];
+    if (!verifyUser) {
+      // Fall back to findUser if result didn't include the user
+      verifyUser = await findUser(supabase, session);
+    }
     console.log('Settings saved for user:', verifyUser?.id, 'preferred_send_time:', verifyUser?.preferred_send_time, 'timezone:', verifyUser?.timezone);
 
     return NextResponse.json({ 

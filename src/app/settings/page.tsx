@@ -63,6 +63,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -101,6 +102,10 @@ const detectTimezone = () => {
           ...data.settings,
         });
       }
+      // Store userId for save operations
+      if (data.userId) {
+        setUserId(data.userId);
+      }
     } catch (err) {
       console.error('Failed to fetch settings:', err);
     } finally {
@@ -117,7 +122,7 @@ const detectTimezone = () => {
       const res = await fetch('/api/user/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings }),
+        body: JSON.stringify({ settings, userId }),
       });
 
       if (res.ok) {
