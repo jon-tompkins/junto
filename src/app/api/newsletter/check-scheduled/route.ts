@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     // Query users directly
     const { data: rawUsersData, error: usersError } = await supabase
       .from('users')
-      .select('id, email, preferred_send_time, timezone, last_newsletter_sent, send_frequency, weekend_delivery')
+      .select('id, email, preferred_send_time, timezone, last_newsletter_sent, send_frequency, weekend_delivery, name, twitter_handle, twitter_id, created_at, updated_at')
       .not('email', 'is', null)
       .not('preferred_send_time', 'is', null)
       .not('timezone', 'is', null);
@@ -101,6 +101,7 @@ export async function GET(request: NextRequest) {
     }
     
     console.log(`Found ${rawUsersData?.length || 0} users with scheduling preferences`);
+    console.log('Raw user data:', JSON.stringify(rawUsersData, null, 2));
     
     // Filter users based on scheduling logic per spec
     const users: ScheduledUser[] = [];
