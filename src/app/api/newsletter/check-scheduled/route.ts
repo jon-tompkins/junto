@@ -64,12 +64,15 @@ export async function GET(request: NextRequest) {
     logId = log?.id;
     
     // Get users due for newsletter using direct database query
-    // Calculate 5-minute window for scheduling flexibility
+    // Calculate time window - extended to 60 minutes to catch missed schedules
+    // This allows catching users who were scheduled in the last hour but cron missed them
     const windowStart = new Date(currentTime);
-    windowStart.setMinutes(Math.floor(windowStart.getMinutes() / 5) * 5, 0, 0); // Round down to nearest 5 minutes
-    const windowEnd = new Date(windowStart.getTime() + 5 * 60 * 1000); // Add 5 minutes
+    windowStart.setMinutes(Math.floor(windowStart.getMinutes() / 5) * 5, 0, 0);
+    windowStart.setTime(windowStart.getTime() - 60 * 60 * 1000); // Look back 60 minutes
+    const windowEnd = new Date(currentTime);
+    windowEnd.setMinutes(Math.ceil(windowEnd.getMinutes() / 5) * 5, 0, 0); // Round up to next 5 min
     
-    console.log(`Checking for users with send times between ${windowStart.toISOString()} and ${windowEnd.toISOString()}`);
+    console.log(`Checking for users with send times between ${windowStart.toISOString()} and ${windowEnd.toISOString()} (60-min catch-up window)`);
     
     // Query users directly instead of using the missing database function
     const { data: rawUsersData, error: usersError } = await supabase
