@@ -95,18 +95,37 @@ export async function GET(request: NextRequest) {
           continue;
         }
         
-        // Convert user's preferred time (stored in their local timezone) to UTC
-        const userDate = new Date().toISOString().split('T')[0]; // Today's date in UTC
-        const userDateTime = `${userDate}T${user.preferred_send_time}`;
-        
-        // Now we need to convert FROM user's timezone TO UTC
-        // The time stored is in user's local time, so we need to add the offset to get UTC
+        // FIXED: Convert user's preferred time to UTC properly handling timezone crossovers
+        const userTimeStr = user.preferred_send_time; // e.g., "17:37:00"
         const timezoneOffset = getTimezoneOffset(user.timezone);
-        const userLocalTime = new Date(userDateTime);
-        const userUtc = new Date(userLocalTime.getTime() - timezoneOffset * 60000);
         
-        // Check if user's preferred time falls within the current 5-minute window
-        const isInTimeWindow = userUtc >= windowStart && userUtc <= windowEnd;
+        // Generate candidate times for both today and tomorrow in user's local time
+        const today = new Date();
+        const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+        
+        const candidateUtcTimes = [];
+        
+        for (const date of [today, tomorrow]) {
+          const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+          const userDateTime = `${dateStr}T${userTimeStr}`;
+          const userLocalTime = new Date(userDateTime);
+          
+          // Convert to UTC: subtract the timezone offset
+          const userUtcTime = new Date(userLocalTime.getTime() - timezoneOffset * 60000);
+          candidateUtcTimes.push(userUtcTime);
+        }
+        
+        // Check if ANY of the candidate times falls within the current 5-minute window
+        let isInTimeWindow = false;
+        let matchingUtcTime = null;
+        
+        for (const candidateTime of candidateUtcTimes) {
+          if (candidateTime >= windowStart && candidateTime <= windowEnd) {
+            isInTimeWindow = true;
+            matchingUtcTime = candidateTime;
+            break;
+          }
+        }
         
         if (!isInTimeWindow) {
           continue;
@@ -156,7 +175,7 @@ export async function GET(request: NextRequest) {
           email: user.email,
           preferred_send_time: user.preferred_send_time,
           timezone: user.timezone,
-          local_send_time: userUtc.toISOString(),
+          local_send_time: matchingUtcTime?.toISOString() || 'no_match',
           last_newsletter_sent: lastSent,
           send_frequency: sendFrequency
         });
@@ -167,16 +186,26 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // Helper function for basic timezone offset (simplified)
+    // Helper function for timezone offsets (simplified but comprehensive)
     function getTimezoneOffset(timezone: string): number {
       const offsets: Record<string, number> = {
-        'America/Los_Angeles': -8 * 60, // PST (simplified, doesn't account for DST)
+        // US Timezones (Standard Time - simplified, doesn't account for DST)
+        'America/Los_Angeles': -8 * 60, // PST
         'America/Denver': -7 * 60, // MST
         'America/Chicago': -6 * 60, // CST
         'America/New_York': -5 * 60, // EST
+        
+        // Other common timezones
         'UTC': 0,
-        'Europe/London': 0, // GMT (simplified)
+        'Europe/London': 0, // GMT
         'Europe/Paris': 1 * 60, // CET
+        'Europe/Berlin': 1 * 60, // CET
+        'Asia/Tokyo': 9 * 60, // JST
+        'Asia/Shanghai': 8 * 60, // CST
+        'Asia/Kolkata': 5.5 * 60, // IST
+        'Australia/Sydney': 11 * 60, // AEDT (simplified)
+        'Australia/Melbourne': 11 * 60, // AEDT (simplified)
+        
         // Add more as needed
       };
       return offsets[timezone] || 0; // Default to UTC if unknown
