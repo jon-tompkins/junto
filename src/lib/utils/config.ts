@@ -26,6 +26,12 @@ export const config = {
     apiKey: getEnvVar('APIFY_API_KEY', false),
   },
   
+  // Twitter proxy (alternative to Apify)
+  twitter: {
+    proxyUrl: getEnvVar('TWITTER_PROXY_URL', false),
+    proxyToken: getEnvVar('TWITTER_PROXY_TOKEN', false),
+  },
+  
   // Resend
   resend: {
     apiKey: getEnvVar('RESEND_API_KEY', false),
