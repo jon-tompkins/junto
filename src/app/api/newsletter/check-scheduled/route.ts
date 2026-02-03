@@ -96,17 +96,18 @@ export async function GET(request: NextRequest) {
         }
         
         // FIXED: Convert user's preferred time to UTC properly handling timezone crossovers
-        const userTimeStr = user.preferred_send_time; // e.g., "17:37:00"
+        const userTimeStr = user.preferred_send_time; // e.g., "18:04:00"
         const timezoneOffset = getTimezoneOffset(user.timezone);
         
-        // Generate candidate times for both today and tomorrow in user's local time
-        const today = new Date();
-        const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
-        
+        // Generate candidate times for multiple days to handle timezone edge cases
+        const currentUtc = new Date();
         const candidateUtcTimes = [];
         
-        for (const date of [today, tomorrow]) {
-          const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+        // Check today in user's timezone and tomorrow in user's timezone
+        for (let dayOffset = 0; dayOffset <= 1; dayOffset++) {
+          const targetDate = new Date(currentUtc.getTime() + dayOffset * 24 * 60 * 60 * 1000);
+          const dateStr = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD
+          
           const userDateTime = `${dateStr}T${userTimeStr}`;
           const userLocalTime = new Date(userDateTime);
           
@@ -114,6 +115,14 @@ export async function GET(request: NextRequest) {
           const userUtcTime = new Date(userLocalTime.getTime() - timezoneOffset * 60000);
           candidateUtcTimes.push(userUtcTime);
         }
+        
+        // Also generate candidates for yesterday (in case we're early in UTC day)
+        const yesterday = new Date(currentUtc.getTime() - 24 * 60 * 60 * 1000);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const yesterdayDateTime = `${yesterdayStr}T${userTimeStr}`;
+        const yesterdayLocal = new Date(yesterdayDateTime);
+        const yesterdayUtc = new Date(yesterdayLocal.getTime() - timezoneOffset * 60000);
+        candidateUtcTimes.push(yesterdayUtc);
         
         // Check if ANY of the candidate times falls within the current 5-minute window
         let isInTimeWindow = false;
