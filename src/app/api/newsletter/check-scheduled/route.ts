@@ -34,11 +34,29 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now();
   let logId: string | null = null;
   
+  // Track missing config for reporting
+  const missingConfig: string[] = [];
+  
   try {
-    // Validate configuration
+    // Validate Supabase (required for any operation)
     validateConfig('supabase');
-    validateConfig('resend');
-    validateConfig('anthropic');
+    
+    // Check optional configs - don't fail if missing, just track
+    try {
+      validateConfig('resend');
+    } catch (e) {
+      missingConfig.push('RESEND_API_KEY (email sending disabled)');
+    }
+    
+    try {
+      validateConfig('anthropic');
+    } catch (e) {
+      missingConfig.push('ANTHROPIC_API_KEY (AI generation disabled)');
+    }
+    
+    if (missingConfig.length > 0) {
+      console.warn('⚠️ Missing optional config:', missingConfig.join(', '));
+    }
     
     const supabase = getSupabase();
     const currentTime = new Date();
@@ -63,18 +81,14 @@ export async function GET(request: NextRequest) {
     
     logId = log?.id;
     
-    // Get users due for newsletter using direct database query
-    // Calculate time window - extended to 60 minutes to catch missed schedules
-    // This allows catching users who were scheduled in the last hour but cron missed them
-    const windowStart = new Date(currentTime);
-    windowStart.setMinutes(Math.floor(windowStart.getMinutes() / 5) * 5, 0, 0);
-    windowStart.setTime(windowStart.getTime() - 60 * 60 * 1000); // Look back 60 minutes
-    const windowEnd = new Date(currentTime);
-    windowEnd.setMinutes(Math.ceil(windowEnd.getMinutes() / 5) * 5, 0, 0); // Round up to next 5 min
+    // Get users due for newsletter
+    // Per spec: "Looks for users with delivery times less than current time that have not had a newsletter delivered"
+    // This means: find users where their preferred_send_time (in their timezone) has passed today,
+    // AND they haven't received a newsletter yet today.
     
-    console.log(`Checking for users with send times between ${windowStart.toISOString()} and ${windowEnd.toISOString()} (60-min catch-up window)`);
+    console.log(`Checking for users due for newsletter at ${currentTime.toISOString()}`);
     
-    // Query users directly instead of using the missing database function
+    // Query users directly
     const { data: rawUsersData, error: usersError } = await supabase
       .from('users')
       .select('id, email, preferred_send_time, timezone, last_newsletter_sent, send_frequency, weekend_delivery')
@@ -86,141 +100,200 @@ export async function GET(request: NextRequest) {
       throw new Error(`Database error fetching users: ${usersError.message}`);
     }
     
-    // Filter users based on scheduling logic (replicate the database function logic)
+    console.log(`Found ${rawUsersData?.length || 0} users with scheduling preferences`);
+    
+    // Filter users based on scheduling logic per spec
     const users: ScheduledUser[] = [];
-    const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    const currentDayOfWeek = currentTime.getDay(); // 0 = Sunday, 6 = Saturday
+    const debugInfo: any[] = [];
     
     for (const user of rawUsersData || []) {
+      const userDebug: any = { email: user.email, checks: {} };
+      
       try {
         // Skip if missing required fields
         if (!user.email || !user.preferred_send_time || !user.timezone) {
+          userDebug.checks.requiredFields = 'SKIP: missing required fields';
+          debugInfo.push(userDebug);
           continue;
         }
         
-        // FIXED: Convert user's preferred time to UTC properly handling timezone crossovers
-        const userTimeStr = user.preferred_send_time; // e.g., "18:04:00"
-        const timezoneOffset = getTimezoneOffset(user.timezone);
+        // Get current time in user's timezone
+        const userLocalNow = getCurrentTimeInTimezone(user.timezone);
+        const userLocalDate = getCurrentDateInTimezone(user.timezone);
         
-        // Generate candidate times for multiple days to handle timezone edge cases
-        const currentUtc = new Date();
-        const candidateUtcTimes = [];
+        userDebug.userLocalNow = userLocalNow;
+        userDebug.userLocalDate = userLocalDate;
+        userDebug.preferredTime = user.preferred_send_time;
         
-        // Check today in user's timezone and tomorrow in user's timezone
-        for (let dayOffset = 0; dayOffset <= 1; dayOffset++) {
-          const targetDate = new Date(currentUtc.getTime() + dayOffset * 24 * 60 * 60 * 1000);
-          const dateStr = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD
-          
-          const userDateTime = `${dateStr}T${userTimeStr}`;
-          const userLocalTime = new Date(userDateTime);
-          
-          // Convert to UTC: subtract the timezone offset
-          const userUtcTime = new Date(userLocalTime.getTime() - timezoneOffset * 60000);
-          candidateUtcTimes.push(userUtcTime);
-        }
+        // Check if preferred time has passed in user's timezone
+        const timeHasPassed = hasTimePassed(user.preferred_send_time, userLocalNow);
+        userDebug.checks.timeHasPassed = timeHasPassed ? 'PASS' : 'SKIP: time not yet';
         
-        // Also generate candidates for yesterday (in case we're early in UTC day)
-        const yesterday = new Date(currentUtc.getTime() - 24 * 60 * 60 * 1000);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-        const yesterdayDateTime = `${yesterdayStr}T${userTimeStr}`;
-        const yesterdayLocal = new Date(yesterdayDateTime);
-        const yesterdayUtc = new Date(yesterdayLocal.getTime() - timezoneOffset * 60000);
-        candidateUtcTimes.push(yesterdayUtc);
-        
-        // Check if ANY of the candidate times falls within the current 5-minute window
-        let isInTimeWindow = false;
-        let matchingUtcTime = null;
-        
-        for (const candidateTime of candidateUtcTimes) {
-          if (candidateTime >= windowStart && candidateTime <= windowEnd) {
-            isInTimeWindow = true;
-            matchingUtcTime = candidateTime;
-            break;
-          }
-        }
-        
-        if (!isInTimeWindow) {
-          continue;
-        }
-        
-        // Check frequency requirements
-        const sendFrequency = user.send_frequency || 'daily';
-        const lastSent = user.last_newsletter_sent;
-        
-        let shouldSend = false;
-        if (!lastSent) {
-          shouldSend = true; // Never sent before
-        } else {
-          const lastSentDate = new Date(lastSent);
-          const daysSinceLastSent = Math.floor((currentTime.getTime() - lastSentDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          switch (sendFrequency) {
-            case 'daily':
-              shouldSend = lastSent < currentDate;
-              break;
-            case 'weekly':
-              shouldSend = daysSinceLastSent >= 7;
-              break;
-            case 'bi-weekly':
-              shouldSend = daysSinceLastSent >= 14;
-              break;
-            default:
-              shouldSend = lastSent < currentDate; // Default to daily
-          }
-        }
-        
-        if (!shouldSend) {
+        if (!timeHasPassed) {
+          debugInfo.push(userDebug);
           continue;
         }
         
         // Check weekend delivery preference
+        const isWeekend = isWeekendInTimezone(user.timezone);
         const weekendDelivery = user.weekend_delivery || false;
-        const isWeekend = currentDayOfWeek === 0 || currentDayOfWeek === 6;
         
         if (isWeekend && !weekendDelivery) {
+          userDebug.checks.weekend = 'SKIP: weekend delivery disabled';
+          debugInfo.push(userDebug);
+          continue;
+        }
+        userDebug.checks.weekend = 'PASS';
+        
+        // Check if already sent today (in user's timezone)
+        const lastSent = user.last_newsletter_sent;
+        userDebug.lastSent = lastSent;
+        
+        // Normalize lastSent to YYYY-MM-DD format (handles legacy "Mon Feb 03 2026" format)
+        const normalizedLastSent = lastSent ? normalizeDateToYYYYMMDD(lastSent) : null;
+        userDebug.normalizedLastSent = normalizedLastSent;
+        
+        // Check frequency requirements
+        const sendFrequency = user.send_frequency || 'daily';
+        let shouldSend = false;
+        
+        if (!normalizedLastSent) {
+          shouldSend = true; // Never sent before or invalid date
+          userDebug.checks.frequency = 'PASS: never sent (or invalid date)';
+        } else {
+          // For daily: check if last sent date is before today (in user's timezone)
+          switch (sendFrequency) {
+            case 'daily':
+              shouldSend = normalizedLastSent < userLocalDate;
+              userDebug.checks.frequency = shouldSend 
+                ? `PASS: last sent ${normalizedLastSent} < today ${userLocalDate}`
+                : `SKIP: already sent today (${normalizedLastSent} >= ${userLocalDate})`;
+              break;
+            case 'weekly':
+              const lastSentDate = new Date(normalizedLastSent + 'T00:00:00');
+              const daysSinceLastSent = Math.floor((currentTime.getTime() - lastSentDate.getTime()) / (1000 * 60 * 60 * 24));
+              shouldSend = daysSinceLastSent >= 7;
+              userDebug.checks.frequency = shouldSend 
+                ? `PASS: ${daysSinceLastSent} days since last sent`
+                : `SKIP: only ${daysSinceLastSent} days since last sent (need 7)`;
+              break;
+            case 'bi-weekly':
+              const lastSentDate2 = new Date(normalizedLastSent + 'T00:00:00');
+              const daysSinceLastSent2 = Math.floor((currentTime.getTime() - lastSentDate2.getTime()) / (1000 * 60 * 60 * 24));
+              shouldSend = daysSinceLastSent2 >= 14;
+              userDebug.checks.frequency = shouldSend 
+                ? `PASS: ${daysSinceLastSent2} days since last sent`
+                : `SKIP: only ${daysSinceLastSent2} days since last sent (need 14)`;
+              break;
+            default:
+              shouldSend = normalizedLastSent < userLocalDate;
+              userDebug.checks.frequency = shouldSend ? 'PASS' : 'SKIP';
+          }
+        }
+        
+        if (!shouldSend) {
+          debugInfo.push(userDebug);
           continue;
         }
         
-        // Add user to the list
+        // User is due for newsletter!
+        userDebug.result = 'DUE';
+        debugInfo.push(userDebug);
+        
         users.push({
           user_id: user.id,
           email: user.email,
           preferred_send_time: user.preferred_send_time,
           timezone: user.timezone,
-          local_send_time: matchingUtcTime?.toISOString() || 'no_match',
+          local_send_time: `${userLocalDate}T${user.preferred_send_time}`,
           last_newsletter_sent: lastSent,
           send_frequency: sendFrequency
         });
         
+        console.log(`✨ User ${user.email} is DUE (${user.preferred_send_time} ${user.timezone}, current: ${userLocalNow})`);
+        
       } catch (error) {
         console.warn(`Error processing user ${user.id}:`, error);
-        // Continue with next user
+        userDebug.error = error instanceof Error ? error.message : 'Unknown error';
+        debugInfo.push(userDebug);
       }
     }
     
-    // Helper function for timezone offsets (simplified but comprehensive)
-    function getTimezoneOffset(timezone: string): number {
-      const offsets: Record<string, number> = {
-        // US Timezones (Standard Time - simplified, doesn't account for DST)
-        'America/Los_Angeles': -8 * 60, // PST
-        'America/Denver': -7 * 60, // MST
-        'America/Chicago': -6 * 60, // CST
-        'America/New_York': -5 * 60, // EST
-        
-        // Other common timezones
-        'UTC': 0,
-        'Europe/London': 0, // GMT
-        'Europe/Paris': 1 * 60, // CET
-        'Europe/Berlin': 1 * 60, // CET
-        'Asia/Tokyo': 9 * 60, // JST
-        'Asia/Shanghai': 8 * 60, // CST
-        'Asia/Kolkata': 5.5 * 60, // IST
-        'Australia/Sydney': 11 * 60, // AEDT (simplified)
-        'Australia/Melbourne': 11 * 60, // AEDT (simplified)
-        
-        // Add more as needed
-      };
-      return offsets[timezone] || 0; // Default to UTC if unknown
+    // Log debug info
+    console.log('User scheduling debug:', JSON.stringify(debugInfo, null, 2));
+    
+    // Helper functions for timezone calculations
+    function getCurrentTimeInTimezone(timezone: string): string {
+      try {
+        const now = new Date();
+        return now.toLocaleTimeString('en-GB', { 
+          timeZone: timezone, 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          second: '2-digit',
+          hour12: false 
+        });
+      } catch (e) {
+        console.warn(`Invalid timezone ${timezone}, using UTC`);
+        return new Date().toISOString().substr(11, 8);
+      }
+    }
+    
+    function getCurrentDateInTimezone(timezone: string): string {
+      try {
+        const now = new Date();
+        // Format: YYYY-MM-DD
+        const parts = now.toLocaleDateString('en-CA', { timeZone: timezone }).split('/');
+        return parts[0]; // en-CA gives YYYY-MM-DD format
+      } catch (e) {
+        console.warn(`Invalid timezone ${timezone}, using UTC`);
+        return new Date().toISOString().split('T')[0];
+      }
+    }
+    
+    function hasTimePassed(preferredTime: string, currentTime: string): boolean {
+      const [prefH, prefM] = preferredTime.split(':').map(Number);
+      const [curH, curM] = currentTime.split(':').map(Number);
+      
+      if (curH > prefH) return true;
+      if (curH === prefH && curM >= prefM) return true;
+      return false;
+    }
+    
+    function isWeekendInTimezone(timezone: string): boolean {
+      try {
+        const now = new Date();
+        const dayName = now.toLocaleDateString('en-US', { timeZone: timezone, weekday: 'short' });
+        return dayName === 'Sat' || dayName === 'Sun';
+      } catch (e) {
+        const day = new Date().getDay();
+        return day === 0 || day === 6;
+      }
+    }
+    
+    // Normalize date strings to YYYY-MM-DD format
+    // Handles legacy format "Mon Feb 03 2026" and new format "2026-02-03"
+    function normalizeDateToYYYYMMDD(dateStr: string): string | null {
+      if (!dateStr) return null;
+      
+      // Already in YYYY-MM-DD format
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        return dateStr;
+      }
+      
+      // Try parsing as a date string (handles "Mon Feb 03 2026" etc)
+      try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) {
+          console.warn(`Invalid date string: ${dateStr}`);
+          return null;
+        }
+        // Format as YYYY-MM-DD
+        return date.toISOString().split('T')[0];
+      } catch (e) {
+        console.warn(`Failed to parse date: ${dateStr}`, e);
+        return null;
+      }
     }
     console.log(`Found ${users.length} users due for newsletters`);
     
@@ -338,6 +411,7 @@ export async function GET(request: NextRequest) {
         errors: errorCount,
         processingTimeMs: processingTime
       },
+      missingConfig: missingConfig.length > 0 ? missingConfig : undefined,
       results: results
     });
     
@@ -386,19 +460,49 @@ export async function GET(request: NextRequest) {
 async function processUserNewsletter(user: ScheduledUser, supabase: any): Promise<ProcessingResult> {
   try {
     // Get user's selected profiles
-    const { data: userProfiles } = await supabase
-      .from('user_profiles')
-      .select('profiles(twitter_handle)')
-      .eq('user_id', user.user_id);
+    let profileHandles: string[] = [];
     
-    const profileHandles = userProfiles?.map((p: any) => p.profiles?.twitter_handle).filter(Boolean) || [];
+    try {
+      const { data: userProfiles, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('profiles(twitter_handle)')
+        .eq('user_id', user.user_id);
+      
+      if (profileError) {
+        // If user_profiles table doesn't exist, log and use fallback
+        console.warn(`user_profiles query failed: ${profileError.message}`);
+        // Check if user has settings with source profiles
+        const { data: userData } = await supabase
+          .from('users')
+          .select('settings')
+          .eq('id', user.user_id)
+          .single();
+        
+        if (userData?.settings?.profiles) {
+          profileHandles = userData.settings.profiles;
+        }
+      } else {
+        profileHandles = userProfiles?.map((p: any) => p.profiles?.twitter_handle).filter(Boolean) || [];
+      }
+    } catch (e) {
+      console.warn('Error fetching user profiles, checking settings fallback');
+      const { data: userData } = await supabase
+        .from('users')
+        .select('settings')
+        .eq('id', user.user_id)
+        .single();
+      
+      if (userData?.settings?.profiles) {
+        profileHandles = userData.settings.profiles;
+      }
+    }
     
     if (profileHandles.length === 0) {
       return {
         success: false,
         userId: user.user_id,
         email: user.email,
-        error: 'No profiles selected for user'
+        error: 'No profiles selected for user (check user_profiles table or user settings.profiles)'
       };
     }
     
@@ -440,11 +544,45 @@ async function processUserNewsletter(user: ScheduledUser, supabase: any): Promis
     const totalCount = recentCount + contextCount;
     
     if (totalCount === 0) {
+      // Instead of failing, create a placeholder newsletter
+      console.log(`No tweets found for ${user.email} - creating placeholder newsletter`);
+      
+      // Check if we should still send a placeholder
+      const placeholderContent = `# Daily Brief - ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+
+Hello ${user.email.split('@')[0]}!
+
+Your newsletter delivery is working, but we couldn't find any recent tweets from your selected sources (${profileHandles.join(', ')}).
+
+**This could mean:**
+- The tweet database is still being set up
+- Your selected accounts haven't posted recently
+- Tweet fetching needs to be configured
+
+We'll try again at your next scheduled delivery time.
+
+---
+*Delivered by MyJunto*`;
+
+      const placeholderSubject = `Daily Brief - No Updates Today`;
+      
+      // Skip sending if no email service
+      if (!config.resend.apiKey) {
+        return {
+          success: false,
+          userId: user.user_id,
+          email: user.email,
+          error: 'No tweets found and RESEND_API_KEY not configured'
+        };
+      }
+      
+      // Otherwise fall through to send the placeholder
+      // For now, return error to indicate no content
       return {
         success: false,
         userId: user.user_id,
         email: user.email,
-        error: 'No tweets found for user profiles in time range'
+        error: 'No tweets found for user profiles in time range (tweets table may not exist - run migrations)'
       };
     }
     
@@ -501,11 +639,12 @@ async function processUserNewsletter(user: ScheduledUser, supabase: any): Promis
       })
       .eq('id', newsletter.id);
     
-    // Update user's last newsletter sent date
+    // Update user's last newsletter sent date (YYYY-MM-DD format in user's timezone for comparison)
+    const userLocalDateNow = new Date().toLocaleDateString('en-CA', { timeZone: user.timezone });
     await supabase
       .from('users')
       .update({
-        last_newsletter_sent: new Date().toDateString(),
+        last_newsletter_sent: userLocalDateNow,
         updated_at: new Date().toISOString()
       })
       .eq('id', user.user_id);

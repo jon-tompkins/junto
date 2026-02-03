@@ -42,6 +42,11 @@ export async function getRecentTweetsGrouped(hoursAgo: number = 24): Promise<Gro
   
   if (error) {
     console.error('Error fetching tweets:', error);
+    // Return empty instead of throwing - allows system to continue
+    if (error.code === 'PGRST205') {
+      console.warn('tweets table does not exist - run migrations');
+      return {};
+    }
     throw error;
   }
   
@@ -83,6 +88,11 @@ export async function getTweetsForContext(
   
   if (error) {
     console.error('Error fetching context tweets:', error);
+    // Return empty instead of throwing - allows system to continue
+    if (error.code === 'PGRST205') {
+      console.warn('tweets table does not exist - run migrations');
+      return {};
+    }
     throw error;
   }
   
