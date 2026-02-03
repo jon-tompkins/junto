@@ -9,7 +9,27 @@ async function findUser(supabase: any, session: any) {
   const twitterId = (session.user as any).twitterId;
   const sessionEmail = session.user?.email;
   
-  // Try to find by name (which might match twitter handle) - this is the most reliable for existing users
+  // Priority 1: Find by twitter_id (most reliable, set during OAuth)
+  if (twitterId) {
+    const { data: byTwitterId } = await supabase
+      .from('users')
+      .select('*')
+      .eq('twitter_id', twitterId)
+      .single();
+    if (byTwitterId) return byTwitterId;
+  }
+  
+  // Priority 2: Find by twitter_handle column
+  if (twitterHandle) {
+    const { data: byTwitterHandle } = await supabase
+      .from('users')
+      .select('*')
+      .eq('twitter_handle', twitterHandle)
+      .single();
+    if (byTwitterHandle) return byTwitterHandle;
+  }
+  
+  // Priority 3: Find by name (legacy - some users may have name=twitter_handle)
   if (twitterHandle) {
     const { data: byName } = await supabase
       .from('users')
@@ -19,7 +39,7 @@ async function findUser(supabase: any, session: any) {
     if (byName) return byName;
   }
   
-  // Try to find by email from session
+  // Priority 4: Find by email from session
   if (sessionEmail) {
     const { data: byEmail } = await supabase
       .from('users')
@@ -28,9 +48,6 @@ async function findUser(supabase: any, session: any) {
       .single();
     if (byEmail) return byEmail;
   }
-  
-  // Fall back to finding any user with matching id format if we have twitterId
-  // (In case the id column stores Twitter IDs)
   
   return null;
 }
@@ -120,12 +137,19 @@ export async function POST(request: NextRequest) {
     } else {
       // Try to find existing user
       const existingUser = await findUser(supabase, session);
+      const twitterId = (session.user as any).twitterId;
       
       if (existingUser) {
         console.log('Found existing user by session lookup:', existingUser.id);
+        // Also ensure twitter_handle and twitter_id are set on existing users
+        const fullUpdateData = {
+          ...updateData,
+          twitter_handle: twitterHandle || existingUser.twitter_handle,
+          twitter_id: twitterId || existingUser.twitter_id,
+        };
         updateResult = await supabase
           .from('users')
-          .update(updateData)
+          .update(fullUpdateData)
           .eq('id', existingUser.id)
           .select();
       } else {
@@ -137,16 +161,19 @@ export async function POST(request: NextRequest) {
           }, { status: 400 });
         }
         
-        // For new users, store twitter handle in name for future lookups
+        // For new users, set both twitter_handle column AND name for compatibility
         updateResult = await supabase
           .from('users')
           .insert({
             ...updateData,
             name: twitterHandle,
+            twitter_handle: twitterHandle,
+            twitter_id: twitterId || null,
+            has_access: true, // Grant access on signup
             created_at: new Date().toISOString(),
           })
           .select();
-        console.log('Created new user with twitter handle:', twitterHandle);
+        console.log('Created new user with twitter handle:', twitterHandle, 'twitter_id:', twitterId);
       }
     }
 

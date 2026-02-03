@@ -30,20 +30,71 @@ export const authOptions: NextAuthOptions = {
       try {
         const twitterProfile = profile as { data?: { id: string; username: string; name: string; profile_image_url: string } };
         const supabase = getSupabase();
+        const twitterId = twitterProfile.data?.id;
+        const twitterHandle = twitterProfile.data?.username;
         
-        const { error } = await supabase
-          .from('users')
-          .upsert({
-            twitter_id: twitterProfile.data?.id,
-            twitter_handle: twitterProfile.data?.username,
-            display_name: twitterProfile.data?.name,
-            avatar_url: twitterProfile.data?.profile_image_url,
-            updated_at: new Date().toISOString(),
-          }, {
-            onConflict: 'twitter_id',
-          });
+        console.log('SignIn: Processing user', twitterHandle, 'twitter_id:', twitterId);
+        
+        // First, try to find existing user by twitter_id OR twitter_handle OR name
+        let existingUser = null;
+        
+        if (twitterId) {
+          const { data } = await supabase
+            .from('users')
+            .select('id')
+            .eq('twitter_id', twitterId)
+            .single();
+          if (data) existingUser = data;
+        }
+        
+        if (!existingUser && twitterHandle) {
+          const { data } = await supabase
+            .from('users')
+            .select('id')
+            .eq('twitter_handle', twitterHandle)
+            .single();
+          if (data) existingUser = data;
+        }
+        
+        if (!existingUser && twitterHandle) {
+          const { data } = await supabase
+            .from('users')
+            .select('id')
+            .eq('name', twitterHandle)
+            .single();
+          if (data) existingUser = data;
+        }
+        
+        const userData = {
+          twitter_id: twitterId,
+          twitter_handle: twitterHandle,
+          display_name: twitterProfile.data?.name,
+          avatar_url: twitterProfile.data?.profile_image_url,
+          updated_at: new Date().toISOString(),
+        };
+        
+        let error;
+        if (existingUser) {
+          // Update existing user
+          console.log('SignIn: Updating existing user', existingUser.id);
+          const result = await supabase
+            .from('users')
+            .update(userData)
+            .eq('id', existingUser.id);
+          error = result.error;
+        } else {
+          // Try upsert for new users (with twitter_id conflict handling)
+          console.log('SignIn: Creating new user via upsert');
+          const result = await supabase
+            .from('users')
+            .upsert(userData, {
+              onConflict: 'twitter_id',
+            });
+          error = result.error;
+        }
 
-        if (error) console.error('Error saving user:', error);
+        if (error) console.error('SignIn: Error saving user:', error);
+        else console.log('SignIn: User saved successfully');
       } catch (err) {
         console.error('SignIn callback error:', err);
       }

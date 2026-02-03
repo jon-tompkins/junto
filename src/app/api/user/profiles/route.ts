@@ -23,16 +23,43 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabase();
     const twitterHandle = (session.user as any).twitterHandle;
+    const twitterId = (session.user as any).twitterId;
     
-    // Get user from database
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('twitter_handle', twitterHandle)
-      .single();
+    // Get user from database - try multiple lookup strategies
+    let user = null;
+    
+    // Priority 1: By twitter_id (most reliable)
+    if (twitterId) {
+      const { data } = await supabase
+        .from('users')
+        .select('id')
+        .eq('twitter_id', twitterId)
+        .single();
+      if (data) user = data;
+    }
+    
+    // Priority 2: By twitter_handle column
+    if (!user && twitterHandle) {
+      const { data } = await supabase
+        .from('users')
+        .select('id')
+        .eq('twitter_handle', twitterHandle)
+        .single();
+      if (data) user = data;
+    }
+    
+    // Priority 3: By name column (legacy)
+    if (!user && twitterHandle) {
+      const { data } = await supabase
+        .from('users')
+        .select('id')
+        .eq('name', twitterHandle)
+        .single();
+      if (data) user = data;
+    }
 
-    if (userError || !user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!user) {
+      return NextResponse.json({ error: 'User not found. Please complete settings first.' }, { status: 404 });
     }
 
     // Ensure profiles exist in profiles table, create if not
@@ -98,13 +125,40 @@ export async function GET() {
   try {
     const supabase = getSupabase();
     const twitterHandle = (session.user as any).twitterHandle;
+    const twitterId = (session.user as any).twitterId;
     
-    // Get user's selected profiles
-    const { data: user } = await supabase
-      .from('users')
-      .select('id')
-      .eq('twitter_handle', twitterHandle)
-      .single();
+    // Get user's selected profiles - try multiple lookup strategies
+    let user = null;
+    
+    // Priority 1: By twitter_id
+    if (twitterId) {
+      const { data } = await supabase
+        .from('users')
+        .select('id')
+        .eq('twitter_id', twitterId)
+        .single();
+      if (data) user = data;
+    }
+    
+    // Priority 2: By twitter_handle
+    if (!user && twitterHandle) {
+      const { data } = await supabase
+        .from('users')
+        .select('id')
+        .eq('twitter_handle', twitterHandle)
+        .single();
+      if (data) user = data;
+    }
+    
+    // Priority 3: By name (legacy)
+    if (!user && twitterHandle) {
+      const { data } = await supabase
+        .from('users')
+        .select('id')
+        .eq('name', twitterHandle)
+        .single();
+      if (data) user = data;
+    }
 
     if (!user) {
       return NextResponse.json({ profiles: [] });
