@@ -5,10 +5,12 @@ export async function GET(request: NextRequest) {
   const supabase = getSupabase();
   const currentTime = new Date();
   
-  // Exact same window calculation as check-scheduled
+  // Match updated check-scheduled: 60-minute catch-up window
   const windowStart = new Date(currentTime);
   windowStart.setMinutes(Math.floor(windowStart.getMinutes() / 5) * 5, 0, 0);
-  const windowEnd = new Date(windowStart.getTime() + 5 * 60 * 1000);
+  windowStart.setTime(windowStart.getTime() - 60 * 60 * 1000); // Look back 60 minutes
+  const windowEnd = new Date(currentTime);
+  windowEnd.setMinutes(Math.ceil(windowEnd.getMinutes() / 5) * 5, 0, 0);
   
   // Exact same query as check-scheduled
   const { data: rawUsersData, error: usersError } = await supabase
