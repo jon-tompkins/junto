@@ -11,15 +11,7 @@ interface UserSettings {
   timezone: string;
   keywords: string[];
   email: string;
-  use_custom_time: boolean;
 }
-
-const TIME_OPTIONS = [
-  { value: '05:00', label: '5:00 AM', description: 'Early morning' },
-  { value: '11:00', label: '11:00 AM', description: 'Late morning' },
-  { value: '17:00', label: '5:00 PM', description: 'End of day' },
-  { value: '23:00', label: '11:00 PM', description: 'Night owl' },
-];
 
 const COMMON_TIMEZONES = [
   { value: 'America/New_York', label: 'Eastern Time (ET)' },
@@ -34,7 +26,7 @@ const COMMON_TIMEZONES = [
   { value: 'UTC', label: 'UTC' },
 ];
 
-const KEYWORD_OPTIONS = [
+const DEFAULT_KEYWORDS = [
   'crypto',
   'macro',
   'equities',
@@ -52,11 +44,10 @@ export default function SettingsPage() {
   const router = useRouter();
   const [settings, setSettings] = useState<UserSettings>({
     frequency: 'daily',
-    delivery_time: '05:00',
+    delivery_time: '09:00',
     timezone: 'America/New_York',
     keywords: [],
     email: '',
-    use_custom_time: false,
   });
   const [userTimezone, setUserTimezone] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -64,6 +55,10 @@ export default function SettingsPage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
+  const [availableKeywords, setAvailableKeywords] = useState<string[]>(DEFAULT_KEYWORDS);
+  const [newKeyword, setNewKeyword] = useState('');
+  const [availableNewsletters, setAvailableNewsletters] = useState<Array<{id: string, name: string, slug: string, description?: string}>>([]);
+  const [selectedNewsletterIds, setSelectedNewsletterIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -77,7 +72,7 @@ const detectTimezone = () => {
       setUserTimezone(detectedTz);
       
       // If user hasn't set a timezone, use the detected one
-      if (settings.timezone === 'America/New_York' && !settings.use_custom_time) {
+      if (settings.timezone === 'America/New_York') {
         setSettings(prev => ({ ...prev, timezone: detectedTz }));
       }
     } catch (error) {
@@ -88,9 +83,55 @@ const detectTimezone = () => {
   useEffect(() => {
     if (session) {
       fetchSettings();
+      fetchNewsletters();
       detectTimezone();
     }
   }, [session]);
+
+  const fetchNewsletters = async () => {
+    try {
+      // Fetch available newsletters
+      const availRes = await fetch('/api/newsletters/available');
+      const availData = await availRes.json();
+      if (availData.newsletters) {
+        setAvailableNewsletters(availData.newsletters);
+      }
+      
+      // Fetch user's selected newsletters
+      const userRes = await fetch('/api/newsletters/user');
+      const userData = await userRes.json();
+      if (userData.selected) {
+        setSelectedNewsletterIds(userData.selected.map((n: any) => n.id));
+      }
+    } catch (err) {
+      console.error('Failed to fetch newsletters:', err);
+    }
+  };
+
+  const toggleNewsletter = async (newsletterId: string) => {
+    let newSelection: string[];
+    
+    if (selectedNewsletterIds.includes(newsletterId)) {
+      newSelection = selectedNewsletterIds.filter(id => id !== newsletterId);
+    } else if (selectedNewsletterIds.length < 5) {
+      newSelection = [...selectedNewsletterIds, newsletterId];
+    } else {
+      return; // Max 5 reached
+    }
+    
+    setSelectedNewsletterIds(newSelection);
+    
+    // Save to backend
+    try {
+      await fetch('/api/newsletters/user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newsletterIds: newSelection }),
+      });
+    } catch (err) {
+      console.error('Failed to save newsletter selection:', err);
+    }
+  };
 
   const fetchSettings = async () => {
     try {
@@ -101,6 +142,10 @@ const detectTimezone = () => {
           ...settings,
           ...data.settings,
         });
+        // Load available keywords if saved, otherwise use defaults
+        if (data.settings.availableKeywords && Array.isArray(data.settings.availableKeywords)) {
+          setAvailableKeywords(data.settings.availableKeywords);
+        }
       }
       // Store userId for save operations
       if (data.userId) {
@@ -119,10 +164,16 @@ const detectTimezone = () => {
     setSuccess('');
 
     try {
+      // Include availableKeywords in settings to persist them
+      const settingsToSave = {
+        ...settings,
+        availableKeywords,
+      };
+      
       const res = await fetch('/api/user/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings, userId }),
+        body: JSON.stringify({ settings: settingsToSave, userId }),
       });
 
       if (res.ok) {
@@ -144,13 +195,32 @@ const detectTimezone = () => {
         ...settings,
         keywords: settings.keywords.filter(k => k !== keyword),
       });
-    } else {
+    } else if (settings.keywords.length < 10) {
       setSettings({
         ...settings,
         keywords: [...settings.keywords, keyword],
       });
     }
     setSuccess('');
+  };
+
+  const addKeyword = () => {
+    const keyword = newKeyword.trim().toLowerCase();
+    if (keyword && !availableKeywords.includes(keyword)) {
+      setAvailableKeywords([...availableKeywords, keyword]);
+      setNewKeyword('');
+    }
+  };
+
+  const removeAvailableKeyword = (keyword: string) => {
+    setAvailableKeywords(availableKeywords.filter(k => k !== keyword));
+    // Also remove from selected if it was selected
+    if (settings.keywords.includes(keyword)) {
+      setSettings({
+        ...settings,
+        keywords: settings.keywords.filter(k => k !== keyword),
+      });
+    }
   };
 
   if (status === 'loading' || loading) {
@@ -216,88 +286,116 @@ const detectTimezone = () => {
           </select>
         </div>
 
-        {/* Custom Time Toggle */}
-        <div className="mb-8">
-          <label className="flex items-center space-x-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.use_custom_time}
-              onChange={(e) => setSettings({ ...settings, use_custom_time: e.target.checked })}
-              className="w-4 h-4 text-white bg-transparent border-neutral-600 rounded focus:ring-white focus:ring-2"
-            />
-            <span className="text-sm font-medium">Use custom delivery time</span>
-          </label>
-          <p className="text-sm text-neutral-500 mt-2">
-            Choose a specific time instead of preset options.
-          </p>
-        </div>
-
         {/* Delivery Time */}
         <div className="mb-8">
           <label className="block text-sm font-medium mb-2">
-            Delivery Time ({settings.timezone})
+            Newsletter Delivery Time
           </label>
           <p className="text-sm text-neutral-500 mb-4">
-            {settings.use_custom_time 
-              ? 'Select any time you prefer for your daily briefing.'
-              : 'Choose when you want to receive your daily briefing.'
-            }
+            Choose when you want to receive your daily briefing ({settings.timezone}).
           </p>
-          
-          {settings.use_custom_time ? (
-            <input
-              type="time"
-              value={settings.delivery_time}
-              onChange={(e) => setSettings({ ...settings, delivery_time: e.target.value })}
-              className="w-full px-4 py-3 bg-transparent border border-neutral-700 focus:border-white focus:outline-none transition-colors"
-            />
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
-              {TIME_OPTIONS.map(option => (
-                <button
-                  key={option.value}
-                  onClick={() => setSettings({ ...settings, delivery_time: option.value })}
-                  className={`p-4 border transition-colors text-left ${
-                    settings.delivery_time === option.value
-                      ? 'border-white bg-white text-black'
-                      : 'border-neutral-700 hover:border-neutral-500'
-                  }`}
-                >
-                  <div className="font-medium">{option.label}</div>
-                  <div className={`text-sm ${
-                    settings.delivery_time === option.value 
-                      ? 'text-neutral-600' 
-                      : 'text-neutral-500'
-                  }`}>
-                    {option.description}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+          <input
+            type="time"
+            value={settings.delivery_time}
+            onChange={(e) => setSettings({ ...settings, delivery_time: e.target.value })}
+            className="w-full px-4 py-3 bg-transparent border border-neutral-700 focus:border-white focus:outline-none transition-colors"
+          />
         </div>
 
         {/* Focus Keywords */}
         <div className="mb-8">
           <label className="block text-sm font-medium mb-2">Focus Keywords</label>
           <p className="text-sm text-neutral-500 mb-4">
-            Select topics to prioritize in your briefing.
+            Select up to 10 topics to prioritize in your briefing ({settings.keywords.length}/10 selected).
           </p>
+          
+          {/* Add new keyword */}
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              value={newKeyword}
+              onChange={(e) => setNewKeyword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addKeyword()}
+              placeholder="Add a keyword..."
+              className="flex-1 px-4 py-2 bg-transparent border border-neutral-700 focus:border-white focus:outline-none transition-colors placeholder-neutral-600 text-sm"
+            />
+            <button
+              onClick={addKeyword}
+              disabled={!newKeyword.trim()}
+              className="px-4 py-2 text-sm border border-neutral-700 hover:border-white hover:bg-white hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Add
+            </button>
+          </div>
+
+          {/* Available keywords */}
           <div className="flex flex-wrap gap-2">
-            {KEYWORD_OPTIONS.map(keyword => (
-              <button
+            {availableKeywords.map(keyword => (
+              <div
                 key={keyword}
-                onClick={() => toggleKeyword(keyword)}
-                className={`px-3 py-1 text-sm border transition-colors ${
+                className={`group flex items-center gap-1 px-3 py-1 text-sm border transition-colors ${
                   settings.keywords.includes(keyword)
                     ? 'border-white bg-white text-black'
                     : 'border-neutral-700 hover:border-neutral-500'
                 }`}
               >
-                {keyword}
-              </button>
+                <button
+                  onClick={() => toggleKeyword(keyword)}
+                  disabled={!settings.keywords.includes(keyword) && settings.keywords.length >= 10}
+                  className="disabled:opacity-50"
+                >
+                  {keyword}
+                </button>
+                <button
+                  onClick={() => removeAvailableKeyword(keyword)}
+                  className={`ml-1 opacity-0 group-hover:opacity-100 transition-opacity ${
+                    settings.keywords.includes(keyword) ? 'text-black hover:text-red-600' : 'text-neutral-500 hover:text-red-500'
+                  }`}
+                  title="Remove keyword"
+                >
+                  ×
+                </button>
+              </div>
             ))}
           </div>
+        </div>
+
+        {/* Newsletter Sources */}
+        <div className="mb-8">
+          <label className="block text-sm font-medium mb-2">Newsletter Sources</label>
+          <p className="text-sm text-neutral-500 mb-4">
+            Select newsletters to include in your daily briefing (up to 5). {selectedNewsletterIds.length}/5 selected.
+          </p>
+          
+          {availableNewsletters.length === 0 ? (
+            <p className="text-sm text-neutral-600 italic">No newsletters available yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {availableNewsletters.map(newsletter => (
+                <button
+                  key={newsletter.id}
+                  onClick={() => toggleNewsletter(newsletter.id)}
+                  disabled={!selectedNewsletterIds.includes(newsletter.id) && selectedNewsletterIds.length >= 5}
+                  className={`w-full p-4 border transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed ${
+                    selectedNewsletterIds.includes(newsletter.id)
+                      ? 'border-white bg-white text-black'
+                      : 'border-neutral-700 hover:border-neutral-500'
+                  }`}
+                >
+                  <div className="font-medium">{newsletter.name}</div>
+                  {newsletter.description && (
+                    <div className={`text-sm mt-1 ${
+                      selectedNewsletterIds.includes(newsletter.id) 
+                        ? 'text-neutral-600' 
+                        : 'text-neutral-500'
+                    }`}>
+                      {newsletter.description}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Save */}
