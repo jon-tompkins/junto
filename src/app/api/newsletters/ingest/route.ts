@@ -39,3 +39,4 @@ export async function GET() {
       : 'Gmail credentials not configured. Set GMAIL_USER and GMAIL_APP_PASSWORD.',
   });
 }
+// Trigger redeploy Wed Feb  4 18:29:05 UTC 2026
