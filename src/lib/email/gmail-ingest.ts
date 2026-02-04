@@ -12,12 +12,20 @@ interface NewsletterMatch {
 async function matchNewsletter(from: string, subject: string): Promise<NewsletterMatch | null> {
   const supabase = getSupabase();
   
-  const { data: newsletters } = await supabase
+  const { data: newsletters, error } = await supabase
     .from('available_newsletters')
     .select('id, name, slug, sender_email, sender_patterns')
     .eq('is_active', true);
   
-  if (!newsletters) return null;
+  if (error) {
+    console.error('Error fetching newsletters for matching:', error);
+    return null;
+  }
+  
+  if (!newsletters || newsletters.length === 0) {
+    console.warn('No newsletters found in available_newsletters table');
+    return null;
+  }
   
   const fromLower = from.toLowerCase();
   const subjectLower = subject.toLowerCase();
