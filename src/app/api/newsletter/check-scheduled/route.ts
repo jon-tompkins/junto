@@ -327,11 +327,15 @@ export async function GET(request: NextRequest) {
         message: 'No users due for newsletters',
         timestamp: currentTime.toISOString(),
         stats: {
-          usersChecked: 0,
+          usersChecked: rawUsersData?.length || 0,
           usersMatched: 0,
           newslettersSent: 0,
           errors: 0,
           processingTimeMs: processingTime
+        },
+        debug: {
+          rawUserCount: rawUsersData?.length || 0,
+          filterResults: debugInfo
         }
       });
     }
