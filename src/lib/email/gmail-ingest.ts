@@ -131,27 +131,34 @@ export async function ingestNewslettersFromGmail(
     newsletters: [],
   };
   
-  // Fetch available newsletters - use anon key since RLS allows read
-  const { createClient } = await import('@supabase/supabase-js');
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  // Fetch available newsletters using RPC to bypass schema cache issue
+  const supabase = getSupabase();
+  const { data: availNl, error: nlError } = await supabase
+    .rpc('get_available_newsletters')
+    .select();
   
-  const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey);
-  const { data: availNl, error: nlError } = await supabaseAnon
-    .from('available_newsletters')
-    .select('name, sender_patterns')
-    .eq('is_active', true);
-  
-  result.debug = {
-    availableNewslettersCount: availNl?.length || 0,
-    availableNewsletters: (availNl || []).map(n => ({ name: n.name, patterns: n.sender_patterns || [] })),
-    supabaseUrlSet: !!supabaseUrl,
-    supabaseAnonKeySet: !!supabaseAnonKey,
-    queryError: nlError?.message || null,
-  };
+  // If RPC fails, try direct query
+  let newsletters = availNl;
+  let queryError = nlError?.message || null;
   
   if (nlError) {
-    result.errors.push(`Error fetching available newsletters: ${nlError.message}`);
+    // Fallback to direct query with service role
+    const { data: directData, error: directError } = await supabase
+      .from('available_newsletters')
+      .select('name, sender_patterns')
+      .eq('is_active', true);
+    newsletters = directData;
+    queryError = directError?.message || null;
+  }
+  
+  result.debug = {
+    availableNewslettersCount: newsletters?.length || 0,
+    availableNewsletters: (newsletters || []).map((n: any) => ({ name: n.name, patterns: n.sender_patterns || [] })),
+    queryError,
+  };
+  
+  if (queryError) {
+    result.errors.push(`Error fetching available newsletters: ${queryError}`);
   }
   
   const gmailUser = process.env.GMAIL_USER;

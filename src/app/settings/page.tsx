@@ -57,8 +57,7 @@ export default function SettingsPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [availableKeywords, setAvailableKeywords] = useState<string[]>(DEFAULT_KEYWORDS);
   const [newKeyword, setNewKeyword] = useState('');
-  const [availableNewsletters, setAvailableNewsletters] = useState<Array<{id: string, name: string, slug: string, description?: string}>>([]);
-  const [selectedNewsletterIds, setSelectedNewsletterIds] = useState<string[]>([]);
+  // Newsletter selection moved to Sources page
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -83,55 +82,9 @@ const detectTimezone = () => {
   useEffect(() => {
     if (session) {
       fetchSettings();
-      fetchNewsletters();
       detectTimezone();
     }
   }, [session]);
-
-  const fetchNewsletters = async () => {
-    try {
-      // Fetch available newsletters
-      const availRes = await fetch('/api/newsletters/available');
-      const availData = await availRes.json();
-      if (availData.newsletters) {
-        setAvailableNewsletters(availData.newsletters);
-      }
-      
-      // Fetch user's selected newsletters
-      const userRes = await fetch('/api/newsletters/user');
-      const userData = await userRes.json();
-      if (userData.selected) {
-        setSelectedNewsletterIds(userData.selected.map((n: any) => n.id));
-      }
-    } catch (err) {
-      console.error('Failed to fetch newsletters:', err);
-    }
-  };
-
-  const toggleNewsletter = async (newsletterId: string) => {
-    let newSelection: string[];
-    
-    if (selectedNewsletterIds.includes(newsletterId)) {
-      newSelection = selectedNewsletterIds.filter(id => id !== newsletterId);
-    } else if (selectedNewsletterIds.length < 5) {
-      newSelection = [...selectedNewsletterIds, newsletterId];
-    } else {
-      return; // Max 5 reached
-    }
-    
-    setSelectedNewsletterIds(newSelection);
-    
-    // Save to backend
-    try {
-      await fetch('/api/newsletters/user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newsletterIds: newSelection }),
-      });
-    } catch (err) {
-      console.error('Failed to save newsletter selection:', err);
-    }
-  };
 
   const fetchSettings = async () => {
     try {
@@ -358,44 +311,6 @@ const detectTimezone = () => {
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Newsletter Sources */}
-        <div className="mb-8">
-          <label className="block text-sm font-medium mb-2">Newsletter Sources</label>
-          <p className="text-sm text-neutral-500 mb-4">
-            Select newsletters to include in your daily briefing (up to 5). {selectedNewsletterIds.length}/5 selected.
-          </p>
-          
-          {availableNewsletters.length === 0 ? (
-            <p className="text-sm text-neutral-600 italic">No newsletters available yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {availableNewsletters.map(newsletter => (
-                <button
-                  key={newsletter.id}
-                  onClick={() => toggleNewsletter(newsletter.id)}
-                  disabled={!selectedNewsletterIds.includes(newsletter.id) && selectedNewsletterIds.length >= 5}
-                  className={`w-full p-4 border transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed ${
-                    selectedNewsletterIds.includes(newsletter.id)
-                      ? 'border-white bg-white text-black'
-                      : 'border-neutral-700 hover:border-neutral-500'
-                  }`}
-                >
-                  <div className="font-medium">{newsletter.name}</div>
-                  {newsletter.description && (
-                    <div className={`text-sm mt-1 ${
-                      selectedNewsletterIds.includes(newsletter.id) 
-                        ? 'text-neutral-600' 
-                        : 'text-neutral-500'
-                    }`}>
-                      {newsletter.description}
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Save */}
