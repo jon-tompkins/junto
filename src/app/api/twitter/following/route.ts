@@ -35,9 +35,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Step 2: Get following list
+    // Step 2: Get following list (increased limit for better search)
     const followingRes = await fetch(
-      `https://twitter154.p.rapidapi.com/user/following?user_id=${userId}&limit=100`,
+      `https://twitter154.p.rapidapi.com/user/following?user_id=${userId}&limit=500`,
       {
         headers: {
           'x-rapidapi-key': rapidApiKey,
