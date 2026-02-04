@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { getSupabase } from '@/lib/db/client';
 import { getRecentTweetsGrouped, getTweetsForContext } from '@/lib/db/tweets';
 import { storeNewsletter } from '@/lib/db/newsletters';
-import { generateNewsletter, PROMPT_VERSION } from '@/lib/synthesis/generator';
+import { generateNewsletter, PROMPT_VERSION, NewsletterContent } from '@/lib/synthesis/generator';
 import { getDateRange } from '@/lib/utils/date';
 
 export const maxDuration = 60;
@@ -85,6 +85,53 @@ export async function POST(request: NextRequest) {
     const keywords = user.settings?.keywords || [];
     const customPrompt = user.custom_prompt || null;
     
+    // Get user's selected newsletters and recent content
+    let newsletterContent: NewsletterContent[] = [];
+    try {
+      // Get user's newsletter selections
+      const { data: userNewsletters } = await supabase
+        .from('user_newsletters')
+        .select('newsletter_id')
+        .eq('user_id', user.id);
+      
+      if (userNewsletters && userNewsletters.length > 0) {
+        const newsletterIds = userNewsletters.map(un => un.newsletter_id);
+        
+        // Get recent newsletter content (last 7 days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        const { data: content } = await supabase
+          .from('newsletter_content')
+          .select(`
+            id,
+            subject,
+            content,
+            received_at,
+            available_newsletters!inner(name)
+          `)
+          .in('newsletter_id', newsletterIds)
+          .gte('received_at', sevenDaysAgo.toISOString())
+          .order('received_at', { ascending: false })
+          .limit(5); // Max 5 newsletter issues
+        
+        if (content) {
+          newsletterContent = content.map((c: any) => ({
+            id: c.id,
+            name: c.available_newsletters?.name || 'Unknown Newsletter',
+            subject: c.subject || 'No Subject',
+            content: c.content || '',
+            received_at: c.received_at,
+          }));
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching newsletter content:', err);
+      // Continue without newsletter content
+    }
+    
+    console.log(`Including ${newsletterContent.length} newsletter issues in synthesis`);
+    
     // Generate newsletter
     const synthesis = await generateNewsletter(
       recentTweets, 
@@ -92,7 +139,8 @@ export async function POST(request: NextRequest) {
       end, 
       contextTweets,
       keywords,
-      customPrompt
+      customPrompt,
+      newsletterContent
     );
     
     // Store newsletter with user_id

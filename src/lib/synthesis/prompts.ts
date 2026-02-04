@@ -111,11 +111,20 @@ export function buildCustomSystemPrompt(customPrompt: string, keywords?: string[
   return prompt;
 }
 
+interface NewsletterContent {
+  id: string;
+  name: string;
+  subject: string;
+  content: string;
+  received_at: string;
+}
+
 export function buildUserPrompt(
   recentTweets: GroupedTweets, 
   dateRange: string,
   focusKeywords?: string[],
-  contextTweets?: GroupedTweets
+  contextTweets?: GroupedTweets,
+  newsletterContent?: NewsletterContent[]
 ): string {
   
   // Build recent tweets section with numbered citations
@@ -165,6 +174,21 @@ export function buildUserPrompt(
     focusSection = `\n\n**USER FOCUS AREAS:** Pay special attention to content related to: ${focusKeywords.join(', ')}\n`;
   }
 
+  // Build newsletter content section
+  let newsletterSection = '';
+  if (newsletterContent && newsletterContent.length > 0) {
+    const nlSections = newsletterContent.map((nl, idx) => {
+      // Truncate very long content
+      let content = nl.content;
+      if (content.length > 3000) {
+        content = content.substring(0, 2997) + '...';
+      }
+      return `### [NL${idx + 1}] ${nl.name}: "${nl.subject}"\n${content}`;
+    }).join('\n\n');
+    
+    newsletterSection = `\n\n---\n\n## NEWSLETTER CONTENT (Recent issues from subscribed newsletters)\n\nIntegrate insights from these newsletters. Reference them as [NL1], [NL2], etc.\n\n${nlSections}`;
+  }
+
   return `Generate today's briefing based on tweets from ${dateRange}.
 ${focusSection}
 
@@ -172,8 +196,9 @@ ${focusSection}
 
 ${recentSections}
 ${contextSection}
+${newsletterSection}
 
-Write the newsletter following the structure above. Focus on RECENT tweets for the main content.`;
+Write the newsletter following the structure above. Focus on RECENT tweets for the main content, and integrate newsletter insights where relevant.`;
 }
 
 export function parseNewsletterResponse(response: string): { subject: string; content: string } {
@@ -195,7 +220,8 @@ export function parseNewsletterResponse(response: string): { subject: string; co
 export function extractTweetReferences(
   response: string, 
   recentTweets: GroupedTweets, 
-  contextTweets?: GroupedTweets
+  contextTweets?: GroupedTweets,
+  newsletterContent?: NewsletterContent[]
 ): { content: string; references: string[] } {
   // Extract content directly from response (subject already handled separately)
   
@@ -267,27 +293,66 @@ export function extractTweetReferences(
     return `<sup><a href="#ref-${num}" style="text-decoration: none; color: inherit; font-size: 0.7em; vertical-align: super;">${num}</a></sup>`;
   });
   
-  // Build clean references section with anchors
-  const cleanReferences = references.map((ref, index) => {
-    const citationNum = index + 1;
-    return `<div id="ref-${citationNum}" style="margin-bottom: 8px; padding: 8px; background: #1a1a1a; border-radius: 4px;">
-      <strong>${ref}</strong>
-    </div>`;
+  // Convert newsletter citations to superscript (no hyperlink)
+  const nlCitationRegex = /\[NL(\d+)\]/g;
+  contentWithSuperscripts = contentWithSuperscripts.replace(nlCitationRegex, (match, num) => {
+    return `<sup style="font-size: 0.7em; color: #666;">NL${num}</sup>`;
   });
+  
+  // Build clean references section with anchors - compact, professional styling
+  const cleanReferences = references.map((ref, index) => {
+    const citationNum = sortedCitations[index];
+    const tweet = citationMap[citationNum];
+    if (!tweet) return '';
+    
+    // Truncate content
+    let tweetContent = tweet.content;
+    if (tweetContent.length > 120) {
+      tweetContent = tweetContent.substring(0, 117) + '...';
+    }
+    
+    // Create hyperlinked reference (Twitter search as fallback since we don't have tweet IDs)
+    const twitterUrl = `https://twitter.com/${tweet.handle}`;
+    return `<span id="ref-${citationNum}" style="font-size: 11px; color: #333;"><a href="${twitterUrl}" target="_blank" style="color: #333; text-decoration: underline;">@${tweet.handle}</a>: "${tweetContent}"</span>`;
+  }).filter(Boolean);
+  
+  // Build newsletter references (no hyperlinks, just name)
+  const newsletterReferences: string[] = [];
+  if (newsletterContent && newsletterContent.length > 0) {
+    // Find newsletter citations in content
+    const nlCitationRegex = /\[NL(\d+)\]/g;
+    let nlMatch;
+    const usedNlCitations = new Set<number>();
+    
+    while ((nlMatch = nlCitationRegex.exec(response)) !== null) {
+      usedNlCitations.add(parseInt(nlMatch[1]));
+    }
+    
+    for (const nlNum of Array.from(usedNlCitations).sort((a, b) => a - b)) {
+      const nl = newsletterContent[nlNum - 1];
+      if (nl) {
+        newsletterReferences.push(`<span style="font-size: 11px; color: #333;">[NL${nlNum}] ${nl.name}</span>`);
+      }
+    }
+  }
+  
+  // Combine all references
+  const allReferences = [...cleanReferences, ...newsletterReferences];
+  
+  // Build compact references block - no spacing, professional
+  const referencesHtml = allReferences.length > 0
+    ? `<div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e0e0e0; font-size: 11px; line-height: 1.6; color: #333;">${allReferences.join(' · ')}</div>`
+    : '';
   
   // If no References section exists, add one
   let finalContent = contentWithSuperscripts;
   if (!content.includes('## References')) {
-    if (references.length > 0) {
-      finalContent += '\n\n---\n\n## References\n\n' + cleanReferences.join('\n');
+    if (cleanReferences.length > 0) {
+      finalContent += '\n\n' + referencesHtml;
     }
   } else {
-    // Replace existing References section
-    const referencesSection = references.length > 0 
-      ? '\n\n## References\n\n' + cleanReferences.join('\n')
-      : '\n\n## References\n\nNo references found.';
-    
-    finalContent = contentWithSuperscripts.replace(/## References[\s\S]*$/m, referencesSection);
+    // Replace existing References section with compact version
+    finalContent = contentWithSuperscripts.replace(/## References[\s\S]*$/m, referencesHtml);
   }
   
   return {

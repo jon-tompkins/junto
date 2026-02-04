@@ -4,6 +4,14 @@ import { NEWSLETTER_SYSTEM_PROMPT, buildUserPrompt, parseNewsletterResponse, ext
 
 export { PROMPT_VERSION };
 
+export interface NewsletterContent {
+  id: string;
+  name: string;
+  subject: string;
+  content: string;
+  received_at: string;
+}
+
 interface NewsletterResult {
   subject: string;
   content: string;
@@ -17,12 +25,13 @@ export async function generateNewsletter(
   endDate: string,
   contextTweets?: GroupedTweets,
   keywords?: string[],
-  customPrompt?: string | null
+  customPrompt?: string | null,
+  newsletterContent?: NewsletterContent[]
 ): Promise<NewsletterResult> {
   const client = getAnthropic();
   
   const dateRange = `${startDate} to ${endDate}`;
-  const userPrompt = buildUserPrompt(recentTweets, dateRange, keywords, contextTweets);
+  const userPrompt = buildUserPrompt(recentTweets, dateRange, keywords, contextTweets, newsletterContent);
   
   // Use custom prompt if provided, otherwise default
   const systemPrompt = customPrompt 
@@ -42,7 +51,7 @@ export async function generateNewsletter(
   const rawContent = textContent?.text || '';
   
   const { subject } = parseNewsletterResponse(rawContent);
-  const { content } = extractTweetReferences(rawContent, recentTweets, contextTweets);
+  const { content } = extractTweetReferences(rawContent, recentTweets, contextTweets, newsletterContent);
   
   return {
     subject,
