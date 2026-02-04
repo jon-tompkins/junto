@@ -113,6 +113,9 @@ export interface IngestResult {
   debug?: {
     availableNewslettersCount: number;
     availableNewsletters: Array<{ name: string; patterns: string[] }>;
+    supabaseUrlSet?: boolean;
+    supabaseAnonKeySet?: boolean;
+    queryError?: string | null;
   };
 }
 
