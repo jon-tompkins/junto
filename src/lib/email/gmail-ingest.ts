@@ -130,10 +130,10 @@ export async function ingestNewslettersFromGmail(
   
   // Fetch available newsletters - use anon key since RLS allows read
   const { createClient } = await import('@supabase/supabase-js');
-  const supabaseAnon = createClient(
-    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-  );
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  
+  const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey);
   const { data: availNl, error: nlError } = await supabaseAnon
     .from('available_newsletters')
     .select('name, sender_patterns')
@@ -142,6 +142,9 @@ export async function ingestNewslettersFromGmail(
   result.debug = {
     availableNewslettersCount: availNl?.length || 0,
     availableNewsletters: (availNl || []).map(n => ({ name: n.name, patterns: n.sender_patterns || [] })),
+    supabaseUrlSet: !!supabaseUrl,
+    supabaseAnonKeySet: !!supabaseAnonKey,
+    queryError: nlError?.message || null,
   };
   
   if (nlError) {
