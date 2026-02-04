@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     // Query users directly
     const { data: rawUsersData, error: usersError } = await supabase
       .from('users')
-      .select('id, email, preferred_send_time, timezone, last_newsletter_sent, send_frequency, weekend_delivery, name, twitter_handle, twitter_id, created_at, updated_at')
+      .select('id, email, preferred_send_time, timezone, last_newsletter_sent, send_frequency, weekend_delivery, twitter_handle, twitter_id, created_at, updated_at')
       .not('email', 'is', null)
       .not('preferred_send_time', 'is', null)
       .not('timezone', 'is', null);
