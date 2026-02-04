@@ -76,7 +76,7 @@ async function storeNewsletterContent(
       received_at: email.date || new Date(),
       message_id: messageId,
       metadata: {
-        to: email.to?.text,
+        to: Array.isArray(email.to) ? email.to.map(a => a.text).join(', ') : email.to?.text,
         headers: Object.fromEntries(
           Array.from(email.headers || []).slice(0, 10) // Limit headers stored
         ),
@@ -141,10 +141,11 @@ export async function ingestNewslettersFromGmail(
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - daysBack);
     
-    const messages = await client.search({
+    const searchResult = await client.search({
       since: sinceDate,
     });
     
+    const messages = searchResult || [];
     console.log(`Found ${messages.length} messages from last ${daysBack} days`);
     
     // Process messages (newest first, up to limit)
@@ -152,8 +153,8 @@ export async function ingestNewslettersFromGmail(
     
     for (const uid of messagesToProcess) {
       try {
-        const message = await client.fetchOne(uid, { source: true });
-        if (!message?.source) continue;
+        const message = await client.fetchOne(uid, { source: true }) as { source?: Buffer } | false;
+        if (!message || !message.source) continue;
         
         const parsed = await simpleParser(message.source);
         result.processed++;
