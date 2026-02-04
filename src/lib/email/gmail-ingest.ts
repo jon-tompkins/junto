@@ -105,6 +105,10 @@ export interface IngestResult {
   skipped: number;
   errors: string[];
   newsletters: Array<{ subject: string; from: string; matched: string | null; stored: boolean }>;
+  debug?: {
+    availableNewslettersCount: number;
+    availableNewsletters: Array<{ name: string; patterns: string[] }>;
+  };
 }
 
 export async function ingestNewslettersFromGmail(
@@ -118,6 +122,22 @@ export async function ingestNewslettersFromGmail(
     errors: [],
     newsletters: [],
   };
+  
+  // Fetch available newsletters for debug info
+  const supabase = getSupabase();
+  const { data: availNl, error: nlError } = await supabase
+    .from('available_newsletters')
+    .select('name, sender_patterns')
+    .eq('is_active', true);
+  
+  result.debug = {
+    availableNewslettersCount: availNl?.length || 0,
+    availableNewsletters: (availNl || []).map(n => ({ name: n.name, patterns: n.sender_patterns || [] })),
+  };
+  
+  if (nlError) {
+    result.errors.push(`Error fetching available newsletters: ${nlError.message}`);
+  }
   
   const gmailUser = process.env.GMAIL_USER;
   const gmailPass = process.env.GMAIL_APP_PASSWORD;
