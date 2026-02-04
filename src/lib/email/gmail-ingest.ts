@@ -10,9 +10,14 @@ interface NewsletterMatch {
 
 // Check if an email matches any of our tracked newsletters
 async function matchNewsletter(from: string, subject: string): Promise<NewsletterMatch | null> {
-  const supabase = getSupabase();
+  // Use anon key for reading - RLS allows it
+  const { createClient } = await import('@supabase/supabase-js');
+  const supabaseAnon = createClient(
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  );
   
-  const { data: newsletters, error } = await supabase
+  const { data: newsletters, error } = await supabaseAnon
     .from('available_newsletters')
     .select('id, name, slug, sender_email, sender_patterns')
     .eq('is_active', true);
@@ -123,9 +128,13 @@ export async function ingestNewslettersFromGmail(
     newsletters: [],
   };
   
-  // Fetch available newsletters for debug info
-  const supabase = getSupabase();
-  const { data: availNl, error: nlError } = await supabase
+  // Fetch available newsletters - use anon key since RLS allows read
+  const { createClient } = await import('@supabase/supabase-js');
+  const supabaseAnon = createClient(
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  );
+  const { data: availNl, error: nlError } = await supabaseAnon
     .from('available_newsletters')
     .select('name, sender_patterns')
     .eq('is_active', true);
