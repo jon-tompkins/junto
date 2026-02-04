@@ -464,41 +464,41 @@ export async function GET(request: NextRequest) {
 
 async function processUserNewsletter(user: ScheduledUser, supabase: any): Promise<ProcessingResult> {
   try {
-    // Get user's selected profiles
+    // Get user's selected profiles - try user_profiles table first, then fall back to settings.profiles
     let profileHandles: string[] = [];
     
+    // First, always get the user's settings as a fallback source
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('settings, custom_prompt')
+      .eq('id', user.user_id)
+      .single();
+    
+    console.log(`📋 User ${user.email} settings:`, JSON.stringify(userData?.settings));
+    
+    // Try user_profiles table (may not exist)
     try {
       const { data: userProfiles, error: profileError } = await supabase
         .from('user_profiles')
         .select('profiles(twitter_handle)')
         .eq('user_id', user.user_id);
       
-      if (profileError) {
-        // If user_profiles table doesn't exist, log and use fallback
-        console.warn(`user_profiles query failed: ${profileError.message}`);
-        // Check if user has settings with source profiles
-        const { data: userData } = await supabase
-          .from('users')
-          .select('settings')
-          .eq('id', user.user_id)
-          .single();
-        
-        if (userData?.settings?.profiles) {
-          profileHandles = userData.settings.profiles;
-        }
+      if (!profileError && userProfiles && userProfiles.length > 0) {
+        profileHandles = userProfiles.map((p: any) => p.profiles?.twitter_handle).filter(Boolean);
+        console.log(`✅ Got ${profileHandles.length} profiles from user_profiles table`);
       } else {
-        profileHandles = userProfiles?.map((p: any) => p.profiles?.twitter_handle).filter(Boolean) || [];
+        console.warn(`⚠️ user_profiles query: ${profileError?.message || 'no results'}`);
       }
     } catch (e) {
-      console.warn('Error fetching user profiles, checking settings fallback');
-      const { data: userData } = await supabase
-        .from('users')
-        .select('settings')
-        .eq('id', user.user_id)
-        .single();
-      
-      if (userData?.settings?.profiles) {
-        profileHandles = userData.settings.profiles;
+      console.warn('user_profiles table query failed:', e);
+    }
+    
+    // Fallback to settings.profiles if no profiles from user_profiles
+    if (profileHandles.length === 0 && userData?.settings?.profiles) {
+      const settingsProfiles = userData.settings.profiles;
+      if (Array.isArray(settingsProfiles) && settingsProfiles.length > 0) {
+        profileHandles = settingsProfiles;
+        console.log(`✅ Using ${profileHandles.length} profiles from settings.profiles fallback`);
       }
     }
     
@@ -507,17 +507,13 @@ async function processUserNewsletter(user: ScheduledUser, supabase: any): Promis
         success: false,
         userId: user.user_id,
         email: user.email,
-        error: 'No profiles selected for user (check user_profiles table or user settings.profiles)'
+        error: `No profiles selected. user_id=${user.user_id}, settings=${JSON.stringify(userData?.settings)}`
       };
     }
     
-    // Get user settings
-    const { data: userData } = await supabase
-      .from('users')
-      .select('settings, custom_prompt')
-      .eq('id', user.user_id)
-      .single();
+    console.log(`🎯 Processing newsletter for ${user.email} with profiles: ${profileHandles.join(', ')}`);
     
+    // Use settings from earlier query
     const settings = userData?.settings || {};
     const customPrompt = userData?.custom_prompt || null;
     const keywords = settings.keywords || [];
