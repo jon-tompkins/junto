@@ -226,7 +226,7 @@ export function extractTweetReferences(
   // Extract content directly from response (subject already handled separately)
   
   // Build a map of citation numbers to tweet info
-  const citationMap: Record<number, { handle: string; content: string; likes: number }> = {};
+  const citationMap: Record<number, { handle: string; content: string; likes: number; twitter_id?: string }> = {};
   let citationNumber = 1;
   
   // Process recent tweets
@@ -235,7 +235,8 @@ export function extractTweetReferences(
       citationMap[citationNumber] = {
         handle,
         content: tweet.content,
-        likes: tweet.likes || 0
+        likes: tweet.likes || 0,
+        twitter_id: tweet.twitter_id
       };
       citationNumber++;
     }
@@ -248,7 +249,8 @@ export function extractTweetReferences(
         citationMap[citationNumber] = {
           handle,
           content: tweet.content,
-          likes: tweet.likes || 0
+          likes: tweet.likes || 0,
+          twitter_id: tweet.twitter_id
         };
         citationNumber++;
       }
@@ -299,21 +301,22 @@ export function extractTweetReferences(
     return `<sup style="font-size: 0.7em; color: #666;">NL${num}</sup>`;
   });
   
-  // Build clean references section with anchors - compact, professional styling
-  const cleanReferences = references.map((ref, index) => {
-    const citationNum = sortedCitations[index];
+  // Build clean references section - format: [1] @handle: "first 20 chars..." [link]
+  const cleanReferences = sortedCitations.map(citationNum => {
     const tweet = citationMap[citationNum];
     if (!tweet) return '';
     
-    // Truncate content
-    let tweetContent = tweet.content;
-    if (tweetContent.length > 120) {
-      tweetContent = tweetContent.substring(0, 117) + '...';
-    }
+    // First 20 characters of tweet content
+    let tweetPreview = tweet.content.substring(0, 20);
+    if (tweet.content.length > 20) tweetPreview += '...';
     
-    // Create hyperlinked reference (Twitter search as fallback since we don't have tweet IDs)
-    const twitterUrl = `https://twitter.com/${tweet.handle}`;
-    return `<span id="ref-${citationNum}" style="font-size: 11px; color: #333;"><a href="${twitterUrl}" target="_blank" style="color: #333; text-decoration: underline;">@${tweet.handle}</a>: "${tweetContent}"</span>`;
+    const profileUrl = `https://x.com/${tweet.handle}`;
+    const tweetUrl = tweet.twitter_id 
+      ? `https://x.com/${tweet.handle}/status/${tweet.twitter_id}`
+      : profileUrl;
+    
+    // Format: [1] @handle: "preview..." [link]
+    return `<span id="ref-${citationNum}" style="font-size: 11px; color: #333;">[${citationNum}] <a href="${profileUrl}" target="_blank" style="color: #333; text-decoration: underline;">@${tweet.handle}</a>: "${tweetPreview}" <a href="${tweetUrl}" target="_blank" style="color: #666; text-decoration: underline; font-size: 10px;">[link]</a></span>`;
   }).filter(Boolean);
   
   // Build newsletter references (no hyperlinks, just name)
@@ -347,13 +350,22 @@ export function extractTweetReferences(
   // If no References section exists, add one
   let finalContent = contentWithSuperscripts;
   if (!content.includes('## References')) {
-    if (cleanReferences.length > 0) {
+    if (allReferences.length > 0) {
       finalContent += '\n\n' + referencesHtml;
     }
   } else {
     // Replace existing References section with compact version
     finalContent = contentWithSuperscripts.replace(/## References[\s\S]*$/m, referencesHtml);
   }
+  
+  // Clean up excess spacing - remove multiple newlines, tighten bullet lists
+  finalContent = finalContent
+    .replace(/\n{3,}/g, '\n\n')  // Max 2 newlines
+    .replace(/(<li[^>]*>)\s+/g, '$1')  // Remove space after li tags
+    .replace(/\s+(<\/li>)/g, '$1')  // Remove space before /li tags
+    .replace(/<\/li>\s*<li/g, '</li><li')  // No gap between list items
+    .replace(/(<ul[^>]*>)\s+/g, '$1')  // No space after ul
+    .replace(/\s+(<\/ul>)/g, '$1');  // No space before /ul
   
   return {
     content: finalContent,

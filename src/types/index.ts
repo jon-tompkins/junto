@@ -74,6 +74,7 @@ export interface TweetFromAPI {
 
 export interface GroupedTweets {
   [handle: string]: {
+    twitter_id?: string;
     content: string;
     likes: number;
     retweets: number;
