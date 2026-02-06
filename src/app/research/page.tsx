@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 
 interface Report {
@@ -19,7 +19,7 @@ interface Report {
 export default function ResearchPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string>('all');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchReports();
@@ -46,11 +46,20 @@ export default function ResearchPage() {
     return 'text-neutral-400';
   };
 
-  const filteredReports = filter === 'all' 
-    ? reports 
-    : reports.filter(r => r.tags.includes(filter));
-
-  const allTags = [...new Set(reports.flatMap(r => r.tags))].sort();
+  // Dynamic search across ticker, title, summary, and tags
+  const filteredReports = useMemo(() => {
+    if (!search.trim()) return reports;
+    
+    const query = search.toLowerCase();
+    return reports.filter(r => 
+      r.ticker.toLowerCase().includes(query) ||
+      r.title.toLowerCase().includes(query) ||
+      r.summary.toLowerCase().includes(query) ||
+      r.tags.some(tag => tag.toLowerCase().includes(query)) ||
+      r.rating.toLowerCase().includes(query) ||
+      r.type.toLowerCase().includes(query)
+    );
+  }, [reports, search]);
 
   if (loading) {
     return (
@@ -64,7 +73,7 @@ export default function ResearchPage() {
     <main className="min-h-screen bg-black text-white">
       <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Header */}
-        <div className="mb-12">
+        <div className="mb-8">
           <Link href="/" className="text-neutral-500 hover:text-white text-sm mb-4 inline-block">
             ← MyJunto
           </Link>
@@ -72,31 +81,40 @@ export default function ResearchPage() {
           <p className="text-neutral-400">Investment research and analysis</p>
         </div>
 
-        {/* Filter Tags */}
-        <div className="mb-8 flex flex-wrap gap-2">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-3 py-1 rounded-full text-sm ${
-              filter === 'all' 
-                ? 'bg-white text-black' 
-                : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-            }`}
-          >
-            All
-          </button>
-          {allTags.map(tag => (
-            <button
-              key={tag}
-              onClick={() => setFilter(tag)}
-              className={`px-3 py-1 rounded-full text-sm ${
-                filter === tag 
-                  ? 'bg-white text-black' 
-                  : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-              }`}
+        {/* Search Bar */}
+        <div className="mb-8">
+          <div className="relative">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by ticker, topic, or keyword..."
+              className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 pl-10 text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500 transition-colors"
+            />
+            <svg 
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-500"
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
             >
-              {tag}
-            </button>
-          ))}
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500 hover:text-white"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {search && (
+            <div className="mt-2 text-sm text-neutral-500">
+              {filteredReports.length} result{filteredReports.length !== 1 ? 's' : ''} for "{search}"
+            </div>
+          )}
         </div>
 
         {/* Reports Grid */}
@@ -140,7 +158,7 @@ export default function ResearchPage() {
 
         {filteredReports.length === 0 && (
           <div className="text-center py-12 text-neutral-500">
-            No reports found
+            {search ? `No reports matching "${search}"` : 'No reports found'}
           </div>
         )}
 
