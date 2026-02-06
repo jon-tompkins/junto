@@ -1,10 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const GITHUB_RAW = 'https://raw.githubusercontent.com/jon-tompkins/Agent-Reports/main/reports';
+const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/jon-tompkins/Agent-Reports/main';
 
 // Simple markdown to HTML converter
 function markdownToHtml(markdown: string): string {
   let html = markdown;
+  
+  // Images - convert relative paths to GitHub raw URLs
+  // Handle ../charts/file.png -> full GitHub URL
+  html = html.replace(/!\[([^\]]*)\]\(\.\.\/charts\/([^)]+)\)/g, 
+    `<figure class="chart-figure"><img src="${GITHUB_RAW_BASE}/charts/$2" alt="$1" loading="lazy" /><figcaption>$1</figcaption></figure>`);
+  // Handle ./charts/file.png or charts/file.png
+  html = html.replace(/!\[([^\]]*)\]\(\.?\/?(charts\/[^)]+)\)/g,
+    `<figure class="chart-figure"><img src="${GITHUB_RAW_BASE}/$2" alt="$1" loading="lazy" /><figcaption>$1</figcaption></figure>`);
+  // Handle any other relative images
+  html = html.replace(/!\[([^\]]*)\]\((?!http)([^)]+)\)/g,
+    `<figure class="chart-figure"><img src="${GITHUB_RAW_BASE}/$2" alt="$1" loading="lazy" /><figcaption>$1</figcaption></figure>`);
+  // Handle absolute URLs (keep as-is)
+  html = html.replace(/!\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g,
+    `<figure class="chart-figure"><img src="$2" alt="$1" loading="lazy" /><figcaption>$1</figcaption></figure>`);
   
   // Headers
   html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
