@@ -7,19 +7,23 @@ const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/jon-tompkins/Agent-Re
 function markdownToHtml(markdown: string): string {
   let html = markdown;
   
-  // Images - convert relative paths to GitHub raw URLs
+  // Images - convert relative paths to GitHub raw URLs (no captions)
   // Handle ../charts/file.png -> full GitHub URL
   html = html.replace(/!\[([^\]]*)\]\(\.\.\/charts\/([^)]+)\)/g, 
-    `<figure class="chart-figure"><img src="${GITHUB_RAW_BASE}/charts/$2" alt="$1" loading="lazy" /><figcaption>$1</figcaption></figure>`);
+    `<img class="chart-img" src="${GITHUB_RAW_BASE}/charts/$2" alt="$1" loading="lazy" />`);
   // Handle ./charts/file.png or charts/file.png
   html = html.replace(/!\[([^\]]*)\]\(\.?\/?(charts\/[^)]+)\)/g,
-    `<figure class="chart-figure"><img src="${GITHUB_RAW_BASE}/$2" alt="$1" loading="lazy" /><figcaption>$1</figcaption></figure>`);
+    `<img class="chart-img" src="${GITHUB_RAW_BASE}/$2" alt="$1" loading="lazy" />`);
   // Handle any other relative images
   html = html.replace(/!\[([^\]]*)\]\((?!http)([^)]+)\)/g,
-    `<figure class="chart-figure"><img src="${GITHUB_RAW_BASE}/$2" alt="$1" loading="lazy" /><figcaption>$1</figcaption></figure>`);
+    `<img class="chart-img" src="${GITHUB_RAW_BASE}/$2" alt="$1" loading="lazy" />`);
   // Handle absolute URLs (keep as-is)
   html = html.replace(/!\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g,
-    `<figure class="chart-figure"><img src="$2" alt="$1" loading="lazy" /><figcaption>$1</figcaption></figure>`);
+    `<img class="chart-img" src="$2" alt="$1" loading="lazy" />`);
+  
+  // Handle <div class="charts-row"> for side-by-side layout
+  html = html.replace(/<div class="charts-row">/g, '<div class="charts-row">');
+  html = html.replace(/<\/div>/g, '</div>');
   
   // Headers
   html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
