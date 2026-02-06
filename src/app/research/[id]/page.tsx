@@ -147,8 +147,8 @@ export default function ReportPage() {
         .research-content hr { border-color: #404040; margin: 2rem 0; }
         .research-content code { background: #262626; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-size: 0.875rem; }
         .research-content pre { background: #171717; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
-        .research-content .chart-img { max-width: 49%; height: auto; border-radius: 0.5rem; border: 1px solid #30363d; margin: 0.5rem 0.5%; display: inline-block; vertical-align: top; }
-        @media (max-width: 768px) { .research-content .chart-img { max-width: 100%; display: block; margin: 0.5rem 0; } }
+        .research-content .chart-img { max-width: 75%; height: auto; border-radius: 0.5rem; border: 1px solid #30363d; margin: 1rem auto; display: block; }
+        @media (max-width: 768px) { .research-content .chart-img { max-width: 100%; } }
       `}</style>
     </main>
   );
