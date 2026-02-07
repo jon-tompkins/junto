@@ -3,6 +3,10 @@
     {
       "path": "/api/newsletter/check-scheduled",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/tweets/fetch",
+      "schedule": "0 */4 * * *"
     }
   ]
 }
