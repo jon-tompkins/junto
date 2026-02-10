@@ -7,14 +7,17 @@ import { useParams } from 'next/navigation';
 interface Report {
   id: string;
   title: string;
-  ticker: string;
+  ticker?: string;
   date: string;
-  type: string;
-  rating: string;
+  type?: string;
+  category?: string;
+  rating?: string;
   visibility: string;
-  summary: string;
-  file: string;
-  tags: string[];
+  summary?: string;
+  description?: string;
+  file?: string;
+  path?: string;
+  tags?: string[];
   content?: string;
 }
 
@@ -30,6 +33,18 @@ export default function ReportPage() {
     }
   }, [params.id]);
 
+  // Extract ticker from title like "PTON (Company Name) Deep Dive"
+  const extractTicker = (title: string): string => {
+    const match = title.match(/^([A-Z]{1,5})\s/);
+    return match ? match[1] : '';
+  };
+
+  // Extract rating from summary text
+  const extractRating = (summary: string): string => {
+    const match = summary.match(/Rating:\s*([^.]+)/i);
+    return match ? match[1].trim() : '';
+  };
+
   const fetchReport = async (id: string) => {
     try {
       const res = await fetch(`/api/research/${id}`);
@@ -40,7 +55,15 @@ export default function ReportPage() {
       if (data.visibility !== 'public') {
         throw new Error('Report not available');
       }
-      setReport(data);
+      // Enrich with extracted/mapped fields
+      setReport({
+        ...data,
+        ticker: data.ticker || extractTicker(data.title),
+        rating: data.rating || extractRating(data.summary || ''),
+        type: data.type || data.category || 'research',
+        summary: data.summary || data.description || '',
+        tags: data.tags || [],
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load report');
     } finally {
@@ -48,10 +71,11 @@ export default function ReportPage() {
     }
   };
 
-  const getRatingColor = (rating: string) => {
+  const getRatingColor = (rating: string | undefined | null) => {
+    if (!rating) return 'text-neutral-400';
     if (rating.includes('BUY') || rating.includes('BULLISH')) return 'text-green-400';
-    if (rating.includes('AVOID') || rating.includes('SHORT') || rating.includes('BEARISH')) return 'text-red-400';
-    if (rating.includes('SPECULATIVE')) return 'text-yellow-400';
+    if (rating.includes('AVOID') || rating.includes('SHORT') || rating.includes('BEARISH') || rating.includes('SELL')) return 'text-red-400';
+    if (rating.includes('SPECULATIVE') || rating.includes('HOLD')) return 'text-yellow-400';
     return 'text-neutral-400';
   };
 
@@ -85,33 +109,43 @@ export default function ReportPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-xs text-neutral-500 uppercase tracking-wide bg-neutral-800 px-2 py-1 rounded">
-              {report.ticker}
-            </span>
-            <span className={`text-sm font-medium ${getRatingColor(report.rating)}`}>
-              {report.rating}
-            </span>
+            {report.ticker && (
+              <span className="text-xs text-neutral-500 uppercase tracking-wide bg-neutral-800 px-2 py-1 rounded">
+                {report.ticker}
+              </span>
+            )}
+            {report.rating && (
+              <span className={`text-sm font-medium ${getRatingColor(report.rating)}`}>
+                {report.rating}
+              </span>
+            )}
           </div>
           <h1 className="text-3xl font-bold mb-2">{report.title}</h1>
-          <p className="text-neutral-400">{report.summary}</p>
+          {report.summary && <p className="text-neutral-400">{report.summary}</p>}
           <div className="flex items-center gap-4 mt-4 text-sm text-neutral-500">
             <span>{report.date}</span>
-            <span>•</span>
-            <span>{report.type}</span>
+            {report.type && (
+              <>
+                <span>•</span>
+                <span>{report.type}</span>
+              </>
+            )}
           </div>
         </div>
 
         {/* Tags */}
-        <div className="flex gap-2 mb-8">
-          {report.tags.map(tag => (
-            <span 
-              key={tag}
-              className="px-3 py-1 bg-neutral-800 rounded-full text-xs text-neutral-400"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
+        {report.tags && report.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-8">
+            {report.tags.map(tag => (
+              <span 
+                key={tag}
+                className="px-3 py-1 bg-neutral-800 rounded-full text-xs text-neutral-400"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Content */}
         <article className="prose prose-invert prose-neutral max-w-none">

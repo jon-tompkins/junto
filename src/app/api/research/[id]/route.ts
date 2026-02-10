@@ -115,8 +115,8 @@ export async function GET(
       );
     }
     
-    // Fetch the actual markdown content (report.file includes 'reports/' prefix)
-    const contentRes = await fetch(`${GITHUB_RAW_BASE}/${report.file}`, {
+    // Fetch the actual markdown content (report.path includes 'reports/' prefix)
+    const contentRes = await fetch(`${GITHUB_RAW_BASE}/${report.path || report.file}`, {
       next: { revalidate: 300 }
     });
     
