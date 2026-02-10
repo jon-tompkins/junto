@@ -103,7 +103,7 @@ export default function OnboardingPage() {
     }
     
     if (selectedProfiles.length >= 5) {
-      setError('Maximum 5 profiles allowed');
+      setError('Maximum 10 profiles allowed');
       return;
     }
 

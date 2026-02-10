@@ -150,7 +150,7 @@ export default function SourcesPage() {
     }
     
     if (selected.length >= 5) {
-      setError('Maximum 5 profiles allowed');
+      setError('Maximum 10 profiles allowed');
       return;
     }
 

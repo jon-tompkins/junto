@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No profiles provided' }, { status: 400 });
     }
 
-    if (profiles.length > 5) {
-      return NextResponse.json({ error: 'Maximum 5 profiles allowed' }, { status: 400 });
+    if (profiles.length > 10) {
+      return NextResponse.json({ error: 'Maximum 10 profiles allowed' }, { status: 400 });
     }
 
     const supabase = getSupabase();
