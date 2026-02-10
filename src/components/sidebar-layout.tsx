@@ -18,7 +18,6 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
     { href: '/settings', label: 'Settings', icon: '⚙' },
     { href: '/prompt', label: 'Prompt', icon: '✎' },
     { href: '/newsletters', label: 'Newsletters', icon: '◫' },
-    { href: '/research', label: 'Research', icon: '◈' },
   ];
 
   return (
