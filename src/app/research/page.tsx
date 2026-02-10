@@ -6,14 +6,17 @@ import Link from 'next/link';
 interface Report {
   id: string;
   title: string;
-  ticker: string;
+  ticker?: string;
   date: string;
-  type: string;
-  rating: string;
+  type?: string;
+  category?: string;
+  rating?: string;
   visibility: string;
   summary: string;
-  file: string;
-  tags: string[];
+  description?: string;
+  file?: string;
+  path?: string;
+  tags?: string[];
 }
 
 export default function ResearchPage() {
@@ -25,12 +28,31 @@ export default function ResearchPage() {
     fetchReports();
   }, []);
 
+  // Extract ticker from title like "PTON (Company Name) Deep Dive"
+  const extractTicker = (title: string): string => {
+    const match = title.match(/^([A-Z]{1,5})\s/);
+    return match ? match[1] : '';
+  };
+
+  // Extract rating from summary text
+  const extractRating = (summary: string): string => {
+    const match = summary.match(/Rating:\s*([^.]+)/i);
+    return match ? match[1].trim() : '';
+  };
+
   const fetchReports = async () => {
     try {
       const res = await fetch('/api/research');
       const data = await res.json();
-      // Only show public reports
-      const publicReports = data.reports.filter((r: Report) => r.visibility === 'public');
+      // Only show public reports, and enrich with extracted fields
+      const publicReports = data.reports
+        .filter((r: Report) => r.visibility === 'public')
+        .map((r: Report) => ({
+          ...r,
+          ticker: r.ticker || extractTicker(r.title),
+          rating: r.rating || extractRating(r.summary || ''),
+          type: r.type || r.category || 'research',
+        }));
       setReports(publicReports);
     } catch (err) {
       console.error('Failed to fetch reports:', err);
@@ -39,10 +61,11 @@ export default function ResearchPage() {
     }
   };
 
-  const getRatingColor = (rating: string) => {
+  const getRatingColor = (rating: string | undefined | null) => {
+    if (!rating) return 'text-neutral-400';
     if (rating.includes('BUY') || rating.includes('BULLISH')) return 'text-green-400';
-    if (rating.includes('AVOID') || rating.includes('SHORT') || rating.includes('BEARISH')) return 'text-red-400';
-    if (rating.includes('SPECULATIVE')) return 'text-yellow-400';
+    if (rating.includes('AVOID') || rating.includes('SHORT') || rating.includes('BEARISH') || rating.includes('SELL')) return 'text-red-400';
+    if (rating.includes('SPECULATIVE') || rating.includes('HOLD')) return 'text-yellow-400';
     return 'text-neutral-400';
   };
 
@@ -52,12 +75,12 @@ export default function ResearchPage() {
     
     const query = search.toLowerCase();
     return reports.filter(r => 
-      r.ticker.toLowerCase().includes(query) ||
-      r.title.toLowerCase().includes(query) ||
-      r.summary.toLowerCase().includes(query) ||
-      r.tags.some(tag => tag.toLowerCase().includes(query)) ||
-      r.rating.toLowerCase().includes(query) ||
-      r.type.toLowerCase().includes(query)
+      (r.ticker && r.ticker.toLowerCase().includes(query)) ||
+      (r.title && r.title.toLowerCase().includes(query)) ||
+      (r.summary && r.summary.toLowerCase().includes(query)) ||
+      (r.tags && r.tags.some(tag => tag.toLowerCase().includes(query))) ||
+      (r.rating && r.rating.toLowerCase().includes(query)) ||
+      (r.type && r.type.toLowerCase().includes(query))
     );
   }, [reports, search]);
 
@@ -132,16 +155,18 @@ export default function ResearchPage() {
                   </span>
                   <h2 className="text-xl font-semibold mt-1">{report.title}</h2>
                 </div>
-                <span className={`text-sm font-medium ${getRatingColor(report.rating)}`}>
-                  {report.rating}
-                </span>
+                {report.rating && (
+                  <span className={`text-sm font-medium ${getRatingColor(report.rating)}`}>
+                    {report.rating}
+                  </span>
+                )}
               </div>
               
               <p className="text-neutral-400 text-sm mb-3">{report.summary}</p>
               
               <div className="flex items-center justify-between">
                 <div className="flex gap-2">
-                  {report.tags.slice(0, 3).map(tag => (
+                  {(report.tags || []).slice(0, 3).map(tag => (
                     <span 
                       key={tag}
                       className="px-2 py-0.5 bg-neutral-800 rounded text-xs text-neutral-400"
