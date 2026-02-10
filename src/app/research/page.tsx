@@ -1,172 +1,154 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { SidebarLayout } from '@/components/sidebar-layout';
 
-interface Report {
-  id: string;
+interface ResearchItem {
+  filename: string;
   title: string;
-  ticker: string;
+  symbol: string | null;
   date: string;
-  type: string;
-  rating: string;
-  visibility: string;
-  summary: string;
-  file: string;
-  tags: string[];
+  preview: string;
+  size: number;
 }
 
 export default function ResearchPage() {
-  const [reports, setReports] = useState<Report[]>([]);
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [research, setResearch] = useState<ResearchItem[]>([]);
+  const [selected, setSelected] = useState<ResearchItem | null>(null);
+  const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
 
   useEffect(() => {
-    fetchReports();
+    if (status === 'unauthenticated') {
+      router.push('/');
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    fetchResearch();
   }, []);
 
-  const fetchReports = async () => {
+  async function fetchResearch() {
+    setLoading(true);
     try {
-      const res = await fetch('/api/research');
+      const res = await fetch('https://jai-dash.vercel.app/api/research');
       const data = await res.json();
-      // Only show public reports
-      const publicReports = data.reports.filter((r: Report) => r.visibility === 'public');
-      setReports(publicReports);
-    } catch (err) {
-      console.error('Failed to fetch reports:', err);
-    } finally {
-      setLoading(false);
+      setResearch(data.research || []);
+      if (data.research?.length > 0) {
+        loadContent(data.research[0]);
+      }
+    } catch (e) {
+      console.error('Failed to fetch research:', e);
     }
-  };
+    setLoading(false);
+  }
 
-  const getRatingColor = (rating: string) => {
-    if (rating.includes('BUY') || rating.includes('BULLISH')) return 'text-green-400';
-    if (rating.includes('AVOID') || rating.includes('SHORT') || rating.includes('BEARISH')) return 'text-red-400';
-    if (rating.includes('SPECULATIVE')) return 'text-yellow-400';
-    return 'text-neutral-400';
-  };
+  async function loadContent(item: ResearchItem) {
+    setSelected(item);
+    try {
+      const res = await fetch(`https://jai-dash.vercel.app/api/research?file=${item.filename}`);
+      const data = await res.json();
+      setContent(data.content || '');
+    } catch (e) {
+      console.error('Failed to load content:', e);
+      setContent('Error loading content');
+    }
+  }
 
-  // Dynamic search across ticker, title, summary, and tags
-  const filteredReports = useMemo(() => {
-    if (!search.trim()) return reports;
-    
-    const query = search.toLowerCase();
-    return reports.filter(r => 
-      r.ticker.toLowerCase().includes(query) ||
-      r.title.toLowerCase().includes(query) ||
-      r.summary.toLowerCase().includes(query) ||
-      r.tags.some(tag => tag.toLowerCase().includes(query)) ||
-      r.rating.toLowerCase().includes(query) ||
-      r.type.toLowerCase().includes(query)
-    );
-  }, [reports, search]);
+  // Simple markdown to HTML (basic)
+  function renderMarkdown(md: string): string {
+    return md
+      .replace(/^### (.+)$/gm, '<h3 class="text-lg font-semibold mt-6 mb-2">$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2 class="text-xl font-semibold mt-8 mb-3 text-white">$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-bold mt-8 mb-4 text-white">$1</h1>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`(.+?)`/g, '<code class="bg-neutral-800 px-1 rounded text-sm">$1</code>')
+      .replace(/^- (.+)$/gm, '<li class="ml-4">• $1</li>')
+      .replace(/^\d+\. (.+)$/gm, '<li class="ml-4">$1</li>')
+      .replace(/\n\n/g, '</p><p class="mb-4">')
+      .replace(/^---$/gm, '<hr class="my-6 border-neutral-700" />')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-400 hover:underline" target="_blank">$1</a>');
+  }
 
-  if (loading) {
+  if (status === 'loading' || loading) {
     return (
-      <main className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-neutral-400">Loading research...</div>
-      </main>
+      <SidebarLayout>
+        <div className="p-8 flex items-center justify-center min-h-screen">
+          <div className="text-neutral-500">Loading...</div>
+        </div>
+      </SidebarLayout>
     );
   }
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        {/* Header */}
-        <div className="mb-8">
-          <Link href="/" className="text-neutral-500 hover:text-white text-sm mb-4 inline-block">
-            ← MyJunto
-          </Link>
-          <h1 className="text-3xl font-bold mb-2">Junto Research</h1>
-          <p className="text-neutral-400">Investment research and analysis</p>
+    <SidebarLayout>
+      <div className="flex h-screen">
+        {/* Research List */}
+        <div className="w-80 border-r border-neutral-800 overflow-y-auto">
+          <div className="p-4 border-b border-neutral-800">
+            <h2 className="text-sm font-medium tracking-wide uppercase text-neutral-400">Research Reports</h2>
+            <p className="text-xs text-neutral-600 mt-1">{research.length} reports</p>
+          </div>
+          <div className="divide-y divide-neutral-800">
+            {research.map((item) => (
+              <button
+                key={item.filename}
+                onClick={() => loadContent(item)}
+                className={`w-full text-left p-4 transition-colors ${
+                  selected?.filename === item.filename
+                    ? 'bg-neutral-800'
+                    : 'hover:bg-neutral-900'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  {item.symbol && (
+                    <span className="text-xs px-2 py-0.5 bg-green-900/50 text-green-400 rounded">
+                      {item.symbol}
+                    </span>
+                  )}
+                  <span className="text-xs text-neutral-500">{item.date}</span>
+                </div>
+                <div className="text-sm font-medium text-white truncate">
+                  {item.title}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-8">
-          <div className="relative">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by ticker, topic, or keyword..."
-              className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 pl-10 text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500 transition-colors"
-            />
-            <svg 
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-500"
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500 hover:text-white"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-          </div>
-          {search && (
-            <div className="mt-2 text-sm text-neutral-500">
-              {filteredReports.length} result{filteredReports.length !== 1 ? 's' : ''} for "{search}"
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          {selected ? (
+            <div className="p-8 max-w-4xl">
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-2">
+                  {selected.symbol && (
+                    <span className="text-sm px-3 py-1 bg-green-900/50 text-green-400 rounded">
+                      {selected.symbol}
+                    </span>
+                  )}
+                  <span className="text-sm text-neutral-500">{selected.date}</span>
+                  <span className="text-xs text-neutral-600">{(selected.size / 1024).toFixed(1)}KB</span>
+                </div>
+                <h1 className="text-2xl font-bold">{selected.title}</h1>
+              </div>
+              <div 
+                className="prose prose-invert prose-sm max-w-none text-neutral-300 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-full text-neutral-500">
+              Select a research report
             </div>
           )}
         </div>
-
-        {/* Reports Grid */}
-        <div className="space-y-4">
-          {filteredReports.map(report => (
-            <Link
-              key={report.id}
-              href={`/research/${report.id}`}
-              className="block p-6 bg-neutral-900 rounded-lg border border-neutral-800 hover:border-neutral-600 transition-colors"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <span className="text-xs text-neutral-500 uppercase tracking-wide">
-                    {report.ticker}
-                  </span>
-                  <h2 className="text-xl font-semibold mt-1">{report.title}</h2>
-                </div>
-                <span className={`text-sm font-medium ${getRatingColor(report.rating)}`}>
-                  {report.rating}
-                </span>
-              </div>
-              
-              <p className="text-neutral-400 text-sm mb-3">{report.summary}</p>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex gap-2">
-                  {report.tags.slice(0, 3).map(tag => (
-                    <span 
-                      key={tag}
-                      className="px-2 py-0.5 bg-neutral-800 rounded text-xs text-neutral-400"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <span className="text-xs text-neutral-500">{report.date}</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        {filteredReports.length === 0 && (
-          <div className="text-center py-12 text-neutral-500">
-            {search ? `No reports matching "${search}"` : 'No reports found'}
-          </div>
-        )}
-
-        {/* Footer */}
-        <div className="mt-16 pt-8 border-t border-neutral-800 text-center text-neutral-500 text-sm">
-          <p>Reports are for informational purposes only. Not investment advice.</p>
-        </div>
       </div>
-    </main>
+    </SidebarLayout>
   );
 }
