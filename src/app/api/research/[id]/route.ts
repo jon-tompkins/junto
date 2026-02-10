@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const GITHUB_RAW = 'https://raw.githubusercontent.com/jon-tompkins/Agent-Reports/main/reports';
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/jon-tompkins/Agent-Reports/main';
 
 // Simple markdown to HTML converter
@@ -90,7 +89,7 @@ export async function GET(
     const { id } = await params;
     
     // First fetch the index to get report metadata
-    const indexRes = await fetch(`${GITHUB_RAW}/index.json`, {
+    const indexRes = await fetch(`${GITHUB_RAW_BASE}/reports/index.json`, {
       next: { revalidate: 300 }
     });
     
@@ -116,8 +115,8 @@ export async function GET(
       );
     }
     
-    // Fetch the actual markdown content
-    const contentRes = await fetch(`${GITHUB_RAW}/${report.file}`, {
+    // Fetch the actual markdown content (report.file includes 'reports/' prefix)
+    const contentRes = await fetch(`${GITHUB_RAW_BASE}/${report.file}`, {
       next: { revalidate: 300 }
     });
     
