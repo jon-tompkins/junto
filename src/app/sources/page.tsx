@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { SidebarLayout } from '@/components/sidebar-layout';
 
 interface TwitterUser {
@@ -22,6 +22,8 @@ interface Newsletter {
   description?: string;
 }
 
+const MAX_PROFILES = 10;
+
 export default function SourcesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -29,17 +31,23 @@ export default function SourcesPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
-  const [manualHandle, setManualHandle] = useState('');
-  const [addingManual, setAddingManual] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [showFollowing, setShowFollowing] = useState(false);
+  
+  const searchRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Newsletter state
   const [availableNewsletters, setAvailableNewsletters] = useState<Newsletter[]>([]);
   const [selectedNewsletterIds, setSelectedNewsletterIds] = useState<string[]>([]);
   const [loadingNewsletters, setLoadingNewsletters] = useState(true);
+
+  // Track if initial load is complete
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -55,16 +63,37 @@ export default function SourcesPage() {
     }
   }, [session]);
 
+  // Auto-save when selection changes (after initial load)
+  useEffect(() => {
+    if (initialized && selected.length >= 0) {
+      saveProfiles(selected);
+    }
+  }, [selected, initialized]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current && 
+        !dropdownRef.current.contains(event.target as Node) &&
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const fetchNewsletters = async () => {
     try {
-      // Fetch available newsletters
       const availRes = await fetch('/api/newsletters/available');
       const availData = await availRes.json();
       if (availData.newsletters) {
         setAvailableNewsletters(availData.newsletters);
       }
       
-      // Fetch user's selected newsletters
       const userRes = await fetch('/api/newsletters/user');
       const userData = await userRes.json();
       if (userData.selected) {
@@ -85,12 +114,11 @@ export default function SourcesPage() {
     } else if (selectedNewsletterIds.length < 5) {
       newSelection = [...selectedNewsletterIds, newsletterId];
     } else {
-      return; // Max 5 reached
+      return;
     }
     
     setSelectedNewsletterIds(newSelection);
     
-    // Save to backend
     try {
       await fetch('/api/newsletters/user', {
         method: 'POST',
@@ -107,8 +135,10 @@ export default function SourcesPage() {
       const res = await fetch('/api/user/profiles');
       const data = await res.json();
       setSelected(data.profiles || []);
+      setInitialized(true);
     } catch (err) {
       console.error('Failed to fetch profiles:', err);
+      setInitialized(true);
     }
   };
 
@@ -131,30 +161,74 @@ export default function SourcesPage() {
     }
   };
 
+  const saveProfiles = useCallback(async (profiles: string[]) => {
+    if (profiles.length === 0) {
+      // Allow saving empty to clear all
+      setSaveStatus('saving');
+    } else {
+      setSaveStatus('saving');
+    }
+    
+    try {
+      const res = await fetch('/api/user/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profiles }),
+      });
+      
+      if (res.ok) {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } else {
+        setSaveStatus('error');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      }
+    } catch (err) {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }
+  }, []);
+
   const toggleSelect = (username: string) => {
+    setError('');
     if (selected.includes(username)) {
       setSelected(selected.filter(u => u !== username));
-    } else if (selected.length < 5) {
+    } else if (selected.length < MAX_PROFILES) {
       setSelected([...selected, username]);
     }
-    setSuccess('');
+    setSearchInput('');
+    setShowDropdown(false);
   };
 
-  const addManualHandle = async () => {
-    const handle = manualHandle.trim().replace('@', '');
+  const handleSearchSubmit = async () => {
+    const handle = searchInput.trim().replace('@', '');
     if (!handle) return;
     
-    if (selected.includes(handle)) {
-      setError('Already selected');
+    // Check if already selected
+    if (selected.map(s => s.toLowerCase()).includes(handle.toLowerCase())) {
+      setError('Already added');
+      setTimeout(() => setError(''), 2000);
       return;
     }
     
-    if (selected.length >= 5) {
-      setError('Maximum 10 profiles allowed');
+    // Check limit
+    if (selected.length >= MAX_PROFILES) {
+      setError(`Maximum ${MAX_PROFILES} profiles`);
+      setTimeout(() => setError(''), 2000);
       return;
     }
 
-    setAddingManual(true);
+    // Check if in following list first
+    const inFollowing = following.find(u => u.username.toLowerCase() === handle.toLowerCase());
+    if (inFollowing) {
+      setSelected([...selected, inFollowing.username]);
+      setSearchInput('');
+      setShowDropdown(false);
+      return;
+    }
+
+    // Look up via API
+    setLookingUp(true);
     setError('');
 
     try {
@@ -163,56 +237,38 @@ export default function SourcesPage() {
 
       if (data.error || !data.user) {
         setError(`@${handle} not found`);
+        setTimeout(() => setError(''), 3000);
         return;
       }
 
+      // Add to following list for future reference
       const existingIndex = following.findIndex(u => u.username.toLowerCase() === handle.toLowerCase());
       if (existingIndex === -1) {
         setFollowing([data.user, ...following]);
       }
 
       setSelected([...selected, data.user.username]);
-      setManualHandle('');
-      setSuccess('');
+      setSearchInput('');
+      setShowDropdown(false);
 
     } catch (err) {
       setError('Failed to verify handle');
+      setTimeout(() => setError(''), 3000);
     } finally {
-      setAddingManual(false);
+      setLookingUp(false);
     }
   };
 
-  const handleSave = async () => {
-    if (selected.length === 0) return;
-    
-    setSaving(true);
-    setError('');
-    setSuccess('');
-    
-    try {
-      const res = await fetch('/api/user/profiles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profiles: selected }),
-      });
-      
-      if (res.ok) {
-        setSuccess('Sources saved successfully');
-      } else {
-        const data = await res.json();
-        setError(data.error || 'Failed to save');
-      }
-    } catch (err) {
-      setError('Failed to save profiles');
-    } finally {
-      setSaving(false);
-    }
-  };
-
+  // Filter following list based on search
   const filtered = following.filter(user => 
-    user.username.toLowerCase().includes(search.toLowerCase()) ||
-    user.name.toLowerCase().includes(search.toLowerCase())
+    user.username.toLowerCase().includes(searchInput.toLowerCase()) ||
+    user.name.toLowerCase().includes(searchInput.toLowerCase())
   );
+
+  // Show dropdown suggestions (exclude already selected)
+  const suggestions = filtered
+    .filter(user => !selected.map(s => s.toLowerCase()).includes(user.username.toLowerCase()))
+    .slice(0, 8);
 
   if (status === 'loading') {
     return (
@@ -230,100 +286,116 @@ export default function SourcesPage() {
         <div className="mb-8">
           <h2 className="text-2xl font-light mb-2">Sources</h2>
           <p className="text-neutral-400">
-            Choose your Twitter accounts and newsletters to include in your daily briefing.
+            Choose Twitter accounts and newsletters for your daily briefing.
           </p>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 border border-red-500 text-red-500 text-sm">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-6 p-4 border border-green-500 text-green-500 text-sm">
-            {success}
-          </div>
-        )}
-
         {/* Twitter Section */}
         <div className="mb-12">
-          <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-            </svg>
-            Twitter Accounts
-          </h3>
-          <p className="text-sm text-neutral-400 mb-4">
-            Select up to 5 accounts. Their tweets will be synthesized into your daily briefing.
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium flex items-center gap-2">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+              Twitter Accounts
+            </h3>
+            <div className="text-sm text-neutral-400 flex items-center gap-2">
+              {saveStatus === 'saving' && (
+                <span className="text-neutral-500">Saving...</span>
+              )}
+              {saveStatus === 'saved' && (
+                <span className="text-green-500">✓ Saved</span>
+              )}
+              {saveStatus === 'error' && (
+                <span className="text-red-500">Save failed</span>
+              )}
+              <span>{selected.length}/{MAX_PROFILES}</span>
+            </div>
+          </div>
 
           {/* Selected profiles */}
-          <div className="mb-4">
-            <div className="text-sm text-neutral-400 mb-2">
-              {selected.length}/5 selected
-            </div>
-            {selected.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {selected.map(username => (
+          {selected.length > 0 && (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {selected.map(username => {
+                const user = following.find(f => f.username.toLowerCase() === username.toLowerCase());
+                return (
                   <button
                     key={username}
                     onClick={() => toggleSelect(username)}
-                    className="px-3 py-1 bg-white text-black text-sm flex items-center gap-2"
+                    className="group px-3 py-2 bg-neutral-900 border border-neutral-700 hover:border-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-2 text-sm"
                   >
-                    @{username}
-                    <span className="text-neutral-500">×</span>
+                    {user?.profile_image_url && (
+                      <img src={user.profile_image_url} alt="" className="w-5 h-5 rounded-full" />
+                    )}
+                    <span>@{username}</span>
+                    <span className="text-neutral-500 group-hover:text-red-500 transition-colors">×</span>
                   </button>
-                ))}
+                );
+              })}
+            </div>
+          )}
+
+          {/* Unified search/add input */}
+          <div className="relative mb-4">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  ref={searchRef}
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => {
+                    setSearchInput(e.target.value);
+                    setShowDropdown(true);
+                    setError('');
+                  }}
+                  onFocus={() => setShowDropdown(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSearchSubmit();
+                    }
+                    if (e.key === 'Escape') {
+                      setShowDropdown(false);
+                    }
+                  }}
+                  placeholder="Search or enter @username"
+                  disabled={selected.length >= MAX_PROFILES}
+                  className="w-full px-4 py-3 bg-transparent border border-neutral-700 focus:border-white focus:outline-none transition-colors placeholder-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                {lookingUp && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-neutral-500 border-t-white rounded-full animate-spin" />
+                  </div>
+                )}
+              </div>
+              {searchInput && (
+                <button
+                  onClick={handleSearchSubmit}
+                  disabled={lookingUp || selected.length >= MAX_PROFILES}
+                  className="px-4 py-3 bg-white text-black hover:bg-neutral-200 transition-colors disabled:bg-neutral-600 disabled:cursor-not-allowed text-sm font-medium"
+                >
+                  Add
+                </button>
+              )}
+            </div>
+
+            {/* Error message */}
+            {error && (
+              <div className="absolute -bottom-6 left-0 text-red-500 text-sm">
+                {error}
               </div>
             )}
-          </div>
-
-          {/* Manual add */}
-          <div className="mb-4 p-4 border border-neutral-800 bg-neutral-950">
-            <div className="text-sm text-neutral-400 mb-2">Add any Twitter account</div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={manualHandle}
-                onChange={(e) => setManualHandle(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addManualHandle()}
-                placeholder="@username"
-                className="flex-1 px-4 py-2 bg-transparent border border-neutral-700 focus:border-white focus:outline-none transition-colors placeholder-neutral-600 text-sm"
-              />
-              <button
-                onClick={addManualHandle}
-                disabled={addingManual || !manualHandle.trim() || selected.length >= 5}
-                className="px-4 py-2 bg-white text-black text-sm hover:bg-neutral-200 transition-colors disabled:bg-neutral-600 disabled:cursor-not-allowed"
-              >
-                {addingManual ? '...' : 'Add'}
-              </button>
-            </div>
-          </div>
-
-          {/* Search */}
-          <div className="relative mb-4">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onFocus={() => setShowDropdown(true)}
-              onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-              placeholder="Search your following..."
-              className="w-full px-4 py-3 bg-transparent border border-neutral-700 focus:border-white focus:outline-none transition-colors placeholder-neutral-600"
-            />
             
             {/* Dropdown suggestions */}
-            {showDropdown && search && (
-              <div className="absolute z-10 w-full bg-neutral-900 border border-neutral-700 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1">
-                {filtered.slice(0, 10).map(user => (
+            {showDropdown && searchInput && suggestions.length > 0 && (
+              <div 
+                ref={dropdownRef}
+                className="absolute z-20 w-full bg-neutral-900 border border-neutral-700 shadow-lg max-h-64 overflow-y-auto mt-1"
+              >
+                {suggestions.map(user => (
                   <button
                     key={user.id}
-                    onClick={() => {
-                      toggleSelect(user.username);
-                      setSearch('');
-                      setShowDropdown(false);
-                    }}
+                    onClick={() => toggleSelect(user.username)}
                     className="w-full px-4 py-3 text-left hover:bg-neutral-800 transition-colors flex items-center gap-3"
                   >
                     <img
@@ -331,90 +403,106 @@ export default function SourcesPage() {
                       alt={user.name}
                       className="w-8 h-8 rounded-full"
                     />
-                    <div>
-                      <div className="font-medium">{user.name}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{user.name}</div>
                       <div className="text-sm text-neutral-500">@{user.username}</div>
+                    </div>
+                    <div className="text-xs text-neutral-500">
+                      {user.public_metrics?.followers_count?.toLocaleString()} followers
                     </div>
                   </button>
                 ))}
-                {filtered.length === 0 && (
-                  <div className="px-4 py-3 text-neutral-500 text-sm">
-                    No matches in your following list. Use "Add any Twitter account" above to add by handle.
+                {searchInput.startsWith('@') || !searchInput.includes(' ') ? (
+                  <div className="px-4 py-2 text-xs text-neutral-500 border-t border-neutral-800">
+                    Press Enter to add @{searchInput.replace('@', '')}
                   </div>
+                ) : null}
+              </div>
+            )}
+
+            {/* No results hint */}
+            {showDropdown && searchInput && suggestions.length === 0 && !lookingUp && (
+              <div 
+                ref={dropdownRef}
+                className="absolute z-20 w-full bg-neutral-900 border border-neutral-700 shadow-lg mt-1"
+              >
+                <div className="px-4 py-3 text-sm text-neutral-400">
+                  No matches in your following list.
+                  {(searchInput.startsWith('@') || !searchInput.includes(' ')) && (
+                    <span> Press Enter to look up @{searchInput.replace('@', '')}</span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Expandable following list */}
+          <div className="mt-8">
+            <button
+              onClick={() => setShowFollowing(!showFollowing)}
+              className="flex items-center gap-2 text-sm text-neutral-400 hover:text-white transition-colors"
+            >
+              <svg 
+                className={`w-4 h-4 transition-transform ${showFollowing ? 'rotate-90' : ''}`} 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              {loading ? 'Loading following list...' : `Browse ${following.length} accounts you follow`}
+            </button>
+            
+            {showFollowing && !loading && (
+              <div className="mt-3 border border-neutral-800 divide-y divide-neutral-800 max-h-80 overflow-y-auto">
+                {following.length === 0 ? (
+                  <div className="p-4 text-center text-neutral-500 text-sm">
+                    Could not load following list. Use search above to add accounts.
+                  </div>
+                ) : (
+                  following.map(user => {
+                    const isSelected = selected.map(s => s.toLowerCase()).includes(user.username.toLowerCase());
+                    return (
+                      <button
+                        key={user.id}
+                        onClick={() => toggleSelect(user.username)}
+                        disabled={!isSelected && selected.length >= MAX_PROFILES}
+                        className={`w-full p-3 flex items-center gap-3 text-left transition-colors ${
+                          isSelected
+                            ? 'bg-neutral-900'
+                            : 'hover:bg-neutral-900/50'
+                        } ${
+                          !isSelected && selected.length >= MAX_PROFILES
+                            ? 'opacity-40 cursor-not-allowed'
+                            : ''
+                        }`}
+                      >
+                        {user.profile_image_url && (
+                          <img
+                            src={user.profile_image_url}
+                            alt={user.name}
+                            className="w-8 h-8 rounded-full"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate text-sm">{user.name}</div>
+                          <div className="text-xs text-neutral-400">@{user.username}</div>
+                        </div>
+                        <div className="text-xs text-neutral-500">
+                          {user.public_metrics?.followers_count?.toLocaleString()}
+                        </div>
+                        {isSelected && (
+                          <div className="w-5 h-5 bg-white text-black flex items-center justify-center text-xs">
+                            ✓
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })
                 )}
               </div>
             )}
           </div>
-
-          {/* Following list header */}
-          {!showDropdown && (
-            <div className="mb-2 text-sm text-neutral-500">
-              {loading 
-                ? 'Loading...' 
-                : search 
-                  ? `Found ${filtered.length} match${filtered.length !== 1 ? 'es' : ''}` 
-                  : following.length > 0 
-                    ? `Showing ${following.length} accounts you follow`
-                    : 'No following list loaded. Use manual add above.'
-              }
-            </div>
-          )}
-
-          {/* Following list */}
-          <div className="border border-neutral-800 divide-y divide-neutral-800 max-h-64 overflow-y-auto mb-4">
-            {loading ? (
-              <div className="p-6 text-center text-neutral-500">
-                Loading your following list...
-              </div>
-            ) : !showDropdown && filtered.length === 0 ? (
-              <div className="p-6 text-center text-neutral-500">
-                {search ? 'No matches found' : 'Use manual add to add Twitter accounts'}
-              </div>
-            ) : !showDropdown && (
-              filtered.slice(0, 50).map(user => (
-                <button
-                  key={user.id}
-                  onClick={() => toggleSelect(user.username)}
-                  disabled={!selected.includes(user.username) && selected.length >= 5}
-                  className={`w-full p-3 flex items-center gap-3 text-left transition-colors ${
-                    selected.includes(user.username)
-                      ? 'bg-neutral-900'
-                      : 'hover:bg-neutral-900/50'
-                  } ${
-                    !selected.includes(user.username) && selected.length >= 5
-                      ? 'opacity-50 cursor-not-allowed'
-                      : ''
-                  }`}
-                >
-                  {user.profile_image_url && (
-                    <img
-                      src={user.profile_image_url}
-                      alt={user.name}
-                      className="w-8 h-8 rounded-full"
-                    />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate text-sm">{user.name}</div>
-                    <div className="text-xs text-neutral-400">@{user.username}</div>
-                  </div>
-                  {selected.includes(user.username) && (
-                    <div className="w-5 h-5 bg-white text-black flex items-center justify-center text-xs">
-                      ✓
-                    </div>
-                  )}
-                </button>
-              ))
-            )}
-          </div>
-
-          {/* Save Twitter button */}
-          <button
-            onClick={handleSave}
-            disabled={selected.length === 0 || saving}
-            className="w-full px-6 py-3 bg-white text-black hover:bg-neutral-200 transition-colors disabled:bg-neutral-600 disabled:cursor-not-allowed"
-          >
-            {saving ? 'Saving...' : 'Save Twitter Sources'}
-          </button>
         </div>
 
         {/* Newsletter Section */}
@@ -425,10 +513,10 @@ export default function SourcesPage() {
               <polyline points="22,6 12,13 2,6"/>
             </svg>
             Newsletters
+            <span className="text-sm font-normal text-neutral-400 ml-auto">
+              {selectedNewsletterIds.length}/5
+            </span>
           </h3>
-          <p className="text-sm text-neutral-400 mb-4">
-            Select newsletters to include in your daily briefing (up to 5). {selectedNewsletterIds.length}/5 selected.
-          </p>
           
           {loadingNewsletters ? (
             <div className="p-6 text-center text-neutral-500 border border-neutral-800">

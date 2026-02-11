@@ -14,6 +14,8 @@ interface TwitterUser {
   };
 }
 
+const MAX_PROFILES = 10;
+
 export default function SetupPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -66,7 +68,7 @@ export default function SetupPage() {
   const toggleSelect = (username: string) => {
     if (selected.includes(username)) {
       setSelected(selected.filter(u => u !== username));
-    } else if (selected.length < 5) {
+    } else if (selected.length < MAX_PROFILES) {
       setSelected([...selected, username]);
     }
   };
@@ -81,8 +83,8 @@ export default function SetupPage() {
       return;
     }
     
-    if (selected.length >= 5) {
-      setError('Maximum 10 profiles allowed');
+    if (selected.length >= MAX_PROFILES) {
+      setError(`Maximum ${MAX_PROFILES} profiles allowed`);
       return;
     }
 
@@ -172,7 +174,7 @@ export default function SetupPage() {
           <div className="mb-8">
             <h2 className="text-2xl font-light mb-2">Select your sources</h2>
             <p className="text-neutral-400">
-              Choose up to 5 accounts. Their tweets will be synthesized into your daily briefing.
+              Choose up to {MAX_PROFILES} accounts. Their tweets will be synthesized into your daily briefing.
             </p>
           </div>
 
@@ -185,7 +187,7 @@ export default function SetupPage() {
           {/* Selected profiles */}
           <div className="mb-6">
             <div className="text-sm text-neutral-400 mb-3">
-              {selected.length}/5 selected
+              {selected.length}/{MAX_PROFILES} selected
             </div>
             {selected.length > 0 && (
               <div className="flex flex-wrap gap-2">
@@ -217,7 +219,7 @@ export default function SetupPage() {
               />
               <button
                 onClick={addManualHandle}
-                disabled={addingManual || !manualHandle.trim() || selected.length >= 5}
+                disabled={addingManual || !manualHandle.trim() || selected.length >= MAX_PROFILES}
                 className="px-4 py-2 bg-white text-black text-sm hover:bg-neutral-200 transition-colors disabled:bg-neutral-600 disabled:cursor-not-allowed"
               >
                 {addingManual ? '...' : 'Add'}
@@ -249,13 +251,13 @@ export default function SetupPage() {
                 <button
                   key={user.id}
                   onClick={() => toggleSelect(user.username)}
-                  disabled={!selected.includes(user.username) && selected.length >= 5}
+                  disabled={!selected.includes(user.username) && selected.length >= MAX_PROFILES}
                   className={`w-full p-4 flex items-center gap-4 text-left transition-colors ${
                     selected.includes(user.username)
                       ? 'bg-neutral-900'
                       : 'hover:bg-neutral-900/50'
                   } ${
-                    !selected.includes(user.username) && selected.length >= 5
+                    !selected.includes(user.username) && selected.length >= MAX_PROFILES
                       ? 'opacity-50 cursor-not-allowed'
                       : ''
                   }`}
