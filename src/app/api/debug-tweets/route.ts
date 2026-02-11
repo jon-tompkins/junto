@@ -49,8 +49,8 @@ export async function GET() {
       .select('*', { count: 'exact', head: true })
       .in('profile_id', profileIds);
     
-    // Get most recent tweet regardless of time
-    const { data: latestTweet } = await supabase
+    // Get most recent tweet regardless of time - for Jon's profiles
+    const { data: latestTweetForJon } = await supabase
       .from('tweets')
       .select('twitter_handle, posted_at, content')
       .in('profile_id', profileIds)
@@ -58,11 +58,24 @@ export async function GET() {
       .limit(1)
       .single();
     
+    // Get most recent tweet in entire DB
+    const { data: latestTweetGlobal } = await supabase
+      .from('tweets')
+      .select('twitter_handle, posted_at, content, profile_id')
+      .order('posted_at', { ascending: false })
+      .limit(5);
+    
+    // Total tweets in DB
+    const { count: totalGlobal } = await supabase
+      .from('tweets')
+      .select('*', { count: 'exact', head: true });
+    
     return NextResponse.json({
       user: { id: user?.id, email: user?.email },
       profiles: profileHandles,
       profileIds,
       totalTweetsForUser: count,
+      totalTweetsGlobal: totalGlobal,
       recentTweets48h: {
         count: recentTweets?.length || 0,
         tweets: recentTweets?.map(t => ({
@@ -72,11 +85,17 @@ export async function GET() {
         }))
       },
       tweetsLast7d: weekTweets?.length || 0,
-      latestTweet: latestTweet ? {
-        handle: latestTweet.twitter_handle,
-        posted_at: latestTweet.posted_at,
-        snippet: latestTweet.content?.slice(0, 100)
+      latestTweetForJon: latestTweetForJon ? {
+        handle: latestTweetForJon.twitter_handle,
+        posted_at: latestTweetForJon.posted_at,
+        snippet: latestTweetForJon.content?.slice(0, 100)
       } : null,
+      latestTweetsGlobal: latestTweetGlobal?.map(t => ({
+        handle: t.twitter_handle,
+        posted_at: t.posted_at,
+        profile_id: t.profile_id,
+        snippet: t.content?.slice(0, 80)
+      })),
       timestamps: {
         now: dayjs().toISOString(),
         since48h,
