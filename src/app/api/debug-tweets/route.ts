@@ -50,13 +50,19 @@ export async function GET() {
       .in('profile_id', profileIds);
     
     // Get most recent tweet regardless of time - for Jon's profiles
-    const { data: latestTweetForJon } = await supabase
+    const { data: latestTweetForJon, error: latestError } = await supabase
       .from('tweets')
-      .select('twitter_handle, posted_at, content')
+      .select('twitter_handle, posted_at, content, profile_id')
       .in('profile_id', profileIds)
       .order('posted_at', { ascending: false })
-      .limit(1)
-      .single();
+      .limit(5);
+    
+    // Debug: get any tweet by one of Jon's profile IDs directly
+    const { data: sampleTweet, error: sampleError } = await supabase
+      .from('tweets')
+      .select('*')
+      .eq('profile_id', profileIds[0])
+      .limit(3);
     
     // Get most recent tweet in entire DB
     const { data: latestTweetGlobal } = await supabase
@@ -85,11 +91,23 @@ export async function GET() {
         }))
       },
       tweetsLast7d: weekTweets?.length || 0,
-      latestTweetForJon: latestTweetForJon ? {
-        handle: latestTweetForJon.twitter_handle,
-        posted_at: latestTweetForJon.posted_at,
-        snippet: latestTweetForJon.content?.slice(0, 100)
-      } : null,
+      latestTweetForJon: latestTweetForJon?.map(t => ({
+        handle: t.twitter_handle,
+        posted_at: t.posted_at,
+        profile_id: t.profile_id,
+        snippet: t.content?.slice(0, 100)
+      })),
+      latestError: latestError?.message,
+      sampleTweetForProfile0: {
+        profileId: profileIds[0],
+        tweets: sampleTweet?.map(t => ({ 
+          id: t.id, 
+          handle: t.twitter_handle, 
+          posted_at: t.posted_at,
+          profile_id: t.profile_id 
+        })),
+        error: sampleError?.message
+      },
       latestTweetsGlobal: latestTweetGlobal?.map(t => ({
         handle: t.twitter_handle,
         posted_at: t.posted_at,
