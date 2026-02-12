@@ -72,6 +72,15 @@ If no specific actionable calls, note what sources are watching.
 
 ---
 
+## Your Watchlist
+
+[If watchlist tweets are provided, include this section with quality tweets about the user's tracked tickers. Synthesize the most interesting insights and discussions. Include citations for specific claims. If no watchlist data is provided, omit this section entirely.]
+
+**Trending:** [What tickers are getting the most quality discussion]
+**Notable:** [Any specific insights, price targets, or sentiment shifts]
+
+---
+
 ## References
 
 List each citation number with the corresponding tweet information in this clean format:
@@ -124,7 +133,8 @@ export function buildUserPrompt(
   dateRange: string,
   focusKeywords?: string[],
   contextTweets?: GroupedTweets,
-  newsletterContent?: NewsletterContent[]
+  newsletterContent?: NewsletterContent[],
+  watchlistTweets?: any[]
 ): string {
   
   // Build recent tweets section with numbered citations
@@ -189,6 +199,35 @@ export function buildUserPrompt(
     newsletterSection = `\n\n---\n\n## NEWSLETTER CONTENT (Recent issues from subscribed newsletters)\n\nIntegrate insights from these newsletters. Reference them as [NL1], [NL2], etc.\n\n${nlSections}`;
   }
 
+  // Build watchlist section
+  let watchlistSection = '';
+  if (watchlistTweets && watchlistTweets.length > 0) {
+    // Group by ticker
+    const watchlistByTicker: Record<string, any[]> = {};
+    for (const tweet of watchlistTweets) {
+      if (!watchlistByTicker[tweet.ticker]) {
+        watchlistByTicker[tweet.ticker] = [];
+      }
+      watchlistByTicker[tweet.ticker].push(tweet);
+    }
+
+    const watchlistSections = Object.entries(watchlistByTicker)
+      .map(([ticker, tweets]) => {
+        const tweetList = tweets
+          .map((t) => {
+            let line = `- [WL${citationNumber}] @${t.author_handle} (${t.author_followers} followers): ${t.content} [${t.likes} likes, ${t.retweets} retweets]`;
+            citationNumber++;
+            return line;
+          })
+          .join('\n');
+        
+        return `### $${ticker}\n${tweetList}`;
+      })
+      .join('\n\n');
+    
+    watchlistSection = `\n\n---\n\n## YOUR WATCHLIST (Quality tweets about your tracked tickers)\n\nRecent high-quality discussions about your watchlist tickers. Include this as a "Your Watchlist" section in the newsletter. Reference as [WL1], [WL2], etc.\n\n${watchlistSections}`;
+  }
+
   return `Generate today's briefing based on tweets from ${dateRange}.
 ${focusSection}
 
@@ -197,6 +236,7 @@ ${focusSection}
 ${recentSections}
 ${contextSection}
 ${newsletterSection}
+${watchlistSection}
 
 Write the newsletter following the structure above. Focus on RECENT tweets for the main content, and integrate newsletter insights where relevant.`;
 }

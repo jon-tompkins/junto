@@ -132,6 +132,48 @@ export async function POST(request: NextRequest) {
     
     console.log(`Including ${newsletterContent.length} newsletter issues in synthesis`);
     
+    // Get user's watchlist tweets
+    let watchlistTweets: any[] = [];
+    try {
+      const { data: userWatchlist } = await supabase
+        .from('user_watchlist')
+        .select('ticker')
+        .eq('user_id', user.id);
+      
+      if (userWatchlist && userWatchlist.length > 0) {
+        const tickers = userWatchlist.map(w => w.ticker);
+        
+        // Get top 3 tweets per ticker from the last 7 days
+        const { data: wlTweets } = await supabase
+          .from('watchlist_tweets')
+          .select('*')
+          .in('ticker', tickers)
+          .gte('posted_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+          .order('quality_score', { ascending: false })
+          .limit(20); // Limit total watchlist tweets
+        
+        if (wlTweets) {
+          // Group by ticker and take top 3 per ticker
+          const tweetsByTicker: Record<string, any[]> = {};
+          for (const tweet of wlTweets) {
+            if (!tweetsByTicker[tweet.ticker]) {
+              tweetsByTicker[tweet.ticker] = [];
+            }
+            if (tweetsByTicker[tweet.ticker].length < 3) {
+              tweetsByTicker[tweet.ticker].push(tweet);
+            }
+          }
+          
+          // Flatten back to array
+          watchlistTweets = Object.values(tweetsByTicker).flat();
+          console.log(`Including ${watchlistTweets.length} watchlist tweets for ${Object.keys(tweetsByTicker).length} tickers`);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching watchlist tweets:', err);
+      // Continue without watchlist tweets
+    }
+    
     // Generate newsletter
     const synthesis = await generateNewsletter(
       recentTweets, 
@@ -140,7 +182,8 @@ export async function POST(request: NextRequest) {
       contextTweets,
       keywords,
       customPrompt,
-      newsletterContent
+      newsletterContent,
+      watchlistTweets
     );
     
     // Store newsletter with user_id

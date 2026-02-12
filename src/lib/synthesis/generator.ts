@@ -26,12 +26,13 @@ export async function generateNewsletter(
   contextTweets?: GroupedTweets,
   keywords?: string[],
   customPrompt?: string | null,
-  newsletterContent?: NewsletterContent[]
+  newsletterContent?: NewsletterContent[],
+  watchlistTweets?: any[]
 ): Promise<NewsletterResult> {
   const client = getAnthropic();
   
   const dateRange = `${startDate} to ${endDate}`;
-  const userPrompt = buildUserPrompt(recentTweets, dateRange, keywords, contextTweets, newsletterContent);
+  const userPrompt = buildUserPrompt(recentTweets, dateRange, keywords, contextTweets, newsletterContent, watchlistTweets);
   
   // Use custom prompt if provided, otherwise default
   const systemPrompt = customPrompt 
