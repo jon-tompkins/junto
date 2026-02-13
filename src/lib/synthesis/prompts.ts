@@ -261,7 +261,8 @@ export function extractTweetReferences(
   response: string, 
   recentTweets: GroupedTweets, 
   contextTweets?: GroupedTweets,
-  newsletterContent?: NewsletterContent[]
+  newsletterContent?: NewsletterContent[],
+  watchlistTweets?: any[]
 ): { content: string; references: string[] } {
   // Extract content directly from response (subject already handled separately)
   
@@ -359,6 +360,12 @@ export function extractTweetReferences(
   contentWithSuperscripts = contentWithSuperscripts.replace(nlCitationRegex, (match, num) => {
     return `<sup style="font-size: 0.7em; color: #666;">NL${num}</sup>`;
   });
+
+  // Convert watchlist citations to superscript with hyperlinks
+  const wlCitationRegex = /\[WL(\d+)\]/g;
+  contentWithSuperscripts = contentWithSuperscripts.replace(wlCitationRegex, (match, num) => {
+    return `<sup><a href="#ref-wl-${num}" style="text-decoration: none; color: #0066cc; font-size: 0.7em; vertical-align: super;">WL${num}</a></sup>`;
+  });
   
   // Build clean references section - format: [1] @handle: "first 20 chars..." [link]
   // Use usedCitationsInOrder to maintain sequential numbering
@@ -400,9 +407,60 @@ export function extractTweetReferences(
       }
     }
   }
+
+  // Build watchlist references (with hyperlinks to tweets)
+  const watchlistReferences: string[] = [];
+  if (watchlistTweets && watchlistTweets.length > 0) {
+    // Find watchlist citations in content
+    const wlCitationRegex2 = /\[WL(\d+)\]/g;
+    let wlMatch;
+    const usedWlCitations = new Set<number>();
+    
+    while ((wlMatch = wlCitationRegex2.exec(response)) !== null) {
+      usedWlCitations.add(parseInt(wlMatch[1]));
+    }
+    
+    // Build a map of WL citations to watchlist tweets (following the same order as buildUserPrompt)
+    // In buildUserPrompt, WL citations start after all other citations, numbered sequentially
+    let wlIndex = 1;
+    const wlCitationMap: Record<number, any> = {};
+    
+    // Group by ticker (same as in buildUserPrompt)
+    const watchlistByTicker: Record<string, any[]> = {};
+    for (const tweet of watchlistTweets) {
+      if (!watchlistByTicker[tweet.ticker]) {
+        watchlistByTicker[tweet.ticker] = [];
+      }
+      watchlistByTicker[tweet.ticker].push(tweet);
+    }
+    
+    // Build citation map in same order as buildUserPrompt
+    for (const [ticker, tweets] of Object.entries(watchlistByTicker)) {
+      for (const tweet of tweets) {
+        wlCitationMap[wlIndex] = tweet;
+        wlIndex++;
+      }
+    }
+    
+    for (const wlNum of Array.from(usedWlCitations).sort((a, b) => a - b)) {
+      const tweet = wlCitationMap[wlNum];
+      if (tweet) {
+        // First 20 characters of tweet content
+        let tweetPreview = (tweet.content || '').substring(0, 20);
+        if ((tweet.content || '').length > 20) tweetPreview += '...';
+        
+        const profileUrl = `https://x.com/${tweet.author_handle}`;
+        const tweetUrl = tweet.tweet_id 
+          ? `https://x.com/${tweet.author_handle}/status/${tweet.tweet_id}`
+          : profileUrl;
+        
+        watchlistReferences.push(`<span id="ref-wl-${wlNum}" style="font-size: 11px; color: #333;">[WL${wlNum}] <a href="${profileUrl}" target="_blank" style="color: #333; text-decoration: underline;">@${tweet.author_handle}</a> ($${tweet.ticker}): "${tweetPreview}" <a href="${tweetUrl}" target="_blank" style="color: #666; text-decoration: underline; font-size: 10px;">[link]</a></span>`);
+      }
+    }
+  }
   
   // Combine all references
-  const allReferences = [...cleanReferences, ...newsletterReferences];
+  const allReferences = [...cleanReferences, ...newsletterReferences, ...watchlistReferences];
   
   // Build references block - each reference on its own line
   const referencesHtml = allReferences.length > 0

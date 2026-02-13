@@ -52,7 +52,7 @@ export async function generateNewsletter(
   const rawContent = textContent?.text || '';
   
   const { subject } = parseNewsletterResponse(rawContent);
-  const { content } = extractTweetReferences(rawContent, recentTweets, contextTweets, newsletterContent);
+  const { content } = extractTweetReferences(rawContent, recentTweets, contextTweets, newsletterContent, watchlistTweets);
   
   return {
     subject,
