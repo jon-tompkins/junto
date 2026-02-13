@@ -79,8 +79,11 @@ function processTweets(tweets: BirdTweet[], ticker: string): WatchlistTweet[] {
     
     const followerCount = tweet.author.followers_count || 0;
     
-    // Minimum follower threshold
-    if (followerCount < 500) continue;
+    // Minimum follower threshold (skip check if follower count unknown)
+    if (followerCount > 0 && followerCount < 500) continue;
+    
+    // Require some engagement if no follower data
+    if (followerCount === 0 && tweet.likeCount < 2 && tweet.retweetCount < 1) continue;
     
     const qualityScore = calculateQualityScore(
       tweet.likeCount,

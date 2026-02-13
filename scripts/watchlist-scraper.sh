@@ -1,22 +1,38 @@
 #!/bin/bash
 # Watchlist Tweet Scraper
 # Runs on Ubuntu server, uses bird CLI to fetch tweets, sends to Junto API
-# Usage: ./watchlist-scraper.sh [--api-url URL] [--cron-secret SECRET]
+# Usage: ./watchlist-scraper.sh [--api-url URL] [--cron-secret SECRET] [--auth-token TOKEN] [--ct0 CT0]
 
 set -e
 
 # Config
-API_URL="${JUNTO_API_URL:-https://myjunto.xyz}"
+API_URL="${JUNTO_API_URL:-https://www.myjunto.xyz}"
 CRON_SECRET="${JUNTO_CRON_SECRET:-}"
+BIRD_AUTH_TOKEN="${AUTH_TOKEN:-}"
+BIRD_CT0="${CT0:-}"
 
 # Parse args
 while [[ $# -gt 0 ]]; do
   case $1 in
     --api-url) API_URL="$2"; shift 2 ;;
     --cron-secret) CRON_SECRET="$2"; shift 2 ;;
+    --auth-token) BIRD_AUTH_TOKEN="$2"; shift 2 ;;
+    --ct0) BIRD_CT0="$2"; shift 2 ;;
     *) echo "Unknown option: $1"; exit 1 ;;
   esac
 done
+
+# Try to load from bird config if not set
+if [ -z "$BIRD_AUTH_TOKEN" ] && [ -f ~/.config/bird/config.json5 ]; then
+  BIRD_AUTH_TOKEN=$(grep -oP 'authToken:\s*"\K[^"]+' ~/.config/bird/config.json5 2>/dev/null || true)
+  BIRD_CT0=$(grep -oP 'ct0:\s*"\K[^"]+' ~/.config/bird/config.json5 2>/dev/null || true)
+fi
+
+# Build bird auth args
+BIRD_AUTH=""
+if [ -n "$BIRD_AUTH_TOKEN" ] && [ -n "$BIRD_CT0" ]; then
+  BIRD_AUTH="--auth-token $BIRD_AUTH_TOKEN --ct0 $BIRD_CT0"
+fi
 
 echo "🔍 Starting watchlist scraper..."
 echo "   API: $API_URL"
@@ -59,7 +75,7 @@ for TICKER in $TICKERS; do
   
   # Search for tweets using bird CLI
   # Format: $TICKER (cashtag search)
-  TWEETS=$(bird search "\$$TICKER" -n 30 --json 2>/dev/null || echo "[]")
+  TWEETS=$(bird search "\$$TICKER" -n 30 --json $BIRD_AUTH 2>/dev/null || echo "[]")
   
   # Check if we got valid JSON
   if ! echo "$TWEETS" | jq -e '.' > /dev/null 2>&1; then
