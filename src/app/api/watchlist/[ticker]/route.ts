@@ -2,21 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/db/client';
 import { getServerSession } from 'next-auth';
 
-interface RouteParams {
-  params: {
-    ticker: string;
-  };
-}
-
 // DELETE /api/watchlist/[ticker] - remove ticker from watchlist
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(
+  request: NextRequest, 
+  { params }: { params: Promise<{ ticker: string }> }
+) {
   try {
     const session = await getServerSession();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { ticker } = params;
+    const { ticker } = await params;
     
     if (!ticker) {
       return NextResponse.json({ error: 'Ticker is required' }, { status: 400 });
