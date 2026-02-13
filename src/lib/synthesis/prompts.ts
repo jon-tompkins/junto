@@ -326,13 +326,32 @@ export function extractTweetReferences(
   const { content } = parseNewsletterResponse(response);
   
   // Convert citations to superscript and make them clickable
+  // First pass: collect all used citations and create sequential mapping
   let contentWithSuperscripts = content;
   const citationRegex = /\[(\d+)\]/g;
-  const usedCitations = new Set<number>();
+  const usedCitationsInOrder: number[] = [];
+  const seenCitations = new Set<number>();
   
-  contentWithSuperscripts = contentWithSuperscripts.replace(citationRegex, (match, num) => {
-    usedCitations.add(parseInt(num));
-    return `<sup><a href="#ref-${num}" style="text-decoration: none; color: inherit; font-size: 0.7em; vertical-align: super;">${num}</a></sup>`;
+  let tempMatch;
+  while ((tempMatch = citationRegex.exec(content)) !== null) {
+    const num = parseInt(tempMatch[1]);
+    if (!seenCitations.has(num)) {
+      usedCitationsInOrder.push(num);
+      seenCitations.add(num);
+    }
+  }
+  
+  // Create mapping from original citation number to sequential number
+  const citationRemap: Record<number, number> = {};
+  usedCitationsInOrder.forEach((origNum, idx) => {
+    citationRemap[origNum] = idx + 1;
+  });
+  
+  // Second pass: replace citations with sequential numbers
+  const citationRegex2 = /\[(\d+)\]/g;
+  contentWithSuperscripts = contentWithSuperscripts.replace(citationRegex2, (match, num) => {
+    const newNum = citationRemap[parseInt(num)] || num;
+    return `<sup><a href="#ref-${newNum}" style="text-decoration: none; color: inherit; font-size: 0.7em; vertical-align: super;">${newNum}</a></sup>`;
   });
   
   // Convert newsletter citations to superscript (no hyperlink)
@@ -342,9 +361,12 @@ export function extractTweetReferences(
   });
   
   // Build clean references section - format: [1] @handle: "first 20 chars..." [link]
-  const cleanReferences = sortedCitations.map(citationNum => {
-    const tweet = citationMap[citationNum];
+  // Use usedCitationsInOrder to maintain sequential numbering
+  const cleanReferences = usedCitationsInOrder.map((origCitationNum, idx) => {
+    const tweet = citationMap[origCitationNum];
     if (!tweet) return '';
+    
+    const newNum = idx + 1; // Sequential numbering starting at 1
     
     // First 20 characters of tweet content
     let tweetPreview = tweet.content.substring(0, 20);
@@ -356,7 +378,7 @@ export function extractTweetReferences(
       : profileUrl;
     
     // Format: [1] @handle: "preview..." [link]
-    return `<span id="ref-${citationNum}" style="font-size: 11px; color: #333;">[${citationNum}] <a href="${profileUrl}" target="_blank" style="color: #333; text-decoration: underline;">@${tweet.handle}</a>: "${tweetPreview}" <a href="${tweetUrl}" target="_blank" style="color: #666; text-decoration: underline; font-size: 10px;">[link]</a></span>`;
+    return `<span id="ref-${newNum}" style="font-size: 11px; color: #333;">[${newNum}] <a href="${profileUrl}" target="_blank" style="color: #333; text-decoration: underline;">@${tweet.handle}</a>: "${tweetPreview}" <a href="${tweetUrl}" target="_blank" style="color: #666; text-decoration: underline; font-size: 10px;">[link]</a></span>`;
   }).filter(Boolean);
   
   // Build newsletter references (no hyperlinks, just name)
@@ -382,9 +404,9 @@ export function extractTweetReferences(
   // Combine all references
   const allReferences = [...cleanReferences, ...newsletterReferences];
   
-  // Build compact references block - no spacing, professional
+  // Build references block - each reference on its own line
   const referencesHtml = allReferences.length > 0
-    ? `<div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e0e0e0; font-size: 11px; line-height: 1.6; color: #333;">${allReferences.join(' · ')}</div>`
+    ? `<div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e0e0e0; font-size: 11px; line-height: 1.8; color: #333;">${allReferences.join('<br>')}</div>`
     : '';
   
   // If no References section exists, add one
