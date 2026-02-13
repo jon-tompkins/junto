@@ -22,6 +22,11 @@ interface Newsletter {
   description?: string;
 }
 
+interface WatchlistTicker {
+  ticker: string;
+  created_at: string;
+}
+
 const MAX_PROFILES = 10;
 
 export default function SourcesPage() {
@@ -46,6 +51,13 @@ export default function SourcesPage() {
   const [selectedNewsletterIds, setSelectedNewsletterIds] = useState<string[]>([]);
   const [loadingNewsletters, setLoadingNewsletters] = useState(true);
 
+  // Watchlist state
+  const [watchlistTickers, setWatchlistTickers] = useState<WatchlistTicker[]>([]);
+  const [loadingWatchlist, setLoadingWatchlist] = useState(true);
+  const [tickerInput, setTickerInput] = useState('');
+  const [addingTicker, setAddingTicker] = useState(false);
+  const [watchlistError, setWatchlistError] = useState('');
+
   // Track if initial load is complete
   const [initialized, setInitialized] = useState(false);
 
@@ -60,6 +72,7 @@ export default function SourcesPage() {
       fetchExistingProfiles();
       fetchFollowing();
       fetchNewsletters();
+      fetchWatchlist();
     }
   }, [session]);
 
@@ -127,6 +140,73 @@ export default function SourcesPage() {
       });
     } catch (err) {
       console.error('Failed to save newsletter selection:', err);
+    }
+  };
+
+  const fetchWatchlist = async () => {
+    try {
+      const res = await fetch('/api/watchlist');
+      const data = await res.json();
+      if (data.watchlist) {
+        setWatchlistTickers(data.watchlist);
+      }
+    } catch (err) {
+      console.error('Failed to fetch watchlist:', err);
+    } finally {
+      setLoadingWatchlist(false);
+    }
+  };
+
+  const addTicker = async () => {
+    const ticker = tickerInput.trim().toUpperCase();
+    if (!ticker) return;
+    
+    if (watchlistTickers.find(t => t.ticker === ticker)) {
+      setWatchlistError('Ticker already in watchlist');
+      setTimeout(() => setWatchlistError(''), 3000);
+      return;
+    }
+
+    setAddingTicker(true);
+    setWatchlistError('');
+
+    try {
+      const res = await fetch('/api/watchlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker }),
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        setWatchlistTickers([...watchlistTickers, { ticker: data.ticker, created_at: data.created_at }]);
+        setTickerInput('');
+      } else {
+        setWatchlistError(data.error || 'Failed to add ticker');
+        setTimeout(() => setWatchlistError(''), 3000);
+      }
+    } catch (err) {
+      setWatchlistError('Failed to add ticker');
+      setTimeout(() => setWatchlistError(''), 3000);
+    } finally {
+      setAddingTicker(false);
+    }
+  };
+
+  const removeTicker = async (ticker: string) => {
+    try {
+      const res = await fetch(`/api/watchlist/${ticker}`, {
+        method: 'DELETE',
+      });
+      
+      if (res.ok) {
+        setWatchlistTickers(watchlistTickers.filter(t => t.ticker !== ticker));
+      } else {
+        console.error('Failed to remove ticker');
+      }
+    } catch (err) {
+      console.error('Failed to remove ticker:', err);
     }
   };
 
@@ -506,7 +586,7 @@ export default function SourcesPage() {
         </div>
 
         {/* Newsletter Section */}
-        <div className="mb-8">
+        <div className="mb-12">
           <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
@@ -550,6 +630,99 @@ export default function SourcesPage() {
                     </div>
                   )}
                 </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Watchlist Section */}
+        <div className="mb-8">
+          <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            </svg>
+            Watchlist
+            <span className="text-sm font-normal text-neutral-400 ml-auto">
+              {watchlistTickers.length} tickers
+            </span>
+          </h3>
+
+          {/* Add ticker form */}
+          <div className="mb-4">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={tickerInput}
+                  onChange={(e) => {
+                    setTickerInput(e.target.value.toUpperCase());
+                    setWatchlistError('');
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addTicker();
+                    }
+                  }}
+                  placeholder="Enter ticker symbol (e.g., AAPL, TSLA)"
+                  disabled={addingTicker}
+                  className="w-full px-4 py-3 bg-transparent border border-neutral-700 focus:border-white focus:outline-none transition-colors placeholder-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed uppercase"
+                />
+                {addingTicker && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-neutral-500 border-t-white rounded-full animate-spin" />
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={addTicker}
+                disabled={addingTicker || !tickerInput.trim()}
+                className="px-6 py-3 bg-white text-black hover:bg-neutral-200 transition-colors disabled:bg-neutral-600 disabled:cursor-not-allowed text-sm font-medium"
+              >
+                Add
+              </button>
+            </div>
+            
+            {/* Error message */}
+            {watchlistError && (
+              <div className="mt-2 text-red-500 text-sm">
+                {watchlistError}
+              </div>
+            )}
+          </div>
+
+          {/* Watchlist tickers */}
+          {loadingWatchlist ? (
+            <div className="p-6 text-center text-neutral-500 border border-neutral-800">
+              Loading watchlist...
+            </div>
+          ) : watchlistTickers.length === 0 ? (
+            <div className="p-6 text-center text-neutral-500 border border-neutral-800">
+              <div className="mb-2">No tickers in your watchlist yet.</div>
+              <div className="text-xs text-neutral-600">Add stock symbols above to start tracking them.</div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {watchlistTickers.map(ticker => (
+                <div
+                  key={ticker.ticker}
+                  className="flex items-center justify-between p-4 border border-neutral-700 hover:border-neutral-600 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="font-mono font-medium text-lg">{ticker.ticker}</div>
+                    <div className="text-sm text-neutral-500">
+                      Added {new Date(ticker.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => removeTicker(ticker.ticker)}
+                    className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-red-500 hover:bg-red-500/10 transition-colors rounded"
+                    title="Remove ticker"
+                  >
+                    ×
+                  </button>
+                </div>
               ))}
             </div>
           )}
