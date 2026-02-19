@@ -1,3 +1,5 @@
+import { fetchTweetsFromProfile as fetchViaApify } from './apify-client';
+
 export interface FetchedTweet {
   twitter_id: string;
   content: string;
@@ -45,13 +47,26 @@ export async function fetchTweetsForProfile(
   maxTweets = 30
 ): Promise<FetchedTweet[]> {
   const cleanHandle = handle.replace('@', '');
+  
+  // Try Apify first (preferred)
+  if (process.env.APIFY_API_TOKEN) {
+    console.log(`Fetching tweets for @${cleanHandle} via Apify...`);
+    try {
+      return await fetchViaApify(cleanHandle, maxTweets);
+    } catch (error) {
+      console.error(`Apify error for @${cleanHandle}:`, error);
+      // Fall through to proxy if Apify fails
+    }
+  }
+  
+  // Fallback to proxy
   console.log(`Fetching tweets for @${cleanHandle} via proxy...`);
   
   const proxyUrl = process.env.TWITTER_PROXY_URL;
   const proxyToken = process.env.TWITTER_PROXY_TOKEN;
   
   if (!proxyUrl || !proxyToken) {
-    throw new Error('TWITTER_PROXY_URL and TWITTER_PROXY_TOKEN must be configured');
+    throw new Error('Neither APIFY_API_TOKEN nor TWITTER_PROXY credentials configured');
   }
   
   try {
