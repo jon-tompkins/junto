@@ -36,7 +36,11 @@ export async function GET() {
         // Group tweets by profile handle
         const byProfile: Record<string, number> = {};
         for (const tweet of recentTweets || []) {
-          const handle = tweet.profiles?.twitter_handle || tweet.twitter_handle;
+          // profiles can be an object or array depending on join type
+          const profiles = tweet.profiles as any;
+          const handle = Array.isArray(profiles) 
+            ? profiles[0]?.twitter_handle 
+            : profiles?.twitter_handle;
           if (handle) {
             byProfile[handle] = (byProfile[handle] || 0) + 1;
           }
