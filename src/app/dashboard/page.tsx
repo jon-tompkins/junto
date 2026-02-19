@@ -10,8 +10,10 @@ export default function DashboardPage() {
   const router = useRouter();
   const [profiles, setProfiles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState(false);
+  const [fetchResult, setFetchResult] = useState<{ success: boolean; message: string } | null>(null);
   const [generationResult, setGenerationResult] = useState<{ success: boolean; message: string } | null>(null);
   const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -36,6 +38,37 @@ export default function DashboardPage() {
       console.error('Failed to fetch profiles:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFetchTweets = async () => {
+    setFetching(true);
+    setFetchResult(null);
+    
+    try {
+      const res = await fetch('/api/tweets/fetch-mine', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setFetchResult({ 
+          success: true, 
+          message: `Fetched ${data.totalFetched} tweets from ${data.profiles} sources (${data.totalStored} new)` 
+        });
+      } else {
+        setFetchResult({ 
+          success: false, 
+          message: data.error || data.message || 'Failed to fetch' 
+        });
+      }
+    } catch (err) {
+      setFetchResult({ 
+        success: false, 
+        message: 'Failed to fetch tweets' 
+      });
+    } finally {
+      setFetching(false);
     }
   };
 
@@ -148,6 +181,16 @@ export default function DashboardPage() {
         <div className="border border-dashed border-neutral-700 p-6">
           <p className="text-neutral-500 text-sm mb-4 text-center">Testing</p>
           
+          {fetchResult && (
+            <div className={`mb-4 p-3 text-sm ${
+              fetchResult.success 
+                ? 'border border-green-500 text-green-500' 
+                : 'border border-red-500 text-red-500'
+            }`}>
+              {fetchResult.message}
+            </div>
+          )}
+          
           {generationResult && (
             <div className={`mb-4 p-3 text-sm ${
               generationResult.success 
@@ -168,7 +211,15 @@ export default function DashboardPage() {
             </div>
           )}
           
-          <div className="flex gap-4 justify-center">
+          <div className="flex flex-wrap gap-4 justify-center">
+            <button
+              onClick={handleFetchTweets}
+              disabled={fetching}
+              className="px-6 py-2 border border-neutral-600 text-sm hover:border-white hover:bg-white hover:text-black transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-neutral-600 disabled:hover:bg-transparent disabled:hover:text-white"
+            >
+              {fetching ? 'Fetching...' : 'Fetch Tweets'}
+            </button>
+            
             <button
               onClick={handleGenerateNewsletter}
               disabled={generating}
