@@ -13,6 +13,11 @@ interface UserSettings {
   email: string;
 }
 
+interface WatchlistItem {
+  ticker: string;
+  created_at: string;
+}
+
 const COMMON_TIMEZONES = [
   { value: 'America/New_York', label: 'Eastern Time (ET)' },
   { value: 'America/Chicago', label: 'Central Time (CT)' },
@@ -58,6 +63,12 @@ export default function SettingsPage() {
   const [availableKeywords, setAvailableKeywords] = useState<string[]>(DEFAULT_KEYWORDS);
   const [newKeyword, setNewKeyword] = useState('');
   // Newsletter selection moved to Sources page
+  
+  // Watchlist state
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+  const [newTicker, setNewTicker] = useState('');
+  const [watchlistLoading, setWatchlistLoading] = useState(false);
+  const [watchlistError, setWatchlistError] = useState('');
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -83,8 +94,75 @@ const detectTimezone = () => {
     if (session) {
       fetchSettings();
       detectTimezone();
+      fetchWatchlist();
     }
   }, [session]);
+
+  const fetchWatchlist = async () => {
+    try {
+      const res = await fetch('/api/watchlist');
+      const data = await res.json();
+      if (data.watchlist) {
+        setWatchlist(data.watchlist);
+      }
+    } catch (err) {
+      console.error('Failed to fetch watchlist:', err);
+    }
+  };
+
+  const addTicker = async () => {
+    const ticker = newTicker.trim().toUpperCase();
+    if (!ticker || !/^[A-Z]{1,10}$/.test(ticker)) {
+      setWatchlistError('Invalid ticker format');
+      return;
+    }
+    
+    setWatchlistLoading(true);
+    setWatchlistError('');
+    
+    try {
+      const res = await fetch('/api/watchlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker }),
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setWatchlist([...watchlist, { ticker: data.ticker, created_at: data.created_at }]);
+        setNewTicker('');
+      } else {
+        const data = await res.json();
+        setWatchlistError(data.error || 'Failed to add ticker');
+      }
+    } catch (err) {
+      setWatchlistError('Failed to add ticker');
+    } finally {
+      setWatchlistLoading(false);
+    }
+  };
+
+  const removeTicker = async (ticker: string) => {
+    setWatchlistLoading(true);
+    setWatchlistError('');
+    
+    try {
+      const res = await fetch(`/api/watchlist/${ticker}`, {
+        method: 'DELETE',
+      });
+      
+      if (res.ok) {
+        setWatchlist(watchlist.filter(w => w.ticker !== ticker));
+      } else {
+        const data = await res.json();
+        setWatchlistError(data.error || 'Failed to remove ticker');
+      }
+    } catch (err) {
+      setWatchlistError('Failed to remove ticker');
+    } finally {
+      setWatchlistLoading(false);
+    }
+  };
 
   const fetchSettings = async () => {
     try {
@@ -310,6 +388,64 @@ const detectTimezone = () => {
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Watchlist */}
+        <div className="mb-8">
+          <label className="block text-sm font-medium mb-2">Stock Watchlist</label>
+          <p className="text-sm text-neutral-500 mb-4">
+            Track specific tickers. Quality tweets about these stocks will appear in your newsletter.
+          </p>
+          
+          {watchlistError && (
+            <div className="mb-3 text-sm text-red-500">
+              {watchlistError}
+            </div>
+          )}
+          
+          {/* Add new ticker */}
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              value={newTicker}
+              onChange={(e) => setNewTicker(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === 'Enter' && addTicker()}
+              placeholder="Add ticker (e.g., AAPL)"
+              maxLength={10}
+              className="flex-1 px-4 py-2 bg-transparent border border-neutral-700 focus:border-white focus:outline-none transition-colors placeholder-neutral-600 text-sm uppercase"
+            />
+            <button
+              onClick={addTicker}
+              disabled={!newTicker.trim() || watchlistLoading}
+              className="px-4 py-2 text-sm border border-neutral-700 hover:border-white hover:bg-white hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {watchlistLoading ? '...' : 'Add'}
+            </button>
+          </div>
+
+          {/* Watchlist tickers */}
+          <div className="flex flex-wrap gap-2">
+            {watchlist.length === 0 ? (
+              <span className="text-sm text-neutral-600">No tickers in watchlist</span>
+            ) : (
+              watchlist.map(item => (
+                <div
+                  key={item.ticker}
+                  className="group flex items-center gap-1 px-3 py-1 text-sm border border-neutral-700 hover:border-neutral-500 transition-colors"
+                >
+                  <span className="font-mono">${item.ticker}</span>
+                  <button
+                    onClick={() => removeTicker(item.ticker)}
+                    disabled={watchlistLoading}
+                    className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-neutral-500 hover:text-red-500 disabled:opacity-50"
+                    title="Remove ticker"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
