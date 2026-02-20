@@ -8,6 +8,7 @@ import { sendNewsletter } from '@/lib/email/sender';
 import { config } from '@/lib/utils/config';
 import { getDateRange } from '@/lib/utils/date';
 import { getSupabase } from '@/lib/db/client';
+import { getUserWatchlistTweets } from '@/lib/db/watchlist';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -218,14 +219,28 @@ export async function GET(request: NextRequest) {
         const keywords = user.settings?.keywords || [];
         const customPrompt = user.custom_prompt || null;
         
-        // Generate newsletter with user's settings
+        // Fetch watchlist tweets for this user (last 7 days, up to 50 tweets)
+        let watchlistTweets: any[] = [];
+        try {
+          const watchlistResult = await getUserWatchlistTweets(user.id, 7, 50);
+          watchlistTweets = watchlistResult.tweets || [];
+          if (watchlistTweets.length > 0) {
+            console.log(`  Found ${watchlistTweets.length} watchlist tweets for ${watchlistResult.watchlistTickers.length} tickers`);
+          }
+        } catch (error) {
+          console.error(`  Error fetching watchlist tweets:`, error);
+        }
+        
+        // Generate newsletter with user's settings (including watchlist)
         const synthesis = await generateNewsletter(
           recentTweets, 
           start, 
           end, 
           contextTweets,
           keywords,
-          customPrompt
+          customPrompt,
+          undefined, // newsletterContent
+          watchlistTweets.length > 0 ? watchlistTweets : undefined
         );
         
         // Store newsletter with user_id
@@ -246,6 +261,7 @@ export async function GET(request: NextRequest) {
           metadata: {
             recent_tweets: recentCount,
             context_tweets: contextCount,
+            watchlist_tweets: watchlistTweets.length,
             profiles: userProfileHandles,
             keywords,
           },
