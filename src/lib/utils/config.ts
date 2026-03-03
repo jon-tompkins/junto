@@ -16,9 +16,14 @@ export const config = {
     serviceRoleKey: getEnvVar('SUPABASE_SERVICE_ROLE_KEY', false),
   },
   
-  // Anthropic
+  // Anthropic (legacy)
   anthropic: {
     apiKey: getEnvVar('ANTHROPIC_API_KEY', false),
+  },
+  
+  // xAI (Grok)
+  xai: {
+    apiKey: getEnvVar('XAI_API_KEY', false),
   },
   
   // Twitter data
@@ -46,7 +51,7 @@ export const config = {
 } as const;
 
 // Validation helper for specific features
-export function validateConfig(feature: 'supabase' | 'anthropic' | 'apify' | 'resend') {
+export function validateConfig(feature: 'supabase' | 'anthropic' | 'xai' | 'apify' | 'resend') {
   switch (feature) {
     case 'supabase':
       if (!config.supabase.url || !config.supabase.serviceRoleKey) {
@@ -56,6 +61,11 @@ export function validateConfig(feature: 'supabase' | 'anthropic' | 'apify' | 're
     case 'anthropic':
       if (!config.anthropic.apiKey) {
         throw new Error('Anthropic API key missing. Set ANTHROPIC_API_KEY');
+      }
+      break;
+    case 'xai':
+      if (!config.xai.apiKey) {
+        throw new Error('xAI API key missing. Set XAI_API_KEY');
       }
       break;
     case 'apify':

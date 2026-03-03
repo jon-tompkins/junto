@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
       tweet_count: totalCount,
       date_range_start: start,
       date_range_end: end,
-      model_used: 'claude-sonnet-4-20250514',
+      model_used: 'grok-3-fast',
       prompt_version: PROMPT_VERSION,
       input_tokens: synthesis.input_tokens,
       output_tokens: synthesis.output_tokens,

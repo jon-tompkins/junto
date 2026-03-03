@@ -1,18 +1,20 @@
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { config, validateConfig } from '@/lib/utils/config';
 
-let anthropicInstance: Anthropic | null = null;
+let xaiInstance: OpenAI | null = null;
 
-export function getAnthropic(): Anthropic {
-  if (!anthropicInstance) {
-    validateConfig('anthropic');
-    anthropicInstance = new Anthropic({
-      apiKey: config.anthropic.apiKey,
+export function getXAI(): OpenAI {
+  if (!xaiInstance) {
+    validateConfig('xai');
+    xaiInstance = new OpenAI({
+      apiKey: config.xai.apiKey,
+      baseURL: 'https://api.x.ai/v1',
     });
   }
   
-  return anthropicInstance;
+  return xaiInstance;
 }
 
-export const DEFAULT_MODEL = 'claude-sonnet-4-20250514';
+// Default model for xAI
+export const DEFAULT_MODEL = 'grok-3-fast';
 export const MAX_TOKENS = 2048;
