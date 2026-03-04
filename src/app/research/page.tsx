@@ -57,6 +57,7 @@ export default function ResearchPage() {
   const [requests, setRequests] = useState<ResearchRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'deep-dive' | 'scan'>('all');
   const [credits, setCredits] = useState<number | null>(null);
   const [tickerInput, setTickerInput] = useState('');
   const [requesting, setRequesting] = useState(false);
@@ -180,17 +181,28 @@ export default function ResearchPage() {
   };
 
   const filteredReports = useMemo(() => {
-    if (!search.trim()) return reports;
-    const query = search.toLowerCase();
-    return reports.filter(r => 
-      (r.ticker && r.ticker.toLowerCase().includes(query)) ||
-      (r.title && r.title.toLowerCase().includes(query)) ||
-      (r.summary && r.summary.toLowerCase().includes(query)) ||
-      (r.tags && r.tags.some(tag => tag.toLowerCase().includes(query))) ||
-      (r.rating && r.rating.toLowerCase().includes(query)) ||
-      (r.type && r.type.toLowerCase().includes(query))
-    );
-  }, [reports, search]);
+    let filtered = reports;
+    
+    // Filter by type
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(r => r.type === typeFilter);
+    }
+    
+    // Filter by search
+    if (search.trim()) {
+      const query = search.toLowerCase();
+      filtered = filtered.filter(r => 
+        (r.ticker && r.ticker.toLowerCase().includes(query)) ||
+        (r.title && r.title.toLowerCase().includes(query)) ||
+        (r.summary && r.summary.toLowerCase().includes(query)) ||
+        (r.tags && r.tags.some(tag => tag.toLowerCase().includes(query))) ||
+        (r.rating && r.rating.toLowerCase().includes(query)) ||
+        (r.type && r.type.toLowerCase().includes(query))
+      );
+    }
+    
+    return filtered;
+  }, [reports, search, typeFilter]);
 
   const pendingRequests = requests.filter(r => r.status === 'pending' || r.status === 'processing');
 
@@ -303,8 +315,40 @@ export default function ResearchPage() {
           </div>
         )}
 
-        {/* Search Bar */}
+        {/* Type Filter + Search Bar */}
         <div className="mb-8">
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setTypeFilter('all')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                typeFilter === 'all' 
+                  ? 'bg-white text-black' 
+                  : 'bg-neutral-800 text-neutral-400 hover:text-white'
+              }`}
+            >
+              All ({reports.length})
+            </button>
+            <button
+              onClick={() => setTypeFilter('deep-dive')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                typeFilter === 'deep-dive' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-neutral-800 text-neutral-400 hover:text-white'
+              }`}
+            >
+              🔍 Deep Dives ({reports.filter(r => r.type === 'deep-dive').length})
+            </button>
+            <button
+              onClick={() => setTypeFilter('scan')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                typeFilter === 'scan' 
+                  ? 'bg-purple-600 text-white' 
+                  : 'bg-neutral-800 text-neutral-400 hover:text-white'
+              }`}
+            >
+              📡 Scans ({reports.filter(r => r.type === 'scan').length})
+            </button>
+          </div>
           <div className="relative">
             <input
               type="text"
@@ -349,10 +393,21 @@ export default function ResearchPage() {
             >
               <div className="flex items-start justify-between mb-2">
                 <div>
-                  <span className="text-xs text-neutral-500 uppercase tracking-wide">
-                    {report.ticker}
-                  </span>
-                  <h2 className="text-xl font-semibold mt-1">{report.title}</h2>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs text-neutral-500 uppercase tracking-wide">
+                      {report.ticker}
+                    </span>
+                    {report.type === 'scan' ? (
+                      <span className="px-2 py-0.5 bg-purple-900/50 text-purple-400 rounded text-xs font-medium">
+                        SCAN
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 bg-blue-900/50 text-blue-400 rounded text-xs font-medium">
+                        DEEP DIVE
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-xl font-semibold">{report.title}</h2>
                 </div>
                 {report.rating && (
                   <span className={`text-sm font-medium ${getRatingColor(report.rating)}`}>
