@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 
 interface Report {
   id: string;
@@ -17,24 +18,64 @@ interface Report {
   file?: string;
   path?: string;
   tags?: string[];
+  requested_by?: string;
 }
 
+interface ResearchRequest {
+  id: string;
+  ticker: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  created_at: string;
+  report_id?: string;
+  requested_by?: string;
+}
+
+const researchTeam = [
+  {
+    name: 'Scout',
+    role: 'Deep Dive Analyst',
+    avatar: '🔍',
+    description: 'Comprehensive fundamental analysis and valuation'
+  },
+  {
+    name: 'Quant',
+    role: 'Technical Analysis',
+    avatar: '📊',
+    description: 'Chart patterns, momentum, and statistical analysis'
+  },
+  {
+    name: 'Macro',
+    role: 'Market Context',
+    avatar: '🌍',
+    description: 'Sector trends, macro factors, and positioning'
+  }
+];
+
 export default function ResearchPage() {
+  const { data: session } = useSession();
   const [reports, setReports] = useState<Report[]>([]);
+  const [requests, setRequests] = useState<ResearchRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [credits, setCredits] = useState<number | null>(null);
+  const [tickerInput, setTickerInput] = useState('');
+  const [requesting, setRequesting] = useState(false);
+  const [requestError, setRequestError] = useState('');
+  const [requestSuccess, setRequestSuccess] = useState('');
 
   useEffect(() => {
     fetchReports();
-  }, []);
+    fetchRequests();
+    if (session) {
+      fetchCredits();
+    }
+  }, [session]);
 
-  // Extract ticker from title like "PTON (Company Name) Deep Dive"
   const extractTicker = (title: string): string => {
     const match = title.match(/^([A-Z]{1,5})\s/);
     return match ? match[1] : '';
   };
 
-  // Extract rating from summary text
   const extractRating = (summary: string): string => {
     const match = summary.match(/Rating:\s*([^.]+)/i);
     return match ? match[1].trim() : '';
@@ -44,7 +85,6 @@ export default function ResearchPage() {
     try {
       const res = await fetch('/api/research');
       const data = await res.json();
-      // Only show public reports, and enrich with extracted fields
       const publicReports = data.reports
         .filter((r: Report) => r.visibility === 'public')
         .map((r: Report) => ({
@@ -61,6 +101,61 @@ export default function ResearchPage() {
     }
   };
 
+  const fetchRequests = async () => {
+    try {
+      const res = await fetch('/api/research/requests?all=true&limit=50');
+      const data = await res.json();
+      setRequests(data.requests || []);
+    } catch (err) {
+      console.error('Failed to fetch requests:', err);
+    }
+  };
+
+  const fetchCredits = async () => {
+    try {
+      const res = await fetch('/api/user/credits');
+      if (res.ok) {
+        const data = await res.json();
+        setCredits(data.credits);
+      }
+    } catch (err) {
+      console.error('Failed to fetch credits:', err);
+    }
+  };
+
+  const handleRequestDeepDive = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tickerInput.trim()) return;
+
+    setRequesting(true);
+    setRequestError('');
+    setRequestSuccess('');
+
+    try {
+      const res = await fetch('/api/research/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker: tickerInput.trim().toUpperCase() })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setRequestError(data.error || 'Failed to create request');
+        return;
+      }
+
+      setRequestSuccess(`Deep dive requested for ${data.request.ticker}! We'll notify you when it's ready.`);
+      setTickerInput('');
+      setCredits(data.creditsRemaining);
+      fetchRequests();
+    } catch (err) {
+      setRequestError('Something went wrong. Please try again.');
+    } finally {
+      setRequesting(false);
+    }
+  };
+
   const getRatingColor = (rating: string | undefined | null) => {
     if (!rating) return 'text-neutral-400';
     if (rating.includes('BUY') || rating.includes('BULLISH')) return 'text-green-400';
@@ -69,10 +164,23 @@ export default function ResearchPage() {
     return 'text-neutral-400';
   };
 
-  // Dynamic search across ticker, title, summary, and tags
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <span className="px-2 py-0.5 bg-yellow-900/50 text-yellow-400 rounded text-xs">Queued</span>;
+      case 'processing':
+        return <span className="px-2 py-0.5 bg-blue-900/50 text-blue-400 rounded text-xs">In Progress</span>;
+      case 'completed':
+        return <span className="px-2 py-0.5 bg-green-900/50 text-green-400 rounded text-xs">Complete</span>;
+      case 'failed':
+        return <span className="px-2 py-0.5 bg-red-900/50 text-red-400 rounded text-xs">Failed</span>;
+      default:
+        return null;
+    }
+  };
+
   const filteredReports = useMemo(() => {
     if (!search.trim()) return reports;
-    
     const query = search.toLowerCase();
     return reports.filter(r => 
       (r.ticker && r.ticker.toLowerCase().includes(query)) ||
@@ -83,6 +191,8 @@ export default function ResearchPage() {
       (r.type && r.type.toLowerCase().includes(query))
     );
   }, [reports, search]);
+
+  const pendingRequests = requests.filter(r => r.status === 'pending' || r.status === 'processing');
 
   if (loading) {
     return (
@@ -101,8 +211,97 @@ export default function ResearchPage() {
             ← MyJunto
           </Link>
           <h1 className="text-3xl font-bold mb-2">Junto Research</h1>
-          <p className="text-neutral-400">Investment research and analysis</p>
+          <p className="text-neutral-400">Investment research and analysis powered by AI</p>
         </div>
+
+        {/* Research Team */}
+        <div className="mb-8 p-6 bg-neutral-900 rounded-lg border border-neutral-800">
+          <h2 className="text-lg font-semibold mb-4">Research Team</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {researchTeam.map(member => (
+              <div key={member.name} className="flex items-start gap-3">
+                <div className="text-2xl">{member.avatar}</div>
+                <div>
+                  <div className="font-medium">{member.name}</div>
+                  <div className="text-xs text-neutral-500">{member.role}</div>
+                  <div className="text-xs text-neutral-400 mt-1">{member.description}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Request Deep Dive */}
+        <div className="mb-8 p-6 bg-gradient-to-r from-neutral-900 to-neutral-800 rounded-lg border border-neutral-700">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Request a Deep Dive</h2>
+            {session && credits !== null && (
+              <div className="text-sm text-neutral-400">
+                <span className="text-white font-medium">{credits}</span> credits
+              </div>
+            )}
+          </div>
+          
+          {!session ? (
+            <p className="text-neutral-400 text-sm">
+              <Link href="/login" className="text-white underline">Sign in</Link> to request custom research reports.
+            </p>
+          ) : (
+            <form onSubmit={handleRequestDeepDive} className="flex gap-3">
+              <input
+                type="text"
+                value={tickerInput}
+                onChange={(e) => setTickerInput(e.target.value.toUpperCase())}
+                placeholder="Enter ticker (e.g. AAPL)"
+                maxLength={10}
+                className="flex-1 bg-neutral-800 border border-neutral-600 rounded-lg px-4 py-2 text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-400 uppercase"
+              />
+              <button
+                type="submit"
+                disabled={requesting || !tickerInput.trim() || (credits !== null && credits < 5)}
+                className="px-6 py-2 bg-white text-black font-medium rounded-lg hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {requesting ? 'Requesting...' : 'Request (5 credits)'}
+              </button>
+            </form>
+          )}
+          
+          {requestError && (
+            <p className="mt-3 text-red-400 text-sm">{requestError}</p>
+          )}
+          {requestSuccess && (
+            <p className="mt-3 text-green-400 text-sm">{requestSuccess}</p>
+          )}
+          
+          {credits !== null && credits < 5 && (
+            <p className="mt-3 text-yellow-400 text-sm">
+              You need at least 5 credits for a deep dive. Credits coming soon!
+            </p>
+          )}
+        </div>
+
+        {/* Pending Requests */}
+        {pendingRequests.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold mb-4">In Progress</h2>
+            <div className="space-y-2">
+              {pendingRequests.map(req => (
+                <div key={req.id} className="flex items-center justify-between p-4 bg-neutral-900 rounded-lg border border-neutral-800">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono font-bold">{req.ticker}</span>
+                    {getStatusBadge(req.status)}
+                    {req.requested_by && (
+                      <span className="text-xs text-neutral-500">by @{req.requested_by}</span>
+                    )}
+                  </div>
+                  <span className="text-xs text-neutral-500">
+                    {new Date(req.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Search Bar */}
         <div className="mb-8">
@@ -175,7 +374,12 @@ export default function ResearchPage() {
                     </span>
                   ))}
                 </div>
-                <span className="text-xs text-neutral-500">{report.date}</span>
+                <div className="flex items-center gap-3">
+                  {report.requested_by && (
+                    <span className="text-xs text-neutral-500">by @{report.requested_by}</span>
+                  )}
+                  <span className="text-xs text-neutral-500">{report.date}</span>
+                </div>
               </div>
             </Link>
           ))}
