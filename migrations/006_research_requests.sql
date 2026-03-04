@@ -1,8 +1,8 @@
 -- Migration 006: Research Request System
 -- Adds deep dive request tracking and user credits
 
--- Add credits to users (default 10 for free tier)
-ALTER TABLE users ADD COLUMN IF NOT EXISTS credits INTEGER DEFAULT 10;
+-- Add credits to users (default 100 for free tier)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS credits INTEGER DEFAULT 100;
 
 -- Research requests table
 CREATE TABLE IF NOT EXISTS research_requests (
@@ -43,4 +43,4 @@ GRANT ALL ON research_requests TO authenticated;
 GRANT ALL ON research_requests TO service_role;
 
 -- Seed existing users with credits if they don't have any
-UPDATE users SET credits = 10 WHERE credits IS NULL;
+UPDATE users SET credits = 100 WHERE credits IS NULL OR credits < 100;
