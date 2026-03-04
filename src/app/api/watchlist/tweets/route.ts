@@ -1,26 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/db/client';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 // GET /api/watchlist/tweets - get recent quality tweets for user's watchlist
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const twitterHandle = (session.user as any).twitterHandle;
     const url = new URL(request.url);
     const limit = parseInt(url.searchParams.get('limit') || '50');
     const daysBack = parseInt(url.searchParams.get('days') || '7');
 
     const supabase = getSupabase();
 
-    // Get user ID from email
+    // Get user ID from twitter handle
     const { data: users, error: userError } = await supabase
       .from('users')
       .select('id')
-      .eq('email', session.user.email)
+      .eq('twitter_handle', twitterHandle)
       .single();
 
     if (userError || !users) {
