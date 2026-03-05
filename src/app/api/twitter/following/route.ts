@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     // Step 2: Get following list
     const followingRes = await fetch(
-      `https://twitter154.p.rapidapi.com/user/following?user_id=${userId}&limit=500`,
+      `https://twitter154.p.rapidapi.com/user/following?user_id=${userId}&limit=100`,
       {
         headers: {
           'x-rapidapi-key': rapidApiKey,
