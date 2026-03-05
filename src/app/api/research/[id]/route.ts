@@ -88,8 +88,8 @@ export async function GET(
   try {
     const { id } = await params;
     
-    // First fetch the index to get report metadata
-    const indexRes = await fetch(`${GITHUB_RAW_BASE}/reports/index.json`, {
+    // First fetch the index to get report metadata (index.json is at repo root)
+    const indexRes = await fetch(`${GITHUB_RAW_BASE}/index.json`, {
       next: { revalidate: 300 }
     });
     

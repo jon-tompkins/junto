@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 
-const GITHUB_RAW = 'https://raw.githubusercontent.com/jon-tompkins/Agent-Reports/main/reports';
+const GITHUB_RAW = 'https://raw.githubusercontent.com/jon-tompkins/Agent-Reports/main';
 
 export async function GET() {
   try {
-    // Fetch index from GitHub
+    // Fetch index from GitHub (index.json is at repo root)
     const res = await fetch(`${GITHUB_RAW}/index.json`, {
       next: { revalidate: 300 } // Cache for 5 minutes
     });
