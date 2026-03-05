@@ -63,6 +63,9 @@ export default function ResearchPage() {
   const [requesting, setRequesting] = useState(false);
   const [requestError, setRequestError] = useState('');
   const [requestSuccess, setRequestSuccess] = useState('');
+  const [requestMode, setRequestMode] = useState<'deep-dive' | 'scan'>('deep-dive');
+  const [scanQuery, setScanQuery] = useState('');
+  const MAX_SCAN_CHARS = 200;
 
   useEffect(() => {
     fetchReports();
@@ -148,6 +151,39 @@ export default function ResearchPage() {
 
       setRequestSuccess(`Deep dive requested for ${data.request.ticker}! We'll notify you when it's ready.`);
       setTickerInput('');
+      setCredits(data.creditsRemaining);
+      fetchRequests();
+    } catch (err) {
+      setRequestError('Something went wrong. Please try again.');
+    } finally {
+      setRequesting(false);
+    }
+  };
+
+  const handleRequestScan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!scanQuery.trim()) return;
+
+    setRequesting(true);
+    setRequestError('');
+    setRequestSuccess('');
+
+    try {
+      const res = await fetch('/api/research/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: scanQuery.trim() })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setRequestError(data.error || 'Failed to create scan request');
+        return;
+      }
+
+      setRequestSuccess(`Scan requested! We'll notify you when it's ready.`);
+      setScanQuery('');
       setCredits(data.creditsRemaining);
       fetchRequests();
     } catch (err) {
@@ -243,22 +279,59 @@ export default function ResearchPage() {
           </div>
         </div>
 
-        {/* Request Deep Dive */}
+        {/* Request Research */}
         <div className="mb-8 p-6 bg-gradient-to-r from-neutral-900 to-neutral-800 rounded-lg border border-neutral-700">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Request a Deep Dive</h2>
+            <h2 className="text-lg font-semibold">Request Research</h2>
             {session && credits !== null && (
               <div className="text-sm text-neutral-400">
                 <span className="text-white font-medium">{credits}</span> credits
               </div>
             )}
           </div>
+
+          {/* Mode Toggle */}
+          {session && (
+            <div className="flex gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setRequestMode('deep-dive')}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  requestMode === 'deep-dive'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                }`}
+              >
+                🔍 Deep Dive (5 credits)
+              </button>
+              <button
+                type="button"
+                onClick={() => setRequestMode('scan')}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  requestMode === 'scan'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                }`}
+              >
+                📡 Scan (10 credits)
+              </button>
+            </div>
+          )}
+
+          {/* Mode Description */}
+          {session && (
+            <p className="text-xs text-neutral-500 mb-4">
+              {requestMode === 'deep-dive' 
+                ? 'Enter a ticker symbol for comprehensive fundamental analysis'
+                : 'Ask an open-ended question about markets, sectors, or themes (200 char max)'}
+            </p>
+          )}
           
           {!session ? (
             <p className="text-neutral-400 text-sm">
               <Link href="/login" className="text-white underline">Sign in</Link> to request custom research reports.
             </p>
-          ) : (
+          ) : requestMode === 'deep-dive' ? (
             <form onSubmit={handleRequestDeepDive} className="flex gap-3">
               <input
                 type="text"
@@ -273,7 +346,30 @@ export default function ResearchPage() {
                 disabled={requesting || !tickerInput.trim() || (credits !== null && credits < 5)}
                 className="px-6 py-2 bg-white text-black font-medium rounded-lg hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {requesting ? 'Requesting...' : 'Request (5 credits)'}
+                {requesting ? 'Requesting...' : 'Request'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleRequestScan} className="space-y-3">
+              <div className="relative">
+                <textarea
+                  value={scanQuery}
+                  onChange={(e) => setScanQuery(e.target.value.slice(0, MAX_SCAN_CHARS))}
+                  placeholder="What are the best nuclear stocks right now? Find me undervalued small cap tech..."
+                  maxLength={MAX_SCAN_CHARS}
+                  rows={3}
+                  className="w-full bg-neutral-800 border border-neutral-600 rounded-lg px-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-400 resize-none"
+                />
+                <div className="absolute bottom-2 right-2 text-xs text-neutral-500">
+                  {scanQuery.length}/{MAX_SCAN_CHARS}
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={requesting || !scanQuery.trim() || (credits !== null && credits < 10)}
+                className="w-full px-6 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {requesting ? 'Requesting...' : 'Run Scan'}
               </button>
             </form>
           )}
@@ -285,9 +381,14 @@ export default function ResearchPage() {
             <p className="mt-3 text-green-400 text-sm">{requestSuccess}</p>
           )}
           
-          {credits !== null && credits < 5 && (
+          {credits !== null && requestMode === 'deep-dive' && credits < 5 && (
             <p className="mt-3 text-yellow-400 text-sm">
-              You need at least 5 credits for a deep dive. Credits coming soon!
+              You need at least 5 credits for a deep dive.
+            </p>
+          )}
+          {credits !== null && requestMode === 'scan' && credits < 10 && (
+            <p className="mt-3 text-yellow-400 text-sm">
+              You need at least 10 credits for a scan.
             </p>
           )}
         </div>

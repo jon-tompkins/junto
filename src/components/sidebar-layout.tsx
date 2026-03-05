@@ -13,6 +13,52 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [credits, setCredits] = useState<number | null>(null);
+  const [requestingCredits, setRequestingCredits] = useState(false);
+  const [creditRequestMessage, setCreditRequestMessage] = useState<string | null>(null);
+
+  // Fetch credits when session is available
+  useEffect(() => {
+    if (session) {
+      fetchCredits();
+    }
+  }, [session]);
+
+  const fetchCredits = async () => {
+    try {
+      const res = await fetch('/api/user/credits');
+      if (res.ok) {
+        const data = await res.json();
+        setCredits(data.credits);
+      }
+    } catch (err) {
+      console.error('Failed to fetch credits:', err);
+    }
+  };
+
+  const handleRequestMoreCredits = async () => {
+    setRequestingCredits(true);
+    setCreditRequestMessage(null);
+    
+    try {
+      const res = await fetch('/api/credits/request', { method: 'POST' });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setCreditRequestMessage('Request sent! We\'ll review shortly.');
+        // Clear message after 5 seconds
+        setTimeout(() => setCreditRequestMessage(null), 5000);
+      } else {
+        setCreditRequestMessage(data.error || 'Failed to send request');
+        setTimeout(() => setCreditRequestMessage(null), 5000);
+      }
+    } catch (err) {
+      setCreditRequestMessage('Failed to send request');
+      setTimeout(() => setCreditRequestMessage(null), 5000);
+    } finally {
+      setRequestingCredits(false);
+    }
+  };
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -62,6 +108,32 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
           ))}
         </ul>
       </nav>
+
+      {/* Credits section */}
+      {session && (
+        <div className="px-3 py-3 border-t border-neutral-800">
+          <div className="px-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-neutral-500 uppercase tracking-wide">Credits</span>
+              <span className="text-sm font-medium">{credits ?? '...'}</span>
+            </div>
+            <button
+              onClick={handleRequestMoreCredits}
+              disabled={requestingCredits}
+              className="w-full px-3 py-1.5 text-xs bg-neutral-800 hover:bg-neutral-700 rounded transition-colors disabled:opacity-50"
+            >
+              {requestingCredits ? 'Sending...' : 'Request More Credits'}
+            </button>
+            {creditRequestMessage && (
+              <div className={`mt-2 text-xs ${
+                creditRequestMessage.includes('sent') ? 'text-green-400' : 'text-red-400'
+              }`}>
+                {creditRequestMessage}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* User section - always visible at bottom */}
       <div className="mt-auto px-3 py-4 border-t border-neutral-800">

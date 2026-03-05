@@ -5,6 +5,28 @@ import { authOptions } from '@/lib/auth';
 
 const CREDITS_PER_DEEPDIVE = 5;
 
+// Validate ticker exists using quote API
+async function validateTicker(ticker: string): Promise<{ valid: boolean; error?: string }> {
+  try {
+    // Use internal quote API for validation
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'http://localhost:3000';
+    
+    const response = await fetch(`${baseUrl}/api/quote?symbol=${ticker}`);
+    const data = await response.json();
+    
+    return {
+      valid: data.valid === true,
+      error: data.error
+    };
+  } catch (error) {
+    console.error('Ticker validation error:', error);
+    // If validation fails, allow the request to proceed (fail open for now)
+    return { valid: true };
+  }
+}
+
 // POST /api/research/request - create a new deep dive request
 export async function POST(request: NextRequest) {
   try {
@@ -24,6 +46,14 @@ export async function POST(request: NextRequest) {
     const cleanTicker = ticker.toUpperCase().trim();
     if (!/^[A-Z]{1,10}$/.test(cleanTicker)) {
       return NextResponse.json({ error: 'Invalid ticker format' }, { status: 400 });
+    }
+
+    // Validate ticker exists before charging credits
+    const validation = await validateTicker(cleanTicker);
+    if (!validation.valid) {
+      return NextResponse.json({ 
+        error: validation.error || 'Ticker not found. Please check the symbol.'
+      }, { status: 400 });
     }
 
     const supabase = getSupabase();
