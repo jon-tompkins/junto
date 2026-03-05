@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     // Step 2: Get following list
     const followingRes = await fetch(
-      `https://twitter154.p.rapidapi.com/user/following?user_id=${userId}&limit=500`,
+      `https://twitter154.p.rapidapi.com/user/following?user_id=${userId}&limit=100`,
       {
         headers: {
           'x-rapidapi-key': rapidApiKey,
@@ -48,6 +48,9 @@ export async function GET(request: NextRequest) {
     }
 
     const followingData = await followingRes.json();
+    
+    // Debug: log all keys in response
+    const responseKeys = Object.keys(followingData);
     
     const rawList = followingData.results || followingData.users || followingData.following || followingData.data || [];
     
@@ -65,10 +68,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       following,
       debug: {
+        responseKeys,
         rawListLength: rawList.length,
         followingLength: following.length,
         firstRaw: rawList[0],
         firstTransformed: following[0],
+        fullResponse: followingData,
       }
     });
 
