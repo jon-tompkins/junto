@@ -3,11 +3,16 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   const handle = request.nextUrl.searchParams.get('handle');
   
+  console.log(`[Twitter Following] Request for handle: ${handle}`);
+  
   if (!handle) {
+    console.log('[Twitter Following] No handle provided');
     return NextResponse.json({ error: 'Handle required' }, { status: 400 });
   }
 
   const rapidApiKey = process.env.RAPIDAPI_KEY;
+  console.log(`[Twitter Following] RAPIDAPI_KEY present: ${!!rapidApiKey}, length: ${rapidApiKey?.length || 0}`);
+  
   if (!rapidApiKey) {
     console.error('[Twitter Following] RAPIDAPI_KEY not configured');
     return NextResponse.json({ error: 'API not configured', following: [] }, { status: 500 });
