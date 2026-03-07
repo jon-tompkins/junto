@@ -6,7 +6,7 @@ export async function GET() {
   try {
     // Fetch index from GitHub (index.json is at repo root)
     const res = await fetch(`${GITHUB_RAW}/index.json`, {
-      next: { revalidate: 300 } // Cache for 5 minutes
+      cache: 'no-store' // Always fetch fresh
     });
     
     if (!res.ok) {
