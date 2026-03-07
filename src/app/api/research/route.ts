@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 
-const GITHUB_RAW = 'https://raw.githubusercontent.com/jon-tompkins/Agent-Reports/main';
+const GITHUB_RAW = 'https://raw.githubusercontent.com/jon-tompkins/Agent-Reports/main/reports';
 
 export async function GET() {
   try {
-    // Fetch index from GitHub (index.json is at repo root)
-    const res = await fetch(`${GITHUB_RAW}/index.json`, {
-      cache: 'no-store' // Always fetch fresh
+    // Add timestamp to bust GitHub CDN cache
+    const cacheBuster = Date.now();
+    const res = await fetch(`${GITHUB_RAW}/index.json?t=${cacheBuster}`, {
+      cache: 'no-store'
     });
     
     if (!res.ok) {
@@ -24,4 +25,3 @@ export async function GET() {
     );
   }
 }
-// cache bust 1772848033
