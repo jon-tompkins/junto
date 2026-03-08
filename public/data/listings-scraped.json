@@ -1,42 +1,31 @@
 {
-  "lastUpdated": "2026-03-08T16:57:19.752035",
+  "lastUpdated": "2026-03-08T16:58:29.946401",
   "filters": {
     "beds": "2+",
     "baths": "2+",
+    "sqft": "1300+ or unknown",
     "amenities": [
       "washer_dryer"
     ]
   },
   "listings": [
     {
-      "raw_text": "Rental unit  in Financial District\n95 Wall Street #2222\nSave\n$7,712\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,022 ft\u00b2\n Listing by UDR\nFeatured\nImage 1 of 9",
-      "area": "fidi",
+      "raw_text": "Rental unit  in Carnegie Hill\n175 East 96th Street #16K\nSave\n$6,400\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by The Monterey\nImage 1 of 27",
+      "area": "ues",
       "source": "StreetEasy",
-      "address": "95 Wall Street #2222",
-      "price": 7712,
+      "address": "175 East 96th Street #16K",
+      "price": 6400,
       "beds": 2,
-      "baths": 2,
-      "sqft": 1022
+      "baths": 2
     },
     {
-      "raw_text": "Condo  in Financial District\n125 Greenwich Street #37C\nSave\n$15,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$1,000\n2 beds\n2.5 baths\n1,668 ft\u00b2\n Listing by Compass\nFeatured\nImage 1 of 23",
-      "area": "fidi",
+      "raw_text": "Rental unit  in Yorkville\n345 East 94th Street #22E\nSave\n$6,700\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Mirador Real Estate\nImage 1 of 18",
+      "area": "ues",
       "source": "StreetEasy",
-      "address": "125 Greenwich Street #37C",
-      "price": 15000,
+      "address": "345 East 94th Street #22E",
+      "price": 6700,
       "beds": 2,
-      "baths": 5,
-      "sqft": 1668
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n70 Pine Street #1203\nSave\n$8,779\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$8,413\n0.5 months free\n\u00b7\n12-month lease\n2 beds\n2 baths\n1,378 ft\u00b2\n Listing by Rose Associates, Inc.\nOpen: \nMar 10 \n3 PM)\nImage 1 of 9",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "70 Pine Street #1203",
-      "price": 8779,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1378
+      "baths": 2
     },
     {
       "raw_text": "Rental unit  in Financial District\n180 Pearl Street #347\nSave\n$6,745\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$6,226\n1 month free\n\u00b7\n13-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Bushburg\nImage 1 of 23",
@@ -48,263 +37,13 @@
       "baths": 2
     },
     {
-      "raw_text": "Rental unit  in Williamsburg\n11 Wharf Way #PH107\nSave\n$13,500\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$11,571\n2 months free\n\u00b7\n14-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Corcoran\nOpen: \nMar 8 \n5 PM)\nSponsored\nImage 1 of 27",
-      "area": "fidi",
+      "raw_text": "Rental unit  in Yorkville\n333 East 83rd Street #2W\nSave\n$6,795\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Argent Advisors LLC\nImage 1 of 8",
+      "area": "ues",
       "source": "StreetEasy",
-      "price": 13500,
+      "address": "333 East 83rd Street #2W",
+      "price": 6795,
       "beds": 2,
       "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n7 Platt Street #21F\nSave\n$9,360\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$8,775\n1 month free\n\u00b7\n16-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Aura NYC LLC\nImage 1 of 22",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "7 Platt Street #21F",
-      "price": 9360,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n10 Hanover Square #2A\nSave\n$7,294\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$218\n2 beds\n2 baths\n1,161 ft\u00b2\n Listing by UDR\nImage 1 of 9",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "price": 7294,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1161
-    },
-    {
-      "raw_text": "Rental unit  in Fulton/Seaport\n88 Fulton Street #L7\nSave\n$5,650\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,250 ft\u00b2\n Listing by Compass\nImage 1 of 12",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "88 Fulton Street #L7",
-      "price": 5650,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1250
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n180 Pearl Street #348\nSave\n$7,995\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$7,380\n1 month free\n\u00b7\n13-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Bushburg\nImage 1 of 23",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "180 Pearl Street #348",
-      "price": 7995,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n70 Pine Street #3001\nSave\n$8,608\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$8,249\n0.5 months free\n\u00b7\n12-month lease\n2 beds\n2 baths\n1,137 ft\u00b2\n Listing by Rose Associates, Inc.\nImage 1 of 10",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "70 Pine Street #3001",
-      "price": 8608,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1137
-    },
-    {
-      "raw_text": "Condo  in Financial District\n50 West Street #44B\nSave\n$15,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$1,000\n2 beds\n2.5 baths\n1,513 ft\u00b2\n Listing by Time Equities, Inc.\nImage 1 of 20",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "50 West Street #44B",
-      "price": 15000,
-      "beds": 2,
-      "baths": 5,
-      "sqft": 1513
-    },
-    {
-      "raw_text": "Co-op  in Financial District\n176 Broadway #12E\nSave\n$9,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,500 ft\u00b2\n Listing by Corcoran\nImage 1 of 8",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "176 Broadway #12E",
-      "price": 9000,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1500
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n70 Pine Street #2107\nSave\n$7,788\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$7,464\n0.5 months free\n\u00b7\n12-month lease\n2 beds\n2 baths\n1,096 ft\u00b2\n Listing by Rose Associates, Inc.\nOpen: \nMar 10 \n3 PM)\nVideo\nImage 1 of 24",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "70 Pine Street #2107",
-      "price": 7788,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1096
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n70 Pine Street #1802\nSave\n$8,569\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$8,212\n0.5 months free\n\u00b7\n12-month lease\n2 beds\n2 baths\n1,212 ft\u00b2\n Listing by Rose Associates, Inc.\nOpen: \nMar 10 \n3 PM)\nVideo\nImage 1 of 26",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "70 Pine Street #1802",
-      "price": 8569,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1212
-    },
-    {
-      "raw_text": "Condo  in Financial District\n25 Broad Street #9S\nSave\n$8,800\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2.5 baths\n1,385 ft\u00b2\n Listing by Owner\nFeatured\nImage 1 of 29",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "25 Broad Street #9S",
-      "price": 8800,
-      "beds": 2,
-      "baths": 5,
-      "sqft": 1385
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n70 Pine Street #3001\nSave\n$8,608\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$8,249\n0.5 months free\n\u00b7\n12-month lease\n2 beds\n2 baths\n1,137 ft\u00b2\n Listing by Rose Associates, Inc.\nFeatured\nImage 1 of 10",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "70 Pine Street #3001",
-      "price": 8608,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1137
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n180 Pearl Street #347\nSave\n$6,745\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$6,226\n1 month free\n\u00b7\n13-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Bushburg\nImage 1 of 23",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "180 Pearl Street #347",
-      "price": 6745,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n10 Hanover Square #2A\nSave\n$7,294\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$218\n2 beds\n2 baths\n1,161 ft\u00b2\n Listing by UDR\nImage 1 of 9",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "price": 7294,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1161
-    },
-    {
-      "raw_text": "Rental unit  in Williamsburg\n11 Wharf Way #702\nSave\n$8,750\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$7,500\n2 months free\n\u00b7\n14-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Corcoran\nOpen: \nMar 8 \n5 PM)\nSponsored\nImage 1 of 26",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "price": 8750,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n7 Platt Street #21F\nSave\n$9,360\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$8,775\n1 month free\n\u00b7\n16-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Aura NYC LLC\nImage 1 of 22",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "7 Platt Street #21F",
-      "price": 9360,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n70 Pine Street #2211\nSave\n$8,128\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$7,789\n0.5 months free\n\u00b7\n12-month lease\n2 beds\n2 baths\n1,069 ft\u00b2\n Listing by Rose Associates, Inc.\nVideo\nImage 1 of 23",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "70 Pine Street #2211",
-      "price": 8128,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1069
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n70 Pine Street #3001\nSave\n$8,608\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$8,249\n0.5 months free\n\u00b7\n12-month lease\n2 beds\n2 baths\n1,137 ft\u00b2\n Listing by Rose Associates, Inc.\nImage 1 of 10",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "70 Pine Street #3001",
-      "price": 8608,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1137
-    },
-    {
-      "raw_text": "Condo  in Financial District\n50 West Street #44B\nSave\n$15,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$1,000\n2 beds\n2.5 baths\n1,513 ft\u00b2\n Listing by Time Equities, Inc.\nImage 1 of 20",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "50 West Street #44B",
-      "price": 15000,
-      "beds": 2,
-      "baths": 5,
-      "sqft": 1513
-    },
-    {
-      "raw_text": "Co-op  in Financial District\n176 Broadway #12E\nSave\n$9,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,500 ft\u00b2\n Listing by Corcoran\nImage 1 of 8",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "176 Broadway #12E",
-      "price": 9000,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1500
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n70 Pine Street #1802\nSave\n$8,569\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$8,212\n0.5 months free\n\u00b7\n12-month lease\n2 beds\n2 baths\n1,212 ft\u00b2\n Listing by Rose Associates, Inc.\nOpen: \nMar 10 \n3 PM)\nVideo\nImage 1 of 26",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "70 Pine Street #1802",
-      "price": 8569,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1212
-    },
-    {
-      "raw_text": "Rental unit  in Fulton/Seaport\n88 Fulton Street #227\nSave\n$5,500\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,200 ft\u00b2\n Listing by Compass\nImage 1 of 13",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "88 Fulton Street #227",
-      "price": 5500,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1200
-    },
-    {
-      "raw_text": "Condo  in Fulton/Seaport\n1 Park Row #5C\nSave\n$12,350\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,247 ft\u00b2\n Listing by Corcoran\nOpen: \nMar 8 \n2 PM)\nImage 1 of 18",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "price": 12350,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1247
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n67 Wall Street #10H\nSave\n$7,250\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$6,948\n0.5 months free\n\u00b7\n12-month lease\n2 beds\n2 baths\n1,157 ft\u00b2\n Listing by Pinnacle City Living\nImage 1 of 28",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "67 Wall Street #10H",
-      "price": 7250,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1157
-    },
-    {
-      "raw_text": "Condo  in Financial District\n125 Greenwich Street #37C\nSave\n$15,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$1,000\n2 beds\n2.5 baths\n1,668 ft\u00b2\n Listing by Compass\nFeatured\nImage 1 of 23",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "125 Greenwich Street #37C",
-      "price": 15000,
-      "beds": 2,
-      "baths": 5,
-      "sqft": 1668
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n67 Wall Street #10H\nSave\n$7,250\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$6,948\n0.5 months free\n\u00b7\n12-month lease\n2 beds\n2 baths\n1,157 ft\u00b2\n Listing by Pinnacle City Living\nFeatured\nImage 1 of 28",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "67 Wall Street #10H",
-      "price": 7250,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1157
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n67 Wall Street #10H\nSave\n$7,250\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$6,948\n0.5 months free\n\u00b7\n12-month lease\n2 beds\n2 baths\n1,157 ft\u00b2\n Listing by Pinnacle City Living\nImage 1 of 28",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "67 Wall Street #10H",
-      "price": 7250,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1157
     },
     {
       "raw_text": "Rental unit  in Financial District\n160 Water Street #21X\nSave\n$6,825\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$6,256\n1 month free\n\u00b7\n12-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Living New York\nVideo\nImage 1 of 47",
@@ -316,61 +55,6 @@
       "baths": 2
     },
     {
-      "raw_text": "Rental unit  in Williamsburg\n11 Wharf Way #PH107\nSave\n$13,500\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$11,571\n2 months free\n\u00b7\n14-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Corcoran\nOpen: \nMar 8 \n5 PM)\nSponsored\nImage 1 of 27",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "price": 13500,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Condo  in Financial District\n125 Greenwich Street #37C\nSave\n$15,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$1,000\n2 beds\n2.5 baths\n1,668 ft\u00b2\n Listing by Compass\nImage 1 of 23",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "125 Greenwich Street #37C",
-      "price": 15000,
-      "beds": 2,
-      "baths": 5,
-      "sqft": 1668
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n84 William Street #PH2\nSave\n$7,800\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$7,150\n1 month free\n\u00b7\n12-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Living New York\nImage 1 of 29",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "84 William Street #PH2",
-      "price": 7800,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n95 Wall Street #2222\nSave\n$7,712\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,022 ft\u00b2\n Listing by UDR\nImage 1 of 9",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "95 Wall Street #2222",
-      "price": 7712,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1022
-    },
-    {
-      "raw_text": "Rental unit  in Fulton/Seaport\n8 Spruce Street #36T\nSave\n$9,207\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Beam Living\nVideo\nImage 1 of 18",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "8 Spruce Street #36T",
-      "price": 9207,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Financial District\n55 Broad Street #1307\nSave\n$8,550\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$7,600\n3 months free\n\u00b7\n27-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Compass\nImage 1 of 11",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "55 Broad Street #1307",
-      "price": 8550,
-      "beds": 2,
-      "baths": 2
-    },
-    {
       "raw_text": "Condo  in Financial District\n40 Broad Street #24D\nSave\n$6,995\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$6,495\n1 month free\n\u00b7\n14-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Platinum Properties\nImage 1 of 15",
       "area": "fidi",
       "source": "StreetEasy",
@@ -378,16 +62,6 @@
       "price": 6995,
       "beds": 2,
       "baths": 2
-    },
-    {
-      "raw_text": "Condo  in Financial District\n40 Broad Street #PH1H\nSave\n$8,600\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,105 ft\u00b2\n Listing by Douglas Elliman\nImage 1 of 10",
-      "area": "fidi",
-      "source": "StreetEasy",
-      "address": "40 Broad Street #PH1H",
-      "price": 8600,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1105
     },
     {
       "raw_text": "Condo  in Fulton/Seaport\n264 Water Street #1C\nSave\n$7,400\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,300 ft\u00b2\n Listing by Brown Harris Stevens\nImage 1 of 17",
@@ -410,383 +84,29 @@
       "sqft": 1350
     },
     {
-      "raw_text": "Rental unit  in Lenox Hill\n360 East 65th Street #21A\nSave\n$7,795\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,177 ft\u00b2\n Listing by Stonehenge NYC LLC\nFeatured\nOpen: \nMar 13 (3\u2013\n4 PM)\n3D Tour\nImage 1 of 12",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "360 East 65th Street #21A",
-      "price": 7795,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1177
-    },
-    {
-      "raw_text": "Rental unit  in Lenox Hill\n501 East 74th Street #10E\nSave\n$8,647\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,100 ft\u00b2\n Listing by Fetner Properties\nFeatured\nImage 1 of 19",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "501 East 74th Street #10E",
-      "price": 8647,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1100
-    },
-    {
-      "raw_text": "Rental unit  in Lenox Hill\n1113 York Avenue #17B\nSave\n$15,480\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,300 ft\u00b2\n Listing by Stay Haus\nImage 1 of 21",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "1113 York Avenue #17B",
-      "price": 15480,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1300
-    },
-    {
-      "raw_text": "Multifamily home  in Lenox Hill\n130 East 61st Street #1B\nSave\n$12,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2.5 baths\n2,000 ft\u00b2\n Listing by Keller Williams NYC\nImage 1 of 14",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "130 East 61st Street #1B",
-      "price": 12000,
-      "beds": 2,
-      "baths": 5,
-      "sqft": 2000
-    },
-    {
-      "raw_text": "Rental unit  in Turtle Bay\n222 East 44th Street #33E\nSave\n$13,650\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by BLDG\nSponsored\nImage 1 of 17",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "222 East 44th Street #33E",
-      "price": 13650,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Yorkville\n240 East 86th Street #21I\nSave\n$9,785\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,185 ft\u00b2\n Listing by Rose Associates, Inc.\nVideo\nImage 1 of 18",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "240 East 86th Street #21I",
-      "price": 9785,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1185
-    },
-    {
-      "raw_text": "Rental unit  in Yorkville\n1735 York Avenue #9BB\nSave\n$8,495\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Sovereign Associates\nImage 1 of 21",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "1735 York Avenue #9BB",
-      "price": 8495,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Yorkville\n333 East 83rd Street #2W\nSave\n$6,795\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Argent Advisors LLC\nImage 1 of 8",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "333 East 83rd Street #2W",
-      "price": 6795,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Condo  in Lenox Hill\n815 5th Avenue DUPLEX-2\nSave\n$165,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n3.5 baths\n3,552 ft\u00b2\n Listing by Douglas Elliman\nImage 1 of 11",
-      "area": "ues",
-      "source": "StreetEasy",
-      "price": 165000,
-      "beds": 2,
-      "baths": 5,
-      "sqft": 3552
-    },
-    {
-      "raw_text": "Rental unit  in Carnegie Hill\n175 East 96th Street #16K\nSave\n$6,400\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by The Monterey\nImage 1 of 27",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "175 East 96th Street #16K",
-      "price": 6400,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Lenox Hill\n165 East 66th Street #15F\nSave\n$13,695\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$300\n$12,642\n1 month free\n\u00b7\n13-month lease\n2 beds\n2 baths\n1,419 ft\u00b2\n Listing by Stonehenge NYC LLC\nImage 1 of 12",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "165 East 66th Street #15F",
-      "price": 13695,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1419
-    },
-    {
-      "raw_text": "Condop  in Yorkville\n215 East 96th Street #4E\nSave\n$7,800\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Related Rentals\nImage 1 of 18",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "215 East 96th Street #4E",
-      "price": 7800,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Yorkville\n1735 York Avenue #B16\nSave\n$8,995\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Sovereign Associates\nImage 1 of 18",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "1735 York Avenue #B16",
-      "price": 8995,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Lenox Hill\n7 East 75th Street #PHB\nSave\n$9,995\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Centennial Properties NY\nVideo\nImage 1 of 6",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "7 East 75th Street #PHB",
-      "price": 9995,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Yorkville\n1735 York Avenue #9BB\nSave\n$8,495\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Sovereign Associates\nFeatured\nImage 1 of 21",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "1735 York Avenue #9BB",
-      "price": 8495,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Carnegie Hill\n175 East 96th Street #16K\nSave\n$6,400\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by The Monterey\nFeatured\nImage 1 of 27",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "175 East 96th Street #16K",
-      "price": 6400,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Condo  in Lenox Hill\n305 East 61st Street #502\nSave\n$15,995\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,568 ft\u00b2\n Listing by Owner\nImage 1 of 5",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "305 East 61st Street #502",
-      "price": 15995,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1568
-    },
-    {
-      "raw_text": "Rental unit  in Lenox Hill\n360 East 65th Street #3B\nSave\n$6,995\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,038 ft\u00b2\n Listing by Stonehenge NYC LLC\n3D Tour\nImage 1 of 9",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "360 East 65th Street #3B",
-      "price": 6995,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1038
-    },
-    {
-      "raw_text": "Rental unit  in Turtle Bay\n222 East 44th Street #33E\nSave\n$13,650\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by BLDG\nSponsored\nImage 1 of 17",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "222 East 44th Street #33E",
-      "price": 13650,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Yorkville\n333 East 83rd Street #2W\nSave\n$6,795\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Argent Advisors LLC\nImage 1 of 8",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "333 East 83rd Street #2W",
-      "price": 6795,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Lenox Hill\n254 East 68th Street #31B\nSave\n$13,500\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,508 ft\u00b2\n Listing by Rudin Management Company, Inc.\nImage 1 of 9",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "254 East 68th Street #31B",
-      "price": 13500,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1508
-    },
-    {
-      "raw_text": "Rental unit  in Lenox Hill\n360 East 65th Street #11E\nSave\n$7,995\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,146 ft\u00b2\n Listing by Stonehenge NYC LLC\nImage 1 of 10",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "360 East 65th Street #11E",
-      "price": 7995,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1146
-    },
-    {
-      "raw_text": "Rental unit  in Lenox Hill\n1385 York Avenue #26G\nSave\n$8,795\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2.5 baths\n- ft\u00b2\n Listing by Glenwood\nVideo\nImage 1 of 15",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "1385 York Avenue #26G",
-      "price": 8795,
-      "beds": 2,
-      "baths": 5
-    },
-    {
-      "raw_text": "Rental unit  in Yorkville\n225 East 95th Street #A26C\nSave\n$6,165\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n838 ft\u00b2\n Listing by Ogden CAP Properties\nOpen: \nMar 12 \n6 PM)\nImage 1 of 15",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "225 East 95th Street #A26C",
-      "price": 6165,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 838
-    },
-    {
-      "raw_text": "Rental unit  in Lenox Hill\n220 East 72nd Street #21E\nSave\n$9,445\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by The Dermot Realty Management Company\n3D Tour\nImage 1 of 21",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "220 East 72nd Street #21E",
-      "price": 9445,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Yorkville\n303 East 83rd Street #14G\nSave\n$7,996\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,038 ft\u00b2\n Listing by Equity Residential\nImage 1 of 40",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "303 East 83rd Street #14G",
-      "price": 7996,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1038
-    },
-    {
-      "raw_text": "Condop  in Yorkville\n215 East 96th Street #4E\nSave\n$7,800\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Related Rentals\nImage 1 of 18",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "215 East 96th Street #4E",
-      "price": 7800,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Lenox Hill\n165 East 66th Street #16A\nSave\n$15,250\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,420 ft\u00b2\n Listing by Stonehenge NYC LLC\nImage 1 of 10",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "165 East 66th Street #16A",
-      "price": 15250,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1420
-    },
-    {
-      "raw_text": "Rental unit  in Lenox Hill\n165 East 66th Street #17C\nSave\n$13,500\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,179 ft\u00b2\n Listing by Stonehenge NYC LLC\nFeatured\nImage 1 of 10",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "165 East 66th Street #17C",
-      "price": 13500,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1179
-    },
-    {
-      "raw_text": "Rental unit  in Lenox Hill\n360 East 65th Street #11E\nSave\n$7,995\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,146 ft\u00b2\n Listing by Stonehenge NYC LLC\nFeatured\nImage 1 of 10",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "360 East 65th Street #11E",
-      "price": 7995,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1146
-    },
-    {
-      "raw_text": "Rental unit  in Lenox Hill\n215 East 68th Street #22C\nSave\n$15,675\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2.5 baths\n1,995 ft\u00b2\n Listing by Rudin Management Company, Inc.\nImage 1 of 1",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "215 East 68th Street #22C",
-      "price": 15675,
-      "beds": 2,
-      "baths": 5,
-      "sqft": 1995
-    },
-    {
-      "raw_text": "Rental unit  in Yorkville\n345 East 94th Street #22E\nSave\n$6,700\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Mirador Real Estate\nImage 1 of 18",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "345 East 94th Street #22E",
-      "price": 6700,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Turtle Bay\n222 East 44th Street #33E\nSave\n$13,650\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by BLDG\nSponsored\nImage 1 of 17",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "222 East 44th Street #33E",
-      "price": 13650,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Condop  in Yorkville\n215 East 96th Street #4E\nSave\n$7,800\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Related Rentals\nImage 1 of 18",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "215 East 96th Street #4E",
-      "price": 7800,
-      "beds": 2,
-      "baths": 2
-    },
-    {
-      "raw_text": "Rental unit  in Yorkville\n225 East 95th Street #A26C\nSave\n$6,165\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n838 ft\u00b2\n Listing by Ogden CAP Properties\nOpen: \nMar 12 \n6 PM)\nImage 1 of 15",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "225 East 95th Street #A26C",
-      "price": 6165,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 838
-    },
-    {
-      "raw_text": "Rental unit  in Yorkville\n225 East 95th Street #D22K\nSave\n$6,175\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n883 ft\u00b2\n Listing by Ogden CAP Properties\nImage 1 of 15",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "225 East 95th Street #D22K",
-      "price": 6175,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 883
-    },
-    {
-      "raw_text": "Rental unit  in Lenox Hill\n360 East 65th Street #21A\nSave\n$7,795\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,177 ft\u00b2\n Listing by Stonehenge NYC LLC\nOpen: \nMar 13 (3\u2013\n4 PM)\n3D Tour\nImage 1 of 12",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "360 East 65th Street #21A",
-      "price": 7795,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1177
-    },
-    {
-      "raw_text": "Rental unit  in Lenox Hill\n525 East 72nd Street #45I\nSave\n$9,300\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,300 ft\u00b2\n Listing by Vector New York, LLC\nImage 1 of 21",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "525 East 72nd Street #45I",
-      "price": 9300,
-      "beds": 2,
-      "baths": 2,
-      "sqft": 1300
-    },
-    {
-      "raw_text": "Condo  in Lenox Hill\n140 East 63rd Street #7A\nSave\n$15,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2.5 baths\n1,508 ft\u00b2\n Listing by REAL New York\nOpen: \nMar 9 \n11:30 AM)\nImage 1 of 11",
-      "area": "ues",
-      "source": "StreetEasy",
-      "address": "140 East 63rd Street #7A",
-      "price": 15000,
-      "beds": 2,
-      "baths": 5,
-      "sqft": 1508
-    },
-    {
       "raw_text": "Rental unit  in Carnegie Hill\n1 East 93rd Street #3BC\nSave\n$7,750\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$250\n2 beds\n2 baths\n- ft\u00b2\n Listing by CitySites Real Estate Group\nImage 1 of 12",
       "area": "ues",
       "source": "StreetEasy",
       "address": "1 East 93rd Street #3BC",
       "price": 7750,
+      "beds": 2,
+      "baths": 2
+    },
+    {
+      "raw_text": "Rental unit  in Financial District\n84 William Street #PH2\nSave\n$7,800\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$7,150\n1 month free\n\u00b7\n12-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Living New York\nImage 1 of 29",
+      "area": "fidi",
+      "source": "StreetEasy",
+      "address": "84 William Street #PH2",
+      "price": 7800,
+      "beds": 2,
+      "baths": 2
+    },
+    {
+      "raw_text": "Condop  in Yorkville\n215 East 96th Street #4E\nSave\n$7,800\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Related Rentals\nImage 1 of 18",
+      "area": "ues",
+      "source": "StreetEasy",
+      "address": "215 East 96th Street #4E",
+      "price": 7800,
       "beds": 2,
       "baths": 2
     },
@@ -801,14 +121,242 @@
       "sqft": 1300
     },
     {
-      "raw_text": "Condo  in Lenox Hill\n40 East 78th Street #10B\nSave\n$10,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,250 ft\u00b2\n Listing by Corcoran\nImage 1 of 8",
+      "raw_text": "Rental unit  in Financial District\n180 Pearl Street #348\nSave\n$7,995\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$7,380\n1 month free\n\u00b7\n13-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Bushburg\nImage 1 of 23",
+      "area": "fidi",
+      "source": "StreetEasy",
+      "address": "180 Pearl Street #348",
+      "price": 7995,
+      "beds": 2,
+      "baths": 2
+    },
+    {
+      "raw_text": "Rental unit  in Yorkville\n1735 York Avenue #9BB\nSave\n$8,495\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Sovereign Associates\nImage 1 of 21",
       "area": "ues",
       "source": "StreetEasy",
-      "address": "40 East 78th Street #10B",
-      "price": 10000,
+      "address": "1735 York Avenue #9BB",
+      "price": 8495,
+      "beds": 2,
+      "baths": 2
+    },
+    {
+      "raw_text": "Rental unit  in Financial District\n55 Broad Street #1307\nSave\n$8,550\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$7,600\n3 months free\n\u00b7\n27-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Compass\nImage 1 of 11",
+      "area": "fidi",
+      "source": "StreetEasy",
+      "address": "55 Broad Street #1307",
+      "price": 8550,
+      "beds": 2,
+      "baths": 2
+    },
+    {
+      "raw_text": "Rental unit  in Financial District\n70 Pine Street #1203\nSave\n$8,779\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$8,413\n0.5 months free\n\u00b7\n12-month lease\n2 beds\n2 baths\n1,378 ft\u00b2\n Listing by Rose Associates, Inc.\nOpen: \nMar 10 \n3 PM)\nImage 1 of 9",
+      "area": "fidi",
+      "source": "StreetEasy",
+      "address": "70 Pine Street #1203",
+      "price": 8779,
       "beds": 2,
       "baths": 2,
-      "sqft": 1250
+      "sqft": 1378
+    },
+    {
+      "raw_text": "Rental unit  in Lenox Hill\n1385 York Avenue #26G\nSave\n$8,795\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2.5 baths\n- ft\u00b2\n Listing by Glenwood\nVideo\nImage 1 of 15",
+      "area": "ues",
+      "source": "StreetEasy",
+      "address": "1385 York Avenue #26G",
+      "price": 8795,
+      "beds": 2,
+      "baths": 5
+    },
+    {
+      "raw_text": "Condo  in Financial District\n25 Broad Street #9S\nSave\n$8,800\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2.5 baths\n1,385 ft\u00b2\n Listing by Owner\nFeatured\nImage 1 of 29",
+      "area": "fidi",
+      "source": "StreetEasy",
+      "address": "25 Broad Street #9S",
+      "price": 8800,
+      "beds": 2,
+      "baths": 5,
+      "sqft": 1385
+    },
+    {
+      "raw_text": "Rental unit  in Yorkville\n1735 York Avenue #B16\nSave\n$8,995\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Sovereign Associates\nImage 1 of 18",
+      "area": "ues",
+      "source": "StreetEasy",
+      "address": "1735 York Avenue #B16",
+      "price": 8995,
+      "beds": 2,
+      "baths": 2
+    },
+    {
+      "raw_text": "Co-op  in Financial District\n176 Broadway #12E\nSave\n$9,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,500 ft\u00b2\n Listing by Corcoran\nImage 1 of 8",
+      "area": "fidi",
+      "source": "StreetEasy",
+      "address": "176 Broadway #12E",
+      "price": 9000,
+      "beds": 2,
+      "baths": 2,
+      "sqft": 1500
+    },
+    {
+      "raw_text": "Rental unit  in Fulton/Seaport\n8 Spruce Street #36T\nSave\n$9,207\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Beam Living\nVideo\nImage 1 of 18",
+      "area": "fidi",
+      "source": "StreetEasy",
+      "address": "8 Spruce Street #36T",
+      "price": 9207,
+      "beds": 2,
+      "baths": 2
+    },
+    {
+      "raw_text": "Rental unit  in Lenox Hill\n525 East 72nd Street #45I\nSave\n$9,300\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,300 ft\u00b2\n Listing by Vector New York, LLC\nImage 1 of 21",
+      "area": "ues",
+      "source": "StreetEasy",
+      "address": "525 East 72nd Street #45I",
+      "price": 9300,
+      "beds": 2,
+      "baths": 2,
+      "sqft": 1300
+    },
+    {
+      "raw_text": "Rental unit  in Financial District\n7 Platt Street #21F\nSave\n$9,360\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$8,775\n1 month free\n\u00b7\n16-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Aura NYC LLC\nImage 1 of 22",
+      "area": "fidi",
+      "source": "StreetEasy",
+      "address": "7 Platt Street #21F",
+      "price": 9360,
+      "beds": 2,
+      "baths": 2
+    },
+    {
+      "raw_text": "Rental unit  in Lenox Hill\n220 East 72nd Street #21E\nSave\n$9,445\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by The Dermot Realty Management Company\n3D Tour\nImage 1 of 21",
+      "area": "ues",
+      "source": "StreetEasy",
+      "address": "220 East 72nd Street #21E",
+      "price": 9445,
+      "beds": 2,
+      "baths": 2
+    },
+    {
+      "raw_text": "Rental unit  in Lenox Hill\n7 East 75th Street #PHB\nSave\n$9,995\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by Centennial Properties NY\nVideo\nImage 1 of 6",
+      "area": "ues",
+      "source": "StreetEasy",
+      "address": "7 East 75th Street #PHB",
+      "price": 9995,
+      "beds": 2,
+      "baths": 2
+    },
+    {
+      "raw_text": "Multifamily home  in Lenox Hill\n130 East 61st Street #1B\nSave\n$12,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2.5 baths\n2,000 ft\u00b2\n Listing by Keller Williams NYC\nImage 1 of 14",
+      "area": "ues",
+      "source": "StreetEasy",
+      "address": "130 East 61st Street #1B",
+      "price": 12000,
+      "beds": 2,
+      "baths": 5,
+      "sqft": 2000
+    },
+    {
+      "raw_text": "Rental unit  in Williamsburg\n11 Wharf Way #PH107\nSave\n$13,500\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$11,571\n2 months free\n\u00b7\n14-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Corcoran\nOpen: \nMar 8 \n5 PM)\nSponsored\nImage 1 of 27",
+      "area": "fidi",
+      "source": "StreetEasy",
+      "price": 13500,
+      "beds": 2,
+      "baths": 2
+    },
+    {
+      "raw_text": "Rental unit  in Lenox Hill\n254 East 68th Street #31B\nSave\n$13,500\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,508 ft\u00b2\n Listing by Rudin Management Company, Inc.\nImage 1 of 9",
+      "area": "ues",
+      "source": "StreetEasy",
+      "address": "254 East 68th Street #31B",
+      "price": 13500,
+      "beds": 2,
+      "baths": 2,
+      "sqft": 1508
+    },
+    {
+      "raw_text": "Rental unit  in Turtle Bay\n222 East 44th Street #33E\nSave\n$13,650\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by BLDG\nSponsored\nImage 1 of 17",
+      "area": "ues",
+      "source": "StreetEasy",
+      "address": "222 East 44th Street #33E",
+      "price": 13650,
+      "beds": 2,
+      "baths": 2
+    },
+    {
+      "raw_text": "Rental unit  in Lenox Hill\n165 East 66th Street #15F\nSave\n$13,695\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$300\n$12,642\n1 month free\n\u00b7\n13-month lease\n2 beds\n2 baths\n1,419 ft\u00b2\n Listing by Stonehenge NYC LLC\nImage 1 of 12",
+      "area": "ues",
+      "source": "StreetEasy",
+      "address": "165 East 66th Street #15F",
+      "price": 13695,
+      "beds": 2,
+      "baths": 2,
+      "sqft": 1419
+    },
+    {
+      "raw_text": "Condo  in Financial District\n125 Greenwich Street #37C\nSave\n$15,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$1,000\n2 beds\n2.5 baths\n1,668 ft\u00b2\n Listing by Compass\nFeatured\nImage 1 of 23",
+      "area": "fidi",
+      "source": "StreetEasy",
+      "address": "125 Greenwich Street #37C",
+      "price": 15000,
+      "beds": 2,
+      "baths": 5,
+      "sqft": 1668
+    },
+    {
+      "raw_text": "Condo  in Financial District\n50 West Street #44B\nSave\n$15,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$1,000\n2 beds\n2.5 baths\n1,513 ft\u00b2\n Listing by Time Equities, Inc.\nImage 1 of 20",
+      "area": "fidi",
+      "source": "StreetEasy",
+      "address": "50 West Street #44B",
+      "price": 15000,
+      "beds": 2,
+      "baths": 5,
+      "sqft": 1513
+    },
+    {
+      "raw_text": "Condo  in Lenox Hill\n140 East 63rd Street #7A\nSave\n$15,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2.5 baths\n1,508 ft\u00b2\n Listing by REAL New York\nOpen: \nMar 9 \n11:30 AM)\nImage 1 of 11",
+      "area": "ues",
+      "source": "StreetEasy",
+      "address": "140 East 63rd Street #7A",
+      "price": 15000,
+      "beds": 2,
+      "baths": 5,
+      "sqft": 1508
+    },
+    {
+      "raw_text": "Rental unit  in Lenox Hill\n165 East 66th Street #16A\nSave\n$15,250\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,420 ft\u00b2\n Listing by Stonehenge NYC LLC\nImage 1 of 10",
+      "area": "ues",
+      "source": "StreetEasy",
+      "address": "165 East 66th Street #16A",
+      "price": 15250,
+      "beds": 2,
+      "baths": 2,
+      "sqft": 1420
+    },
+    {
+      "raw_text": "Rental unit  in Lenox Hill\n1113 York Avenue #17B\nSave\n$15,480\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,300 ft\u00b2\n Listing by Stay Haus\nImage 1 of 21",
+      "area": "ues",
+      "source": "StreetEasy",
+      "address": "1113 York Avenue #17B",
+      "price": 15480,
+      "beds": 2,
+      "baths": 2,
+      "sqft": 1300
+    },
+    {
+      "raw_text": "Rental unit  in Lenox Hill\n215 East 68th Street #22C\nSave\n$15,675\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2.5 baths\n1,995 ft\u00b2\n Listing by Rudin Management Company, Inc.\nImage 1 of 1",
+      "area": "ues",
+      "source": "StreetEasy",
+      "address": "215 East 68th Street #22C",
+      "price": 15675,
+      "beds": 2,
+      "baths": 5,
+      "sqft": 1995
+    },
+    {
+      "raw_text": "Condo  in Lenox Hill\n305 East 61st Street #502\nSave\n$15,995\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,568 ft\u00b2\n Listing by Owner\nImage 1 of 5",
+      "area": "ues",
+      "source": "StreetEasy",
+      "address": "305 East 61st Street #502",
+      "price": 15995,
+      "beds": 2,
+      "baths": 2,
+      "sqft": 1568
     }
   ]
 }
