@@ -198,11 +198,11 @@ export default function ApartmentsPage() {
       </div>
 
       <div className="flex flex-col lg:flex-row" style={{ height: 'calc(100vh - 120px)' }}>
-        {/* Map */}
-        <div ref={mapRef} className="w-full lg:w-3/5 h-[50vh] lg:h-full" />
+        {/* Map - 70% width on desktop */}
+        <div ref={mapRef} className="w-full lg:w-[70%] h-[60vh] lg:h-full" />
 
-        {/* Listings */}
-        <div className="w-full lg:w-2/5 overflow-y-auto bg-white border-l">
+        {/* Listings - 30% width on desktop */}
+        <div className="w-full lg:w-[30%] overflow-y-auto bg-white border-l">
           <div className="p-4 border-b bg-gray-50">
             <div className="flex justify-between items-center">
               <span className="font-medium">{filteredListings.length} listings</span>
