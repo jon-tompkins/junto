@@ -65,8 +65,8 @@ export default function ApartmentsPage() {
   const markersRef = useRef<any[]>([]);
 
   useEffect(() => {
-    // Load all scraped listings (not filtered)
-    fetch('/data/listings-scraped.json')
+    // Load listings with cache bust
+    fetch('/data/listings-v2.json?v=' + Date.now())
       .then((data: ListingsData) => {
         setListings(data.listings);
         setFilteredListings(data.listings);
