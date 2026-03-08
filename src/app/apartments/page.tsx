@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import dynamic from 'next/dynamic';
 
 interface Listing {
   address?: string;
@@ -94,8 +93,15 @@ export default function ApartmentsPage() {
 
     // Load Leaflet dynamically
     const loadMap = async () => {
+      // Load Leaflet CSS
+      if (!document.querySelector('link[href*="leaflet"]')) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
+      
       const L = (await import('leaflet')).default;
-      await import('leaflet/dist/leaflet.css');
 
       if (mapInstance.current) {
         mapInstance.current.remove();
