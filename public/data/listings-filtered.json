@@ -1,0 +1,158 @@
+{
+  "lastUpdated": "2026-03-08T16:13:46.409434",
+  "filters": {
+    "beds": "2+",
+    "baths": "2+",
+    "amenities": [
+      "washer_dryer",
+      "gym",
+      "roof_deck"
+    ]
+  },
+  "building_cache": {
+    "70 Pine Street": null,
+    "95 Wall Street": {
+      "gym": true,
+      "roof_deck": true,
+      "pool": false,
+      "doorman": true,
+      "concierge": true
+    },
+    "180 Pearl Street": {
+      "gym": true,
+      "roof_deck": true,
+      "pool": true,
+      "doorman": false,
+      "concierge": true
+    },
+    "50 West Street": {
+      "gym": true,
+      "roof_deck": true,
+      "pool": true,
+      "doorman": true,
+      "concierge": true
+    },
+    "88 Fulton Street": {
+      "gym": false,
+      "roof_deck": true,
+      "pool": false,
+      "doorman": true,
+      "concierge": true
+    },
+    "345 East 94th Street": null,
+    "225 East 95th Street": null,
+    "333 East 83rd Street": null,
+    "1735 York Avenue": null,
+    "222 East 44th Street": null,
+    "240 East 86th Street": null,
+    "420 East 61st Street": null,
+    "220 East 72nd Street": {
+      "gym": true,
+      "roof_deck": false,
+      "pool": false,
+      "doorman": true,
+      "concierge": true
+    },
+    "360 East 65th Street": null,
+    "130 East 61st Street": null
+  },
+  "listings": [
+    {
+      "raw_text": "Rental unit  in Financial District\n95 Wall Street #2222\nSave\n$7,712\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,022 ft\u00b2\n Listing by UDR\nFeatured\nImage 1 of 9",
+      "address": "95 Wall Street #2222",
+      "price": 7712,
+      "beds": 2,
+      "baths": 2,
+      "sqft": 1022,
+      "agent": "UDR",
+      "has_wd": false,
+      "area": "fidi",
+      "source": "StreetEasy",
+      "scraped_at": "2026-03-08T16:09:21.422927",
+      "building_amenities": {
+        "gym": true,
+        "roof_deck": true,
+        "pool": false,
+        "doorman": true,
+        "concierge": true
+      }
+    },
+    {
+      "raw_text": "Rental unit  in Financial District\n180 Pearl Street #347\nSave\n$6,745\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$6,226\n1 month free\n\u00b7\n13-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Bushburg\nImage 1 of 23",
+      "address": "180 Pearl Street #347",
+      "price": 6745,
+      "beds": 2,
+      "baths": 2,
+      "agent": "Bushburg",
+      "has_wd": false,
+      "area": "fidi",
+      "source": "StreetEasy",
+      "scraped_at": "2026-03-08T16:09:21.423048",
+      "building_amenities": {
+        "gym": true,
+        "roof_deck": true,
+        "pool": true,
+        "doorman": false,
+        "concierge": true
+      }
+    },
+    {
+      "raw_text": "Rental unit  in Financial District\n180 Pearl Street #348\nSave\n$7,995\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$7,380\n1 month free\n\u00b7\n13-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Bushburg\nImage 1 of 23",
+      "address": "180 Pearl Street #348",
+      "price": 7995,
+      "beds": 2,
+      "baths": 2,
+      "agent": "Bushburg",
+      "has_wd": false,
+      "area": "fidi",
+      "source": "StreetEasy",
+      "scraped_at": "2026-03-08T16:09:21.423159",
+      "building_amenities": {
+        "gym": true,
+        "roof_deck": true,
+        "pool": true,
+        "doorman": false,
+        "concierge": true
+      }
+    },
+    {
+      "raw_text": "Rental unit  in Financial District\n180 Pearl Street #321\nSave\n$8,450\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$7,800\n1 month free\n\u00b7\n13-month lease\n2 beds\n2 baths\n- ft\u00b2\n Listing by Bushburg\nImage 1 of 25",
+      "address": "180 Pearl Street #321",
+      "price": 8450,
+      "beds": 2,
+      "baths": 2,
+      "agent": "Bushburg",
+      "has_wd": false,
+      "area": "fidi",
+      "source": "StreetEasy",
+      "scraped_at": "2026-03-08T16:09:21.423987",
+      "building_amenities": {
+        "gym": true,
+        "roof_deck": true,
+        "pool": true,
+        "doorman": false,
+        "concierge": true
+      }
+    },
+    {
+      "raw_text": "Condo  in Financial District\n50 West Street #44B\nSave\n$15,000\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n$1,000\n2 beds\n2.5 baths\n1,513 ft\u00b2\n Listing by Time Equities, Inc.\nImage 1 of 20",
+      "address": "50 West Street #44B",
+      "price": 15000,
+      "beds": 2,
+      "baths": 5,
+      "sqft": 1513,
+      "agent": "Time Equities, Inc.",
+      "has_wd": false,
+      "area": "fidi",
+      "source": "StreetEasy",
+      "scraped_at": "2026-03-08T16:09:21.424089",
+      "building_amenities": {
+        "gym": true,
+        "roof_deck": true,
+        "pool": true,
+        "doorman": true,
+        "concierge": true
+      }
+    }
+  ]
+}
