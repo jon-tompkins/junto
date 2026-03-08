@@ -4,12 +4,14 @@ import { useEffect, useState, useRef } from 'react';
 
 interface Listing {
   address?: string;
+  title?: string;
   price?: number;
   beds?: number;
   baths?: number;
   sqft?: number;
   area?: string;
   source?: string;
+  url?: string;
   building_amenities?: {
     gym?: boolean;
     roof_deck?: boolean;
@@ -230,11 +232,18 @@ export default function ApartmentsPage() {
                   }}
                 >
                   <div className="flex justify-between items-start mb-1">
-                    <span className={`text-xs px-2 py-0.5 rounded ${
-                      listing.area === 'fidi' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
-                    }`}>
-                      {listing.area === 'fidi' ? 'FiDi' : 'UES'}
-                    </span>
+                    <div className="flex gap-1">
+                      <span className={`text-xs px-2 py-0.5 rounded ${
+                        listing.area === 'fidi' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                      }`}>
+                        {listing.area === 'fidi' ? 'FiDi' : 'UES'}
+                      </span>
+                      {listing.source && listing.source !== 'streeteasy' && (
+                        <span className="text-xs px-2 py-0.5 rounded bg-orange-100 text-orange-700">
+                          {listing.source}
+                        </span>
+                      )}
+                    </div>
                     <span className="text-lg font-bold text-blue-600">{formatPrice(listing.price)}</span>
                   </div>
                   
@@ -263,13 +272,13 @@ export default function ApartmentsPage() {
                   )}
                   
                   <a 
-                    href={`https://streeteasy.com/for-rent/nyc?search=${encodeURIComponent(listing.address || '')}`}
+                    href={listing.url || `https://streeteasy.com/for-rent/nyc?search=${encodeURIComponent(listing.address || '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 mt-2"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    View on StreetEasy →
+                    View listing →
                   </a>
                 </div>
               ))}
