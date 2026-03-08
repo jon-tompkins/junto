@@ -1,18 +1,5 @@
 {
-  "lastUpdated": "2026-03-08T17:45:05.731643",
-  "filters": {
-    "beds": "2+",
-    "baths": "2+",
-    "price": "$5,000-$12,000",
-    "areas": [
-      "fidi",
-      "ues"
-    ]
-  },
-  "sources": [
-    "streeteasy",
-    "craigslist"
-  ],
+  "lastUpdated": "2026-03-08T17:56:06.469639",
   "listings": [
     {
       "raw_text": "Rental unit  in Carnegie Hill\n175 East 96th Street #16K\nSave\n$6,400\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n- ft\u00b2\n Listing by The Monterey\nImage 1 of 27",
@@ -453,6 +440,15 @@
       "area": "fidi",
       "source": "craigslist",
       "url": "https://newyork.craigslist.org/mnh/apa/d/new-york-beautiful-bedroom-bathroom-no/7915514751.html"
+    },
+    {
+      "address": "Financial District",
+      "price": 8300,
+      "beds": 3,
+      "baths": 2.0,
+      "area": "fidi",
+      "source": "compass",
+      "url": ""
     }
   ]
 }
