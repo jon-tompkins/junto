@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-03-08T16:13:46.409434",
+  "lastUpdated": "2026-03-08T16:18:48.906859",
   "filters": {
     "beds": "2+",
     "baths": "2+",
@@ -40,12 +40,36 @@
       "concierge": true
     },
     "345 East 94th Street": null,
-    "225 East 95th Street": null,
-    "333 East 83rd Street": null,
+    "225 East 95th Street": {
+      "gym": true,
+      "roof_deck": true,
+      "pool": true,
+      "doorman": true,
+      "concierge": true
+    },
+    "333 East 83rd Street": {
+      "gym": false,
+      "roof_deck": false,
+      "pool": false,
+      "doorman": false,
+      "concierge": true
+    },
     "1735 York Avenue": null,
     "222 East 44th Street": null,
-    "240 East 86th Street": null,
-    "420 East 61st Street": null,
+    "240 East 86th Street": {
+      "gym": true,
+      "roof_deck": true,
+      "pool": false,
+      "doorman": true,
+      "concierge": true
+    },
+    "420 East 61st Street": {
+      "gym": true,
+      "roof_deck": false,
+      "pool": true,
+      "doorman": true,
+      "concierge": true
+    },
     "220 East 72nd Street": {
       "gym": true,
       "roof_deck": false,
@@ -53,8 +77,20 @@
       "doorman": true,
       "concierge": true
     },
-    "360 East 65th Street": null,
-    "130 East 61st Street": null
+    "360 East 65th Street": {
+      "gym": true,
+      "roof_deck": false,
+      "pool": false,
+      "doorman": true,
+      "concierge": true
+    },
+    "130 East 61st Street": {
+      "gym": false,
+      "roof_deck": false,
+      "pool": false,
+      "doorman": false,
+      "concierge": true
+    }
   },
   "listings": [
     {
@@ -146,6 +182,66 @@
       "area": "fidi",
       "source": "StreetEasy",
       "scraped_at": "2026-03-08T16:09:21.424089",
+      "building_amenities": {
+        "gym": true,
+        "roof_deck": true,
+        "pool": true,
+        "doorman": true,
+        "concierge": true
+      }
+    },
+    {
+      "raw_text": "Rental unit  in Yorkville\n225 East 95th Street #A26C\nSave\n$6,165\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n838 ft\u00b2\n Listing by Ogden CAP Properties\nFeatured\nOpen: \nMar 12 \n6 PM)\nImage 1 of 15",
+      "address": "225 East 95th Street #A26C",
+      "price": 6165,
+      "beds": 2,
+      "baths": 2,
+      "sqft": 838,
+      "agent": "Ogden CAP Properties",
+      "has_wd": false,
+      "area": "ues",
+      "source": "StreetEasy",
+      "scraped_at": "2026-03-08T16:09:26.952873",
+      "building_amenities": {
+        "gym": true,
+        "roof_deck": true,
+        "pool": true,
+        "doorman": true,
+        "concierge": true
+      }
+    },
+    {
+      "raw_text": "Rental unit  in Yorkville\n240 East 86th Street #21I\nSave\n$9,785\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n1,185 ft\u00b2\n Listing by Rose Associates, Inc.\nVideo\nImage 1 of 18",
+      "address": "240 East 86th Street #21I",
+      "price": 9785,
+      "beds": 2,
+      "baths": 2,
+      "sqft": 1185,
+      "agent": "Rose Associates, Inc.",
+      "has_wd": false,
+      "area": "ues",
+      "source": "StreetEasy",
+      "scraped_at": "2026-03-08T16:09:26.953247",
+      "building_amenities": {
+        "gym": true,
+        "roof_deck": true,
+        "pool": false,
+        "doorman": true,
+        "concierge": true
+      }
+    },
+    {
+      "raw_text": "Rental unit  in Yorkville\n225 East 95th Street #D22K\nSave\n$6,175\nbase rent\nBase rent doesn't include any fees. Visit listing for breakdown of costs and fees.\n2 beds\n2 baths\n883 ft\u00b2\n Listing by Ogden CAP Properties\nImage 1 of 15",
+      "address": "225 East 95th Street #D22K",
+      "price": 6175,
+      "beds": 2,
+      "baths": 2,
+      "sqft": 883,
+      "agent": "Ogden CAP Properties",
+      "has_wd": false,
+      "area": "ues",
+      "source": "StreetEasy",
+      "scraped_at": "2026-03-08T16:09:26.953942",
       "building_amenities": {
         "gym": true,
         "roof_deck": true,
