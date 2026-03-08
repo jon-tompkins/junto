@@ -67,6 +67,7 @@ export default function ApartmentsPage() {
   useEffect(() => {
     // Load listings with cache bust
     fetch('/data/listings-v2.json?v=' + Date.now())
+      .then(r => r.json())
       .then((data: ListingsData) => {
         setListings(data.listings);
         setFilteredListings(data.listings);
