@@ -261,6 +261,16 @@ export default function ApartmentsPage() {
                       )}
                     </div>
                   )}
+                  
+                  <a 
+                    href={`https://streeteasy.com/for-rent/nyc?search=${encodeURIComponent(listing.address || '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 mt-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    View on StreetEasy →
+                  </a>
                 </div>
               ))}
             </div>
