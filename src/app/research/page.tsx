@@ -75,6 +75,19 @@ export default function ResearchPage() {
     }
   }, [session]);
 
+  // Poll for updates when requests are pending/processing
+  useEffect(() => {
+    const hasPending = requests.some(r => r.status === 'pending' || r.status === 'processing');
+    if (!hasPending) return;
+    
+    const interval = setInterval(() => {
+      fetchRequests();
+      fetchReports(); // Also refresh reports in case one completed
+    }, 10000); // Poll every 10 seconds
+    
+    return () => clearInterval(interval);
+  }, [requests]);
+
   const extractTicker = (title: string): string => {
     const match = title.match(/^([A-Z]{1,5})\s/);
     return match ? match[1] : '';
@@ -396,7 +409,10 @@ export default function ResearchPage() {
         {/* Pending Requests */}
         {pendingRequests.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">In Progress</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">In Progress</h2>
+              <span className="text-xs text-neutral-500">Reports can take up to 15 minutes</span>
+            </div>
             <div className="space-y-2">
               {pendingRequests.map(req => (
                 <div key={req.id} className="flex items-center justify-between p-4 bg-neutral-900 rounded-lg border border-neutral-800">
