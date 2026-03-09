@@ -33,21 +33,21 @@ interface ResearchRequest {
 const researchTeam = [
   {
     name: 'Scout',
-    role: 'Deep Dive Analyst',
-    avatar: '🔍',
-    description: 'Comprehensive fundamental analysis and valuation'
+    role: 'The Idea Hunter',
+    avatar: '/agents/scout.png',
+    description: 'Finds opportunities, runs deep dives, identifies fastest horses and weakest dogs'
   },
   {
-    name: 'Quant',
-    role: 'Technical Analysis',
-    avatar: '📊',
-    description: 'Chart patterns, momentum, and statistical analysis'
+    name: 'Jeb',
+    role: 'The Fundamentalist',
+    avatar: '/agents/jeb.png',
+    description: 'Business quality, moats, valuation, balance sheet analysis'
   },
   {
-    name: 'Macro',
-    role: 'Market Context',
-    avatar: '🌍',
-    description: 'Sector trends, macro factors, and positioning'
+    name: 'Ant',
+    role: 'The Technician',
+    avatar: '/agents/ant.png',
+    description: 'Price action, Wyckoff phases, support/resistance, entry timing'
   }
 ];
 
@@ -281,7 +281,17 @@ export default function ResearchPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {researchTeam.map(member => (
               <div key={member.name} className="flex items-start gap-3">
-                <div className="text-2xl">{member.avatar}</div>
+                <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  <img 
+                    src={member.avatar} 
+                    alt={member.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.parentElement!.innerHTML = `<span class="text-2xl">${member.name[0]}</span>`;
+                    }}
+                  />
+                </div>
                 <div>
                   <div className="font-medium">{member.name}</div>
                   <div className="text-xs text-neutral-500">{member.role}</div>
