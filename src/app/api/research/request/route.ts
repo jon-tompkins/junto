@@ -129,6 +129,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create request' }, { status: 500 });
     }
 
+    // Fire webhook to Clawdbot for immediate processing (push model)
+    try {
+      const webhookUrl = process.env.CLAWDBOT_WEBHOOK_URL || 'http://127.0.0.1:18789/hooks/agent';
+      const webhookToken = process.env.CLAWDBOT_WEBHOOK_TOKEN || 'myjunto-research-webhook-2026';
+      
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${webhookToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: `MyJunto research request: Spawn Scout sub-agent for ${cleanTicker}. Request ID: ${researchRequest.id}. After completion, mark as completed via POST https://myjunto.xyz/api/research/process with requestId and status='completed'.`,
+          name: 'MyJunto Research',
+          sessionKey: `myjunto:research:${researchRequest.id}`,
+          wakeMode: 'now',
+          deliver: false
+        })
+      }).catch(err => {
+        // Non-fatal: If webhook fails, request is still queued for polling fallback
+        console.error('Webhook delivery failed (non-fatal):', err);
+      });
+    } catch (webhookError) {
+      console.error('Webhook error (non-fatal):', webhookError);
+    }
+
     return NextResponse.json({
       message: 'Deep dive requested successfully',
       request: {
