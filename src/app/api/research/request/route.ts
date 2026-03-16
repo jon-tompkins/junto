@@ -129,30 +129,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create request' }, { status: 500 });
     }
 
-    // Fire webhook to Clawdbot for immediate processing (push model)
+    // Fire webhook via Telegram to OpenClaw/Benji for immediate processing
     try {
-      const webhookUrl = process.env.CLAWDBOT_WEBHOOK_URL || 'http://127.0.0.1:18789/hooks/agent';
-      const webhookToken = process.env.CLAWDBOT_WEBHOOK_TOKEN || 'myjunto-research-webhook-2026';
+      const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
+      const chatId = process.env.TELEGRAM_CHAT_ID;
       
-      await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${webhookToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message: `MyJunto research request: Spawn Scout sub-agent for ${cleanTicker}. Request ID: ${researchRequest.id}. After completion, mark as completed via POST https://myjunto.xyz/api/research/process with requestId and status='completed'.`,
-          name: 'MyJunto Research',
-          sessionKey: `myjunto:research:${researchRequest.id}`,
-          wakeMode: 'now',
-          deliver: false
-        })
-      }).catch(err => {
-        // Non-fatal: If webhook fails, request is still queued for polling fallback
-        console.error('Webhook delivery failed (non-fatal):', err);
-      });
+      if (telegramBotToken && chatId) {
+        await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: `🔍 RESEARCH REQUEST\nTicker: ${cleanTicker}\nRequest ID: ${researchRequest.id}\nUser: ${twitterHandle}`,
+            parse_mode: 'HTML'
+          })
+        });
+        console.log(`Telegram webhook sent for ${cleanTicker}`);
+      } else {
+        console.warn('Telegram credentials not configured, skipping webhook');
+      }
     } catch (webhookError) {
-      console.error('Webhook error (non-fatal):', webhookError);
+      // Non-fatal: If webhook fails, request is still queued for polling fallback
+      console.error('Telegram webhook error (non-fatal):', webhookError);
     }
 
     return NextResponse.json({
