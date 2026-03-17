@@ -174,7 +174,19 @@ export async function POST(request: NextRequest) {
       // Continue without watchlist tweets
     }
     
-    // Generate newsletter
+    // Get user's watchlist tickers
+    let userWatchlist: string[] = [];
+    try {
+      const { data: watchlistData } = await supabase
+        .from('user_watchlist')
+        .select('ticker')
+        .eq('user_id', user.id);
+      userWatchlist = watchlistData?.map((w: any) => w.ticker) || [];
+    } catch (err) {
+      console.error('Error fetching watchlist:', err);
+    }
+    
+    // Generate newsletter with sentiment
     const synthesis = await generateNewsletter(
       recentTweets, 
       start, 
@@ -183,7 +195,8 @@ export async function POST(request: NextRequest) {
       keywords,
       customPrompt,
       newsletterContent,
-      watchlistTweets
+      watchlistTweets,
+      userWatchlist
     );
     
     // Store newsletter with user_id

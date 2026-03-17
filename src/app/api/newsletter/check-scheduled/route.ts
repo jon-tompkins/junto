@@ -518,6 +518,21 @@ async function processUserNewsletter(user: ScheduledUser, supabase: any): Promis
     const customPrompt = userData?.custom_prompt || null;
     const keywords = settings.keywords || [];
     
+    // Get user's watchlist tickers
+    let userWatchlist: string[] = [];
+    try {
+      const { data: watchlistData } = await supabase
+        .from('user_watchlist')
+        .select('ticker')
+        .eq('user_id', user.user_id);
+      userWatchlist = watchlistData?.map((w: any) => w.ticker) || [];
+      if (userWatchlist.length > 0) {
+        console.log(`📊 Found ${userWatchlist.length} watchlist tickers: ${userWatchlist.join(', ')}`);
+      }
+    } catch (err) {
+      console.error('Error fetching watchlist:', err);
+    }
+    
     // Generate newsletter content
     const recentHours = 48; // Default to last 48 hours
     const contextDays = 180; // Default context window
@@ -587,14 +602,17 @@ We'll try again at your next scheduled delivery time.
       };
     }
     
-    // Generate newsletter
+    // Generate newsletter with sentiment analysis
     const synthesis = await generateNewsletter(
       recentTweets, 
       start, 
       end, 
       contextTweets,
       keywords,
-      customPrompt
+      customPrompt,
+      undefined, // newsletterContent
+      undefined, // watchlistTweets
+      userWatchlist
     );
     
     // Store newsletter in database

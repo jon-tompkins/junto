@@ -492,3 +492,153 @@ export function extractTweetReferences(
     references
   };
 }
+
+import { TickerSentiment, TrendingHashtag, getSentimentEmoji, toTitleCase } from './sentiment';
+
+export function buildUserPromptWithSentiment(
+  recentTweets: GroupedTweets, 
+  dateRange: string,
+  discussedSentiment: TickerSentiment[],
+  watchlistSentiment: TickerSentiment[],
+  trendingHashtags: TrendingHashtag[],
+  smartMoneySignals: string[],
+  focusKeywords?: string[],
+  contextTweets?: GroupedTweets,
+  newsletterContent?: NewsletterContent[],
+  watchlistTweets?: any[]
+): string {
+  
+  // Build recent tweets section with numbered citations
+  let citationNumber = 1;
+  const recentSections = Object.entries(recentTweets)
+    .map(([handle, handleTweets]) => {
+      const tweetList = (handleTweets as any[])
+        .map((t: any) => {
+          let line = `- [${citationNumber}] [${t.likes} likes] ${t.content}`;
+          if (t.quoted_tweet_content) {
+            line += `\n  > Quoting: "${t.quoted_tweet_content}"`;
+          }
+          citationNumber++;
+          return line;
+        })
+        .join('\n');
+      
+      return `### @${handle}\n${tweetList}`;
+    })
+    .join('\n\n');
+
+  // Build context section
+  let contextSection = '';
+  if (contextTweets && Object.keys(contextTweets).length > 0) {
+    const contextCitations: Record<string, number> = {};
+    
+    const contextSections = Object.entries(contextTweets)
+      .map(([handle, handleTweets]) => {
+        const tweetList = (handleTweets as any[])
+          .map((t: any) => {
+            const key = `${handle}:${t.content}`;
+            if (!contextCitations[key]) {
+              contextCitations[key] = citationNumber++;
+            }
+            let line = `- [${contextCitations[key]}] [${t.likes} likes] ${t.content}`;
+            if (t.quoted_tweet_content) {
+              line += `\n  > Quoting: "${t.quoted_tweet_content}"`;
+            }
+            return line;
+          })
+          .join('\n');
+        
+        return `### @${handle}\n${tweetList}`;
+      })
+      .join('\n\n');
+    
+    contextSection = `\n\n---\n\n## CONTEXT TWEETS (Past 6 months - for background only)\n\n${contextSections}`;
+  }
+
+  // Build newsletter content section
+  let newsletterSection = '';
+  if (newsletterContent && newsletterContent.length > 0) {
+    const newsletterList = newsletterContent
+      .map((nl, idx) => {
+        return `### ${nl.name} - ${nl.subject}\n[NL${idx + 1}]\n${nl.content.substring(0, 1000)}${nl.content.length > 1000 ? '...' : ''}`;
+      })
+      .join('\n\n');
+    
+    newsletterSection = `\n\n---\n\n## NEWSLETTER CONTENT (Subscribe-only content)\n\nReference as [NL1], [NL2], etc. Integrate insights where relevant:\n\n${newsletterList}`;
+  }
+
+  // Build watchlist section
+  let watchlistSection = '';
+  if (watchlistTweets && watchlistTweets.length > 0) {
+    // Group by ticker
+    const watchlistByTicker: Record<string, any[]> = {};
+    for (const tweet of watchlistTweets) {
+      if (!watchlistByTicker[tweet.ticker]) {
+        watchlistByTicker[tweet.ticker] = [];
+      }
+      watchlistByTicker[tweet.ticker].push(tweet);
+    }
+
+    const watchlistSections = Object.entries(watchlistByTicker)
+      .map(([ticker, tweets]) => {
+        const tweetList = (tweets as any[])
+          .map((t: any) => {
+            let line = `- [WL${citationNumber}] @${t.author_handle} (${t.author_followers} followers): ${t.content} [${t.likes} likes, ${t.retweets} retweets]`;
+            citationNumber++;
+            return line;
+          })
+          .join('\n');
+        
+        return `### $${ticker}\n${tweetList}`;
+      })
+      .join('\n\n');
+    
+    watchlistSection = `\n\n---\n\n## YOUR WATCHLIST (Quality tweets about your tracked tickers)\n\nRecent high-quality discussions about your watchlist tickers. Include this as a "Your Watchlist" section in the newsletter. Reference as [WL1], [WL2], etc.\n\n${watchlistSections}`;
+  }
+
+  // Build Market Pulse section
+  let marketPulseSection = '';
+  
+  if (discussedSentiment.length > 0) {
+    const discussedTable = discussedSentiment.map(s => 
+      `| **${s.ticker}** | ${getSentimentEmoji(s.sentiment)} ${toTitleCase(s.sentiment)} | ${s.score > 0 ? '+' : ''}${s.score} | ${toTitleCase(s.volume)} | ${s.keyTheme} |`
+    ).join('\n');
+    
+    marketPulseSection += `\n### Discussed in Your Sources\n| Ticker | Sentiment | Score | Volume | Key Theme |\n|--------|-----------|-------|--------|-----------|\n${discussedTable}\n`;
+  }
+  
+  if (watchlistSentiment.length > 0) {
+    const watchlistTable = watchlistSentiment.map(s =>
+      `| **${s.ticker}** | ${getSentimentEmoji(s.sentiment)} ${toTitleCase(s.sentiment)} | ${s.score > 0 ? '+' : ''}${s.score} | ${s.change24h > 0 ? '↑' : '↓'}${s.change24h} | ${s.keyTheme} |`
+    ).join('\n');
+    
+    marketPulseSection += `\n### Your Watchlist\n| Ticker | Sentiment | Score | Change | Notable |\n|--------|-----------|-------|--------|---------|\n${watchlistTable}\n`;
+  }
+  
+  if (trendingHashtags.length > 0) {
+    marketPulseSection += `\n### Trending on X\n${trendingHashtags.map(t => `- ${t.tag} (${t.count} mentions)`).join('\n')}\n`;
+  }
+  
+  if (smartMoneySignals.length > 0) {
+    marketPulseSection += `\n### Smart Money Signals\n${smartMoneySignals.map(s => `- ${s}`).join('\n')}\n`;
+  }
+
+  const focusSection = focusKeywords && focusKeywords.length > 0
+    ? `\n\nFOCUS KEYWORDS: ${focusKeywords.join(', ')} (prioritize insights related to these topics)`
+    : '';
+
+  return `Generate today's briefing based on tweets from ${dateRange}.${focusSection}
+
+## MARKET PULSE: Real-Time X/Twitter Sentiment
+
+*Sentiment analysis on tickers from your sources and watchlist*
+${marketPulseSection}
+
+---
+
+## RECENT TWEETS (Last 24-48 hours - PRIMARY FOCUS)
+
+${recentSections}${contextSection}${newsletterSection}${watchlistSection}
+
+Write the newsletter following the structure in the system prompt. Include a "Market Pulse" section with the sentiment data provided above. Focus on RECENT tweets for the main content, and integrate newsletter insights where relevant.`;
+}

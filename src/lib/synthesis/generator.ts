@@ -1,6 +1,12 @@
 import { GroupedTweets } from '@/types';
 import { getXAI, DEFAULT_MODEL } from './client';
-import { NEWSLETTER_SYSTEM_PROMPT, buildUserPrompt, parseNewsletterResponse, extractTweetReferences, PROMPT_VERSION, buildCustomSystemPrompt } from './prompts';
+import { NEWSLETTER_SYSTEM_PROMPT, buildUserPromptWithSentiment, parseNewsletterResponse, extractTweetReferences, PROMPT_VERSION, buildCustomSystemPrompt } from './prompts';
+import { 
+  extractTickersFromTweets, 
+  fetchMultiTickerSentiment, 
+  fetchTrendingHashtags, 
+  fetchSmartMoneySignals 
+} from './sentiment';
 
 export { PROMPT_VERSION };
 
@@ -27,12 +33,39 @@ export async function generateNewsletter(
   keywords?: string[],
   customPrompt?: string | null,
   newsletterContent?: NewsletterContent[],
-  watchlistTweets?: any[]
+  watchlistTweets?: any[],
+  userWatchlist?: string[]
 ): Promise<NewsletterResult> {
   const client = getXAI();
   
+  // Extract tickers and fetch sentiment
+  const discussedTickers = extractTickersFromTweets(recentTweets);
+  const allTickers = [...new Set([...discussedTickers, ...(userWatchlist || [])])];
+  
+  // Fetch sentiment data in parallel
+  const [sentimentData, trendingHashtags, smartMoneySignals] = await Promise.all([
+    fetchMultiTickerSentiment(allTickers),
+    fetchTrendingHashtags(),
+    fetchSmartMoneySignals(discussedTickers.slice(0, 5))
+  ]);
+  
+  // Split sentiment by source
+  const discussedSentiment = sentimentData.filter(s => discussedTickers.includes(s.ticker));
+  const watchlistSentiment = sentimentData.filter(s => userWatchlist?.includes(s.ticker));
+  
   const dateRange = `${startDate} to ${endDate}`;
-  const userPrompt = buildUserPrompt(recentTweets, dateRange, keywords, contextTweets, newsletterContent, watchlistTweets);
+  const userPrompt = buildUserPromptWithSentiment(
+    recentTweets, 
+    dateRange, 
+    discussedSentiment,
+    watchlistSentiment,
+    trendingHashtags,
+    smartMoneySignals,
+    keywords, 
+    contextTweets, 
+    newsletterContent, 
+    watchlistTweets
+  );
   
   // Use custom prompt if provided, otherwise default
   const systemPrompt = customPrompt 
@@ -41,7 +74,7 @@ export async function generateNewsletter(
   
   const response = await client.chat.completions.create({
     model: DEFAULT_MODEL,
-    max_tokens: 2000,
+    max_tokens: 2500,  // Increased for Market Pulse section
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt }
