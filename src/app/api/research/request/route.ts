@@ -22,8 +22,18 @@ interface TwitterSentiment {
   trendingHashtags: string[];
 }
 
+interface ChartData {
+  chartUrl: string | null;
+  currentPrice: number | null;
+  supportLevels: Array<{ price: number; label: string }>;
+  resistanceLevels: Array<{ price: number; label: string }>;
+  ma20: number | null;
+  ma50: number | null;
+  error?: string;
+}
+
 // Validate ticker exists using quote API
-async function validateTicker(ticker: string): Promise<{ valid: boolean; error?: string }> {
+async function validateTicker(ticker: string): Promise<{ valid: boolean; error?: string; price?: number }> {
   try {
     const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
       ? `https://${process.env.VERCEL_URL}` 
@@ -34,7 +44,8 @@ async function validateTicker(ticker: string): Promise<{ valid: boolean; error?:
     
     return {
       valid: data.valid === true,
-      error: data.error
+      error: data.error,
+      price: data.price
     };
   } catch (error) {
     console.error('Ticker validation error:', error);
@@ -87,6 +98,67 @@ Return valid JSON only.`;
   }
 }
 
+// Fetch chart data via internal API with fallback
+async function fetchChartData(ticker: string): Promise<ChartData> {
+  const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
+    ? `https://${process.env.VERCEL_URL}` 
+    : 'http://localhost:3000';
+  
+  try {
+    // Try the analyze endpoint first
+    const response = await fetch(`${baseUrl}/api/research/analyze`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-analysis-secret': process.env.RESEARCH_PROCESS_SECRET || 'junto-research-2026'
+      },
+      body: JSON.stringify({
+        ticker,
+        requestId: 'pre-fetch',
+        stage: 'technical'
+      })
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.data) {
+        return {
+          chartUrl: data.data.chartUrl,
+          currentPrice: data.data.keyLevels?.find((l: any) => l.level === 'Current')?.price || null,
+          supportLevels: data.data.keyLevels?.filter((l: any) => l.level.includes('Support')) || [],
+          resistanceLevels: data.data.keyLevels?.filter((l: any) => l.level.includes('Resistance')) || [],
+          ma20: null,
+          ma50: null
+        };
+      }
+    }
+    
+    // Fallback: generate chart without price data
+    console.log(`Chart API failed for ${ticker}, using fallback`);
+    return {
+      chartUrl: null,
+      currentPrice: null,
+      supportLevels: [],
+      resistanceLevels: [],
+      ma20: null,
+      ma50: null,
+      error: 'Chart generation failed - will proceed without chart'
+    };
+    
+  } catch (error) {
+    console.error('Chart data fetch failed:', error);
+    return {
+      chartUrl: null,
+      currentPrice: null,
+      supportLevels: [],
+      resistanceLevels: [],
+      ma20: null,
+      ma50: null,
+      error: 'Chart generation failed - will proceed without chart'
+    };
+  }
+}
+
 // POST /api/research/request - create a new deep dive request
 export async function POST(request: NextRequest) {
   try {
@@ -107,6 +179,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid ticker format' }, { status: 400 });
     }
 
+    // Validate and get current price
     const validation = await validateTicker(cleanTicker);
     if (!validation.valid) {
       return NextResponse.json({ 
@@ -181,8 +254,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create request' }, { status: 500 });
     }
 
-    // Fetch Twitter sentiment immediately for richer webhook context
-    const sentiment = await fetchTwitterSentiment(cleanTicker);
+    // Fetch all data in parallel for efficiency
+    console.log(`Fetching data for ${cleanTicker}...`);
+    const [sentiment, chartData] = await Promise.all([
+      fetchTwitterSentiment(cleanTicker),
+      fetchChartData(cleanTicker)
+    ]);
+    
+    console.log(`Data fetched: Sentiment=${sentiment ? 'OK' : 'FAIL'}, Chart=${chartData.chartUrl ? 'OK' : 'FAIL'}`);
 
     // Fire webhook via Telegram to OpenClaw/Benji for immediate processing
     try {
@@ -192,6 +271,12 @@ export async function POST(request: NextRequest) {
       if (telegramBotToken && chatId) {
         let message = `🔍 RESEARCH REQUEST\nTicker: ${cleanTicker}\nRequest ID: ${researchRequest.id}\nUser: ${twitterHandle}`;
         
+        // Add price context
+        if (validation.price) {
+          message += `\n💰 Current Price: $${validation.price}`;
+        }
+        
+        // Add sentiment
         if (sentiment) {
           message += `\n\n📊 Twitter Sentiment: ${sentiment.overallMood} (${sentiment.overallScore}/10)`;
           message += `\nVolume: ${sentiment.volume}`;
@@ -203,6 +288,13 @@ export async function POST(request: NextRequest) {
           }
         }
         
+        // Add chart context (simplified for Telegram)
+        if (chartData.chartUrl) {
+          message += `\n\n📈 Chart: Pre-generated and ready`;
+        } else if (chartData.error) {
+          message += `\n\n⚠️ Note: Chart will be generated during analysis`;
+        }
+        
         await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -212,7 +304,19 @@ export async function POST(request: NextRequest) {
             parse_mode: 'HTML'
           })
         });
-        console.log(`Telegram webhook sent for ${cleanTicker} with sentiment`);
+        console.log(`Telegram webhook sent for ${cleanTicker}`);
+        
+        // Send chart URL separately if available (for easy access)
+        if (chartData.chartUrl) {
+          await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `Chart URL for ${cleanTicker}:\n${chartData.chartUrl}`,
+            })
+          });
+        }
       } else {
         console.warn('Telegram credentials not configured, skipping webhook');
       }
@@ -228,7 +332,11 @@ export async function POST(request: NextRequest) {
         status: researchRequest.status,
         created_at: researchRequest.created_at
       },
-      creditsRemaining: currentCredits - CREDITS_PER_DEEPDIVE
+      creditsRemaining: currentCredits - CREDITS_PER_DEEPDIVE,
+      dataFetched: {
+        sentiment: !!sentiment,
+        chart: !!chartData.chartUrl
+      }
     });
 
   } catch (error) {
