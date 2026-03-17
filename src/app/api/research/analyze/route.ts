@@ -78,23 +78,52 @@ function generateQuickChartUrl(ticker: string, prices: number[], dates: string[]
   return `https://quickchart.io/chart?c=${encodedConfig}&w=800&h=400&f=png`;
 }
 
-// Fetch price data for chart
-async function fetchPriceData(ticker: string): Promise<{ prices: number[]; dates: string[] } | null> {
+// Fetch price data for chart with better error handling
+async function fetchPriceData(ticker: string): Promise<{ prices: number[]; dates: string[]; currentPrice: number | null } | null> {
   try {
-    // Use a free API like Yahoo Finance or similar
-    const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=3mo`);
+    // Use Yahoo Finance API
+    const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=3mo`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    
+    if (!response.ok) {
+      console.error(`Yahoo Finance API error: ${response.status}`);
+      return null;
+    }
+    
     const data = await response.json();
     
     if (data.chart?.result?.[0]) {
       const result = data.chart.result[0];
-      const prices = result.indicators.quote[0].close.filter((p: number | null) => p !== null);
-      const timestamps = result.timestamp;
+      const meta = result.meta;
+      
+      // Get current price from meta (handles splits correctly)
+      const currentPrice = meta.regularMarketPrice || meta.previousClose || null;
+      
+      // Get price history
+      const quote = result.indicators.quote[0];
+      const prices: number[] = [];
+      const timestamps: number[] = [];
+      
+      // Filter out null values and collect valid data points
+      for (let i = 0; i < quote.close.length; i++) {
+        if (quote.close[i] !== null && quote.close[i] !== undefined) {
+          prices.push(quote.close[i]);
+          timestamps.push(result.timestamp[i]);
+        }
+      }
+      
+      // Convert timestamps to dates
       const dates = timestamps.map((ts: number) => {
         const date = new Date(ts * 1000);
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       });
       
-      return { prices, dates };
+      console.log(`Fetched ${prices.length} price points for ${ticker}, current: $${currentPrice}`);
+      
+      return { prices, dates, currentPrice };
     }
     return null;
   } catch (error) {
@@ -109,68 +138,45 @@ export async function generateTechnicalAnalysis(ticker: string): Promise<{
   chartUrl: string | null;
   keyLevels: Array<{ level: string; price: number; significance: string }>;
   timingVerdict: string;
+  currentPrice: number | null;
 }> {
-  const client = getXAI();
-  
   // Fetch real price data
   const priceData = await fetchPriceData(ticker);
   let chartUrl: string | null = null;
+  let currentPrice: number | null = null;
   
-  if (priceData) {
+  if (priceData && priceData.prices.length > 0) {
+    currentPrice = priceData.currentPrice || priceData.prices[priceData.prices.length - 1];
     chartUrl = generateQuickChartUrl(ticker, priceData.prices, priceData.dates);
+    console.log(`Generated chart for ${ticker} at $${currentPrice}`);
   }
 
-  const prompt = `Perform technical analysis on ${ticker}. 
-
-Current price context: ${priceData ? `Trading around $${priceData.prices[priceData.prices.length - 1]}` : 'Price data unavailable'}
-
-Provide:
-1. Key support and resistance levels (3-5 levels with price targets)
-2. Current trend structure
-3. Technical indicators (RSI, MACD if relevant)
-4. Timing verdict (BUY, WAIT, or AVOID) with specific entry/stop/target prices
-5. Risk/reward analysis
-
-Return as JSON:
-{
-  "analysis": "Detailed technical analysis text (3-4 paragraphs)",
-  "keyLevels": [
-    {"level": "Resistance 1", "price": 123.45, "significance": "Recent high"},
-    {"level": "Support 1", "price": 110.00, "significance": "200-day MA"}
-  ],
-  "timingVerdict": "WAIT for pullback to $115-118 zone",
-  "entry": 115.00,
-  "stopLoss": 109.50,
-  "target1": 125.00,
-  "target2": 132.00
-}`;
-
-  try {
-    const response = await client.chat.completions.create({
-      model: 'grok-3-fast',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 1500,
-    });
-
-    const content = response.choices[0]?.message?.content || '';
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : '{}');
-
-    return {
-      analysis: parsed.analysis || 'Technical analysis unavailable',
-      chartUrl,
-      keyLevels: parsed.keyLevels || [],
-      timingVerdict: parsed.timingVerdict || 'NEUTRAL'
-    };
-  } catch (error) {
-    console.error('Technical analysis generation failed:', error);
-    return {
-      analysis: 'Technical analysis generation failed',
-      chartUrl,
-      keyLevels: [],
-      timingVerdict: 'NEUTRAL'
-    };
+  // Calculate basic support/resistance from price data
+  const keyLevels: Array<{ level: string; price: number; significance: string }> = [];
+  
+  if (priceData && priceData.prices.length > 0) {
+    const prices = priceData.prices;
+    const maxPrice = Math.max(...prices);
+    const minPrice = Math.min(...prices);
+    const recentHigh = Math.max(...prices.slice(-20));
+    const recentLow = Math.min(...prices.slice(-20));
+    
+    if (currentPrice) {
+      keyLevels.push({ level: 'Current', price: currentPrice, significance: 'Last traded price' });
+    }
+    keyLevels.push({ level: 'Resistance 2', price: maxPrice, significance: '3-month high' });
+    keyLevels.push({ level: 'Resistance 1', price: recentHigh, significance: 'Recent high (20-day)' });
+    keyLevels.push({ level: 'Support 1', price: recentLow, significance: 'Recent low (20-day)' });
+    keyLevels.push({ level: 'Support 2', price: minPrice, significance: '3-month low' });
   }
+
+  return {
+    analysis: `Technical analysis for ${ticker}: ${keyLevels.length > 0 ? 'Key levels identified from price data' : 'Price data unavailable'}`,
+    chartUrl,
+    keyLevels,
+    timingVerdict: currentPrice ? 'Analysis ready' : 'Data unavailable',
+    currentPrice
+  };
 }
 
 // POST /api/research/analyze - internal endpoint for agent analysis
@@ -196,7 +202,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         stage: 'technical',
-        data: technicalData
+        data: {
+          chartUrl: technicalData.chartUrl,
+          currentPrice: technicalData.currentPrice,
+          keyLevels: technicalData.keyLevels,
+          timingVerdict: technicalData.timingVerdict,
+          ticker
+        }
       });
     }
 
