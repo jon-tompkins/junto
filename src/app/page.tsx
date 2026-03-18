@@ -1,166 +1,47 @@
-'use client';
-
-import { useSession, signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-
-export default function Home() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [checkingAccess, setCheckingAccess] = useState(false);
-
-  useEffect(() => {
-    if (session?.user) {
-      checkUserStatus();
-    }
-  }, [session]);
-
-  const checkUserStatus = async () => {
-    setCheckingAccess(true);
-    try {
-      // Check if user has completed onboarding (has profiles set up)
-      const profilesRes = await fetch('/api/user/profiles');
-      const profilesData = await profilesRes.json();
-      
-      const settingsRes = await fetch('/api/user/settings');
-      const settingsData = await settingsRes.json();
-      
-      const hasProfiles = profilesData.profiles && profilesData.profiles.length > 0;
-      const hasEmail = settingsData.settings?.email;
-      
-      if (hasProfiles && hasEmail) {
-        // Fully onboarded - go to dashboard
-        router.push('/dashboard');
-      } else {
-        // Needs onboarding
-        router.push('/onboarding');
-      }
-    } catch (err) {
-      // If error, send to onboarding
-      router.push('/onboarding');
-    } finally {
-      setCheckingAccess(false);
-    }
-  };
-
-  const handleConnect = () => {
-    signIn('twitter', { callbackUrl: '/' });
-  };
-
-  if (status === 'loading' || checkingAccess) {
-    return (
-      <main className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-neutral-400">Loading...</div>
-      </main>
-    );
-  }
-
-  // If logged in, the useEffect will redirect
-  if (session) {
-    return (
-      <main className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-neutral-400">Redirecting...</div>
-      </main>
-    );
-  }
-
+export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-black text-white flex flex-col">
-      {/* Header */}
-      <header className="px-8 py-6 border-b border-neutral-800">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-sm font-medium tracking-widest uppercase">MyJunto</h1>
+    <main className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-20 text-center">
+        <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+          Stop Scrolling, Start Acting
+        </h1>
+        <p className="text-xl md:text-2xl text-slate-300 mb-8 max-w-2xl mx-auto">
+          Expert-curated newsletters that cut through the noise. 
+          Subscribe to intelligence, not information.
+        </p>
+        <div className="flex gap-4 justify-center">
+          <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition">
+            Get Started
+          </button>
+          <button className="border border-slate-500 hover:border-slate-400 text-slate-300 px-8 py-3 rounded-lg font-semibold transition">
+            Explore Newsletters
+          </button>
         </div>
-      </header>
+      </section>
 
-      {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center px-8 py-16">
-        <div className="max-w-2xl w-full">
-          {/* Hero */}
-          <div className="mb-12">
-            <h2 className="text-3xl md:text-4xl font-light leading-tight mb-6">
-              Stop scrolling Twitter.
-              <br />
-              <span className="text-neutral-500">Get a daily briefing from the voices you trust.</span>
-            </h2>
-            <p className="text-neutral-400 text-lg leading-relaxed">
-              Select the analysts and thinkers you follow. Each morning, receive a synthesized 
-              intelligence briefing—as if they collaborated to tell you what matters today.
-            </p>
+      {/* Features Section */}
+      <section className="container mx-auto px-4 py-16">
+        <h2 className="text-3xl font-bold text-center mb-12">Why MyJunto?</h2>
+        <div className="grid md:grid-cols-3 gap-8">
+          <div className="bg-slate-800/50 p-6 rounded-xl">
+            <h3 className="text-xl font-semibold mb-3 text-blue-400">Expert Curation</h3>
+            <p className="text-slate-400">Top creators aggregate and synthesize the best content from across the web.</p>
           </div>
-
-          {/* CTA */}
-          <div className="mb-16">
-            <button
-              onClick={handleConnect}
-              className="w-full sm:w-auto px-8 py-4 bg-white text-black hover:bg-neutral-200 active:bg-neutral-300 transition-all duration-150 cursor-pointer flex items-center justify-center gap-3"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-              </svg>
-              Connect with X
-            </button>
-            <p className="mt-4 text-sm text-neutral-600">
-              To use a different account, log out of X first or use a private window.
-            </p>
+          <div className="bg-slate-800/50 p-6 rounded-xl">
+            <h3 className="text-xl font-semibold mb-3 text-purple-400">AI-Powered</h3>
+            <p className="text-slate-400">Intelligent aggregation from Twitter, YouTube, and more. Never miss what matters.</p>
           </div>
-
-          {/* How it works */}
-          <div className="mb-16 py-8 border-t border-b border-neutral-800">
-            <div className="space-y-6 text-sm">
-              <div className="flex gap-6">
-                <div className="text-neutral-600 w-8">01</div>
-                <div>
-                  <div className="font-medium mb-1">Choose your sources</div>
-                  <div className="text-neutral-500">Select up to 5 Twitter accounts you trust</div>
-                </div>
-              </div>
-              <div className="flex gap-6">
-                <div className="text-neutral-600 w-8">02</div>
-                <div>
-                  <div className="font-medium mb-1">AI synthesis</div>
-                  <div className="text-neutral-500">We distill their insights into one coherent view</div>
-                </div>
-              </div>
-              <div className="flex gap-6">
-                <div className="text-neutral-600 w-8">03</div>
-                <div>
-                  <div className="font-medium mb-1">Daily delivery</div>
-                  <div className="text-neutral-500">Receive your briefing every morning</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Sample Preview */}
-          <div className="border border-neutral-800 p-8 bg-neutral-950">
-            <div className="text-xs text-neutral-600 uppercase tracking-wider mb-4">Sample Briefing</div>
-            <div className="space-y-4 text-sm">
-              <div>
-                <div className="font-medium mb-1">Sentiment Check</div>
-                <p className="text-neutral-400">
-                  Consensus shifting bearish on altcoins. Multiple sources noting 
-                  diminishing returns this cycle. Macro concerns outweighing sector-specific catalysts.
-                </p>
-              </div>
-              <div>
-                <div className="font-medium mb-1">Actionable</div>
-                <p className="text-neutral-400">
-                  $BTC — accumulating on dips
-                  <br />
-                  $SOL — reducing exposure, watching $180 support
-                </p>
-              </div>
-            </div>
+          <div className="bg-slate-800/50 p-6 rounded-xl">
+            <h3 className="text-xl font-semibold mb-3 text-green-400">Creator Economy</h3>
+            <p className="text-slate-400">Newsletter admins earn 70% of subscription revenue. Build your audience.</p>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Footer */}
-      <footer className="px-8 py-6 border-t border-neutral-800">
-        <div className="max-w-2xl mx-auto text-sm text-neutral-600">
-          © 2025 MyJunto
-        </div>
+      <footer className="container mx-auto px-4 py-8 text-center text-slate-500">
+        <p>© 2026 MyJunto. All rights reserved.</p>
       </footer>
     </main>
   );
