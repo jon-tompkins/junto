@@ -97,3 +97,118 @@ export interface NewsletterGenerationResult {
   sent: boolean;
   error?: string;
 }
+
+// ============================================================
+// V2 Marketplace Types
+// ============================================================
+
+export type SourceType = 'twitter' | 'youtube' | 'rss';
+export type ScheduleCadence = 'daily' | 'twice_daily' | 'weekly';
+export type CreditTransactionType = 'subscription_charge' | 'creator_earning' | 'purchase' | 'bonus';
+
+export interface Source {
+  id: string;
+  type: SourceType;
+  handle_or_url: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  metadata: Record<string, unknown>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContentTwitter {
+  id: string;
+  source_id: string;
+  twitter_id: string;
+  content: string;
+  posted_at: string;
+  likes: number;
+  retweets: number;
+  replies: number;
+  is_retweet: boolean;
+  is_reply: boolean;
+  thread_id: string | null;
+  raw_data: Record<string, unknown>;
+  fetched_at: string;
+}
+
+export interface NewsletterV2 {
+  id: string;
+  name: string;
+  description: string | null;
+  prompt: string;
+  secondary_prompt: string | null;
+  admin_user_id: string;
+  is_public: boolean;
+  schedule_cadence: ScheduleCadence;
+  credit_cost: number;
+  subscriber_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NewsletterLabel {
+  id: string;
+  newsletter_id: string;
+  label: string;
+}
+
+export interface NewsletterSource {
+  id: string;
+  newsletter_id: string;
+  source_id: string;
+}
+
+export interface Subscription {
+  id: string;
+  user_id: string;
+  newsletter_id: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface NewsletterRun {
+  id: string;
+  newsletter_id: string;
+  content: string;
+  subject: string | null;
+  model_used: string | null;
+  tokens_used: { input_tokens?: number; output_tokens?: number };
+  metadata: Record<string, unknown>;
+  generated_at: string;
+}
+
+export interface NewsletterDelivery {
+  id: string;
+  run_id: string;
+  user_id: string;
+  delivered_at: string;
+  delivery_method: string;
+}
+
+export interface CreditTransaction {
+  id: string;
+  user_id: string;
+  amount: number;
+  type: CreditTransactionType;
+  newsletter_id: string | null;
+  run_id: string | null;
+  description: string | null;
+  created_at: string;
+}
+
+// Extended types with joins
+export interface NewsletterV2WithSources extends NewsletterV2 {
+  sources: Source[];
+  labels: string[];
+}
+
+export interface NewsletterV2WithAdmin extends NewsletterV2 {
+  admin: { display_name: string | null; avatar_url: string | null };
+}
+
+export interface NewsletterRunWithNewsletter extends NewsletterRun {
+  newsletter: Pick<NewsletterV2, 'id' | 'name'>;
+}
