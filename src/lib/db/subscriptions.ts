@@ -36,7 +36,7 @@ export async function getUserSubscriptions(userId: string): Promise<(Subscriptio
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data || []).map((row: { newsletters_v2: NewsletterV2 } & Subscription) => ({
+  return (data || []).map((row: any) => ({
     ...row,
     newsletter: row.newsletters_v2,
   }));
@@ -51,8 +51,8 @@ export async function getNewsletterSubscribers(newsletterId: string): Promise<{ 
 
   if (error) throw error;
   return (data || [])
-    .filter((row: { users: { email: string | null } }) => row.users?.email)
-    .map((row: { user_id: string; users: { email: string } }) => ({
+    .filter((row: any) => row.users?.email)
+    .map((row: any) => ({
       user_id: row.user_id,
       email: row.users.email,
     }));

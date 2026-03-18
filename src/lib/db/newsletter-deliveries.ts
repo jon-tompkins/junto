@@ -57,7 +57,7 @@ export async function getUserDeliveries(
     .range(offset, offset + limit - 1);
 
   if (error) throw error;
-  return (data || []).map((row: NewsletterDelivery & { newsletter_runs: { subject: string | null; newsletter_id: string } }) => ({
+  return (data || []).map((row: any) => ({
     ...row,
     run: row.newsletter_runs,
   }));

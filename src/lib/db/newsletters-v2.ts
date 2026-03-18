@@ -149,7 +149,8 @@ export async function getNewsletterSources(newsletterId: string): Promise<Source
     .eq('newsletter_id', newsletterId);
 
   if (error) throw error;
-  return (data || []).map((row: { sources: Source }) => row.sources);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((row: any) => row.sources as Source);
 }
 
 export async function addNewsletterSource(newsletterId: string, sourceId: string): Promise<void> {
