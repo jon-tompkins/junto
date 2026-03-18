@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function LandingPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
@@ -11,12 +13,18 @@ export default function LandingPage() {
           Subscribe to intelligence, not information.
         </p>
         <div className="flex gap-4 justify-center">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition">
+          <Link 
+            href="/dashboard"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition"
+          >
             Get Started
-          </button>
-          <button className="border border-slate-500 hover:border-slate-400 text-slate-300 px-8 py-3 rounded-lg font-semibold transition">
+          </Link>
+          <Link 
+            href="/newsletters"
+            className="border border-slate-500 hover:border-slate-400 text-slate-300 px-8 py-3 rounded-lg font-semibold transition"
+          >
             Explore Newsletters
-          </button>
+          </Link>
         </div>
       </section>
 
