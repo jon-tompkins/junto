@@ -1,9 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { AuthModal } from '@/components/auth-modal';
+
+// ============================================================
+// Source type for validation
+// ============================================================
+interface SourceEntry {
+  handle: string;
+  status: 'pending' | 'validating' | 'valid' | 'invalid';
+  name?: string;
+  followers?: number;
+  error?: string;
+}
 
 // ============================================================
 // Canned Templates
@@ -99,6 +111,7 @@ export default function CreateNewsletterPage() {
   const [step, setStep] = useState<WizardStep>('template');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Form state
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
@@ -108,10 +121,42 @@ export default function CreateNewsletterPage() {
   const [secondaryPrompt, setSecondaryPrompt] = useState('');
   const [labels, setLabels] = useState<string[]>([]);
   const [labelInput, setLabelInput] = useState('');
-  const [sources, setSources] = useState<string[]>([]);
+  const [sources, setSources] = useState<SourceEntry[]>([]);
   const [sourceInput, setSourceInput] = useState('');
   const [cadence, setCadence] = useState('daily');
   const [isPublic, setIsPublic] = useState(true);
+
+  // Validate a single Twitter handle via API
+  const validateSource = useCallback(async (handle: string) => {
+    setSources((prev) =>
+      prev.map((s) => (s.handle === handle ? { ...s, status: 'validating' as const } : s))
+    );
+
+    try {
+      const res = await fetch(`/api/v2/sources/validate?handle=${encodeURIComponent(handle)}&type=twitter`);
+      const data = await res.json();
+
+      setSources((prev) =>
+        prev.map((s) => {
+          if (s.handle !== handle) return s;
+          if (data.valid) {
+            return {
+              ...s,
+              status: 'valid' as const,
+              name: data.profile?.name || handle,
+              followers: data.profile?.followers,
+            };
+          } else {
+            return { ...s, status: 'invalid' as const, error: data.error || 'Handle not found' };
+          }
+        })
+      );
+    } catch {
+      setSources((prev) =>
+        prev.map((s) => (s.handle === handle ? { ...s, status: 'valid' as const } : s))
+      );
+    }
+  }, []);
 
   function selectTemplate(templateId: string | null) {
     if (templateId) {
@@ -121,10 +166,17 @@ export default function CreateNewsletterPage() {
         setDescription(t.description);
         setPrompt(t.prompt);
         setLabels([...t.labels]);
-        setSources([...t.suggested_sources]);
+        const newSources: SourceEntry[] = t.suggested_sources.map((h) => ({
+          handle: h,
+          status: 'pending' as const,
+        }));
+        setSources(newSources);
+        // Auto-validate template sources
+        newSources.forEach((s) => {
+          setTimeout(() => validateSource(s.handle), 0);
+        });
       }
     } else {
-      // Start from scratch
       setName('');
       setDescription('');
       setPrompt('');
@@ -145,15 +197,20 @@ export default function CreateNewsletterPage() {
 
   function addSource() {
     const s = sourceInput.trim().replace('@', '').toLowerCase();
-    if (s && !sources.includes(s)) {
-      setSources([...sources, s]);
+    if (s && !sources.some((src) => src.handle === s)) {
+      const entry: SourceEntry = { handle: s, status: 'pending' };
+      setSources((prev) => [...prev, entry]);
+      setSourceInput('');
+      // Trigger validation
+      validateSource(s);
+    } else {
+      setSourceInput('');
     }
-    setSourceInput('');
   }
 
   async function handleCreate() {
     if (!session?.user) {
-      router.push('/login');
+      setShowAuthModal(true);
       return;
     }
     if (!name || !prompt) {
@@ -174,7 +231,9 @@ export default function CreateNewsletterPage() {
           prompt,
           secondary_prompt: secondaryPrompt || undefined,
           labels,
-          sources: sources.map((handle) => ({ type: 'twitter', handle_or_url: handle })),
+          sources: sources
+            .filter((s) => s.status !== 'invalid')
+            .map((s) => ({ type: 'twitter', handle_or_url: s.handle })),
           schedule_cadence: cadence,
           is_public: isPublic,
         }),
@@ -210,23 +269,35 @@ export default function CreateNewsletterPage() {
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         {/* Progress */}
         <div className="flex items-center gap-2 mb-10 text-sm">
-          {(['template', 'details', 'sources', 'schedule'] as WizardStep[]).map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
-              {i > 0 && <div className="w-8 h-px bg-slate-700" />}
-              <button
-                onClick={() => {
-                  if (s === 'template' || (step !== 'template')) setStep(s);
-                }}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition ${
-                  step === s
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-800 text-slate-400 hover:text-white'
-                }`}
-              >
-                {i + 1}. {s.charAt(0).toUpperCase() + s.slice(1)}
-              </button>
-            </div>
-          ))}
+          {(['template', 'details', 'sources', 'schedule'] as WizardStep[]).map((s, i) => {
+            const stepOrder = ['template', 'details', 'sources', 'schedule'];
+            const currentIdx = stepOrder.indexOf(step);
+            const thisIdx = stepOrder.indexOf(s);
+            const isCompleted = thisIdx < currentIdx;
+            const isCurrent = step === s;
+
+            return (
+              <div key={s} className="flex items-center gap-2">
+                {i > 0 && (
+                  <div className={`w-8 h-px transition ${isCompleted ? 'bg-blue-600/60' : 'bg-slate-700'}`} />
+                )}
+                <button
+                  onClick={() => {
+                    if (s === 'template' || step !== 'template') setStep(s);
+                  }}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition ${
+                    isCurrent
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                      : isCompleted
+                      ? 'bg-blue-600/15 text-blue-400 hover:bg-blue-600/25'
+                      : 'bg-slate-800/80 text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  {i + 1}. {s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              </div>
+            );
+          })}
         </div>
 
         {/* Step 1: Template Selection */}
@@ -241,13 +312,13 @@ export default function CreateNewsletterPage() {
                 <button
                   key={t.id}
                   onClick={() => selectTemplate(t.id)}
-                  className="text-left bg-slate-800/40 hover:bg-slate-800/70 border border-slate-700/50 hover:border-blue-500/50 rounded-xl p-5 transition"
+                  className="text-left bg-slate-800/30 hover:bg-slate-800/60 border border-slate-700/40 hover:border-blue-500/40 rounded-2xl p-6 transition-all duration-200 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5 group"
                 >
-                  <h3 className="font-semibold mb-1">{t.name}</h3>
-                  <p className="text-sm text-slate-400 mb-3">{t.description}</p>
+                  <h3 className="font-semibold mb-1.5 group-hover:text-blue-400 transition">{t.name}</h3>
+                  <p className="text-sm text-slate-400 mb-3 leading-relaxed">{t.description}</p>
                   <div className="flex gap-1.5 flex-wrap">
                     {t.labels.map((l) => (
-                      <span key={l} className="text-xs px-2 py-0.5 rounded bg-slate-700/50 text-slate-400">
+                      <span key={l} className="text-xs px-2 py-0.5 rounded-full bg-slate-700/40 text-slate-400">
                         {l}
                       </span>
                     ))}
@@ -257,9 +328,9 @@ export default function CreateNewsletterPage() {
             </div>
             <button
               onClick={() => selectTemplate(null)}
-              className="w-full text-center border border-dashed border-slate-600 hover:border-slate-400 rounded-xl p-5 text-slate-400 hover:text-white transition"
+              className="w-full text-center border border-dashed border-slate-700/50 hover:border-slate-500 rounded-2xl p-6 text-slate-400 hover:text-white transition"
             >
-              Start from Scratch
+              <span className="text-lg">+</span> Start from Scratch
             </button>
           </div>
         )}
@@ -276,7 +347,7 @@ export default function CreateNewsletterPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="My Newsletter"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition"
                 />
               </div>
               <div>
@@ -286,7 +357,7 @@ export default function CreateNewsletterPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What does this newsletter cover?"
                   rows={2}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none"
+                  className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 resize-none transition"
                 />
               </div>
               <div>
@@ -298,7 +369,7 @@ export default function CreateNewsletterPage() {
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Describe what the AI should synthesize and how..."
                   rows={10}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-y font-mono text-sm"
+                  className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 resize-y font-mono text-sm transition"
                 />
               </div>
               <div>
@@ -310,7 +381,7 @@ export default function CreateNewsletterPage() {
                   onChange={(e) => setSecondaryPrompt(e.target.value)}
                   placeholder="E.g., Watch these tickers: BTC, ETH, SOL..."
                   rows={3}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none font-mono text-sm"
+                  className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 resize-none font-mono text-sm transition"
                 />
               </div>
               <div>
@@ -335,9 +406,9 @@ export default function CreateNewsletterPage() {
                     onChange={(e) => setLabelInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addLabel())}
                     placeholder="Add label..."
-                    className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                    className="flex-1 bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition"
                   />
-                  <button onClick={addLabel} className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition">
+                  <button onClick={addLabel} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-sm font-medium transition">
                     Add
                   </button>
                 </div>
@@ -350,7 +421,7 @@ export default function CreateNewsletterPage() {
               <button
                 onClick={() => setStep('sources')}
                 disabled={!name || !prompt}
-                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg font-medium transition"
+                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-xl font-medium transition shadow-lg shadow-blue-600/20"
               >
                 Next: Sources
               </button>
@@ -363,37 +434,91 @@ export default function CreateNewsletterPage() {
           <div>
             <h2 className="text-2xl font-bold mb-2">Select Sources</h2>
             <p className="text-slate-400 mb-6 text-sm">
-              Add Twitter handles (or other sources) that this newsletter will pull from.
+              Add Twitter/X handles to pull from. Each handle is validated in real-time.
             </p>
             <div className="flex gap-2 mb-4">
-              <input
-                type="text"
-                value={sourceInput}
-                onChange={(e) => setSourceInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSource())}
-                placeholder="@twitter_handle"
-                className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-              />
-              <button onClick={addSource} className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition">
+              <div className="relative flex-1">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">@</span>
+                <input
+                  type="text"
+                  value={sourceInput}
+                  onChange={(e) => setSourceInput(e.target.value.replace('@', ''))}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSource())}
+                  placeholder="twitter_handle"
+                  className="w-full bg-slate-800/80 border border-slate-700 rounded-xl pl-8 pr-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition"
+                />
+              </div>
+              <button
+                onClick={addSource}
+                disabled={!sourceInput.trim()}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 rounded-xl text-sm font-medium transition"
+              >
                 Add
               </button>
             </div>
             {sources.length === 0 ? (
-              <p className="text-sm text-slate-500 py-4">No sources added yet.</p>
+              <div className="text-center py-10 border border-dashed border-slate-700/50 rounded-xl">
+                <p className="text-sm text-slate-500">No sources added yet.</p>
+                <p className="text-xs text-slate-600 mt-1">Add Twitter handles above to get started.</p>
+              </div>
             ) : (
               <div className="space-y-2 mb-6">
-                {sources.map((handle) => (
+                {sources.map((source) => (
                   <div
-                    key={handle}
-                    className="flex items-center justify-between bg-slate-800/60 px-4 py-2.5 rounded-lg"
+                    key={source.handle}
+                    className={`flex items-center justify-between px-4 py-3 rounded-xl border transition ${
+                      source.status === 'valid'
+                        ? 'bg-emerald-950/20 border-emerald-800/30'
+                        : source.status === 'invalid'
+                        ? 'bg-red-950/20 border-red-800/30'
+                        : source.status === 'validating'
+                        ? 'bg-slate-800/40 border-slate-700/50'
+                        : 'bg-slate-800/40 border-slate-700/50'
+                    }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-slate-700 text-slate-400">twitter</span>
-                      <span className="text-sm">@{handle}</span>
+                    <div className="flex items-center gap-3 min-w-0">
+                      {/* Status indicator */}
+                      <div className="shrink-0">
+                        {source.status === 'validating' && (
+                          <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                        )}
+                        {source.status === 'valid' && (
+                          <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        )}
+                        {source.status === 'invalid' && (
+                          <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        )}
+                        {source.status === 'pending' && (
+                          <div className="w-5 h-5 rounded-full bg-slate-700" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">@{source.handle}</span>
+                          {source.name && source.name !== source.handle && (
+                            <span className="text-xs text-slate-400 truncate">{source.name}</span>
+                          )}
+                        </div>
+                        {source.status === 'valid' && source.followers !== undefined && (
+                          <span className="text-xs text-slate-500">
+                            {source.followers.toLocaleString()} followers
+                          </span>
+                        )}
+                        {source.status === 'invalid' && (
+                          <span className="text-xs text-red-400">{source.error || 'Handle not found'}</span>
+                        )}
+                        {source.status === 'validating' && (
+                          <span className="text-xs text-slate-500">Validating...</span>
+                        )}
+                      </div>
                     </div>
                     <button
-                      onClick={() => setSources(sources.filter((s) => s !== handle))}
-                      className="text-slate-500 hover:text-red-400 text-sm transition"
+                      onClick={() => setSources(sources.filter((s) => s.handle !== source.handle))}
+                      className="text-slate-500 hover:text-red-400 text-xs ml-3 shrink-0 transition"
                     >
                       Remove
                     </button>
@@ -407,7 +532,7 @@ export default function CreateNewsletterPage() {
               </button>
               <button
                 onClick={() => setStep('schedule')}
-                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-lg font-medium transition"
+                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-medium transition"
               >
                 Next: Schedule
               </button>
@@ -431,10 +556,10 @@ export default function CreateNewsletterPage() {
                     <button
                       key={opt.value}
                       onClick={() => setCadence(opt.value)}
-                      className={`p-4 rounded-xl border text-left transition ${
+                      className={`p-4 rounded-2xl border text-left transition-all duration-200 ${
                         cadence === opt.value
-                          ? 'border-blue-500 bg-blue-600/10'
-                          : 'border-slate-700 bg-slate-800/40 hover:border-slate-600'
+                          ? 'border-blue-500/60 bg-blue-600/10 shadow-lg shadow-blue-600/10'
+                          : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
                       }`}
                     >
                       <div className="font-medium text-sm">{opt.label}</div>
@@ -448,10 +573,10 @@ export default function CreateNewsletterPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setIsPublic(true)}
-                    className={`p-4 rounded-xl border text-left transition ${
+                    className={`p-4 rounded-2xl border text-left transition-all duration-200 ${
                       isPublic
-                        ? 'border-blue-500 bg-blue-600/10'
-                        : 'border-slate-700 bg-slate-800/40 hover:border-slate-600'
+                        ? 'border-blue-500/60 bg-blue-600/10 shadow-lg shadow-blue-600/10'
+                        : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
                     }`}
                   >
                     <div className="font-medium text-sm">Public</div>
@@ -461,10 +586,10 @@ export default function CreateNewsletterPage() {
                   </button>
                   <button
                     onClick={() => setIsPublic(false)}
-                    className={`p-4 rounded-xl border text-left transition ${
+                    className={`p-4 rounded-2xl border text-left transition-all duration-200 ${
                       !isPublic
-                        ? 'border-blue-500 bg-blue-600/10'
-                        : 'border-slate-700 bg-slate-800/40 hover:border-slate-600'
+                        ? 'border-blue-500/60 bg-blue-600/10 shadow-lg shadow-blue-600/10'
+                        : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
                     }`}
                   >
                     <div className="font-medium text-sm">Private</div>
@@ -489,7 +614,7 @@ export default function CreateNewsletterPage() {
               <button
                 onClick={handleCreate}
                 disabled={creating || !name || !prompt}
-                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-semibold transition"
+                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-semibold transition shadow-lg shadow-blue-600/20"
               >
                 {creating ? 'Creating...' : 'Create Newsletter'}
               </button>
@@ -497,6 +622,12 @@ export default function CreateNewsletterPage() {
           </div>
         )}
       </div>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        message="Sign in to create your newsletter and start building your audience."
+      />
     </main>
   );
 }

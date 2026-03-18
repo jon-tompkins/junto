@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { AuthModal } from '@/components/auth-modal';
 
 interface NewsletterDetail {
   id: string;
@@ -40,6 +41,7 @@ export default function NewsletterDetailPage() {
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -73,7 +75,7 @@ export default function NewsletterDetailPage() {
 
   async function toggleSubscription() {
     if (!session?.user) {
-      window.location.href = '/login';
+      setShowAuthModal(true);
       return;
     }
     setSubscribing(true);
@@ -127,40 +129,43 @@ export default function NewsletterDetailPage() {
       </nav>
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-start justify-between gap-4 mb-4">
+        {/* Header card */}
+        <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-8 mb-8">
+          <div className="flex items-start justify-between gap-4 mb-5">
             <div>
-              <h1 className="text-3xl font-bold mb-2">{newsletter.name}</h1>
+              <h1 className="text-3xl font-bold mb-3">{newsletter.name}</h1>
               <div className="flex items-center gap-3 text-sm text-slate-400">
-                <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
+                <span className="px-2.5 py-1 rounded-full bg-blue-600/15 text-blue-400 font-medium text-xs">
                   {CADENCE_LABELS[newsletter.schedule_cadence]}
                 </span>
-                <span>{newsletter.subscriber_count} subscribers</span>
-                <span>{newsletter.credit_cost} credit/run</span>
+                <span className="flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  {newsletter.subscriber_count} subscribers
+                </span>
+                <span>{newsletter.credit_cost} credit/issue</span>
               </div>
             </div>
             <button
               onClick={toggleSubscription}
               disabled={subscribing}
-              className={`px-6 py-2.5 rounded-lg font-medium transition shrink-0 ${
+              className={`px-7 py-3 rounded-xl font-semibold transition shrink-0 shadow-lg ${
                 subscribed
-                  ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                  : 'bg-blue-600 text-white hover:bg-blue-500'
+                  ? 'bg-slate-700 text-slate-300 hover:bg-slate-600 shadow-none'
+                  : 'bg-blue-600 text-white hover:bg-blue-500 shadow-blue-600/20'
               }`}
             >
-              {subscribing ? '...' : subscribed ? 'Subscribed' : 'Subscribe'}
+              {subscribing ? '...' : subscribed ? 'Subscribed ✓' : 'Subscribe'}
             </button>
           </div>
 
           {newsletter.description && (
-            <p className="text-slate-400 leading-relaxed mb-4">{newsletter.description}</p>
+            <p className="text-slate-400 leading-relaxed mb-5">{newsletter.description}</p>
           )}
 
           {newsletter.labels.length > 0 && (
             <div className="flex gap-2 flex-wrap">
               {newsletter.labels.map((label) => (
-                <span key={label} className="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400">
+                <span key={label} className="text-xs px-2.5 py-1 rounded-full bg-slate-700/60 text-slate-400">
                   {label}
                 </span>
               ))}
@@ -168,64 +173,77 @@ export default function NewsletterDetailPage() {
           )}
         </div>
 
-        {/* Sources */}
-        <section className="mb-10">
-          <h2 className="text-lg font-semibold mb-4 text-slate-300">Sources ({newsletter.sources.length})</h2>
-          {newsletter.sources.length === 0 ? (
-            <p className="text-sm text-slate-500">No sources configured yet.</p>
-          ) : (
-            <div className="flex gap-3 flex-wrap">
-              {newsletter.sources.map((src) => (
-                <div
-                  key={src.id}
-                  className="flex items-center gap-2 bg-slate-800/60 px-3 py-2 rounded-lg text-sm"
-                >
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-slate-700 text-slate-400 uppercase">
-                    {src.type}
-                  </span>
-                  <span className="text-slate-300">
-                    {src.display_name || src.handle_or_url}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          {/* Sources */}
+          <div className="md:col-span-1">
+            <h2 className="text-sm font-semibold mb-3 text-slate-400 uppercase tracking-wider">
+              Sources ({newsletter.sources.length})
+            </h2>
+            {newsletter.sources.length === 0 ? (
+              <p className="text-sm text-slate-500">No sources yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {newsletter.sources.map((src) => (
+                  <div
+                    key={src.id}
+                    className="flex items-center gap-2.5 bg-slate-800/40 px-3 py-2.5 rounded-xl text-sm border border-slate-700/30"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-xs text-slate-400 font-bold shrink-0">
+                      {(src.display_name || src.handle_or_url).charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-slate-300 truncate">
+                      @{src.handle_or_url}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-        {/* Recent Runs */}
-        <section className="mb-10">
-          <h2 className="text-lg font-semibold mb-4 text-slate-300">Recent Issues</h2>
-          {runs.length === 0 ? (
-            <p className="text-sm text-slate-500">No issues generated yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {runs.map((run) => (
-                <div
-                  key={run.id}
-                  className="flex items-center justify-between bg-slate-800/40 px-4 py-3 rounded-lg"
-                >
-                  <span className="text-sm text-slate-300">
-                    {run.subject || 'Untitled issue'}
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    {new Date(run.generated_at).toLocaleDateString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+          {/* Recent Runs */}
+          <div className="md:col-span-2">
+            <h2 className="text-sm font-semibold mb-3 text-slate-400 uppercase tracking-wider">Recent Issues</h2>
+            {runs.length === 0 ? (
+              <div className="text-center py-10 border border-dashed border-slate-700/40 rounded-xl">
+                <p className="text-sm text-slate-500">No issues generated yet.</p>
+                <p className="text-xs text-slate-600 mt-1">First issue will be generated on schedule.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {runs.map((run) => (
+                  <div
+                    key={run.id}
+                    className="flex items-center justify-between bg-slate-800/40 border border-slate-700/30 px-4 py-3.5 rounded-xl hover:bg-slate-800/60 transition cursor-pointer"
+                  >
+                    <span className="text-sm text-slate-300 font-medium">
+                      {run.subject || 'Untitled issue'}
+                    </span>
+                    <span className="text-xs text-slate-500 shrink-0 ml-3">
+                      {new Date(run.generated_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Prompt Preview */}
         <section className="mb-10">
           <h2 className="text-lg font-semibold mb-4 text-slate-300">Prompt</h2>
-          <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg p-4">
+          <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5">
             <pre className="text-sm text-slate-400 whitespace-pre-wrap font-mono leading-relaxed">
               {newsletter.prompt}
             </pre>
           </div>
         </section>
       </div>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        message="Sign in to subscribe to this newsletter."
+      />
     </main>
   );
 }
