@@ -1,19 +1,47 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { SidebarLayout } from '@/components/sidebar-layout';
+import Link from 'next/link';
+
+interface SubscribedNewsletter {
+  id: string;
+  newsletter_id: string;
+  is_active: boolean;
+  created_at: string;
+  newsletter: {
+    id: string;
+    name: string;
+    description: string | null;
+    schedule_cadence: string;
+    subscriber_count: number;
+  };
+}
+
+interface CreatedNewsletter {
+  id: string;
+  name: string;
+  description: string | null;
+  schedule_cadence: string;
+  subscriber_count: number;
+  is_public: boolean;
+  created_at: string;
+}
+
+const CADENCE_LABELS: Record<string, string> = {
+  daily: 'Daily',
+  twice_daily: '2x Daily',
+  weekly: 'Weekly',
+};
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [profiles, setProfiles] = useState<string[]>([]);
+  const [subscriptions, setSubscriptions] = useState<SubscribedNewsletter[]>([]);
+  const [created, setCreated] = useState<CreatedNewsletter[]>([]);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [generationResult, setGenerationResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<'subscribed' | 'created'>('subscribed');
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -22,175 +50,242 @@ export default function DashboardPage() {
   }, [status, router]);
 
   useEffect(() => {
-    if (session) {
-      fetchProfiles();
+    if (session?.user) {
+      loadData();
     }
   }, [session]);
 
-  const fetchProfiles = async () => {
+  async function loadData() {
     try {
-      const res = await fetch('/api/user/profiles');
-      const data = await res.json();
-      setProfiles(data.profiles || []);
-    } catch (err) {
-      console.error('Failed to fetch profiles:', err);
+      const [subsRes, createdRes] = await Promise.all([
+        fetch('/api/v2/dashboard/subscriptions'),
+        fetch('/api/v2/dashboard/created'),
+      ]);
+
+      if (subsRes.ok) {
+        const data = await subsRes.json();
+        setSubscriptions(data.subscriptions || []);
+      }
+      if (createdRes.ok) {
+        const data = await createdRes.json();
+        setCreated(data.newsletters || []);
+      }
+    } catch {
+      // APIs may not exist yet — graceful fallback
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const handleGenerateNewsletter = async () => {
-    setGenerating(true);
-    setGenerationResult(null);
-    
-    try {
-      const res = await fetch('/api/newsletter/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recentHours: 48, contextDays: 180 }),
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        setGenerationResult({ 
-          success: true, 
-          message: `Newsletter generated: "${data.newsletter?.subject || 'Success'}"` 
-        });
-      } else {
-        setGenerationResult({ 
-          success: false, 
-          message: data.error || data.message || 'Failed to generate' 
-        });
-      }
-    } catch (err) {
-      setGenerationResult({ 
-        success: false, 
-        message: 'Failed to generate newsletter' 
-      });
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  const handleSendNewsletter = async () => {
-    setSending(true);
-    setSendResult(null);
-    
-    try {
-      const res = await fetch('/api/newsletter/send');
-      const data = await res.json();
-      
-      if (data.success) {
-        setSendResult({ 
-          success: true, 
-          message: `Newsletter sent to ${data.sentTo?.join(', ') || 'recipient'}` 
-        });
-      } else {
-        setSendResult({ 
-          success: false, 
-          message: data.error || 'Failed to send' 
-        });
-      }
-    } catch (err) {
-      setSendResult({ 
-        success: false, 
-        message: 'Failed to send newsletter' 
-      });
-    } finally {
-      setSending(false);
-    }
-  };
-
-  if (status === 'loading' || loading) {
+  if (status === 'loading') {
     return (
-      <SidebarLayout>
-        <div className="flex items-center justify-center h-full">
-          <div className="text-neutral-400">Loading...</div>
-        </div>
-      </SidebarLayout>
+      <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white flex items-center justify-center">
+        <div className="animate-pulse text-slate-500">Loading...</div>
+      </main>
     );
   }
 
   return (
-    <SidebarLayout>
-      <div className="px-8 py-12 max-w-2xl">
-        <div className="mb-12">
-          <h2 className="text-2xl font-light mb-2">Dashboard</h2>
-          <p className="text-neutral-400">
-            Your daily briefing will be generated from your selected sources.
-          </p>
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+      {/* Nav */}
+      <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
+        <Link href="/" className="text-2xl font-bold tracking-tight">
+          <span className="text-white">my</span>
+          <span className="text-blue-400">junto</span>
+        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/explore" className="text-slate-400 hover:text-white transition text-sm">
+            Explore
+          </Link>
+          <Link href="/create" className="text-slate-400 hover:text-white transition text-sm">
+            Create
+          </Link>
+          <button
+            onClick={() => signOut({ callbackUrl: '/' })}
+            className="text-slate-500 hover:text-slate-300 transition text-sm"
+          >
+            Sign Out
+          </button>
+        </div>
+      </nav>
+
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-10">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+            <p className="text-slate-400">
+              Welcome back{session?.user?.name ? `, ${session.user.name}` : ''}. Manage your newsletters and subscriptions.
+            </p>
+          </div>
+          <Link
+            href="/create"
+            className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-medium transition shadow-lg shadow-blue-600/20 text-sm shrink-0"
+          >
+            + New Newsletter
+          </Link>
         </div>
 
-        {/* Status */}
-        <div className="mb-8 p-6 border border-neutral-800 bg-neutral-950">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-sm">Active</span>
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-10">
+          <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
+            <div className="text-2xl font-bold text-white">{subscriptions.length}</div>
+            <div className="text-sm text-slate-400 mt-1">Subscriptions</div>
           </div>
-          <p className="text-neutral-400 text-sm">
-            Your next briefing will be delivered tomorrow morning.
-          </p>
-        </div>
-
-        {/* Quick stats */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="border border-neutral-800 p-4">
-            <div className="text-2xl font-light">{profiles.length}</div>
-            <div className="text-sm text-neutral-500">Sources</div>
+          <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
+            <div className="text-2xl font-bold text-white">{created.length}</div>
+            <div className="text-sm text-slate-400 mt-1">Created</div>
           </div>
-          <div className="border border-neutral-800 p-4">
-            <div className="text-2xl font-light">Daily</div>
-            <div className="text-sm text-neutral-500">Frequency</div>
-          </div>
-        </div>
-
-        {/* Manual trigger for testing */}
-        <div className="border border-dashed border-neutral-700 p-6">
-          <p className="text-neutral-500 text-sm mb-4 text-center">Testing</p>
-          <p className="text-neutral-600 text-xs mb-4 text-center">
-            Tweets are fetched automatically every day at 12:00 UTC
-          </p>
-          
-          {generationResult && (
-            <div className={`mb-4 p-3 text-sm ${
-              generationResult.success 
-                ? 'border border-green-500 text-green-500' 
-                : 'border border-red-500 text-red-500'
-            }`}>
-              {generationResult.message}
+          <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
+            <div className="text-2xl font-bold text-white">
+              {created.reduce((sum, n) => sum + n.subscriber_count, 0)}
             </div>
-          )}
-          
-          {sendResult && (
-            <div className={`mb-4 p-3 text-sm ${
-              sendResult.success 
-                ? 'border border-green-500 text-green-500' 
-                : 'border border-red-500 text-red-500'
-            }`}>
-              {sendResult.message}
-            </div>
-          )}
-          
-          <div className="flex flex-wrap gap-4 justify-center">
-            <button
-              onClick={handleGenerateNewsletter}
-              disabled={generating}
-              className="px-6 py-2 border border-neutral-600 text-sm hover:border-white hover:bg-white hover:text-black transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-neutral-600 disabled:hover:bg-transparent disabled:hover:text-white"
-            >
-              {generating ? 'Generating...' : 'Generate Newsletter'}
-            </button>
-            
-            <button
-              onClick={handleSendNewsletter}
-              disabled={sending}
-              className="px-6 py-2 border border-neutral-600 text-sm hover:border-white hover:bg-white hover:text-black transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-neutral-600 disabled:hover:bg-transparent disabled:hover:text-white"
-            >
-              {sending ? 'Sending...' : 'Send Most Recent'}
-            </button>
+            <div className="text-sm text-slate-400 mt-1">Total Subscribers</div>
           </div>
         </div>
+
+        {/* Tab Switcher */}
+        <div className="flex gap-1 bg-slate-800/40 rounded-xl p-1 mb-8 w-fit">
+          <button
+            onClick={() => setActiveTab('subscribed')}
+            className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
+              activeTab === 'subscribed'
+                ? 'bg-slate-700 text-white shadow'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Subscribed ({subscriptions.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('created')}
+            className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
+              activeTab === 'created'
+                ? 'bg-slate-700 text-white shadow'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            My Newsletters ({created.length})
+          </button>
+        </div>
+
+        {/* Content */}
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-slate-800/30 border border-slate-700/30 rounded-2xl p-6 animate-pulse">
+                <div className="h-5 bg-slate-700 rounded w-1/3 mb-3" />
+                <div className="h-3 bg-slate-700/60 rounded w-2/3" />
+              </div>
+            ))}
+          </div>
+        ) : activeTab === 'subscribed' ? (
+          subscriptions.length === 0 ? (
+            <div className="text-center py-16 border border-dashed border-slate-700/40 rounded-2xl">
+              <div className="w-14 h-14 rounded-2xl bg-slate-800/60 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-7 h-7 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <p className="text-slate-400 font-medium mb-2">No subscriptions yet</p>
+              <p className="text-slate-500 text-sm mb-6">Discover newsletters to subscribe to.</p>
+              <Link
+                href="/explore"
+                className="inline-block bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-medium transition shadow-lg shadow-blue-600/20"
+              >
+                Explore Newsletters
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {subscriptions.map((sub) => (
+                <Link
+                  key={sub.id}
+                  href={`/newsletter/${sub.newsletter.id}`}
+                  className="flex items-center justify-between bg-slate-800/30 hover:bg-slate-800/50 border border-slate-700/40 hover:border-slate-600/60 rounded-2xl p-5 transition-all duration-200 group"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                      <h3 className="font-semibold group-hover:text-blue-400 transition truncate">
+                        {sub.newsletter.name}
+                      </h3>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-600/15 text-blue-400 font-medium shrink-0">
+                        {CADENCE_LABELS[sub.newsletter.schedule_cadence]}
+                      </span>
+                    </div>
+                    {sub.newsletter.description && (
+                      <p className="text-sm text-slate-400 truncate">{sub.newsletter.description}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 shrink-0 ml-4">
+                    <span className="text-xs text-slate-500">
+                      {sub.newsletter.subscriber_count} subscribers
+                    </span>
+                    <svg className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )
+        ) : (
+          created.length === 0 ? (
+            <div className="text-center py-16 border border-dashed border-slate-700/40 rounded-2xl">
+              <div className="w-14 h-14 rounded-2xl bg-slate-800/60 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-7 h-7 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </div>
+              <p className="text-slate-400 font-medium mb-2">No newsletters created</p>
+              <p className="text-slate-500 text-sm mb-6">Create your first newsletter and start building an audience.</p>
+              <Link
+                href="/create"
+                className="inline-block bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-medium transition shadow-lg shadow-blue-600/20"
+              >
+                Create Newsletter
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {created.map((nl) => (
+                <Link
+                  key={nl.id}
+                  href={`/newsletter/${nl.id}`}
+                  className="flex items-center justify-between bg-slate-800/30 hover:bg-slate-800/50 border border-slate-700/40 hover:border-slate-600/60 rounded-2xl p-5 transition-all duration-200 group"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                      <h3 className="font-semibold group-hover:text-blue-400 transition truncate">
+                        {nl.name}
+                      </h3>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-600/15 text-blue-400 font-medium shrink-0">
+                        {CADENCE_LABELS[nl.schedule_cadence]}
+                      </span>
+                      {!nl.is_public && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-400 shrink-0">
+                          Private
+                        </span>
+                      )}
+                    </div>
+                    {nl.description && (
+                      <p className="text-sm text-slate-400 truncate">{nl.description}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 shrink-0 ml-4">
+                    <div className="text-right">
+                      <div className="text-sm font-medium">{nl.subscriber_count}</div>
+                      <div className="text-xs text-slate-500">subscribers</div>
+                    </div>
+                    <svg className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )
+        )}
       </div>
-    </SidebarLayout>
+    </main>
   );
 }
-// Deploy 1771528029
