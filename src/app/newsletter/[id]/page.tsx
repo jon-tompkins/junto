@@ -131,7 +131,7 @@ export default function NewsletterDetailPage() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Header card */}
         <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-8 mb-8">
-          <div className="flex items-start justify-between gap-4 mb-5">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
             <div>
               <h1 className="text-3xl font-bold mb-3">{newsletter.name}</h1>
               <div className="flex items-center gap-3 text-sm text-slate-400">
@@ -148,7 +148,7 @@ export default function NewsletterDetailPage() {
             <button
               onClick={toggleSubscription}
               disabled={subscribing}
-              className={`px-7 py-3 rounded-xl font-semibold transition shrink-0 shadow-lg ${
+              className={`w-full sm:w-auto px-7 py-3 rounded-xl font-semibold transition shrink-0 shadow-lg ${
                 subscribed
                   ? 'bg-slate-700 text-slate-300 hover:bg-slate-600 shadow-none'
                   : 'bg-blue-600 text-white hover:bg-blue-500 shadow-blue-600/20'
