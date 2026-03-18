@@ -49,7 +49,7 @@ export async function fetchTweetsForProfile(
   const cleanHandle = handle.replace('@', '');
   
   // Try Apify first (preferred)
-  if (process.env.APIFY_API_TOKEN) {
+  if (process.env.APIFY_API_KEY) {
     console.log(`Fetching tweets for @${cleanHandle} via Apify...`);
     try {
       return await fetchViaApify(cleanHandle, maxTweets);

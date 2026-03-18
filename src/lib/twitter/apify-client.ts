@@ -76,11 +76,11 @@ export async function fetchTweetsFromProfile(
   handle: string,
   maxTweets = 30
 ): Promise<FetchedTweet[]> {
-  const token = process.env.APIFY_API_TOKEN;
+  const token = process.env.APIFY_API_KEY;
   if (!token) {
-    throw new Error('APIFY_API_TOKEN not configured');
+    throw new Error('APIFY_API_KEY not configured');
   }
-  
+
   const cleanHandle = handle.replace('@', '');
   console.log(`[Apify] Fetching tweets for @${cleanHandle}...`);
   
@@ -138,11 +138,11 @@ export async function searchTweets(
   query: string,
   maxTweets = 30
 ): Promise<FetchedTweet[]> {
-  const token = process.env.APIFY_API_TOKEN;
+  const token = process.env.APIFY_API_KEY;
   if (!token) {
-    throw new Error('APIFY_API_TOKEN not configured');
+    throw new Error('APIFY_API_KEY not configured');
   }
-  
+
   console.log(`[Apify] Searching for "${query}"...`);
   
   const runRes = await fetch(
