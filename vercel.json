@@ -7,6 +7,14 @@
     {
       "path": "/api/tweets/fetch",
       "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/pull-content",
+      "schedule": "0 */2 * * *"
+    },
+    {
+      "path": "/api/cron/generate-newsletters",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
