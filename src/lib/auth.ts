@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import TwitterProvider from "next-auth/providers/twitter";
 import { getSupabase } from "@/lib/db/client";
+import { NEW_USER_BONUS_CREDITS } from "@/lib/pricing";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -83,14 +84,35 @@ export const authOptions: NextAuthOptions = {
             .eq('id', existingUser.id);
           error = result.error;
         } else {
-          // Try upsert for new users (with twitter_id conflict handling)
-          console.log('SignIn: Creating new user via upsert');
+          // New user — create with bonus credits
+          console.log('SignIn: Creating new user with', NEW_USER_BONUS_CREDITS, 'bonus credits');
           const result = await supabase
             .from('users')
-            .upsert(userData, {
+            .upsert({
+              ...userData,
+              credit_balance: NEW_USER_BONUS_CREDITS,
+            }, {
               onConflict: 'twitter_id',
             });
           error = result.error;
+
+          // Record the bonus credit transaction
+          if (!result.error) {
+            const { data: newUser } = await supabase
+              .from('users')
+              .select('id')
+              .eq('twitter_id', twitterId)
+              .single();
+
+            if (newUser) {
+              await supabase.from('credit_transactions').insert({
+                user_id: newUser.id,
+                amount: NEW_USER_BONUS_CREDITS,
+                type: 'bonus',
+                description: 'Welcome bonus — new account signup',
+              });
+            }
+          }
         }
 
         if (error) console.error('SignIn: Error saving user:', error);

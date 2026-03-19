@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchNewsletters, searchNewslettersByLabel, getPublicNewsletters } from '@/lib/db/newsletters-v2';
-import { getNewsletterLabels } from '@/lib/db/newsletters-v2';
+import { getNewsletterLabels, getNewsletterSources } from '@/lib/db/newsletters-v2';
 
 // GET /api/v2/newsletters/search?q=crypto&label=defi
 export async function GET(req: NextRequest) {
@@ -19,16 +19,24 @@ export async function GET(req: NextRequest) {
       newsletters = await getPublicNewsletters(limit);
     }
 
-    // Enrich with labels
+    // Enrich with labels and sources
     const enriched = await Promise.all(
       newsletters.map(async (nl) => {
-        const labels = await getNewsletterLabels(nl.id);
+        const [labels, sources] = await Promise.all([
+          getNewsletterLabels(nl.id),
+          getNewsletterSources(nl.id),
+        ]);
         return {
           ...nl,
           labels,
-          // Placeholder for source count — will be enriched when newsletter_sources is populated
-          source_count: 0,
-          admin_name: null,
+          sources: sources.map((s) => ({
+            id: s.id,
+            handle: s.handle_or_url,
+            source_type: s.type,
+            display_name: s.display_name,
+          })),
+          source_count: sources.length,
+          credit_cost: nl.credit_cost ?? 1,
         };
       })
     );
