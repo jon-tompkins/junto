@@ -341,9 +341,9 @@ export default function LandingPage() {
               <div className="text-xs text-slate-500">top up anytime</div>
             </div>
             <div className="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-7">
-              <div className="text-3xl font-bold mb-1">70%</div>
+              <div className="text-3xl font-bold mb-1">50%</div>
               <div className="text-sm text-slate-400 mb-3">creator revenue share</div>
-              <div className="text-xs text-slate-500">earn from your audience</div>
+              <div className="text-xs text-slate-500">earn from every subscriber</div>
             </div>
           </div>
         </div>
@@ -356,7 +356,7 @@ export default function LandingPage() {
           <div className="relative">
             <h2 className="text-3xl font-bold mb-4">Build Your Audience</h2>
             <p className="text-slate-400 mb-8 max-w-lg mx-auto text-lg leading-relaxed">
-              Create a public newsletter and earn 70% of subscription revenue.
+              Create a public newsletter and earn 50% of every subscriber&apos;s credits.
               Your sources + your prompt = your newsletter business.
             </p>
             <Link

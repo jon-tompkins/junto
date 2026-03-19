@@ -42,6 +42,8 @@ export default function NewsletterDetailPage() {
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [forking, setForking] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -55,6 +57,16 @@ export default function NewsletterDetailPage() {
         if (nlRes.ok) {
           const data = await nlRes.json();
           setNewsletter(data.newsletter);
+          // Check ownership
+          if (session?.user && data.newsletter?.admin_user_id) {
+            try {
+              const ownerRes = await fetch('/api/v2/dashboard/created');
+              if (ownerRes.ok) {
+                const ownerData = await ownerRes.json();
+                setIsOwner((ownerData.newsletters || []).some((n: any) => n.id === data.newsletter.id));
+              }
+            } catch {}
+          }
         }
         if (subRes?.ok) {
           const data = await subRes.json();
@@ -93,6 +105,25 @@ export default function NewsletterDetailPage() {
       }
     } finally {
       setSubscribing(false);
+    }
+  }
+
+  async function handleFork() {
+    if (!session?.user) {
+      setShowAuthModal(true);
+      return;
+    }
+    setForking(true);
+    try {
+      const res = await fetch(`/api/v2/newsletters/${id}/fork`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        window.location.href = `/newsletter/${data.newsletter.id}/edit`;
+      }
+    } catch {
+      // ignore
+    } finally {
+      setForking(false);
     }
   }
 
@@ -145,17 +176,34 @@ export default function NewsletterDetailPage() {
                 <span>{newsletter.credit_cost} credit/issue</span>
               </div>
             </div>
-            <button
-              onClick={toggleSubscription}
-              disabled={subscribing}
-              className={`px-7 py-3 rounded-xl font-semibold transition shrink-0 shadow-lg ${
-                subscribed
-                  ? 'bg-slate-700 text-slate-300 hover:bg-slate-600 shadow-none'
-                  : 'bg-blue-600 text-white hover:bg-blue-500 shadow-blue-600/20'
-              }`}
-            >
-              {subscribing ? '...' : subscribed ? 'Subscribed ✓' : 'Subscribe'}
-            </button>
+            <div className="flex gap-2 shrink-0">
+              {isOwner && (
+                <Link
+                  href={`/newsletter/${id}/edit`}
+                  className="px-5 py-3 rounded-xl font-medium transition border border-slate-600 hover:border-slate-400 text-slate-300 hover:text-white text-sm"
+                >
+                  Edit
+                </Link>
+              )}
+              <button
+                onClick={handleFork}
+                disabled={forking}
+                className="px-5 py-3 rounded-xl font-medium transition border border-slate-600 hover:border-purple-400 text-slate-300 hover:text-purple-400 text-sm disabled:opacity-50"
+              >
+                {forking ? '...' : 'Fork'}
+              </button>
+              <button
+                onClick={toggleSubscription}
+                disabled={subscribing}
+                className={`px-7 py-3 rounded-xl font-semibold transition shadow-lg ${
+                  subscribed
+                    ? 'bg-slate-700 text-slate-300 hover:bg-slate-600 shadow-none'
+                    : 'bg-blue-600 text-white hover:bg-blue-500 shadow-blue-600/20'
+                }`}
+              >
+                {subscribing ? '...' : subscribed ? 'Subscribed ✓' : 'Subscribe'}
+              </button>
+            </div>
           </div>
 
           {newsletter.description && (

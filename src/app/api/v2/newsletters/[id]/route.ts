@@ -1,7 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getNewsletterWithSources, updateNewsletter, deleteNewsletter } from '@/lib/db/newsletters-v2';
+import { getNewsletterWithSources, updateNewsletter, deleteNewsletter, setNewsletterLabels, addNewsletterSource, removeNewsletterSource } from '@/lib/db/newsletters-v2';
+import { getOrCreateSource } from '@/lib/db/sources';
+import { getSupabase } from '@/lib/db/client';
+
+async function resolveUserId(session: any): Promise<string | null> {
+  const supabase = getSupabase();
+  const twitterId = session.user?.twitterId;
+  const googleId = session.user?.googleId;
+
+  if (twitterId) {
+    const { data } = await supabase.from('users').select('id').eq('twitter_id', twitterId).single();
+    return data?.id || null;
+  }
+  if (googleId) {
+    const { data } = await supabase.from('users').select('id').eq('google_id', googleId).single();
+    return data?.id || null;
+  }
+  return null;
+}
 
 // GET /api/v2/newsletters/[id]
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -34,13 +52,34 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Newsletter not found' }, { status: 404 });
     }
 
-    // @ts-expect-error — session.user extended with id
-    if (newsletter.admin_user_id !== session.user.id) {
+    const userId = await resolveUserId(session);
+    if (!userId || newsletter.admin_user_id !== userId) {
       return NextResponse.json({ error: 'Forbidden — not the admin' }, { status: 403 });
     }
 
     const body = await req.json();
-    const updated = await updateNewsletter(id, body);
+
+    // Handle source add/remove
+    if (body.add_source) {
+      const source = await getOrCreateSource({ type: 'twitter', handle_or_url: body.add_source });
+      await addNewsletterSource(id, source.id);
+      const refreshed = await getNewsletterWithSources(id);
+      return NextResponse.json({ newsletter: refreshed });
+    }
+    if (body.remove_source_id) {
+      await removeNewsletterSource(id, body.remove_source_id);
+      const refreshed = await getNewsletterWithSources(id);
+      return NextResponse.json({ newsletter: refreshed });
+    }
+
+    // Handle labels update
+    if (body.labels && Array.isArray(body.labels)) {
+      await setNewsletterLabels(id, body.labels);
+    }
+
+    // Update core fields
+    const { labels, add_source, remove_source_id, ...updateFields } = body;
+    const updated = await updateNewsletter(id, updateFields);
 
     return NextResponse.json({ newsletter: updated });
   } catch (error) {
@@ -63,8 +102,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       return NextResponse.json({ error: 'Newsletter not found' }, { status: 404 });
     }
 
-    // @ts-expect-error — session.user extended with id
-    if (newsletter.admin_user_id !== session.user.id) {
+    const userId = await resolveUserId(session);
+    if (!userId || newsletter.admin_user_id !== userId) {
       return NextResponse.json({ error: 'Forbidden — not the admin' }, { status: 403 });
     }
 
