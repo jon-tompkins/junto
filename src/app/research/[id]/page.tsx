@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { TopNav } from '@/components/top-nav';
 
 interface Report {
   id: string;
@@ -100,11 +101,8 @@ export default function ReportPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
+      <TopNav />
       <div className="max-w-4xl mx-auto px-6 py-12">
-        {/* Back Link */}
-        <Link href="/research" className="text-slate-500 hover:text-white text-sm mb-8 inline-block">
-          ← Back to Research
-        </Link>
 
         {/* Header */}
         <div className="mb-8">

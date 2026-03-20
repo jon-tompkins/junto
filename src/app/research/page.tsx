@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { TopNav } from '@/components/top-nav';
 
 interface Report {
   id: string;
@@ -265,12 +266,10 @@ export default function ResearchPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
-      <div className="container mx-auto px-4 py-12 max-w-5xl">
+      <TopNav />
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header */}
         <div className="mb-8">
-          <Link href="/" className="text-slate-500 hover:text-white text-sm mb-4 inline-block">
-            ← MyJunto
-          </Link>
           <h1 className="text-3xl font-bold mb-2">Junto Research</h1>
           <p className="text-slate-400">Investment research and analysis powered by AI</p>
         </div>

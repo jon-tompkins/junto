@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { CADENCE_LABELS } from '@/lib/pricing';
+import { TopNav } from '@/components/top-nav';
 
 interface NewsletterDetail {
   id: string;
@@ -176,15 +177,7 @@ export default function EditNewsletterPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
-      <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
-        <Link href="/" className="text-2xl font-bold tracking-tight">
-          <span className="text-white">my</span>
-          <span className="text-blue-400">junto</span>
-        </Link>
-        <Link href={`/newsletter/${id}`} className="text-slate-400 hover:text-white transition text-sm">
-          &larr; Back to newsletter
-        </Link>
-      </nav>
+      <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <h1 className="text-2xl font-bold mb-8">Edit Newsletter</h1>

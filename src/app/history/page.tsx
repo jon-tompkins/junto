@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { TopNav } from '@/components/top-nav';
 
 interface RunEntry {
   id: string;
@@ -92,15 +93,7 @@ export default function HistoryPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
-      <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
-        <Link href="/" className="text-2xl font-bold tracking-tight">
-          <span className="text-white">my</span>
-          <span className="text-blue-400">junto</span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="text-slate-400 hover:text-white transition text-sm">&larr; Dashboard</Link>
-        </div>
-      </nav>
+      <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <h1 className="text-3xl font-bold mb-2">Newsletter History</h1>

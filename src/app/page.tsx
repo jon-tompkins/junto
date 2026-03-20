@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+import { TopNav } from '@/components/top-nav';
 import { AuthModal } from '@/components/auth-modal';
 import {
   CADENCE_OPTIONS,
@@ -161,36 +162,7 @@ export default function LandingPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
-      {/* Nav */}
-      <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
-        <div className="text-2xl font-bold tracking-tight">
-          <span className="text-white">my</span>
-          <span className="text-blue-400">junto</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/explore" className="text-slate-400 hover:text-white transition text-sm">
-            Explore
-          </Link>
-          <Link href="/research" className="text-slate-400 hover:text-white transition text-sm">
-            Research
-          </Link>
-          {session?.user ? (
-            <Link href="/dashboard" className="text-slate-400 hover:text-white transition text-sm">
-              Dashboard
-            </Link>
-          ) : (
-            <Link href="/login" className="text-slate-400 hover:text-white transition text-sm">
-              Sign In
-            </Link>
-          )}
-          <Link
-            href="/create"
-            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-lg shadow-blue-600/20"
-          >
-            Get Started
-          </Link>
-        </div>
-      </nav>
+      <TopNav />
 
       {/* Hero */}
       <section className="container mx-auto px-4 pt-24 pb-20 text-center relative">

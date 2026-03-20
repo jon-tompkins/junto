@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { AuthModal } from '@/components/auth-modal';
+import { TopNav } from '@/components/top-nav';
 
 interface NewsletterCard {
   id: string;
@@ -61,30 +62,7 @@ export default function ExplorePage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
-      {/* Nav */}
-      <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
-        <Link href="/" className="text-2xl font-bold tracking-tight">
-          <span className="text-white">my</span>
-          <span className="text-blue-400">junto</span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link href="/create" className="text-slate-400 hover:text-white transition text-sm">
-            Create
-          </Link>
-          {session?.user ? (
-            <Link href="/dashboard" className="text-slate-400 hover:text-white transition text-sm">
-              Dashboard
-            </Link>
-          ) : (
-            <button
-              onClick={() => setShowAuthModal(true)}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition"
-            >
-              Sign In
-            </button>
-          )}
-        </div>
-      </nav>
+      <TopNav />
 
       <div className="container mx-auto px-4 py-8">
         {/* Header */}

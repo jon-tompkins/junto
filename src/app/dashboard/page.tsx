@@ -4,6 +4,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { TopNav } from '@/components/top-nav';
 
 interface SubscribedNewsletter {
   id: string;
@@ -124,35 +125,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
-      {/* Nav */}
-      <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
-        <Link href="/" className="text-2xl font-bold tracking-tight">
-          <span className="text-white">my</span>
-          <span className="text-blue-400">junto</span>
-        </Link>
-        <div className="flex items-center gap-4">
-          {creditBalance !== null && (
-            <span className={`text-sm font-medium ${creditColor}`}>
-              {creditBalance.toLocaleString()} credits
-            </span>
-          )}
-          <Link href="/explore" className="text-slate-400 hover:text-white transition text-sm">
-            Explore
-          </Link>
-          <Link href="/history" className="text-slate-400 hover:text-white transition text-sm">
-            History
-          </Link>
-          <Link href="/create" className="text-slate-400 hover:text-white transition text-sm">
-            Create
-          </Link>
-          <button
-            onClick={() => signOut({ callbackUrl: '/' })}
-            className="text-slate-500 hover:text-slate-300 transition text-sm"
-          >
-            Sign Out
-          </button>
-        </div>
-      </nav>
+      <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Email Collection Banner */}

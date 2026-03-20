@@ -2,20 +2,12 @@
 
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+import { TopNav } from '@/components/top-nav';
 
 export default function LoginPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white flex flex-col">
-      {/* Nav */}
-      <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
-        <Link href="/" className="text-2xl font-bold tracking-tight">
-          <span className="text-white">my</span>
-          <span className="text-blue-400">junto</span>
-        </Link>
-        <Link href="/explore" className="text-slate-400 hover:text-white transition text-sm">
-          Explore
-        </Link>
-      </nav>
+      <TopNav />
 
       {/* Main */}
       <div className="flex-1 flex items-center justify-center px-4">
