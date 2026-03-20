@@ -601,6 +601,7 @@ export default function CreateNewsletterPage() {
               </div>
             </div>
 
+            <p className="text-xs text-slate-400 mb-4">~{(2*(2+.3*sources.filter(s=>s.status!="invalid").length)*(cadence==="twice_daily"?60:cadence==="weekly"?4:30)).toFixed(0)} credits/mo (owner)</p>
             {error && (
               <div className="mt-6 p-3 bg-red-600/10 border border-red-600/30 rounded-lg text-sm text-red-400">
                 {error}
