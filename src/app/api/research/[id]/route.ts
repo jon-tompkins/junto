@@ -7,16 +7,17 @@ const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/jon-tompkins/Agent-Re
 function markdownToHtml(markdown: string): string {
   let html = markdown;
 
+  // Images — handle absolute URLs first (QuickChart URLs may contain parens)
+  // Use a function to extract balanced parens from markdown image syntax
+  html = html.replace(/!\[([^\]]*)\]\((https?:\/\/[^\s]*)\)/g,
+    `<img class="chart-img" src="$2" alt="$1" style="max-width:100%;height:auto;border-radius:8px;margin:16px 0;" loading="lazy" />`);
   // Images - convert relative paths to GitHub raw URLs
   html = html.replace(/!\[([^\]]*)\]\(\.\.\/charts\/([^)]+)\)/g,
-    `<img class="chart-img" src="${GITHUB_RAW_BASE}/charts/$2" alt="$1" loading="lazy" />`);
+    `<img class="chart-img" src="${GITHUB_RAW_BASE}/charts/$2" alt="$1" style="max-width:100%;height:auto;border-radius:8px;margin:16px 0;" loading="lazy" />`);
   html = html.replace(/!\[([^\]]*)\]\(\.?\/?(charts\/[^)]+)\)/g,
-    `<img class="chart-img" src="${GITHUB_RAW_BASE}/$2" alt="$1" loading="lazy" />`);
+    `<img class="chart-img" src="${GITHUB_RAW_BASE}/$2" alt="$1" style="max-width:100%;height:auto;border-radius:8px;margin:16px 0;" loading="lazy" />`);
   html = html.replace(/!\[([^\]]*)\]\((?!http)([^)]+)\)/g,
-    `<img class="chart-img" src="${GITHUB_RAW_BASE}/$2" alt="$1" loading="lazy" />`);
-  // Keep absolute URLs as-is (including QuickChart URLs)
-  html = html.replace(/!\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g,
-    `<img class="chart-img" src="$2" alt="$1" loading="lazy" />`);
+    `<img class="chart-img" src="${GITHUB_RAW_BASE}/$2" alt="$1" style="max-width:100%;height:auto;border-radius:8px;margin:16px 0;" loading="lazy" />`);
 
   // Handle <div> tags passthrough
   html = html.replace(/<div class="charts-row">/g, '<div class="charts-row">');

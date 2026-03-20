@@ -6,7 +6,7 @@ const CREDITS_PER_SCAN = 10;
 
 // ─── Chart Generation ───────────────────────────────────────────
 
-function generateChartUrl(ticker: string, prices: number[], dates: string[]): string | null {
+async function generateChartUrl(ticker: string, prices: number[], dates: string[]): Promise<string | null> {
   if (prices.length < 5) return null;
 
   const calculateMA = (data: number[], period: number): (number | null)[] => {
@@ -60,29 +60,52 @@ function generateChartUrl(ticker: string, prices: number[], dates: string[]): st
       ],
     },
     options: {
-      title: { display: true, text: `${ticker} — 3 Month Price Action`, fontSize: 14 },
+      title: { display: true, text: `${ticker} - 3 Month Price Action`, fontSize: 14 },
       legend: { position: 'bottom', labels: { fontSize: 10 } },
       scales: {
-        yAxes: [{ ticks: { callback: (v: number) => `$${v}` } }],
+        yAxes: [{ ticks: { maxTicksLimit: 8 } }],
         xAxes: [{ ticks: { maxTicksLimit: 10, fontSize: 9 } }],
       },
     },
   };
 
-  // QuickChart has a ~16k char URL limit. Use shorthand encoding.
+  // Use QuickChart short URL API to avoid long URLs with parens that break markdown
   const json = JSON.stringify(config);
+
+  // Trim data if too large
+  let chartConfig = config;
   if (json.length > 12000) {
-    // Too large — trim data points
-    const trimmedConfig = { ...config };
-    trimmedConfig.data.labels = last60Dates.filter((_, i) => i % 2 === 0);
-    trimmedConfig.data.datasets = config.data.datasets.map((ds) => ({
+    chartConfig = { ...config };
+    chartConfig.data.labels = last60Dates.filter((_, i) => i % 2 === 0);
+    chartConfig.data.datasets = config.data.datasets.map((ds) => ({
       ...ds,
       data: (ds.data as any[]).filter((_: any, i: number) => i % 2 === 0),
     }));
-    return `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(trimmedConfig))}&w=700&h=350&f=png`;
   }
 
-  return `https://quickchart.io/chart?c=${encodeURIComponent(json)}&w=700&h=350&f=png`;
+  try {
+    const res = await fetch('https://quickchart.io/chart/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chart: chartConfig,
+        width: 700,
+        height: 350,
+        format: 'png',
+        backgroundColor: 'transparent',
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.url) return data.url; // Clean short URL like https://quickchart.io/chart/render/abc123
+    }
+  } catch (err) {
+    console.error('[research] QuickChart short URL failed, falling back to inline:', err);
+  }
+
+  // Fallback: inline URL (may break markdown if it contains parens)
+  return `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}&w=700&h=350&f=png`;
 }
 
 // ─── Yahoo Finance Data ─────────────────────────────────────────
@@ -299,7 +322,7 @@ export async function processDeepDive(requestId: string, ticker: string, userId:
     const { currentPrice, name: companyName, prices, dates } = yahoo;
 
     // 2. Generate chart
-    const chartUrl = generateChartUrl(ticker, prices, dates);
+    const chartUrl = await generateChartUrl(ticker, prices, dates);
 
     // Calculate key levels
     const keyLevels = prices.length >= 20 ? {
