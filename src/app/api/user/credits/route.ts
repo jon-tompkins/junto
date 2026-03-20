@@ -16,7 +16,7 @@ export async function GET() {
 
     const { data: user, error } = await supabase
       .from('users')
-      .select('credits')
+      .select('credit_balance')
       .eq('twitter_handle', twitterHandle)
       .single();
 
@@ -25,7 +25,7 @@ export async function GET() {
     }
 
     return NextResponse.json({ 
-      credits: user.credits ?? 0 
+      credits: user.credit_balance ?? 0 
     });
 
   } catch (error) {

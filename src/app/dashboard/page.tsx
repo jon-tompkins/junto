@@ -42,6 +42,10 @@ export default function DashboardPage() {
   const [created, setCreated] = useState<CreatedNewsletter[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'subscribed' | 'created'>('subscribed');
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
+  const [emailInput, setEmailInput] = useState('');
+  const [savingEmail, setSavingEmail] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -57,9 +61,10 @@ export default function DashboardPage() {
 
   async function loadData() {
     try {
-      const [subsRes, createdRes] = await Promise.all([
+      const [subsRes, createdRes, accountRes] = await Promise.all([
         fetch('/api/v2/dashboard/subscriptions'),
         fetch('/api/v2/dashboard/created'),
+        fetch('/api/v2/account'),
       ]);
 
       if (subsRes.ok) {
@@ -70,12 +75,44 @@ export default function DashboardPage() {
         const data = await createdRes.json();
         setCreated(data.newsletters || []);
       }
+      if (accountRes.ok) {
+        const data = await accountRes.json();
+        setCreditBalance(data.balance ?? null);
+        setAccountEmail(data.email ?? null);
+      }
     } catch {
       // APIs may not exist yet — graceful fallback
     } finally {
       setLoading(false);
     }
   }
+
+  async function handleSaveEmail() {
+    if (!emailInput.trim()) return;
+    setSavingEmail(true);
+    try {
+      const res = await fetch('/api/v2/account', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailInput.trim() }),
+      });
+      if (res.ok) {
+        setAccountEmail(emailInput.trim());
+        setEmailInput('');
+      }
+    } catch {
+      // handle error
+    } finally {
+      setSavingEmail(false);
+    }
+  }
+
+  const creditColor =
+    creditBalance !== null && creditBalance <= 50
+      ? 'text-red-400'
+      : creditBalance !== null && creditBalance <= 100
+        ? 'text-amber-400'
+        : 'text-emerald-400';
 
   if (status === 'loading') {
     return (
@@ -94,8 +131,16 @@ export default function DashboardPage() {
           <span className="text-blue-400">junto</span>
         </Link>
         <div className="flex items-center gap-4">
+          {creditBalance !== null && (
+            <span className={`text-sm font-medium ${creditColor}`}>
+              {creditBalance.toLocaleString()} credits
+            </span>
+          )}
           <Link href="/explore" className="text-slate-400 hover:text-white transition text-sm">
             Explore
+          </Link>
+          <Link href="/history" className="text-slate-400 hover:text-white transition text-sm">
+            History
           </Link>
           <Link href="/create" className="text-slate-400 hover:text-white transition text-sm">
             Create
@@ -110,6 +155,32 @@ export default function DashboardPage() {
       </nav>
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
+        {/* Email Collection Banner */}
+        {accountEmail === null && !loading && (
+          <div className="mb-8 p-4 bg-amber-900/20 border border-amber-700/40 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="flex-1">
+              <p className="text-amber-300 font-medium text-sm">Add your email to receive newsletters</p>
+              <p className="text-amber-400/60 text-xs mt-0.5">This will be used as the default delivery email for your subscriptions.</p>
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <input
+                type="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="you@example.com"
+                className="flex-1 sm:w-64 bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+              />
+              <button
+                onClick={handleSaveEmail}
+                disabled={savingEmail || !emailInput.trim()}
+                className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium rounded-lg transition disabled:opacity-50"
+              >
+                {savingEmail ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-start justify-between mb-10">
           <div>
@@ -127,7 +198,13 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-10">
+        <div className="grid grid-cols-4 gap-4 mb-10">
+          <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
+            <div className={`text-2xl font-bold ${creditColor}`}>
+              {creditBalance !== null ? creditBalance.toLocaleString() : '—'}
+            </div>
+            <div className="text-sm text-slate-400 mt-1">Credits</div>
+          </div>
           <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
             <div className="text-2xl font-bold text-white">{subscriptions.length}</div>
             <div className="text-sm text-slate-400 mt-1">Subscriptions</div>

@@ -19,7 +19,7 @@ export async function POST() {
     // Get current credits
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('id, credits')
+      .select('id, credit_balance')
       .eq('twitter_handle', twitterHandle)
       .single();
 
@@ -27,7 +27,7 @@ export async function POST() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const currentCredits = user.credits ?? 0;
+    const currentCredits = user.credit_balance ?? 0;
 
     // Send email to myjunto@agentmail.to
     const resend = getResend();

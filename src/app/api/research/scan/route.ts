@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     // Get user
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('id, credits')
+      .select('id, credit_balance')
       .eq('twitter_handle', twitterHandle)
       .single();
 
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check credits
-    const currentCredits = user.credits ?? 0;
+    const currentCredits = user.credit_balance ?? 0;
     if (currentCredits < CREDITS_PER_SCAN) {
       return NextResponse.json({ 
         error: 'Insufficient credits',

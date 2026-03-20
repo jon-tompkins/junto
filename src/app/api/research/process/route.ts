@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     // Simple auth check - require secret header
     const authHeader = request.headers.get('x-process-secret');
-    if (authHeader !== process.env.RESEARCH_PROCESS_SECRET && authHeader !== 'junto-research-2026') {
+    if (!process.env.RESEARCH_PROCESS_SECRET || authHeader !== process.env.RESEARCH_PROCESS_SECRET) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('x-process-secret');
-    if (authHeader !== process.env.RESEARCH_PROCESS_SECRET && authHeader !== 'junto-research-2026') {
+    if (!process.env.RESEARCH_PROCESS_SECRET || authHeader !== process.env.RESEARCH_PROCESS_SECRET) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

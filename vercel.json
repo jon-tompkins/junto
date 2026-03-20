@@ -1,14 +1,6 @@
 {
   "crons": [
     {
-      "path": "/api/newsletter/check-scheduled",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/tweets/fetch",
-      "schedule": "0 */4 * * *"
-    },
-    {
       "path": "/api/cron/pull-content",
       "schedule": "0 */2 * * *"
     },

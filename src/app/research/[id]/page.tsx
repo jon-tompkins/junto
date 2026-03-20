@@ -72,25 +72,25 @@ export default function ReportPage() {
   };
 
   const getRatingColor = (rating: string | undefined | null) => {
-    if (!rating) return 'text-neutral-400';
+    if (!rating) return 'text-slate-400';
     if (rating.includes('BUY') || rating.includes('BULLISH')) return 'text-green-400';
     if (rating.includes('AVOID') || rating.includes('SHORT') || rating.includes('BEARISH') || rating.includes('SELL')) return 'text-red-400';
     if (rating.includes('SPECULATIVE') || rating.includes('HOLD')) return 'text-yellow-400';
-    return 'text-neutral-400';
+    return 'text-slate-400';
   };
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-neutral-400">Loading report...</div>
+      <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white flex items-center justify-center">
+        <div className="text-slate-400">Loading report...</div>
       </main>
     );
   }
 
   if (error || !report) {
     return (
-      <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
-        <div className="text-neutral-400 mb-4">{error || 'Report not found'}</div>
+      <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white flex flex-col items-center justify-center">
+        <div className="text-slate-400 mb-4">{error || 'Report not found'}</div>
         <Link href="/research" className="text-white hover:underline">
           ← Back to Research
         </Link>
@@ -99,10 +99,10 @@ export default function ReportPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
       <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Back Link */}
-        <Link href="/research" className="text-neutral-500 hover:text-white text-sm mb-8 inline-block">
+        <Link href="/research" className="text-slate-500 hover:text-white text-sm mb-8 inline-block">
           ← Back to Research
         </Link>
 
@@ -110,7 +110,7 @@ export default function ReportPage() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             {report.ticker && (
-              <span className="text-xs text-neutral-500 uppercase tracking-wide bg-neutral-800 px-2 py-1 rounded">
+              <span className="text-xs text-slate-500 uppercase tracking-wide bg-slate-700/50 px-2 py-1 rounded">
                 {report.ticker}
               </span>
             )}
@@ -121,8 +121,8 @@ export default function ReportPage() {
             )}
           </div>
           <h1 className="text-3xl font-bold mb-2">{report.title}</h1>
-          {report.summary && <p className="text-neutral-400">{report.summary}</p>}
-          <div className="flex items-center gap-4 mt-4 text-sm text-neutral-500">
+          {report.summary && <p className="text-slate-400">{report.summary}</p>}
+          <div className="flex items-center gap-4 mt-4 text-sm text-slate-500">
             <span>{report.date}</span>
             {report.type && (
               <>
@@ -139,7 +139,7 @@ export default function ReportPage() {
             {report.tags.map(tag => (
               <span 
                 key={tag}
-                className="px-3 py-1 bg-neutral-800 rounded-full text-xs text-neutral-400"
+                className="px-3 py-1 bg-slate-700/50 rounded-full text-xs text-slate-400"
               >
                 {tag}
               </span>
@@ -148,7 +148,7 @@ export default function ReportPage() {
         )}
 
         {/* Content */}
-        <article className="prose prose-invert prose-neutral max-w-none">
+        <article className="prose prose-invert prose-slate max-w-none">
           <div 
             className="research-content"
             dangerouslySetInnerHTML={{ __html: report.content || '' }}
@@ -156,7 +156,7 @@ export default function ReportPage() {
         </article>
 
         {/* Footer */}
-        <div className="mt-16 pt-8 border-t border-neutral-800 text-neutral-500 text-sm">
+        <div className="mt-16 pt-8 border-t border-slate-700/40 text-slate-500 text-sm">
           <p className="mb-4">
             <strong>Disclaimer:</strong> This report is for informational purposes only and does not constitute investment advice. 
             Always do your own research before making investment decisions.
@@ -175,13 +175,13 @@ export default function ReportPage() {
         .research-content ul, .research-content ol { margin-bottom: 1rem; padding-left: 1.5rem; color: #a3a3a3; }
         .research-content li { margin-bottom: 0.5rem; }
         .research-content table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
-        .research-content th, .research-content td { border: 1px solid #404040; padding: 0.5rem; text-align: left; }
-        .research-content th { background: #262626; }
+        .research-content th, .research-content td { border: 1px solid #334155; padding: 0.5rem; text-align: left; }
+        .research-content th { background: #1e293b; }
         .research-content strong { color: #fff; }
-        .research-content hr { border-color: #404040; margin: 2rem 0; }
-        .research-content code { background: #262626; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-size: 0.875rem; }
-        .research-content pre { background: #171717; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
-        .research-content .chart-img { max-width: 75%; height: auto; border-radius: 0.5rem; border: 1px solid #30363d; margin: 1rem auto; display: block; }
+        .research-content hr { border-color: #334155; margin: 2rem 0; }
+        .research-content code { background: #1e293b; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-size: 0.875rem; }
+        .research-content pre { background: #0f172a; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+        .research-content .chart-img { max-width: 75%; height: auto; border-radius: 0.5rem; border: 1px solid #334155; margin: 1rem auto; display: block; }
         @media (max-width: 768px) { .research-content .chart-img { max-width: 100%; } }
       `}</style>
     </main>

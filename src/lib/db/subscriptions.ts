@@ -3,13 +3,19 @@ import type { Subscription, NewsletterV2 } from '@/types';
 
 const supabase = () => getSupabase();
 
-export async function subscribe(userId: string, newsletterId: string): Promise<Subscription> {
+export async function subscribe(
+  userId: string,
+  newsletterId: string,
+  deliveryEmail?: string,
+  scheduleCadence?: string,
+): Promise<Subscription> {
+  const row: Record<string, any> = { user_id: userId, newsletter_id: newsletterId, is_active: true };
+  if (deliveryEmail) row.delivery_email = deliveryEmail;
+  if (scheduleCadence) row.schedule_cadence = scheduleCadence;
+
   const { data, error } = await supabase()
     .from('subscriptions')
-    .upsert(
-      { user_id: userId, newsletter_id: newsletterId, is_active: true },
-      { onConflict: 'user_id,newsletter_id' }
-    )
+    .upsert(row, { onConflict: 'user_id,newsletter_id' })
     .select()
     .single();
 
@@ -42,19 +48,20 @@ export async function getUserSubscriptions(userId: string): Promise<(Subscriptio
   }));
 }
 
-export async function getNewsletterSubscribers(newsletterId: string): Promise<{ user_id: string; email: string }[]> {
+export async function getNewsletterSubscribers(newsletterId: string): Promise<{ user_id: string; email: string; delivery_email: string | null }[]> {
   const { data, error } = await supabase()
     .from('subscriptions')
-    .select('user_id, users(email)')
+    .select('user_id, delivery_email, users(email)')
     .eq('newsletter_id', newsletterId)
     .eq('is_active', true);
 
   if (error) throw error;
   return (data || [])
-    .filter((row: any) => row.users?.email)
+    .filter((row: any) => row.delivery_email || row.users?.email)
     .map((row: any) => ({
       user_id: row.user_id,
-      email: row.users.email,
+      email: row.users?.email || '',
+      delivery_email: row.delivery_email || null,
     }));
 }
 
@@ -69,6 +76,19 @@ export async function isSubscribed(userId: string, newsletterId: string): Promis
 
   if (error && error.code !== 'PGRST116') throw error;
   return !!data;
+}
+
+export async function getSubscription(userId: string, newsletterId: string) {
+  const { data, error } = await supabase()
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('newsletter_id', newsletterId)
+    .eq('is_active', true)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw error;
+  return data;
 }
 
 export async function getSubscriptionCount(newsletterId: string): Promise<number> {

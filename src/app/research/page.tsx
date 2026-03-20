@@ -207,11 +207,11 @@ export default function ResearchPage() {
   };
 
   const getRatingColor = (rating: string | undefined | null) => {
-    if (!rating) return 'text-neutral-400';
+    if (!rating) return 'text-slate-400';
     if (rating.includes('BUY') || rating.includes('BULLISH')) return 'text-green-400';
     if (rating.includes('AVOID') || rating.includes('SHORT') || rating.includes('BEARISH') || rating.includes('SELL')) return 'text-red-400';
     if (rating.includes('SPECULATIVE') || rating.includes('HOLD')) return 'text-yellow-400';
-    return 'text-neutral-400';
+    return 'text-slate-400';
   };
 
   const getStatusBadge = (status: string) => {
@@ -257,31 +257,31 @@ export default function ResearchPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-neutral-400">Loading research...</div>
+      <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white flex items-center justify-center">
+        <div className="text-slate-400">Loading research...</div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      <div className="max-w-4xl mx-auto px-6 py-12">
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
+      <div className="container mx-auto px-4 py-12 max-w-5xl">
         {/* Header */}
         <div className="mb-8">
-          <Link href="/" className="text-neutral-500 hover:text-white text-sm mb-4 inline-block">
+          <Link href="/" className="text-slate-500 hover:text-white text-sm mb-4 inline-block">
             ← MyJunto
           </Link>
           <h1 className="text-3xl font-bold mb-2">Junto Research</h1>
-          <p className="text-neutral-400">Investment research and analysis powered by AI</p>
+          <p className="text-slate-400">Investment research and analysis powered by AI</p>
         </div>
 
         {/* Research Team */}
-        <div className="mb-8 p-6 bg-neutral-900 rounded-lg border border-neutral-800">
+        <div className="mb-8 p-6 bg-slate-800/30 rounded-lg border border-slate-700/40">
           <h2 className="text-lg font-semibold mb-4">Research Team</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {researchTeam.map(member => (
               <div key={member.name} className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-slate-700/50 flex items-center justify-center overflow-hidden flex-shrink-0">
                   <img 
                     src={member.avatar} 
                     alt={member.name}
@@ -294,8 +294,8 @@ export default function ResearchPage() {
                 </div>
                 <div>
                   <div className="font-medium">{member.name}</div>
-                  <div className="text-xs text-neutral-500">{member.role}</div>
-                  <div className="text-xs text-neutral-400 mt-1">{member.description}</div>
+                  <div className="text-xs text-slate-500">{member.role}</div>
+                  <div className="text-xs text-slate-400 mt-1">{member.description}</div>
                 </div>
               </div>
             ))}
@@ -303,11 +303,11 @@ export default function ResearchPage() {
         </div>
 
         {/* Request Research */}
-        <div className="mb-8 p-6 bg-gradient-to-r from-neutral-900 to-neutral-800 rounded-lg border border-neutral-700">
+        <div className="mb-8 p-6 bg-gradient-to-r from-slate-800/30 to-slate-800/50 rounded-lg border border-slate-700/40">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Request Research</h2>
             {session && credits !== null && (
-              <div className="text-sm text-neutral-400">
+              <div className="text-sm text-slate-400">
                 <span className="text-white font-medium">{credits}</span> credits
               </div>
             )}
@@ -322,7 +322,7 @@ export default function ResearchPage() {
                 className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   requestMode === 'deep-dive'
                     ? 'bg-blue-600 text-white'
-                    : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                    : 'bg-slate-700/50 text-slate-400 hover:text-white'
                 }`}
               >
                 🔍 Deep Dive (5 credits)
@@ -333,7 +333,7 @@ export default function ResearchPage() {
                 className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   requestMode === 'scan'
                     ? 'bg-purple-600 text-white'
-                    : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                    : 'bg-slate-700/50 text-slate-400 hover:text-white'
                 }`}
               >
                 📡 Scan (10 credits)
@@ -343,7 +343,7 @@ export default function ResearchPage() {
 
           {/* Mode Description */}
           {session && (
-            <p className="text-xs text-neutral-500 mb-4">
+            <p className="text-xs text-slate-500 mb-4">
               {requestMode === 'deep-dive' 
                 ? 'Enter a ticker symbol for comprehensive fundamental analysis'
                 : 'Ask an open-ended question about markets, sectors, or themes (200 char max)'}
@@ -351,7 +351,7 @@ export default function ResearchPage() {
           )}
           
           {!session ? (
-            <p className="text-neutral-400 text-sm">
+            <p className="text-slate-400 text-sm">
               <Link href="/login" className="text-white underline">Sign in</Link> to request custom research reports.
             </p>
           ) : requestMode === 'deep-dive' ? (
@@ -362,12 +362,12 @@ export default function ResearchPage() {
                 onChange={(e) => setTickerInput(e.target.value.toUpperCase())}
                 placeholder="Enter ticker (e.g. AAPL)"
                 maxLength={10}
-                className="flex-1 bg-neutral-800 border border-neutral-600 rounded-lg px-4 py-2 text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-400 uppercase"
+                className="flex-1 bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-slate-400 uppercase"
               />
               <button
                 type="submit"
                 disabled={requesting || !tickerInput.trim() || (credits !== null && credits < 5)}
-                className="px-6 py-2 bg-white text-black font-medium rounded-lg hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-6 py-2 bg-white text-black font-medium rounded-lg hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {requesting ? 'Requesting...' : 'Request'}
               </button>
@@ -381,9 +381,9 @@ export default function ResearchPage() {
                   placeholder="What are the best nuclear stocks right now? Find me undervalued small cap tech..."
                   maxLength={MAX_SCAN_CHARS}
                   rows={3}
-                  className="w-full bg-neutral-800 border border-neutral-600 rounded-lg px-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-400 resize-none"
+                  className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-slate-400 resize-none"
                 />
-                <div className="absolute bottom-2 right-2 text-xs text-neutral-500">
+                <div className="absolute bottom-2 right-2 text-xs text-slate-500">
                   {scanQuery.length}/{MAX_SCAN_CHARS}
                 </div>
               </div>
@@ -421,19 +421,19 @@ export default function ResearchPage() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">In Progress</h2>
-              <span className="text-xs text-neutral-500">Reports can take up to 15 minutes</span>
+              <span className="text-xs text-slate-500">Reports can take up to 15 minutes</span>
             </div>
             <div className="space-y-2">
               {pendingRequests.map(req => (
-                <div key={req.id} className="flex items-center justify-between p-4 bg-neutral-900 rounded-lg border border-neutral-800">
+                <div key={req.id} className="flex items-center justify-between p-4 bg-slate-800/30 rounded-lg border border-slate-700/40">
                   <div className="flex items-center gap-3">
                     <span className="font-mono font-bold">{req.ticker}</span>
                     {getStatusBadge(req.status)}
                     {req.requested_by && (
-                      <span className="text-xs text-neutral-500">by @{req.requested_by}</span>
+                      <span className="text-xs text-slate-500">by @{req.requested_by}</span>
                     )}
                   </div>
-                  <span className="text-xs text-neutral-500">
+                  <span className="text-xs text-slate-500">
                     {new Date(req.created_at).toLocaleDateString()}
                   </span>
                 </div>
@@ -450,7 +450,7 @@ export default function ResearchPage() {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 typeFilter === 'all' 
                   ? 'bg-white text-black' 
-                  : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                  : 'bg-slate-700/50 text-slate-400 hover:text-white'
               }`}
             >
               All ({reports.length})
@@ -460,7 +460,7 @@ export default function ResearchPage() {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 typeFilter === 'deep-dive' 
                   ? 'bg-blue-600 text-white' 
-                  : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                  : 'bg-slate-700/50 text-slate-400 hover:text-white'
               }`}
             >
               🔍 Deep Dives ({reports.filter(r => r.type === 'deep-dive').length})
@@ -470,7 +470,7 @@ export default function ResearchPage() {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 typeFilter === 'scan' 
                   ? 'bg-purple-600 text-white' 
-                  : 'bg-neutral-800 text-neutral-400 hover:text-white'
+                  : 'bg-slate-700/50 text-slate-400 hover:text-white'
               }`}
             >
               📡 Scans ({reports.filter(r => r.type === 'scan').length})
@@ -482,10 +482,10 @@ export default function ResearchPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by ticker, topic, or keyword..."
-              className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 pl-10 text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500 transition-colors"
+              className="w-full bg-slate-800/30 border border-slate-700/40 rounded-lg px-4 py-3 pl-10 text-white placeholder-slate-500 focus:outline-none focus:border-slate-500 transition-colors"
             />
             <svg 
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-500"
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500"
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"
@@ -495,7 +495,7 @@ export default function ResearchPage() {
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500 hover:text-white"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-white"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -504,7 +504,7 @@ export default function ResearchPage() {
             )}
           </div>
           {search && (
-            <div className="mt-2 text-sm text-neutral-500">
+            <div className="mt-2 text-sm text-slate-500">
               {filteredReports.length} result{filteredReports.length !== 1 ? 's' : ''} for "{search}"
             </div>
           )}
@@ -516,12 +516,12 @@ export default function ResearchPage() {
             <Link
               key={report.id}
               href={`/research/${report.id}`}
-              className="block p-6 bg-neutral-900 rounded-lg border border-neutral-800 hover:border-neutral-600 transition-colors"
+              className="block p-6 bg-slate-800/30 rounded-lg border border-slate-700/40 hover:border-slate-600 transition-colors"
             >
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs text-neutral-500 uppercase tracking-wide">
+                    <span className="text-xs text-slate-500 uppercase tracking-wide">
                       {report.ticker}
                     </span>
                     {report.type === 'scan' ? (
@@ -543,14 +543,14 @@ export default function ResearchPage() {
                 )}
               </div>
               
-              <p className="text-neutral-400 text-sm mb-3">{report.summary}</p>
+              <p className="text-slate-400 text-sm mb-3">{report.summary}</p>
               
               <div className="flex items-center justify-between">
                 <div className="flex gap-2">
                   {(report.tags || []).slice(0, 3).map(tag => (
                     <span 
                       key={tag}
-                      className="px-2 py-0.5 bg-neutral-800 rounded text-xs text-neutral-400"
+                      className="px-2 py-0.5 bg-slate-700/50 rounded text-xs text-slate-400"
                     >
                       {tag}
                     </span>
@@ -558,9 +558,9 @@ export default function ResearchPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   {report.requested_by && (
-                    <span className="text-xs text-neutral-500">by @{report.requested_by}</span>
+                    <span className="text-xs text-slate-500">by @{report.requested_by}</span>
                   )}
-                  <span className="text-xs text-neutral-500">{report.date}</span>
+                  <span className="text-xs text-slate-500">{report.date}</span>
                 </div>
               </div>
             </Link>
@@ -568,13 +568,13 @@ export default function ResearchPage() {
         </div>
 
         {filteredReports.length === 0 && (
-          <div className="text-center py-12 text-neutral-500">
+          <div className="text-center py-12 text-slate-500">
             {search ? `No reports matching "${search}"` : 'No reports found'}
           </div>
         )}
 
         {/* Footer */}
-        <div className="mt-16 pt-8 border-t border-neutral-800 text-center text-neutral-500 text-sm">
+        <div className="mt-16 pt-8 border-t border-slate-800/60 text-center text-slate-500 text-sm">
           <p>Reports are for informational purposes only. Not investment advice.</p>
         </div>
       </div>

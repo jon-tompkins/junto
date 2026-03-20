@@ -183,7 +183,7 @@ export async function generateTechnicalAnalysis(ticker: string): Promise<{
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('x-analysis-secret');
-    if (authHeader !== process.env.RESEARCH_PROCESS_SECRET && authHeader !== 'junto-research-2026') {
+    if (!process.env.RESEARCH_PROCESS_SECRET || authHeader !== process.env.RESEARCH_PROCESS_SECRET) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

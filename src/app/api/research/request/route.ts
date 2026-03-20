@@ -110,7 +110,7 @@ async function fetchChartData(ticker: string): Promise<ChartData> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-analysis-secret': process.env.RESEARCH_PROCESS_SECRET || 'junto-research-2026'
+        'x-analysis-secret': process.env.RESEARCH_PROCESS_SECRET || ''
       },
       body: JSON.stringify({
         ticker,
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
 
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('id, credits')
+      .select('id, credit_balance')
       .eq('twitter_handle', twitterHandle)
       .single();
 
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const currentCredits = user.credits ?? 0;
+    const currentCredits = user.credit_balance ?? 0;
     if (currentCredits < CREDITS_PER_DEEPDIVE) {
       return NextResponse.json({ 
         error: 'Insufficient credits',

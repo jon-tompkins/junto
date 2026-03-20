@@ -6,6 +6,8 @@ import { storeRun } from '@/lib/db/newsletter-runs';
 import { recordBulkDeliveries } from '@/lib/db/newsletter-deliveries';
 import { generateNewsletterV2 } from '@/lib/synthesis/generator-v2';
 import { sendNewsletter } from '@/lib/email/sender';
+import { chargeOwner, chargeSubscriber } from '@/lib/db/credits';
+import { calculateOwnerCreditCost, calculateSubscriberCreditCost } from '@/lib/pricing';
 
 export const maxDuration = 300; // 5 minutes
 
@@ -93,7 +95,16 @@ export async function GET(req: NextRequest) {
 
         console.log(`[generate] Run stored: ${run.id} — "${result.subject}"`);
 
-        // 6. Fan out to subscribers
+        // 6. Charge the owner
+        const ownerCost = calculateOwnerCreditCost(sources.length);
+        const ownerCharged = await chargeOwner(newsletter.admin_user_id, newsletter.name, ownerCost, run.id);
+        if (!ownerCharged) {
+          console.log(`[generate] Owner has insufficient credits for ${newsletter.name} (needs ${ownerCost})`);
+          results[newsletter.name] = { status: 'generated_not_delivered', error: 'Owner insufficient credits' };
+          continue;
+        }
+
+        // 7. Fan out to subscribers — charge each, send email
         const subscribers = await getNewsletterSubscribers(newsletter.id);
 
         if (subscribers.length === 0) {
@@ -102,27 +113,55 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
-        const emails = subscribers.map((s) => s.email);
-        console.log(`[generate] Sending to ${emails.length} subscriber(s)...`);
+        const subscriberCost = calculateSubscriberCreditCost(sources.length);
+        const deliveredEmails: string[] = [];
+        const deliveredUserIds: string[] = [];
+
+        for (const sub of subscribers) {
+          const charged = await chargeSubscriber(
+            sub.user_id,
+            newsletter.admin_user_id,
+            newsletter.name,
+            subscriberCost,
+            run.id,
+          );
+
+          if (!charged) {
+            console.log(`[generate] Subscriber ${sub.user_id} skipped — insufficient credits`);
+            continue;
+          }
+
+          const email = sub.delivery_email || sub.email;
+          if (email) {
+            deliveredEmails.push(email);
+            deliveredUserIds.push(sub.user_id);
+          }
+        }
+
+        if (deliveredEmails.length === 0) {
+          console.log(`[generate] No payable subscribers for ${newsletter.name}`);
+          results[newsletter.name] = { status: 'generated', subscribers: 0 };
+          continue;
+        }
+
+        console.log(`[generate] Sending to ${deliveredEmails.length} subscriber(s)...`);
 
         try {
           await sendNewsletter({
-            to: emails,
+            to: deliveredEmails,
             subject: result.subject,
             content: result.content,
           });
 
-          // Record deliveries
-          const userIds = subscribers.map((s) => s.user_id);
-          await recordBulkDeliveries(run.id, userIds, 'email');
+          await recordBulkDeliveries(run.id, deliveredUserIds, 'email');
 
-          console.log(`[generate] Delivered ${newsletter.name} to ${emails.length} subscribers`);
-          results[newsletter.name] = { status: 'delivered', subscribers: emails.length };
+          console.log(`[generate] Delivered ${newsletter.name} to ${deliveredEmails.length} subscribers`);
+          results[newsletter.name] = { status: 'delivered', subscribers: deliveredEmails.length };
         } catch (emailError) {
           console.error(`[generate] Email send failed for ${newsletter.name}:`, emailError);
           results[newsletter.name] = {
             status: 'generated_not_delivered',
-            subscribers: emails.length,
+            subscribers: deliveredEmails.length,
             error: emailError instanceof Error ? emailError.message : 'Email send failed',
           };
         }

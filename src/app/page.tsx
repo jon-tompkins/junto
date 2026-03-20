@@ -171,6 +171,9 @@ export default function LandingPage() {
           <Link href="/explore" className="text-slate-400 hover:text-white transition text-sm">
             Explore
           </Link>
+          <Link href="/research" className="text-slate-400 hover:text-white transition text-sm">
+            Research
+          </Link>
           {session?.user ? (
             <Link href="/dashboard" className="text-slate-400 hover:text-white transition text-sm">
               Dashboard
@@ -377,6 +380,7 @@ export default function LandingPage() {
           </div>
           <div className="flex gap-6 text-sm text-slate-500">
             <Link href="/explore" className="hover:text-slate-300 transition">Explore</Link>
+            <Link href="/research" className="hover:text-slate-300 transition">Research</Link>
             <Link href="/create" className="hover:text-slate-300 transition">Create</Link>
             {session?.user ? (
               <Link href="/dashboard" className="hover:text-slate-300 transition">Dashboard</Link>
