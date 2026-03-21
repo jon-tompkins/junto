@@ -235,8 +235,45 @@ export async function setNewsletterLabels(newsletterId: string, labels: string[]
 // Due newsletters (for cron generation)
 // ============================================================
 
+// Fixed send windows (EST/EDT)
+// Daily:       8:00 AM
+// Twice daily: 8:00 AM, 5:00 PM
+// Weekly:      Monday 8:00 AM
+const SEND_WINDOWS = {
+  daily: [8],          // 8 AM EST
+  twice_daily: [8, 17], // 8 AM, 5 PM EST
+  weekly: [8],          // 8 AM EST (Monday only)
+} as const;
+
+const WINDOW_TOLERANCE_MINUTES = 10; // cron runs every 5min, 10min window to catch it
+
+function isInSendWindow(cadence: string, nowEST: Date): boolean {
+  const hour = nowEST.getHours();
+  const minute = nowEST.getMinutes();
+  const dayOfWeek = nowEST.getDay(); // 0 = Sunday, 1 = Monday
+
+  const windows = SEND_WINDOWS[cadence as keyof typeof SEND_WINDOWS];
+  if (!windows) return false;
+
+  // Weekly only sends on Monday
+  if (cadence === 'weekly' && dayOfWeek !== 1) return false;
+
+  // Check if current time is within tolerance of any send window
+  for (const sendHour of windows) {
+    const diffMinutes = (hour - sendHour) * 60 + minute;
+    if (diffMinutes >= 0 && diffMinutes < WINDOW_TOLERANCE_MINUTES) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export async function getNewslettersDueForGeneration(): Promise<NewsletterV2[]> {
   const now = new Date();
+
+  // Convert to EST/EDT
+  const nowEST = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
 
   // Get all newsletters with their latest run
   const { data: newsletters, error } = await supabase()
@@ -249,7 +286,10 @@ export async function getNewslettersDueForGeneration(): Promise<NewsletterV2[]> 
   const due: NewsletterV2[] = [];
 
   for (const nl of newsletters) {
-    // Check latest run
+    // Must be in a valid send window for this cadence
+    if (!isInSendWindow(nl.schedule_cadence, nowEST)) continue;
+
+    // Check latest run to avoid double-sends
     const { data: latestRun } = await supabase()
       .from('newsletter_runs')
       .select('generated_at')
@@ -263,20 +303,25 @@ export async function getNewslettersDueForGeneration(): Promise<NewsletterV2[]> 
       ? (now.getTime() - lastGenerated.getTime()) / (1000 * 60 * 60)
       : Infinity;
 
-    let isDue = false;
+    // Minimum gap between sends to prevent double-sends within same window
+    let minGapHours: number;
     switch (nl.schedule_cadence) {
       case 'daily':
-        isDue = hoursSinceLastRun >= 23; // ~24h with buffer
+        minGapHours = 20;
         break;
       case 'twice_daily':
-        isDue = hoursSinceLastRun >= 11; // ~12h with buffer
+        minGapHours = 8;
         break;
       case 'weekly':
-        isDue = hoursSinceLastRun >= 167; // ~7 days with buffer
+        minGapHours = 144; // 6 days
         break;
+      default:
+        minGapHours = 20;
     }
 
-    if (isDue) due.push(nl);
+    if (hoursSinceLastRun >= minGapHours) {
+      due.push(nl);
+    }
   }
 
   return due;

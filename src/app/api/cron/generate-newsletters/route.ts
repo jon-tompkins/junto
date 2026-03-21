@@ -47,17 +47,20 @@ export async function GET(req: NextRequest) {
         const sourceMap: Record<string, string> = {};
         sources.forEach((s) => { sourceMap[s.id] = s.handle_or_url; });
 
-        // 2. Fetch recent content (last 48h) and context (last 180d)
+        // 2. Fetch recent content (last 48h) and context (last 7d, not 180d)
+        // Context is limited to 7 days to avoid stale data polluting the briefing
         const [recentContent, contextContent] = await Promise.all([
           getRecentContentForSources(sourceIds, 48),
-          getContextContentForSources(sourceIds, 180, 48),
+          getContextContentForSources(sourceIds, 7, 48),
         ]);
 
         if (recentContent.length === 0) {
-          console.log(`[generate] Skipping ${newsletter.name}: no recent content`);
-          results[newsletter.name] = { status: 'skipped', error: 'No recent content' };
+          console.log(`[generate] Skipping ${newsletter.name}: no recent content (last 48h)`);
+          results[newsletter.name] = { status: 'skipped', error: 'No recent content in last 48 hours' };
           continue;
         }
+
+        console.log(`[generate] ${newsletter.name}: ${recentContent.length} recent tweets, ${contextContent.length} context tweets (7d)`);
 
         // 3. Group content by handle for the synthesis pipeline
         const recentGrouped = groupContentByHandle(recentContent, sourceMap);
