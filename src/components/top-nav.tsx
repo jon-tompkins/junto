@@ -94,6 +94,13 @@ export function TopNav() {
                       )}
                     </div>
                     <Link
+                      href="/settings"
+                      onClick={() => setMenuOpen(false)}
+                      className="block px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition"
+                    >
+                      Settings
+                    </Link>
+                    <Link
                       href="/dashboard"
                       onClick={() => setMenuOpen(false)}
                       className="block px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition"

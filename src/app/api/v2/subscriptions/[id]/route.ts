@@ -1,0 +1,98 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { getSupabase } from '@/lib/db/client';
+
+async function resolveUserId(session: any): Promise<string | null> {
+  const supabase = getSupabase();
+  if (session.user?.twitterId) {
+    const { data } = await supabase.from('users').select('id').eq('twitter_id', session.user.twitterId).single();
+    return data?.id || null;
+  }
+  if (session.user?.googleId) {
+    const { data } = await supabase.from('users').select('id').eq('google_id', session.user.googleId).single();
+    return data?.id || null;
+  }
+  return null;
+}
+
+// PUT /api/v2/subscriptions/[id] — update delivery_email or schedule_cadence
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = await resolveUserId(session);
+    if (!userId) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const { id } = await params;
+    const body = await req.json();
+    const supabase = getSupabase();
+
+    // Verify the subscription belongs to this user
+    const { data: sub, error: subError } = await supabase
+      .from('subscriptions')
+      .select('id, user_id')
+      .eq('id', id)
+      .single();
+
+    if (subError || !sub) {
+      return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
+    }
+
+    if (sub.user_id !== userId) {
+      return NextResponse.json({ error: 'Not your subscription' }, { status: 403 });
+    }
+
+    // Build update object
+    const update: Record<string, any> = {};
+
+    if (body.delivery_email !== undefined) {
+      if (body.delivery_email && (!body.delivery_email.includes('@') || !body.delivery_email.includes('.'))) {
+        return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
+      }
+      update.delivery_email = body.delivery_email || null;
+    }
+
+    if (body.schedule_cadence !== undefined) {
+      const valid = ['daily', 'twice_daily', 'weekly'];
+      if (!valid.includes(body.schedule_cadence)) {
+        return NextResponse.json({ error: `Invalid cadence. Must be one of: ${valid.join(', ')}` }, { status: 400 });
+      }
+      update.schedule_cadence = body.schedule_cadence;
+    }
+
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
+    }
+
+    const { data: updated, error: updateError } = await supabase
+      .from('subscriptions')
+      .update(update)
+      .eq('id', id)
+      .select('*, newsletters_v2(*)')
+      .single();
+
+    if (updateError) {
+      console.error('[PUT /subscriptions]', updateError);
+      return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      subscription: {
+        ...updated,
+        newsletter: updated.newsletters_v2,
+      },
+    });
+  } catch (error) {
+    console.error('[PUT /subscriptions]', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
