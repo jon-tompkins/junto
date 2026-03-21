@@ -321,9 +321,9 @@ export default function SettingsPage() {
             Signed in via{' '}
             <span className="text-slate-300">
               {(session?.user as any)?.twitterHandle
-                ? `Twitter (@${(session.user as any).twitterHandle})`
+                ? `Twitter (@${(session?.user as any)?.twitterHandle})`
                 : (session?.user as any)?.email
-                  ? `Google (${(session.user as any).email})`
+                  ? `Google (${(session?.user as any)?.email})`
                   : 'Unknown'}
             </span>
           </p>
