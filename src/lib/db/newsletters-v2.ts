@@ -235,61 +235,68 @@ export async function setNewsletterLabels(newsletterId: string, labels: string[]
 // Due newsletters (for cron generation)
 // ============================================================
 
-// Fixed send windows (EST/EDT)
-// Daily:       8:00 AM
-// Twice daily: 8:00 AM, 5:00 PM
-// Weekly:      Monday 8:00 AM
-const SEND_WINDOWS = {
-  daily: [8],          // 8 AM EST
-  twice_daily: [8, 17], // 8 AM, 5 PM EST
-  weekly: [8],          // 8 AM EST (Monday only)
+// Fixed send windows in UTC
+export const SEND_WINDOW_TIMES = {
+  morning: 14,  // 14:00 UTC = 6 AM PST
+  midday: 20,   // 20:00 UTC = 12 PM PST
+  evening: 2,   // 02:00 UTC = 6 PM PST
+  night: 8,     // 08:00 UTC = 12 AM PST
 } as const;
 
-const WINDOW_TOLERANCE_MINUTES = 10; // cron runs every 5min, 10min window to catch it
+export type SendWindow = keyof typeof SEND_WINDOW_TIMES;
 
-function isInSendWindow(cadence: string, nowEST: Date): boolean {
-  const hour = nowEST.getHours();
-  const minute = nowEST.getMinutes();
-  const dayOfWeek = nowEST.getDay(); // 0 = Sunday, 1 = Monday
+export const SEND_WINDOW_LABELS: Record<SendWindow, string> = {
+  morning: '6:00 AM',
+  midday: '12:00 PM',
+  evening: '6:00 PM',
+  night: '12:00 AM',
+};
 
-  const windows = SEND_WINDOWS[cadence as keyof typeof SEND_WINDOWS];
-  if (!windows) return false;
+const WINDOW_TOLERANCE_MINUTES = 15;
 
-  // Weekly only sends on Monday
-  if (cadence === 'weekly' && dayOfWeek !== 1) return false;
+export function getCurrentSendWindow(nowUTC?: Date): SendWindow | null {
+  const now = nowUTC || new Date();
+  const hour = now.getUTCHours();
+  const minute = now.getUTCMinutes();
 
-  // Check if current time is within tolerance of any send window
-  for (const sendHour of windows) {
+  for (const [window, sendHour] of Object.entries(SEND_WINDOW_TIMES)) {
     const diffMinutes = (hour - sendHour) * 60 + minute;
     if (diffMinutes >= 0 && diffMinutes < WINDOW_TOLERANCE_MINUTES) {
-      return true;
+      return window as SendWindow;
     }
   }
-
-  return false;
+  return null;
 }
 
 export async function getNewslettersDueForGeneration(): Promise<NewsletterV2[]> {
   const now = new Date();
+  const currentWindow = getCurrentSendWindow(now);
 
-  // Convert to EST/EDT
-  const nowEST = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  if (!currentWindow) return [];
 
-  // Get all newsletters with their latest run
+  console.log(`[generate] Current send window: ${currentWindow} (UTC ${now.getUTCHours()}:${String(now.getUTCMinutes()).padStart(2, '0')})`);
+
+  // Get all newsletters that have at least one active subscriber wanting this window
+  const { data: newsletterIds, error: subError } = await supabase()
+    .from('subscriptions')
+    .select('newsletter_id')
+    .eq('is_active', true)
+    .contains('send_windows', [currentWindow]);
+
+  if (subError || !newsletterIds?.length) return [];
+
+  const uniqueIds = [...new Set(newsletterIds.map(s => s.newsletter_id))];
+
   const { data: newsletters, error } = await supabase()
     .from('newsletters_v2')
-    .select('*');
+    .select('*')
+    .in('id', uniqueIds);
 
-  if (error) throw error;
-  if (!newsletters?.length) return [];
+  if (error || !newsletters?.length) return [];
 
+  // Filter out newsletters that already ran in this window (min 5h gap)
   const due: NewsletterV2[] = [];
-
   for (const nl of newsletters) {
-    // Must be in a valid send window for this cadence
-    if (!isInSendWindow(nl.schedule_cadence, nowEST)) continue;
-
-    // Check latest run to avoid double-sends
     const { data: latestRun } = await supabase()
       .from('newsletter_runs')
       .select('generated_at')
@@ -303,23 +310,7 @@ export async function getNewslettersDueForGeneration(): Promise<NewsletterV2[]> 
       ? (now.getTime() - lastGenerated.getTime()) / (1000 * 60 * 60)
       : Infinity;
 
-    // Minimum gap between sends to prevent double-sends within same window
-    let minGapHours: number;
-    switch (nl.schedule_cadence) {
-      case 'daily':
-        minGapHours = 20;
-        break;
-      case 'twice_daily':
-        minGapHours = 8;
-        break;
-      case 'weekly':
-        minGapHours = 144; // 6 days
-        break;
-      default:
-        minGapHours = 20;
-    }
-
-    if (hoursSinceLastRun >= minGapHours) {
+    if (hoursSinceLastRun >= 5) {
       due.push(nl);
     }
   }

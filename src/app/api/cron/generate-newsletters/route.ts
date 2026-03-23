@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getNewslettersDueForGeneration, getNewsletterSources } from '@/lib/db/newsletters-v2';
+import { getNewslettersDueForGeneration, getNewsletterSources, getCurrentSendWindow } from '@/lib/db/newsletters-v2';
 import { getRecentContentForSources, getContextContentForSources, groupContentByHandle } from '@/lib/db/content-twitter';
 import { getNewsletterSubscribers } from '@/lib/db/subscriptions';
 import { storeRun } from '@/lib/db/newsletter-runs';
@@ -108,7 +108,11 @@ export async function GET(req: NextRequest) {
         }
 
         // 7. Fan out to subscribers — charge each, send email
-        const subscribers = await getNewsletterSubscribers(newsletter.id);
+        const allSubscribers = await getNewsletterSubscribers(newsletter.id);
+        const currentWindow = getCurrentSendWindow();
+        const subscribers = currentWindow
+          ? allSubscribers.filter(sub => sub.send_windows.includes(currentWindow))
+          : allSubscribers;
 
         if (subscribers.length === 0) {
           console.log(`[generate] No subscribers for ${newsletter.name}`);

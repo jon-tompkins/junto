@@ -53,7 +53,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const body = await req.json().catch(() => ({}));
     let deliveryEmail = body.delivery_email;
-    const cadence = body.cadence;
+    const sendWindows: string[] = body.send_windows || ['morning'];
+
+    // Validate send_windows values
+    const validWindows = ['morning', 'midday', 'evening', 'night'];
+    const invalidWindows = sendWindows.filter((w: string) => !validWindows.includes(w));
+    if (invalidWindows.length > 0) {
+      return NextResponse.json(
+        { error: `Invalid send windows: ${invalidWindows.join(', ')}. Valid values: ${validWindows.join(', ')}` },
+        { status: 400 },
+      );
+    }
 
     // Fall back to account email if no delivery_email provided
     if (!deliveryEmail) {
@@ -67,7 +77,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       );
     }
 
-    const subscription = await subscribe(userId, id, deliveryEmail, cadence);
+    const subscription = await subscribe(userId, id, deliveryEmail, sendWindows);
     return NextResponse.json({ subscription, subscribed: true });
   } catch (error) {
     console.error('[POST /subscribe]', error);

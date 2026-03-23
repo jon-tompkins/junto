@@ -7,11 +7,11 @@ export async function subscribe(
   userId: string,
   newsletterId: string,
   deliveryEmail?: string,
-  scheduleCadence?: string,
+  sendWindows?: string[],
 ): Promise<Subscription> {
   const row: Record<string, any> = { user_id: userId, newsletter_id: newsletterId, is_active: true };
   if (deliveryEmail) row.delivery_email = deliveryEmail;
-  if (scheduleCadence) row.schedule_cadence = scheduleCadence;
+  if (sendWindows) row.send_windows = sendWindows;
 
   const { data, error } = await supabase()
     .from('subscriptions')
@@ -48,10 +48,10 @@ export async function getUserSubscriptions(userId: string): Promise<(Subscriptio
   }));
 }
 
-export async function getNewsletterSubscribers(newsletterId: string): Promise<{ user_id: string; email: string; delivery_email: string | null }[]> {
+export async function getNewsletterSubscribers(newsletterId: string): Promise<{ user_id: string; email: string; delivery_email: string | null; send_windows: string[] }[]> {
   const { data, error } = await supabase()
     .from('subscriptions')
-    .select('user_id, delivery_email, users(email)')
+    .select('user_id, delivery_email, send_windows, users(email)')
     .eq('newsletter_id', newsletterId)
     .eq('is_active', true);
 
@@ -62,6 +62,7 @@ export async function getNewsletterSubscribers(newsletterId: string): Promise<{ 
       user_id: row.user_id,
       email: row.users?.email || '',
       delivery_email: row.delivery_email || null,
+      send_windows: row.send_windows || ['morning'],
     }));
 }
 
