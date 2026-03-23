@@ -74,7 +74,8 @@ async function waitForRun(runId: string, token: string, maxWaitMs = 60000): Prom
 
 export async function fetchTweetsFromProfile(
   handle: string,
-  maxTweets = 30
+  maxTweets = 30,
+  sinceDate?: string // ISO date string e.g. '2026-03-22'
 ): Promise<FetchedTweet[]> {
   const token = process.env.APIFY_API_KEY;
   if (!token) {
@@ -82,16 +83,26 @@ export async function fetchTweetsFromProfile(
   }
 
   const cleanHandle = handle.replace('@', '');
-  console.log(`[Apify] Fetching tweets for @${cleanHandle}...`);
-  
-  // Start the run with from:username search
+
+  // Build search query — only fetch tweets since last pull
+  let searchQuery = `from:${cleanHandle}`;
+  if (sinceDate) {
+    // Use Twitter's since: operator to only get new tweets
+    const dateStr = sinceDate.split('T')[0]; // YYYY-MM-DD
+    searchQuery += ` since:${dateStr}`;
+    console.log(`[Apify] Fetching NEW tweets for @${cleanHandle} since ${dateStr}...`);
+  } else {
+    console.log(`[Apify] Fetching tweets for @${cleanHandle} (no date filter)...`);
+  }
+
+  // Start the run
   const runRes = await fetch(
     `${APIFY_BASE_URL}/acts/${APIFY_ACTOR_ID}/runs?token=${token}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        searchTerms: [`from:${cleanHandle}`],
+        searchTerms: [searchQuery],
         tweetsDesired: maxTweets
       })
     }

@@ -51,6 +51,33 @@ export async function getAllActiveSources(type?: SourceType): Promise<Source[]> 
   return data || [];
 }
 
+// Get only sources that are attached to at least one active newsletter
+export async function getSourcesWithActiveNewsletters(type?: SourceType): Promise<Source[]> {
+  // Get distinct source IDs from newsletter_sources where the newsletter exists
+  const { data: linkedSourceIds, error: linkError } = await supabase()
+    .from('newsletter_sources')
+    .select('source_id, newsletters_v2!inner(id)');
+
+  if (linkError) throw linkError;
+  if (!linkedSourceIds?.length) return [];
+
+  const uniqueSourceIds = [...new Set(linkedSourceIds.map((ls: any) => ls.source_id))];
+
+  let query = supabase()
+    .from('sources')
+    .select('*')
+    .eq('is_active', true)
+    .in('id', uniqueSourceIds);
+
+  if (type) {
+    query = query.eq('type', type);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
 export async function createSource(source: {
   type: SourceType;
   handle_or_url: string;

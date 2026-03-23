@@ -44,15 +44,16 @@ interface ProxyResponse {
 
 export async function fetchTweetsForProfile(
   handle: string,
-  maxTweets = 30
+  maxTweets = 30,
+  sinceDate?: string // ISO date — only fetch tweets newer than this
 ): Promise<FetchedTweet[]> {
   const cleanHandle = handle.replace('@', '');
-  
+
   // Try Apify first (preferred)
   if (process.env.APIFY_API_KEY) {
     console.log(`Fetching tweets for @${cleanHandle} via Apify...`);
     try {
-      return await fetchViaApify(cleanHandle, maxTweets);
+      return await fetchViaApify(cleanHandle, maxTweets, sinceDate);
     } catch (error) {
       console.error(`Apify error for @${cleanHandle}:`, error);
       // Fall through to proxy if Apify fails
