@@ -1,21 +1,24 @@
 'use client';
 
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 
+// ─── Types ──────────────────────────────────────────
+
 interface SubscribedNewsletter {
   id: string;
   newsletter_id: string;
   is_active: boolean;
+  delivery_email: string | null;
+  send_windows: string[];
   created_at: string;
   newsletter: {
     id: string;
     name: string;
     description: string | null;
-    schedule_cadence: string;
     subscriber_count: number;
   };
 }
@@ -24,40 +27,78 @@ interface CreatedNewsletter {
   id: string;
   name: string;
   description: string | null;
-  schedule_cadence: string;
   subscriber_count: number;
   is_public: boolean;
   created_at: string;
+  credit_cost: number | null;
 }
 
-const CADENCE_LABELS: Record<string, string> = {
-  daily: 'Daily',
-  twice_daily: '2x Daily',
-  weekly: 'Weekly',
+interface RunEntry {
+  id: string;
+  subject: string | null;
+  content: string;
+  generated_at: string;
+  newsletter_id: string;
+  newsletter_name?: string;
+}
+
+// ─── Constants ──────────────────────────────────────
+
+const WINDOW_OPTIONS = [
+  { key: 'morning', label: '6:00 AM', pstLabel: '6 AM PST' },
+  { key: 'midday', label: '12:00 PM', pstLabel: '12 PM PST' },
+  { key: 'evening', label: '6:00 PM', pstLabel: '6 PM PST' },
+  { key: 'night', label: '12:00 AM', pstLabel: '12 AM PST' },
+];
+
+// Convert PST hour to user's local timezone label
+function pstToLocal(pstHour: number): string {
+  // Create a date at the given PST hour
+  const pstOffset = -8; // PST is UTC-8
+  const utcHour = (pstHour - pstOffset + 24) % 24;
+  const now = new Date();
+  const utcDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), utcHour, 0));
+  return utcDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
+const LOCAL_WINDOW_LABELS: Record<string, string> = {
+  morning: pstToLocal(6),
+  midday: pstToLocal(12),
+  evening: pstToLocal(18),
+  night: pstToLocal(0),
 };
+
+// ─── Component ──────────────────────────────────────
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+
   const [subscriptions, setSubscriptions] = useState<SubscribedNewsletter[]>([]);
   const [created, setCreated] = useState<CreatedNewsletter[]>([]);
+  const [runs, setRuns] = useState<RunEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'subscribed' | 'created'>('subscribed');
+  const [activeTab, setActiveTab] = useState<'newsletters' | 'subscriptions' | 'history'>('subscriptions');
+
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [emailInput, setEmailInput] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
 
+  // Inline editing state for subscriptions
+  const [editingSubId, setEditingSubId] = useState<string | null>(null);
+  const [editWindows, setEditWindows] = useState<string[]>([]);
+  const [editEmail, setEditEmail] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
+
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    }
+    if (status === 'unauthenticated') router.push('/login');
   }, [status, router]);
 
   useEffect(() => {
-    if (session?.user) {
-      loadData();
-    }
+    if (session?.user) loadData();
   }, [session]);
 
   async function loadData() {
@@ -82,10 +123,49 @@ export default function DashboardPage() {
         setAccountEmail(data.email ?? null);
       }
     } catch {
-      // APIs may not exist yet — graceful fallback
+      // Graceful fallback
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadHistory() {
+    try {
+      const subsRes = await fetch('/api/v2/dashboard/subscriptions');
+      const subsData = subsRes.ok ? await subsRes.json() : { subscriptions: [] };
+      const createdRes = await fetch('/api/v2/dashboard/created');
+      const createdData = createdRes.ok ? await createdRes.json() : { newsletters: [] };
+
+      const newsletterIds = new Set<string>();
+      const nameMap: Record<string, string> = {};
+
+      for (const sub of subsData.subscriptions || []) {
+        newsletterIds.add(sub.newsletter.id);
+        nameMap[sub.newsletter.id] = sub.newsletter.name;
+      }
+      for (const nl of createdData.newsletters || []) {
+        newsletterIds.add(nl.id);
+        nameMap[nl.id] = nl.name;
+      }
+
+      const allRuns: RunEntry[] = [];
+      await Promise.all(
+        Array.from(newsletterIds).map(async (nlId) => {
+          try {
+            const res = await fetch(`/api/v2/newsletters/${nlId}/runs?limit=10`);
+            if (res.ok) {
+              const data = await res.json();
+              for (const run of data.runs || []) {
+                allRuns.push({ ...run, newsletter_id: nlId, newsletter_name: nameMap[nlId] });
+              }
+            }
+          } catch {}
+        })
+      );
+
+      allRuns.sort((a, b) => new Date(b.generated_at).getTime() - new Date(a.generated_at).getTime());
+      setRuns(allRuns);
+    } catch {}
   }
 
   async function handleSaveEmail() {
@@ -101,11 +181,62 @@ export default function DashboardPage() {
         setAccountEmail(emailInput.trim());
         setEmailInput('');
       }
-    } catch {
-      // handle error
-    } finally {
+    } catch {} finally {
       setSavingEmail(false);
     }
+  }
+
+  async function handleUpdateSubscription(subId: string) {
+    setSaving(true);
+    try {
+      const body: Record<string, any> = {};
+      if (editWindows.length > 0) body.send_windows = editWindows;
+      if (editEmail) body.delivery_email = editEmail;
+
+      const res = await fetch(`/api/v2/subscriptions/${subId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        setEditingSubId(null);
+        loadData(); // Refresh
+      }
+    } catch {} finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleToggleSubscription(subId: string, currentActive: boolean) {
+    try {
+      await fetch(`/api/v2/subscriptions/${subId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: !currentActive }),
+      });
+      loadData();
+    } catch {}
+  }
+
+  function startEditSub(sub: SubscribedNewsletter) {
+    setEditingSubId(sub.id);
+    setEditWindows(sub.send_windows || ['morning']);
+    setEditEmail(sub.delivery_email || '');
+  }
+
+  function toggleWindow(window: string) {
+    setEditWindows(prev =>
+      prev.includes(window)
+        ? prev.filter(w => w !== window)
+        : [...prev, window]
+    );
+  }
+
+  // Switch to history tab and load data
+  function switchToHistory() {
+    setActiveTab('history');
+    if (runs.length === 0) loadHistory();
   }
 
   const creditColor =
@@ -159,7 +290,7 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
             <p className="text-slate-400">
-              Welcome back{session?.user?.name ? `, ${session.user.name}` : ''}. Manage your newsletters and subscriptions.
+              Welcome back{session?.user?.name ? `, ${session.user.name}` : ''}.
             </p>
           </div>
           <Link
@@ -171,7 +302,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-10">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
           <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
             <div className={`text-2xl font-bold ${creditColor}`}>
               {creditBalance !== null ? creditBalance.toLocaleString() : '—'}
@@ -184,7 +315,7 @@ export default function DashboardPage() {
           </div>
           <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
             <div className="text-2xl font-bold text-white">{created.length}</div>
-            <div className="text-sm text-slate-400 mt-1">Created</div>
+            <div className="text-sm text-slate-400 mt-1">My Newsletters</div>
           </div>
           <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
             <div className="text-2xl font-bold text-white">
@@ -196,146 +327,296 @@ export default function DashboardPage() {
 
         {/* Tab Switcher */}
         <div className="flex gap-1 bg-slate-800/40 rounded-xl p-1 mb-8 w-fit">
-          <button
-            onClick={() => setActiveTab('subscribed')}
-            className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
-              activeTab === 'subscribed'
-                ? 'bg-slate-700 text-white shadow'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Subscribed ({subscriptions.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('created')}
-            className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
-              activeTab === 'created'
-                ? 'bg-slate-700 text-white shadow'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            My Newsletters ({created.length})
-          </button>
+          {[
+            { key: 'subscriptions', label: `My Subscriptions (${subscriptions.length})` },
+            { key: 'newsletters', label: `My Newsletters (${created.length})` },
+            { key: 'history', label: 'History' },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => tab.key === 'history' ? switchToHistory() : setActiveTab(tab.key as any)}
+              className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
+                activeTab === tab.key
+                  ? 'bg-slate-700 text-white shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* Content */}
-        {loading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-slate-800/30 border border-slate-700/30 rounded-2xl p-6 animate-pulse">
-                <div className="h-5 bg-slate-700 rounded w-1/3 mb-3" />
-                <div className="h-3 bg-slate-700/60 rounded w-2/3" />
-              </div>
-            ))}
-          </div>
-        ) : activeTab === 'subscribed' ? (
-          subscriptions.length === 0 ? (
-            <div className="text-center py-16 border border-dashed border-slate-700/40 rounded-2xl">
-              <div className="w-14 h-14 rounded-2xl bg-slate-800/60 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-7 h-7 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <p className="text-slate-400 font-medium mb-2">No subscriptions yet</p>
-              <p className="text-slate-500 text-sm mb-6">Discover newsletters to subscribe to.</p>
-              <Link
-                href="/explore"
-                className="inline-block bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-medium transition shadow-lg shadow-blue-600/20"
-              >
-                Explore Newsletters
-              </Link>
-            </div>
+        {/* ─── My Subscriptions Tab ─────────────────────── */}
+        {activeTab === 'subscriptions' && (
+          loading ? (
+            <LoadingSkeleton />
+          ) : subscriptions.length === 0 ? (
+            <EmptyState
+              icon="mail"
+              title="No subscriptions yet"
+              subtitle="Discover newsletters to subscribe to."
+              actionLabel="Explore Newsletters"
+              actionHref="/explore"
+            />
           ) : (
             <div className="space-y-3">
               {subscriptions.map((sub) => (
-                <Link
+                <div
                   key={sub.id}
-                  href={`/newsletter/${sub.newsletter.id}`}
-                  className="flex items-center justify-between bg-slate-800/30 hover:bg-slate-800/50 border border-slate-700/40 hover:border-slate-600/60 rounded-2xl p-5 transition-all duration-200 group"
+                  className={`bg-slate-800/30 border rounded-2xl transition-all duration-200 ${
+                    sub.is_active ? 'border-slate-700/40' : 'border-slate-700/20 opacity-60'
+                  }`}
                 >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="font-semibold group-hover:text-blue-400 transition truncate">
-                        {sub.newsletter.name}
-                      </h3>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-600/15 text-blue-400 font-medium shrink-0">
-                        {CADENCE_LABELS[sub.newsletter.schedule_cadence]}
-                      </span>
+                  <div className="flex items-center justify-between p-5">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <Link href={`/newsletter/${sub.newsletter.id}`} className="font-semibold hover:text-blue-400 transition truncate">
+                          {sub.newsletter.name}
+                        </Link>
+                        {!sub.is_active && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-400 shrink-0">
+                            Paused
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-slate-500">
+                        <span>{sub.delivery_email || accountEmail || 'No email set'}</span>
+                        <span>·</span>
+                        <span>
+                          {(sub.send_windows || ['morning']).map(w => LOCAL_WINDOW_LABELS[w] || w).join(', ')}
+                        </span>
+                      </div>
                     </div>
-                    {sub.newsletter.description && (
-                      <p className="text-sm text-slate-400 truncate">{sub.newsletter.description}</p>
-                    )}
+                    <div className="flex items-center gap-2 shrink-0 ml-4">
+                      <button
+                        onClick={() => editingSubId === sub.id ? setEditingSubId(null) : startEditSub(sub)}
+                        className="text-xs px-3 py-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 transition"
+                      >
+                        {editingSubId === sub.id ? 'Cancel' : 'Edit'}
+                      </button>
+                      <button
+                        onClick={() => handleToggleSubscription(sub.id, sub.is_active)}
+                        className={`text-xs px-3 py-1.5 rounded-lg transition ${
+                          sub.is_active
+                            ? 'bg-slate-700/50 hover:bg-red-900/30 text-slate-400 hover:text-red-400'
+                            : 'bg-emerald-900/30 hover:bg-emerald-900/50 text-emerald-400'
+                        }`}
+                      >
+                        {sub.is_active ? 'Pause' : 'Reactivate'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4 shrink-0 ml-4">
-                    <span className="text-xs text-slate-500">
-                      {sub.newsletter.subscriber_count} subscribers
-                    </span>
-                    <svg className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </Link>
+
+                  {/* Inline edit panel */}
+                  {editingSubId === sub.id && (
+                    <div className="border-t border-slate-700/30 p-5 space-y-4">
+                      {/* Send windows */}
+                      <div>
+                        <label className="text-xs text-slate-400 font-medium block mb-2">Send times (your local timezone)</label>
+                        <div className="flex gap-2 flex-wrap">
+                          {WINDOW_OPTIONS.map((w) => (
+                            <button
+                              key={w.key}
+                              onClick={() => toggleWindow(w.key)}
+                              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                                editWindows.includes(w.key)
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
+                              }`}
+                            >
+                              {LOCAL_WINDOW_LABELS[w.key]}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Delivery email */}
+                      <div>
+                        <label className="text-xs text-slate-400 font-medium block mb-2">Delivery email</label>
+                        <input
+                          type="email"
+                          value={editEmail}
+                          onChange={(e) => setEditEmail(e.target.value)}
+                          placeholder={accountEmail || 'you@example.com'}
+                          className="w-full sm:w-80 bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+
+                      <button
+                        onClick={() => handleUpdateSubscription(sub.id)}
+                        disabled={saving || editWindows.length === 0}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition disabled:opacity-50"
+                      >
+                        {saving ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )
-        ) : (
-          created.length === 0 ? (
-            <div className="text-center py-16 border border-dashed border-slate-700/40 rounded-2xl">
-              <div className="w-14 h-14 rounded-2xl bg-slate-800/60 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-7 h-7 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </div>
-              <p className="text-slate-400 font-medium mb-2">No newsletters created</p>
-              <p className="text-slate-500 text-sm mb-6">Create your first newsletter and start building an audience.</p>
-              <Link
-                href="/create"
-                className="inline-block bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-medium transition shadow-lg shadow-blue-600/20"
-              >
-                Create Newsletter
-              </Link>
-            </div>
+        )}
+
+        {/* ─── My Newsletters Tab ───────────────────────── */}
+        {activeTab === 'newsletters' && (
+          loading ? (
+            <LoadingSkeleton />
+          ) : created.length === 0 ? (
+            <EmptyState
+              icon="plus"
+              title="No newsletters created"
+              subtitle="Create your first newsletter and start building an audience."
+              actionLabel="Create Newsletter"
+              actionHref="/create"
+            />
           ) : (
             <div className="space-y-3">
               {created.map((nl) => (
-                <Link
+                <div
                   key={nl.id}
-                  href={`/newsletter/${nl.id}`}
-                  className="flex items-center justify-between bg-slate-800/30 hover:bg-slate-800/50 border border-slate-700/40 hover:border-slate-600/60 rounded-2xl p-5 transition-all duration-200 group"
+                  className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5 hover:border-slate-600/60 transition-all duration-200"
                 >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="font-semibold group-hover:text-blue-400 transition truncate">
-                        {nl.name}
-                      </h3>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-600/15 text-blue-400 font-medium shrink-0">
-                        {CADENCE_LABELS[nl.schedule_cadence]}
-                      </span>
-                      {!nl.is_public && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-400 shrink-0">
-                          Private
-                        </span>
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <Link href={`/newsletter/${nl.id}`} className="font-semibold hover:text-blue-400 transition truncate">
+                          {nl.name}
+                        </Link>
+                        {!nl.is_public && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-400 shrink-0">
+                            Private
+                          </span>
+                        )}
+                      </div>
+                      {nl.description && (
+                        <p className="text-sm text-slate-400 truncate mb-2">{nl.description}</p>
                       )}
+                      <div className="flex items-center gap-4 text-xs text-slate-500">
+                        <span>{nl.subscriber_count} subscriber{nl.subscriber_count !== 1 ? 's' : ''}</span>
+                        <span>·</span>
+                        <span>~{nl.credit_cost || 5} credits/run (owner cost)</span>
+                        <span>·</span>
+                        <span>Subscribers earn you ~{Math.round((nl.credit_cost || 5) * 0.25)} credits/send each</span>
+                      </div>
                     </div>
-                    {nl.description && (
-                      <p className="text-sm text-slate-400 truncate">{nl.description}</p>
-                    )}
+                    <Link
+                      href={`/newsletter/${nl.id}/edit`}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 transition shrink-0 ml-4"
+                    >
+                      Edit
+                    </Link>
                   </div>
-                  <div className="flex items-center gap-4 shrink-0 ml-4">
-                    <div className="text-right">
-                      <div className="text-sm font-medium">{nl.subscriber_count}</div>
-                      <div className="text-xs text-slate-500">subscribers</div>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* ─── History Tab ──────────────────────────────── */}
+        {activeTab === 'history' && (
+          runs.length === 0 && !loading ? (
+            <EmptyState
+              icon="clock"
+              title="No issues yet"
+              subtitle="Issues will appear here once newsletters start generating."
+            />
+          ) : (
+            <div className="space-y-3">
+              {runs.map((run) => (
+                <div key={run.id} className="bg-slate-800/30 border border-slate-700/40 rounded-2xl overflow-hidden">
+                  <button
+                    onClick={() => setExpandedRunId(expandedRunId === run.id ? null : run.id)}
+                    className="w-full flex items-center justify-between p-5 hover:bg-slate-800/50 transition text-left"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h3 className="font-semibold text-white truncate">
+                          {run.subject || 'Untitled issue'}
+                        </h3>
+                        {run.newsletter_name && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-600/15 text-blue-400 font-medium shrink-0">
+                            {run.newsletter_name}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {new Date(run.generated_at).toLocaleDateString('en-US', {
+                          weekday: 'short', month: 'short', day: 'numeric',
+                          year: 'numeric', hour: 'numeric', minute: '2-digit',
+                        })}
+                      </p>
                     </div>
-                    <svg className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    <svg
+                      className={`w-5 h-5 text-slate-500 transition-transform shrink-0 ml-4 ${expandedRunId === run.id ? 'rotate-180' : ''}`}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
-                  </div>
-                </Link>
+                  </button>
+
+                  {expandedRunId === run.id && (
+                    <div className="border-t border-slate-700/30 p-6">
+                      <div
+                        className="prose prose-invert prose-sm max-w-none text-slate-300 leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: run.content }}
+                      />
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )
         )}
       </div>
     </main>
+  );
+}
+
+// ─── Shared Components ──────────────────────────────
+
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-4">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="bg-slate-800/30 border border-slate-700/30 rounded-2xl p-6 animate-pulse">
+          <div className="h-5 bg-slate-700 rounded w-1/3 mb-3" />
+          <div className="h-3 bg-slate-700/60 rounded w-2/3" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EmptyState({ icon, title, subtitle, actionLabel, actionHref }: {
+  icon: string;
+  title: string;
+  subtitle: string;
+  actionLabel?: string;
+  actionHref?: string;
+}) {
+  const iconPaths: Record<string, string> = {
+    mail: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+    plus: 'M12 6v6m0 0v6m0-6h6m-6 0H6',
+    clock: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+  };
+
+  return (
+    <div className="text-center py-16 border border-dashed border-slate-700/40 rounded-2xl">
+      <div className="w-14 h-14 rounded-2xl bg-slate-800/60 flex items-center justify-center mx-auto mb-4">
+        <svg className="w-7 h-7 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={iconPaths[icon] || iconPaths.mail} />
+        </svg>
+      </div>
+      <p className="text-slate-400 font-medium mb-2">{title}</p>
+      <p className="text-slate-500 text-sm mb-6">{subtitle}</p>
+      {actionLabel && actionHref && (
+        <Link
+          href={actionHref}
+          className="inline-block bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-medium transition shadow-lg shadow-blue-600/20"
+        >
+          {actionLabel}
+        </Link>
+      )}
+    </div>
   );
 }

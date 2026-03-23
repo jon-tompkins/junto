@@ -61,12 +61,19 @@ export async function PUT(
       update.delivery_email = body.delivery_email || null;
     }
 
-    if (body.schedule_cadence !== undefined) {
-      const valid = ['daily', 'twice_daily', 'weekly'];
-      if (!valid.includes(body.schedule_cadence)) {
-        return NextResponse.json({ error: `Invalid cadence. Must be one of: ${valid.join(', ')}` }, { status: 400 });
+    if (body.send_windows !== undefined) {
+      const validWindows = ['morning', 'midday', 'evening', 'night'];
+      if (!Array.isArray(body.send_windows) || body.send_windows.length === 0) {
+        return NextResponse.json({ error: 'send_windows must be a non-empty array' }, { status: 400 });
       }
-      update.schedule_cadence = body.schedule_cadence;
+      if (!body.send_windows.every((w: string) => validWindows.includes(w))) {
+        return NextResponse.json({ error: `Invalid window. Must be from: ${validWindows.join(', ')}` }, { status: 400 });
+      }
+      update.send_windows = body.send_windows;
+    }
+
+    if (body.is_active !== undefined) {
+      update.is_active = Boolean(body.is_active);
     }
 
     if (Object.keys(update).length === 0) {

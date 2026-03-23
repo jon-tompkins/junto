@@ -33,13 +33,18 @@ export async function unsubscribe(userId: string, newsletterId: string): Promise
   if (error) throw error;
 }
 
-export async function getUserSubscriptions(userId: string): Promise<(Subscription & { newsletter: NewsletterV2 })[]> {
-  const { data, error } = await supabase()
+export async function getUserSubscriptions(userId: string, activeOnly = false): Promise<(Subscription & { newsletter: NewsletterV2 })[]> {
+  let query = supabase()
     .from('subscriptions')
     .select('*, newsletters_v2(*)')
     .eq('user_id', userId)
-    .eq('is_active', true)
     .order('created_at', { ascending: false });
+
+  if (activeOnly) {
+    query = query.eq('is_active', true);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
   return (data || []).map((row: any) => ({
