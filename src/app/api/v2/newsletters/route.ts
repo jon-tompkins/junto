@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, description, prompt, secondary_prompt, is_public, schedule_cadence, credit_cost, labels, sources } = body;
+    const { name, description, prompt, secondary_prompt, is_public, schedule_cadence, credit_cost, labels, sources, send_days } = body;
 
     if (!name || !prompt) {
       return NextResponse.json({ error: 'name and prompt are required' }, { status: 400 });
@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
       is_public,
       schedule_cadence,
       credit_cost,
+      send_days: send_days || ['mon', 'tue', 'wed', 'thu', 'fri'],
     });
 
     // Set labels if provided

@@ -16,6 +16,7 @@ export async function createNewsletter(newsletter: {
   is_public?: boolean;
   schedule_cadence?: string;
   credit_cost?: number;
+  send_days?: string[];
 }): Promise<NewsletterV2> {
   const { data, error } = await supabase()
     .from('newsletters_v2')
@@ -28,6 +29,7 @@ export async function createNewsletter(newsletter: {
       is_public: newsletter.is_public ?? true,
       schedule_cadence: newsletter.schedule_cadence ?? 'daily',
       credit_cost: newsletter.credit_cost ?? 1,
+      send_days: newsletter.send_days ?? ['mon', 'tue', 'wed', 'thu', 'fri'],
     })
     .select()
     .single();

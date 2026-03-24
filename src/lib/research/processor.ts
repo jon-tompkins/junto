@@ -6,9 +6,10 @@ const CREDITS_PER_SCAN = 10;
 
 // ─── Chart Generation ───────────────────────────────────────────
 
-async function generateChartUrl(ticker: string, prices: number[], dates: string[]): Promise<string | null> {
-  if (prices.length < 5) return null;
+function generateChartUrl(ticker: string, prices: number[], dates: string[]): string | null {
+  if (prices.length < 50) return null;
 
+  // Calculate 200-day MA
   const calculateMA = (data: number[], period: number): (number | null)[] => {
     return data.map((_, i) => {
       if (i < period - 1) return null;
@@ -17,19 +18,44 @@ async function generateChartUrl(ticker: string, prices: number[], dates: string[
     });
   };
 
-  const last60Prices = prices.slice(-60);
-  const last60Dates = dates.slice(-60);
-  const ma20 = calculateMA(last60Prices, 20);
-  const ma50 = calculateMA(last60Prices, Math.min(50, last60Prices.length));
+  // Calculate 200-week MA from daily data
+  // First, resample to weekly (take every 5th price as weekly close)
+  const weeklyPrices: number[] = [];
+  for (let i = 4; i < prices.length; i += 5) {
+    weeklyPrices.push(prices[i]);
+  }
+  const weeklyMA200Raw = calculateMA(weeklyPrices, 200);
+
+  // Expand weekly MA back to daily granularity
+  const weeklyMA200: (number | null)[] = prices.map((_, i) => {
+    const weekIdx = Math.floor(i / 5);
+    return weeklyMA200Raw[weekIdx] ?? null;
+  });
+
+  const dailyMA200 = calculateMA(prices, 200);
+
+  // Sample every 5th point to keep URL manageable (~250 points for 5yr)
+  const step = Math.max(1, Math.floor(prices.length / 250));
+  const sampledPrices: number[] = [];
+  const sampledDates: string[] = [];
+  const sampledMA200d: (number | null)[] = [];
+  const sampledMA200w: (number | null)[] = [];
+
+  for (let i = 0; i < prices.length; i += step) {
+    sampledPrices.push(prices[i]);
+    sampledDates.push(dates[i]);
+    sampledMA200d.push(dailyMA200[i]);
+    sampledMA200w.push(weeklyMA200[i]);
+  }
 
   const config = {
     type: 'line',
     data: {
-      labels: last60Dates,
+      labels: sampledDates,
       datasets: [
         {
           label: ticker,
-          data: last60Prices,
+          data: sampledPrices,
           borderColor: '#3b82f6',
           backgroundColor: 'rgba(59,130,246,0.05)',
           tension: 0.2,
@@ -38,8 +64,8 @@ async function generateChartUrl(ticker: string, prices: number[], dates: string[
           borderWidth: 2,
         },
         {
-          label: '20d MA',
-          data: ma20,
+          label: '200d MA',
+          data: sampledMA200d,
           borderColor: '#22c55e',
           borderDash: [5, 3],
           tension: 0.2,
@@ -48,10 +74,10 @@ async function generateChartUrl(ticker: string, prices: number[], dates: string[
           borderWidth: 1.5,
         },
         {
-          label: '50d MA',
-          data: ma50,
+          label: '200w MA',
+          data: sampledMA200w,
           borderColor: '#f97316',
-          borderDash: [5, 3],
+          borderDash: [8, 4],
           tension: 0.2,
           fill: false,
           pointRadius: 0,
@@ -60,52 +86,17 @@ async function generateChartUrl(ticker: string, prices: number[], dates: string[
       ],
     },
     options: {
-      title: { display: true, text: `${ticker} - 3 Month Price Action`, fontSize: 14 },
+      title: { display: true, text: `${ticker} — 5 Year Price Action`, fontSize: 14 },
       legend: { position: 'bottom', labels: { fontSize: 10 } },
       scales: {
-        yAxes: [{ ticks: { maxTicksLimit: 8 } }],
-        xAxes: [{ ticks: { maxTicksLimit: 10, fontSize: 9 } }],
+        yAxes: [{ ticks: { callback: (v: number) => `$${v}` } }],
+        xAxes: [{ ticks: { maxTicksLimit: 12, fontSize: 9 } }],
       },
     },
   };
 
-  // Use QuickChart short URL API to avoid long URLs with parens that break markdown
   const json = JSON.stringify(config);
-
-  // Trim data if too large
-  let chartConfig = config;
-  if (json.length > 12000) {
-    chartConfig = { ...config };
-    chartConfig.data.labels = last60Dates.filter((_, i) => i % 2 === 0);
-    chartConfig.data.datasets = config.data.datasets.map((ds) => ({
-      ...ds,
-      data: (ds.data as any[]).filter((_: any, i: number) => i % 2 === 0),
-    }));
-  }
-
-  try {
-    const res = await fetch('https://quickchart.io/chart/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chart: chartConfig,
-        width: 700,
-        height: 350,
-        format: 'png',
-        backgroundColor: 'transparent',
-      }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data.url) return data.url; // Clean short URL like https://quickchart.io/chart/render/abc123
-    }
-  } catch (err) {
-    console.error('[research] QuickChart short URL failed, falling back to inline:', err);
-  }
-
-  // Fallback: inline URL (may break markdown if it contains parens)
-  return `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}&w=700&h=350&f=png`;
+  return `https://quickchart.io/chart?c=${encodeURIComponent(json)}&w=800&h=400&f=png`;
 }
 
 // ─── Yahoo Finance Data ─────────────────────────────────────────
@@ -119,7 +110,7 @@ async function fetchYahooData(ticker: string): Promise<{
 } | null> {
   try {
     const res = await fetch(
-      `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=3mo`,
+      `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=5y`,
       { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; JuntoResearch/1.0)' } },
     );
     if (!res.ok) return null;
@@ -209,11 +200,11 @@ function antPrompt(
 ): string {
   const levelsText = keyLevels
     ? `\nKey levels from price data:
-- Resistance 2 (3mo high): $${keyLevels.resistance2}
-- Resistance 1 (20d high): $${keyLevels.resistance1}
+- Resistance 2 (5yr high): $${keyLevels.resistance2}
+- Resistance 1 (200d high): $${keyLevels.resistance1}
 - Current: $${price}
-- Support 1 (20d low): $${keyLevels.support1}
-- Support 2 (3mo low): $${keyLevels.support2}`
+- Support 1 (200d low): $${keyLevels.support1}
+- Support 2 (5yr low): $${keyLevels.support2}`
     : '';
 
   return `You are Ant, a technical analyst specializing in price action, Wyckoff phases, and entry timing.
@@ -325,10 +316,10 @@ export async function processDeepDive(requestId: string, ticker: string, userId:
     const chartUrl = await generateChartUrl(ticker, prices, dates);
 
     // Calculate key levels
-    const keyLevels = prices.length >= 20 ? {
-      support1: Math.min(...prices.slice(-20)),
+    const keyLevels = prices.length >= 200 ? {
+      support1: Math.min(...prices.slice(-200)),
       support2: Math.min(...prices),
-      resistance1: Math.max(...prices.slice(-20)),
+      resistance1: Math.max(...prices.slice(-200)),
       resistance2: Math.max(...prices),
     } : null;
 
