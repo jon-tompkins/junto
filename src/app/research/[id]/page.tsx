@@ -214,23 +214,6 @@ export default async function ReportPage({
         </div>
       </div>
 
-      <style jsx global>{`
-        .research-content h1 { font-size: 1.75rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
-        .research-content h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.75rem; }
-        .research-content h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
-        .research-content p { margin-bottom: 1rem; line-height: 1.7; color: #a3a3a3; }
-        .research-content ul, .research-content ol { margin-bottom: 1rem; padding-left: 1.5rem; color: #a3a3a3; }
-        .research-content li { margin-bottom: 0.5rem; }
-        .research-content table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
-        .research-content th, .research-content td { border: 1px solid #334155; padding: 0.5rem; text-align: left; }
-        .research-content th { background: #1e293b; }
-        .research-content strong { color: #fff; }
-        .research-content hr { border-color: #334155; margin: 2rem 0; }
-        .research-content code { background: #1e293b; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-size: 0.875rem; }
-        .research-content pre { background: #0f172a; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
-        .research-content .chart-img { max-width: 75%; height: auto; border-radius: 0.5rem; border: 1px solid #334155; margin: 1rem auto; display: block; }
-        @media (max-width: 768px) { .research-content .chart-img { max-width: 100%; } }
-      `}</style>
     </main>
   );
 }
