@@ -39,9 +39,15 @@ export async function GET() {
       getUserEmail(userId),
     ]);
 
-    const { data: user } = await supabase.from('users').select('timezone').eq('id', userId).single();
+    const { data: user } = await supabase.from('users').select('timezone, is_onboarded').eq('id', userId).single();
 
-    return NextResponse.json({ balance, email, userId, timezone: user?.timezone || 'America/New_York' });
+    return NextResponse.json({
+      balance,
+      email,
+      userId,
+      timezone: user?.timezone || 'America/New_York',
+      isOnboarded: user?.is_onboarded ?? false,
+    });
   } catch (error) {
     console.error('[GET /account]', error);
     return NextResponse.json({ error: 'Failed to get account' }, { status: 500 });
@@ -73,7 +79,6 @@ export async function PUT(req: NextRequest) {
     }
 
     if (body.timezone) {
-      // Validate it's a real timezone
       try {
         Intl.DateTimeFormat(undefined, { timeZone: body.timezone });
         await supabase.from('users').update({ timezone: body.timezone }).eq('id', userId);
@@ -82,14 +87,24 @@ export async function PUT(req: NextRequest) {
       }
     }
 
+    if (body.is_onboarded === true) {
+      await supabase.from('users').update({ is_onboarded: true }).eq('id', userId);
+    }
+
     const [balance, email] = await Promise.all([
       getCreditBalance(userId),
       getUserEmail(userId),
     ]);
 
-    const { data: user } = await supabase.from('users').select('timezone').eq('id', userId).single();
+    const { data: user } = await supabase.from('users').select('timezone, is_onboarded').eq('id', userId).single();
 
-    return NextResponse.json({ balance, email, userId, timezone: user?.timezone || 'America/New_York' });
+    return NextResponse.json({
+      balance,
+      email,
+      userId,
+      timezone: user?.timezone || 'America/New_York',
+      isOnboarded: user?.is_onboarded ?? false,
+    });
   } catch (error) {
     console.error('[PUT /account]', error);
     return NextResponse.json({ error: 'Failed to update account' }, { status: 500 });

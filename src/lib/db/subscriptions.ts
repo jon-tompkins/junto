@@ -8,10 +8,15 @@ export async function subscribe(
   newsletterId: string,
   deliveryEmail?: string,
   sendWindows?: string[],
+  receiveDays?: string[],
 ): Promise<Subscription> {
   const row: Record<string, any> = { user_id: userId, newsletter_id: newsletterId, is_active: true };
   if (deliveryEmail) row.delivery_email = deliveryEmail;
-  if (sendWindows) row.send_windows = sendWindows;
+  if (sendWindows) {
+    row.send_windows = sendWindows;
+    row.receive_windows = sendWindows;
+  }
+  if (receiveDays) row.receive_days = receiveDays;
 
   const { data, error } = await supabase()
     .from('subscriptions')

@@ -104,8 +104,13 @@ function buildEmailHtml(content: string, date: string): string {
           <!-- Footer -->
           <tr>
             <td style="padding: 24px 32px; border-top: 1px solid #e5e7eb; background-color: #f9fafb; border-radius: 0 0 8px 8px;">
-              <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
-                Synthesized by Junto • Your daily intelligence briefing
+              <p style="margin: 0 0 8px; font-size: 12px; color: #9ca3af; text-align: center;">
+                Synthesized by <a href="https://www.myjunto.xyz" style="color: #6b7280; text-decoration: underline;">Junto</a> • Your intelligence briefing
+              </p>
+              <p style="margin: 0; font-size: 11px; color: #d1d5db; text-align: center;">
+                <a href="https://www.myjunto.xyz/dashboard" style="color: #9ca3af; text-decoration: underline;">Manage subscriptions</a>
+                &nbsp;•&nbsp;
+                <a href="https://www.myjunto.xyz/settings" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a>
               </p>
             </td>
           </tr>

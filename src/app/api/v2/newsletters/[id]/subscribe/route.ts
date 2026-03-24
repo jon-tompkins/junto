@@ -51,9 +51,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Newsletter not found' }, { status: 404 });
     }
 
+    // Check onboarding status
+    const supabase = getSupabase();
+    const { data: userData } = await supabase.from('users').select('is_onboarded').eq('id', userId).single();
+    if (!userData?.is_onboarded) {
+      return NextResponse.json(
+        { error: 'Please complete onboarding first', redirect: '/onboarding' },
+        { status: 403 },
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     let deliveryEmail = body.delivery_email;
-    const sendWindows: string[] = body.send_windows || ['morning'];
+    const sendWindows: string[] = body.receive_windows || body.send_windows || ['morning'];
+    const receiveDays: string[] = body.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
     // Validate send_windows values
     const validWindows = ['morning', 'midday', 'evening', 'night'];
@@ -77,7 +88,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       );
     }
 
-    const subscription = await subscribe(userId, id, deliveryEmail, sendWindows);
+    // Validate receive_days
+    const validDays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    const invalidDays = receiveDays.filter((d: string) => !validDays.includes(d));
+    if (invalidDays.length > 0) {
+      return NextResponse.json(
+        { error: `Invalid days: ${invalidDays.join(', ')}. Valid: ${validDays.join(', ')}` },
+        { status: 400 },
+      );
+    }
+
+    const subscription = await subscribe(userId, id, deliveryEmail, sendWindows, receiveDays);
     return NextResponse.json({ subscription, subscribed: true });
   } catch (error) {
     console.error('[POST /subscribe]', error);

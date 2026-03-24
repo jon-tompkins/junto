@@ -147,6 +147,11 @@ export default function DashboardPage() {
         const data = await accountRes.json();
         setCreditBalance(data.balance ?? null);
         setAccountEmail(data.email ?? null);
+        // Redirect to onboarding if not completed
+        if (data.isOnboarded === false) {
+          router.push('/onboarding');
+          return;
+        }
       }
     } catch {
       // Graceful fallback
