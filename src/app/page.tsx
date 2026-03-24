@@ -497,7 +497,8 @@ function NewsletterModal({
           ) : (
             <div className="space-y-2.5">
               {CADENCE_OPTIONS.map((option) => {
-                const period = calculateCreditCostPerPeriod(creditCost, option.value as 'daily' | 'twice_daily' | 'weekly');
+                const sendsPerWeek = option.value === 'twice_daily' ? 14 : option.value === 'daily' ? 7 : 1;
+                const period = calculateCreditCostPerPeriod(creditCost, sendsPerWeek);
                 return (
                   <button
                     key={option.value}
@@ -513,7 +514,7 @@ function NewsletterModal({
                     </div>
                     <div className="text-right shrink-0 ml-4">
                       <div className="text-sm font-semibold text-slate-300">
-                        {creditCost} cr<span className="text-slate-500">/run</span>
+                        {creditCost} cr<span className="text-slate-500">/send</span>
                       </div>
                       <div className="text-xs text-slate-500">
                         ~{period.perWeek} cr/wk ({creditsToDollars(period.perWeek)})
