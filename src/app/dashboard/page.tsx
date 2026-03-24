@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
+import { markdownToHtml } from '@/lib/utils/markdown-client';
 
 // ─── Types ──────────────────────────────────────────
 
@@ -617,8 +618,8 @@ export default function DashboardPage() {
                   {expandedRunId === run.id && (
                     <div className="border-t border-slate-700/30 p-6">
                       <div
-                        className="prose prose-invert prose-sm max-w-none text-slate-300 leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: run.content }}
+                        className="research-content prose prose-invert prose-sm max-w-none text-slate-300 leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: markdownToHtml(run.content) }}
                       />
                     </div>
                   )}
