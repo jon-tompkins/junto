@@ -2,11 +2,11 @@
   "crons": [
     {
       "path": "/api/cron/pull-content",
-      "schedule": "45 1,7,13,19 * * *"
+      "schedule": "45 0,1,6,7,12,13,18,19 * * *"
     },
     {
       "path": "/api/cron/generate-newsletters",
-      "schedule": "0,5,10 2,8,14,20 * * *"
+      "schedule": "0,5,10 1,2,7,8,13,14,19,20 * * *"
     },
     {
       "path": "/api/cron/process-research",

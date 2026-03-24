@@ -235,15 +235,15 @@ export async function setNewsletterLabels(newsletterId: string, labels: string[]
 // Due newsletters (for cron generation)
 // ============================================================
 
-// Fixed send windows in UTC
-export const SEND_WINDOW_TIMES = {
-  morning: 14,  // 14:00 UTC = 6 AM PST
-  midday: 20,   // 20:00 UTC = 12 PM PST
-  evening: 2,   // 02:00 UTC = 6 PM PST
-  night: 8,     // 08:00 UTC = 12 AM PST
+// Send windows defined in Pacific time (handles PST/PDT automatically)
+const SEND_WINDOW_PACIFIC_HOURS = {
+  morning: 6,   // 6 AM Pacific
+  midday: 12,   // 12 PM Pacific
+  evening: 18,  // 6 PM Pacific
+  night: 0,     // 12 AM Pacific
 } as const;
 
-export type SendWindow = keyof typeof SEND_WINDOW_TIMES;
+export type SendWindow = keyof typeof SEND_WINDOW_PACIFIC_HOURS;
 
 export const SEND_WINDOW_LABELS: Record<SendWindow, string> = {
   morning: '6:00 AM',
@@ -252,14 +252,40 @@ export const SEND_WINDOW_LABELS: Record<SendWindow, string> = {
   night: '12:00 AM',
 };
 
+// Convert a Pacific hour to current UTC hour (DST-aware)
+function pacificHourToUTC(pacificHour: number): number {
+  // Create a date at the target Pacific hour today
+  const now = new Date();
+  const pacificDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  pacificDate.setHours(pacificHour, 0, 0, 0);
+  // Calculate the offset between Pacific and UTC right now
+  const utcNow = now.getTime();
+  const pacificNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })).getTime();
+  const offsetMs = utcNow - pacificNow;
+  // Apply offset to get UTC hour
+  const utcTarget = new Date(pacificDate.getTime() + offsetMs);
+  return utcTarget.getUTCHours();
+}
+
+// Get current UTC send times (recomputed to handle DST)
+export function getSendWindowTimesUTC(): Record<SendWindow, number> {
+  return {
+    morning: pacificHourToUTC(6),
+    midday: pacificHourToUTC(12),
+    evening: pacificHourToUTC(18),
+    night: pacificHourToUTC(0),
+  };
+}
+
 const WINDOW_TOLERANCE_MINUTES = 15;
 
 export function getCurrentSendWindow(nowUTC?: Date): SendWindow | null {
   const now = nowUTC || new Date();
   const hour = now.getUTCHours();
   const minute = now.getUTCMinutes();
+  const windowTimes = getSendWindowTimesUTC();
 
-  for (const [window, sendHour] of Object.entries(SEND_WINDOW_TIMES)) {
+  for (const [window, sendHour] of Object.entries(windowTimes)) {
     const diffMinutes = (hour - sendHour) * 60 + minute;
     if (diffMinutes >= 0 && diffMinutes < WINDOW_TOLERANCE_MINUTES) {
       return window as SendWindow;

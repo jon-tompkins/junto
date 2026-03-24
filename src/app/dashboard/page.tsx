@@ -68,21 +68,28 @@ const DAY_LABELS: Record<string, string> = {
   mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun',
 };
 
-// Convert PST hour to user's local timezone label
-function pstToLocal(pstHour: number): string {
-  // Create a date at the given PST hour
-  const pstOffset = -8; // PST is UTC-8
-  const utcHour = (pstHour - pstOffset + 24) % 24;
+// Convert Pacific time hour to user's local timezone label (DST-aware)
+function pacificToLocal(pacificHour: number): string {
+  // Create a date at the target Pacific hour
   const now = new Date();
-  const utcDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), utcHour, 0));
+  // Get today's date in Pacific time
+  const pacificStr = now.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' });
+  const [month, day, year] = pacificStr.split('/');
+  // Build a date string at the target hour in Pacific
+  const targetDate = new Date(`${year}-${month}-${day}T${String(pacificHour).padStart(2, '0')}:00:00`);
+  // Get the Pacific offset for this date
+  const pacificTime = new Date(targetDate.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  const offsetMs = targetDate.getTime() - pacificTime.getTime();
+  const utcDate = new Date(targetDate.getTime() + offsetMs);
+  // Display in user's local timezone
   return utcDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 const LOCAL_WINDOW_LABELS: Record<string, string> = {
-  morning: pstToLocal(6),
-  midday: pstToLocal(12),
-  evening: pstToLocal(18),
-  night: pstToLocal(0),
+  morning: pacificToLocal(6),
+  midday: pacificToLocal(12),
+  evening: pacificToLocal(18),
+  night: pacificToLocal(0),
 };
 
 // ─── Component ──────────────────────────────────────
