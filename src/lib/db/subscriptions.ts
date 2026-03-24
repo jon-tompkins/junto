@@ -53,10 +53,17 @@ export async function getUserSubscriptions(userId: string, activeOnly = false): 
   }));
 }
 
-export async function getNewsletterSubscribers(newsletterId: string): Promise<{ user_id: string; email: string; delivery_email: string | null; send_windows: string[] }[]> {
+export async function getNewsletterSubscribers(newsletterId: string): Promise<{
+  user_id: string;
+  email: string;
+  delivery_email: string | null;
+  send_windows: string[];
+  receive_windows: string[];
+  receive_days: string[];
+}[]> {
   const { data, error } = await supabase()
     .from('subscriptions')
-    .select('user_id, delivery_email, send_windows, users(email)')
+    .select('user_id, delivery_email, send_windows, receive_windows, receive_days, users(email)')
     .eq('newsletter_id', newsletterId)
     .eq('is_active', true);
 
@@ -68,6 +75,8 @@ export async function getNewsletterSubscribers(newsletterId: string): Promise<{ 
       email: row.users?.email || '',
       delivery_email: row.delivery_email || null,
       send_windows: row.send_windows || ['morning'],
+      receive_windows: row.receive_windows || row.send_windows || ['morning'],
+      receive_days: row.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
     }));
 }
 

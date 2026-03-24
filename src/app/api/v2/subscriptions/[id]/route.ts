@@ -61,15 +61,28 @@ export async function PUT(
       update.delivery_email = body.delivery_email || null;
     }
 
-    if (body.send_windows !== undefined) {
+    if (body.send_windows !== undefined || body.receive_windows !== undefined) {
       const validWindows = ['morning', 'midday', 'evening', 'night'];
-      if (!Array.isArray(body.send_windows) || body.send_windows.length === 0) {
-        return NextResponse.json({ error: 'send_windows must be a non-empty array' }, { status: 400 });
+      const windows = body.receive_windows || body.send_windows;
+      if (!Array.isArray(windows) || windows.length === 0) {
+        return NextResponse.json({ error: 'receive_windows must be a non-empty array' }, { status: 400 });
       }
-      if (!body.send_windows.every((w: string) => validWindows.includes(w))) {
+      if (!windows.every((w: string) => validWindows.includes(w))) {
         return NextResponse.json({ error: `Invalid window. Must be from: ${validWindows.join(', ')}` }, { status: 400 });
       }
-      update.send_windows = body.send_windows;
+      update.receive_windows = windows;
+      update.send_windows = windows; // Keep in sync for backward compat
+    }
+
+    if (body.receive_days !== undefined) {
+      const validDays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+      if (!Array.isArray(body.receive_days) || body.receive_days.length === 0) {
+        return NextResponse.json({ error: 'receive_days must be a non-empty array' }, { status: 400 });
+      }
+      if (!body.receive_days.every((d: string) => validDays.includes(d))) {
+        return NextResponse.json({ error: `Invalid day. Must be from: ${validDays.join(', ')}` }, { status: 400 });
+      }
+      update.receive_days = body.receive_days;
     }
 
     if (body.is_active !== undefined) {

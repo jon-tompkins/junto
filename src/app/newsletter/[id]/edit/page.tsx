@@ -40,6 +40,7 @@ export default function EditNewsletterPage() {
   const [cadence, setCadence] = useState('daily');
   const [isPublic, setIsPublic] = useState(true);
   const [labelsStr, setLabelsStr] = useState('');
+  const [sendDays, setSendDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
 
   // Source management
   const [newSource, setNewSource] = useState('');
@@ -66,6 +67,7 @@ export default function EditNewsletterPage() {
         setCadence(nl.schedule_cadence);
         setIsPublic(nl.is_public);
         setLabelsStr(nl.labels?.join(', ') || '');
+        setSendDays(nl.send_days || ['mon', 'tue', 'wed', 'thu', 'fri']);
         setSources(nl.sources?.map((s: any) => ({
           id: s.id,
           handle: s.handle_or_url,
@@ -99,6 +101,7 @@ export default function EditNewsletterPage() {
           schedule_cadence: cadence,
           is_public: isPublic,
           labels,
+          send_days: sendDays,
         }),
       });
 
@@ -261,6 +264,40 @@ export default function EditNewsletterPage() {
                 <option value="public">Public</option>
                 <option value="private">Private</option>
               </select>
+            </div>
+          </div>
+
+          {/* Send Days */}
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-2">
+              Generation Days
+              <span className="text-slate-600 font-normal ml-1">(newsletter generates on these days)</span>
+            </label>
+            <div className="flex gap-2">
+              {[
+                { key: 'mon', label: 'Mon' },
+                { key: 'tue', label: 'Tue' },
+                { key: 'wed', label: 'Wed' },
+                { key: 'thu', label: 'Thu' },
+                { key: 'fri', label: 'Fri' },
+                { key: 'sat', label: 'Sat' },
+                { key: 'sun', label: 'Sun' },
+              ].map((d) => (
+                <button
+                  key={d.key}
+                  type="button"
+                  onClick={() => setSendDays(prev =>
+                    prev.includes(d.key) ? prev.filter(x => x !== d.key) : [...prev, d.key]
+                  )}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                    sendDays.includes(d.key)
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700 border border-slate-700/50'
+                  }`}
+                >
+                  {d.label}
+                </button>
+              ))}
             </div>
           </div>
 

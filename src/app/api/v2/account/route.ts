@@ -33,12 +33,15 @@ export async function GET() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const supabase = getSupabase();
     const [balance, email] = await Promise.all([
       getCreditBalance(userId),
       getUserEmail(userId),
     ]);
 
-    return NextResponse.json({ balance, email, userId });
+    const { data: user } = await supabase.from('users').select('timezone').eq('id', userId).single();
+
+    return NextResponse.json({ balance, email, userId, timezone: user?.timezone || 'America/New_York' });
   } catch (error) {
     console.error('[GET /account]', error);
     return NextResponse.json({ error: 'Failed to get account' }, { status: 500 });
@@ -60,12 +63,23 @@ export async function PUT(req: NextRequest) {
 
     const body = await req.json();
 
+    const supabase = getSupabase();
+
     if (body.email) {
-      // Basic email validation
       if (!body.email.includes('@') || !body.email.includes('.')) {
         return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
       }
       await setUserEmail(userId, body.email);
+    }
+
+    if (body.timezone) {
+      // Validate it's a real timezone
+      try {
+        Intl.DateTimeFormat(undefined, { timeZone: body.timezone });
+        await supabase.from('users').update({ timezone: body.timezone }).eq('id', userId);
+      } catch {
+        return NextResponse.json({ error: 'Invalid timezone' }, { status: 400 });
+      }
     }
 
     const [balance, email] = await Promise.all([
@@ -73,7 +87,9 @@ export async function PUT(req: NextRequest) {
       getUserEmail(userId),
     ]);
 
-    return NextResponse.json({ balance, email, userId });
+    const { data: user } = await supabase.from('users').select('timezone').eq('id', userId).single();
+
+    return NextResponse.json({ balance, email, userId, timezone: user?.timezone || 'America/New_York' });
   } catch (error) {
     console.error('[PUT /account]', error);
     return NextResponse.json({ error: 'Failed to update account' }, { status: 500 });

@@ -14,12 +14,15 @@ interface SubscribedNewsletter {
   is_active: boolean;
   delivery_email: string | null;
   send_windows: string[];
+  receive_windows: string[];
+  receive_days: string[];
   created_at: string;
   newsletter: {
     id: string;
     name: string;
     description: string | null;
     subscriber_count: number;
+    send_days?: string[];
   };
 }
 
@@ -50,6 +53,20 @@ const WINDOW_OPTIONS = [
   { key: 'evening', label: '6:00 PM', pstLabel: '6 PM PST' },
   { key: 'night', label: '12:00 AM', pstLabel: '12 AM PST' },
 ];
+
+const DAY_OPTIONS = [
+  { key: 'mon', label: 'M' },
+  { key: 'tue', label: 'T' },
+  { key: 'wed', label: 'W' },
+  { key: 'thu', label: 'T' },
+  { key: 'fri', label: 'F' },
+  { key: 'sat', label: 'S' },
+  { key: 'sun', label: 'S' },
+];
+
+const DAY_LABELS: Record<string, string> = {
+  mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun',
+};
 
 // Convert PST hour to user's local timezone label
 function pstToLocal(pstHour: number): string {
@@ -88,6 +105,7 @@ export default function DashboardPage() {
   // Inline editing state for subscriptions
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
   const [editWindows, setEditWindows] = useState<string[]>([]);
+  const [editDays, setEditDays] = useState<string[]>([]);
   const [editEmail, setEditEmail] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -190,7 +208,8 @@ export default function DashboardPage() {
     setSaving(true);
     try {
       const body: Record<string, any> = {};
-      if (editWindows.length > 0) body.send_windows = editWindows;
+      if (editWindows.length > 0) body.receive_windows = editWindows;
+      if (editDays.length > 0) body.receive_days = editDays;
       if (editEmail) body.delivery_email = editEmail;
 
       const res = await fetch(`/api/v2/subscriptions/${subId}`, {
@@ -221,7 +240,8 @@ export default function DashboardPage() {
 
   function startEditSub(sub: SubscribedNewsletter) {
     setEditingSubId(sub.id);
-    setEditWindows(sub.send_windows || ['morning']);
+    setEditWindows(sub.receive_windows || sub.send_windows || ['morning']);
+    setEditDays(sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
     setEditEmail(sub.delivery_email || '');
   }
 
@@ -230,6 +250,14 @@ export default function DashboardPage() {
       prev.includes(window)
         ? prev.filter(w => w !== window)
         : [...prev, window]
+    );
+  }
+
+  function toggleDay(day: string) {
+    setEditDays(prev =>
+      prev.includes(day)
+        ? prev.filter(d => d !== day)
+        : [...prev, day]
     );
   }
 
@@ -379,11 +407,15 @@ export default function DashboardPage() {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-slate-500">
+                      <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
                         <span>{sub.delivery_email || accountEmail || 'No email set'}</span>
                         <span>·</span>
                         <span>
-                          {(sub.send_windows || ['morning']).map(w => LOCAL_WINDOW_LABELS[w] || w).join(', ')}
+                          {(sub.receive_windows || sub.send_windows || ['morning']).map(w => LOCAL_WINDOW_LABELS[w] || w).join(', ')}
+                        </span>
+                        <span>·</span>
+                        <span>
+                          {(sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']).map(d => DAY_LABELS[d] || d).join(', ')}
                         </span>
                       </div>
                     </div>
@@ -430,6 +462,27 @@ export default function DashboardPage() {
                         </div>
                       </div>
 
+                      {/* Days */}
+                      <div>
+                        <label className="text-xs text-slate-400 font-medium block mb-2">Days</label>
+                        <div className="flex gap-1.5">
+                          {DAY_OPTIONS.map((d) => (
+                            <button
+                              key={d.key}
+                              onClick={() => toggleDay(d.key)}
+                              className={`w-9 h-9 rounded-lg text-sm font-medium transition ${
+                                editDays.includes(d.key)
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
+                              }`}
+                              title={DAY_LABELS[d.key]}
+                            >
+                              {d.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       {/* Delivery email */}
                       <div>
                         <label className="text-xs text-slate-400 font-medium block mb-2">Delivery email</label>
@@ -444,7 +497,7 @@ export default function DashboardPage() {
 
                       <button
                         onClick={() => handleUpdateSubscription(sub.id)}
-                        disabled={saving || editWindows.length === 0}
+                        disabled={saving || editWindows.length === 0 || editDays.length === 0}
                         className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition disabled:opacity-50"
                       >
                         {saving ? 'Saving...' : 'Save Changes'}

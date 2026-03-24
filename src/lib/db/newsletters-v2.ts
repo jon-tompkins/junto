@@ -82,7 +82,7 @@ export async function getUserNewsletters(userId: string): Promise<NewsletterV2[]
   return data || [];
 }
 
-export async function updateNewsletter(id: string, updates: Partial<Pick<NewsletterV2, 'name' | 'description' | 'prompt' | 'secondary_prompt' | 'is_public' | 'schedule_cadence' | 'credit_cost'>>): Promise<NewsletterV2> {
+export async function updateNewsletter(id: string, updates: Partial<Pick<NewsletterV2, 'name' | 'description' | 'prompt' | 'secondary_prompt' | 'is_public' | 'schedule_cadence' | 'credit_cost'>> & { send_days?: string[] }): Promise<NewsletterV2> {
   const { data, error } = await supabase()
     .from('newsletters_v2')
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -268,35 +268,65 @@ export function getCurrentSendWindow(nowUTC?: Date): SendWindow | null {
   return null;
 }
 
+// Map UTC day to short name (PST day may differ from UTC day near midnight)
+const DAY_NAMES = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+export type DayName = typeof DAY_NAMES[number];
+
+export function getCurrentPSTDay(nowUTC?: Date): DayName {
+  const now = nowUTC || new Date();
+  // PST is UTC-8
+  const pstDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  return DAY_NAMES[pstDate.getDay()];
+}
+
 export async function getNewslettersDueForGeneration(): Promise<NewsletterV2[]> {
   const now = new Date();
   const currentWindow = getCurrentSendWindow(now);
 
   if (!currentWindow) return [];
 
-  console.log(`[generate] Current send window: ${currentWindow} (UTC ${now.getUTCHours()}:${String(now.getUTCMinutes()).padStart(2, '0')})`);
+  const currentDay = getCurrentPSTDay(now);
+
+  console.log(`[generate] Current window: ${currentWindow}, day: ${currentDay} (UTC ${now.getUTCHours()}:${String(now.getUTCMinutes()).padStart(2, '0')})`);
 
   // Get all newsletters that have at least one active subscriber wanting this window
-  const { data: newsletterIds, error: subError } = await supabase()
+  // Use receive_windows (new) with fallback check on send_windows (legacy)
+  const { data: subData, error: subError } = await supabase()
     .from('subscriptions')
-    .select('newsletter_id')
-    .eq('is_active', true)
-    .contains('send_windows', [currentWindow]);
+    .select('newsletter_id, receive_windows, receive_days, send_windows')
+    .eq('is_active', true);
 
-  if (subError || !newsletterIds?.length) return [];
+  if (subError || !subData?.length) return [];
 
-  const uniqueIds = [...new Set(newsletterIds.map(s => s.newsletter_id))];
+  // Filter subscribers who want this window AND this day
+  const matchingNewsletterIds = new Set<string>();
+  for (const sub of subData) {
+    const windows = sub.receive_windows || sub.send_windows || ['morning'];
+    const days = sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    if (windows.includes(currentWindow) && days.includes(currentDay)) {
+      matchingNewsletterIds.add(sub.newsletter_id);
+    }
+  }
 
+  if (matchingNewsletterIds.size === 0) return [];
+
+  // Get those newsletters, but only if the OWNER has this day enabled
   const { data: newsletters, error } = await supabase()
     .from('newsletters_v2')
     .select('*')
-    .in('id', uniqueIds);
+    .in('id', Array.from(matchingNewsletterIds));
 
   if (error || !newsletters?.length) return [];
 
+  // Filter: owner must have this day in send_days
+  const dayFiltered = newsletters.filter(nl => {
+    const ownerDays = nl.send_days || ['mon', 'tue', 'wed', 'thu', 'fri'];
+    return ownerDays.includes(currentDay);
+  });
+
   // Filter out newsletters that already ran in this window (min 5h gap)
   const due: NewsletterV2[] = [];
-  for (const nl of newsletters) {
+  for (const nl of dayFiltered) {
     const { data: latestRun } = await supabase()
       .from('newsletter_runs')
       .select('generated_at')
