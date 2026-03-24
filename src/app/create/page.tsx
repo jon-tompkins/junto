@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { AuthModal } from '@/components/auth-modal';
 import { TopNav } from '@/components/top-nav';
+import { calculateOwnerCreditCost } from '@/lib/pricing';
 
 // ============================================================
 // Source type for validation
@@ -126,6 +127,7 @@ export default function CreateNewsletterPage() {
   const [sourceInput, setSourceInput] = useState('');
   const [cadence, setCadence] = useState('daily');
   const [isPublic, setIsPublic] = useState(true);
+  const [sendDays, setSendDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
 
   // Validate a single Twitter handle via API
   const validateSource = useCallback(async (handle: string) => {
@@ -236,6 +238,7 @@ export default function CreateNewsletterPage() {
             .filter((s) => s.status !== 'invalid')
             .map((s) => ({ type: 'twitter', handle_or_url: s.handle })),
           schedule_cadence: cadence,
+          send_days: sendDays,
           is_public: isPublic,
         }),
       });
@@ -593,7 +596,41 @@ export default function CreateNewsletterPage() {
               </div>
             </div>
 
-            <p className="text-xs text-slate-400 mb-4">~{(2*(2+.3*sources.filter(s=>s.status!="invalid").length)*(cadence==="twice_daily"?60:cadence==="weekly"?4:30)).toFixed(0)} credits/mo (owner)</p>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-3">Generation Days</label>
+                <p className="text-xs text-slate-500 mb-3">Newsletter only generates on selected days.</p>
+                <div className="flex gap-2">
+                  {[
+                    { key: 'mon', label: 'Mon' },
+                    { key: 'tue', label: 'Tue' },
+                    { key: 'wed', label: 'Wed' },
+                    { key: 'thu', label: 'Thu' },
+                    { key: 'fri', label: 'Fri' },
+                    { key: 'sat', label: 'Sat' },
+                    { key: 'sun', label: 'Sun' },
+                  ].map((d) => (
+                    <button
+                      key={d.key}
+                      type="button"
+                      onClick={() => setSendDays(prev =>
+                        prev.includes(d.key) ? prev.filter(x => x !== d.key) : [...prev, d.key]
+                      )}
+                      className={`px-3 py-2 rounded-xl text-sm font-medium transition ${
+                        sendDays.includes(d.key)
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-800/30 text-slate-400 hover:bg-slate-700 border border-slate-700/50'
+                      }`}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+            <p className="text-xs text-slate-400 mb-4 mt-6">
+              Owner cost: {calculateOwnerCreditCost(sources.filter(s => s.status !== 'invalid').length)} credits/send
+              {' '}• Subscriber cost: 2 credits/send
+            </p>
             {error && (
               <div className="mt-6 p-3 bg-red-600/10 border border-red-600/30 rounded-lg text-sm text-red-400">
                 {error}

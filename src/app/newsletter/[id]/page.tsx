@@ -44,6 +44,10 @@ export default function NewsletterDetailPage() {
   const [forking, setForking] = useState(false);
   const [showOlderRuns, setShowOlderRuns] = useState(false);
   const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
+  const [subEmail, setSubEmail] = useState('');
+  const [subWindows, setSubWindows] = useState<string[]>(['morning']);
+  const [subDays, setSubDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
 
   useEffect(() => {
     async function load() {
@@ -87,22 +91,57 @@ export default function NewsletterDetailPage() {
     load();
   }, [id, session]);
 
+  useEffect(() => {
+    if (session?.user) {
+      fetch('/api/v2/account').then(r => r.json()).then(data => {
+        if (data.email) setSubEmail(data.email);
+      }).catch(() => {});
+    }
+  }, [session]);
+
   async function toggleSubscription() {
     if (!session?.user) {
       setShowAuthModal(true);
       return;
     }
+    if (subscribed) {
+      // Unsubscribe directly
+      setSubscribing(true);
+      try {
+        const res = await fetch(`/api/v2/newsletters/${id}/subscribe`, { method: 'DELETE' });
+        if (res.ok) {
+          setSubscribed(false);
+          if (newsletter) setNewsletter({ ...newsletter, subscriber_count: newsletter.subscriber_count - 1 });
+        }
+      } finally {
+        setSubscribing(false);
+      }
+    } else {
+      // Show subscribe modal
+      setShowSubscribeModal(true);
+    }
+  }
+
+  async function handleSubscribe() {
     setSubscribing(true);
     try {
-      const method = subscribed ? 'DELETE' : 'POST';
-      const res = await fetch(`/api/v2/newsletters/${id}/subscribe`, { method });
+      const res = await fetch(`/api/v2/newsletters/${id}/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          delivery_email: subEmail,
+          receive_windows: subWindows,
+          receive_days: subDays,
+        }),
+      });
       if (res.ok) {
-        setSubscribed(!subscribed);
-        if (newsletter) {
-          setNewsletter({
-            ...newsletter,
-            subscriber_count: newsletter.subscriber_count + (subscribed ? -1 : 1),
-          });
+        setSubscribed(true);
+        setShowSubscribeModal(false);
+        if (newsletter) setNewsletter({ ...newsletter, subscriber_count: newsletter.subscriber_count + 1 });
+      } else {
+        const data = await res.json();
+        if (data.redirect) {
+          window.location.href = data.redirect;
         }
       }
     } finally {
@@ -317,6 +356,103 @@ export default function NewsletterDetailPage() {
           </div>
         )}
       </div>
+
+      {showSubscribeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowSubscribeModal(false)} />
+          <div className="relative bg-slate-900 border border-slate-700/60 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5">
+            <div>
+              <h2 className="text-lg font-bold text-white">Subscribe to {newsletter?.name}</h2>
+              <p className="text-sm text-slate-400 mt-1">2 credits per delivery</p>
+            </div>
+
+            {/* Delivery email */}
+            <div>
+              <label className="block text-xs text-slate-400 font-medium mb-2">Delivery email</label>
+              <input
+                type="email"
+                value={subEmail}
+                onChange={(e) => setSubEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full px-3 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* Send windows */}
+            <div>
+              <label className="block text-xs text-slate-400 font-medium mb-2">Send times (Pacific)</label>
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { key: 'morning', label: '6 AM' },
+                  { key: 'midday', label: '12 PM' },
+                  { key: 'evening', label: '6 PM' },
+                  { key: 'night', label: '12 AM' },
+                ].map((w) => (
+                  <button
+                    key={w.key}
+                    onClick={() => setSubWindows(prev =>
+                      prev.includes(w.key) ? prev.filter(x => x !== w.key) : [...prev, w.key]
+                    )}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                      subWindows.includes(w.key)
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
+                    }`}
+                  >
+                    {w.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Days */}
+            <div>
+              <label className="block text-xs text-slate-400 font-medium mb-2">Days</label>
+              <div className="flex gap-1.5">
+                {[
+                  { key: 'mon', label: 'M' },
+                  { key: 'tue', label: 'T' },
+                  { key: 'wed', label: 'W' },
+                  { key: 'thu', label: 'T' },
+                  { key: 'fri', label: 'F' },
+                  { key: 'sat', label: 'S' },
+                  { key: 'sun', label: 'S' },
+                ].map((d) => (
+                  <button
+                    key={d.key}
+                    onClick={() => setSubDays(prev =>
+                      prev.includes(d.key) ? prev.filter(x => x !== d.key) : [...prev, d.key]
+                    )}
+                    className={`w-9 h-9 rounded-lg text-sm font-medium transition ${
+                      subDays.includes(d.key)
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
+                    }`}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setShowSubscribeModal(false)}
+                className="flex-1 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl text-sm font-medium transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubscribe}
+                disabled={subscribing || !subEmail || subWindows.length === 0 || subDays.length === 0}
+                className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition"
+              >
+                {subscribing ? 'Subscribing...' : 'Subscribe'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <AuthModal
         isOpen={showAuthModal}
