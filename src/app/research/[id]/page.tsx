@@ -1,9 +1,11 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { Metadata } from 'next';
+import { getSupabase } from '@/lib/db/client';
+import { markdownToHtml } from '@/lib/utils/markdown';
 import { TopNav } from '@/components/top-nav';
+
+const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/jon-tompkins/Agent-Reports/main';
 
 interface Report {
   id: string;
@@ -22,81 +24,128 @@ interface Report {
   content?: string;
 }
 
-export default function ReportPage() {
-  const params = useParams();
-  const [report, setReport] = useState<Report | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+// Extract ticker from title like "PTON (Company Name) Deep Dive"
+function extractTicker(title: string): string {
+  const match = title.match(/^([A-Z]{1,5})\s/);
+  return match ? match[1] : '';
+}
 
-  useEffect(() => {
-    if (params.id) {
-      fetchReport(params.id as string);
-    }
-  }, [params.id]);
+// Extract rating from summary text
+function extractRating(summary: string): string {
+  const match = summary.match(/Rating:\s*([^.]+)/i);
+  return match ? match[1].trim() : '';
+}
 
-  // Extract ticker from title like "PTON (Company Name) Deep Dive"
-  const extractTicker = (title: string): string => {
-    const match = title.match(/^([A-Z]{1,5})\s/);
-    return match ? match[1] : '';
-  };
+function getRatingColor(rating: string | undefined | null) {
+  if (!rating) return 'text-slate-400';
+  if (rating.includes('BUY') || rating.includes('BULLISH')) return 'text-green-400';
+  if (rating.includes('AVOID') || rating.includes('SHORT') || rating.includes('BEARISH') || rating.includes('SELL')) return 'text-red-400';
+  if (rating.includes('SPECULATIVE') || rating.includes('HOLD')) return 'text-yellow-400';
+  return 'text-slate-400';
+}
 
-  // Extract rating from summary text
-  const extractRating = (summary: string): string => {
-    const match = summary.match(/Rating:\s*([^.]+)/i);
-    return match ? match[1].trim() : '';
-  };
+async function getReport(id: string): Promise<Report | null> {
+  const supabase = getSupabase();
 
-  const fetchReport = async (id: string) => {
-    try {
-      const res = await fetch(`/api/research/${id}`);
-      if (!res.ok) {
-        throw new Error('Report not found');
-      }
-      const data = await res.json();
-      if (data.visibility !== 'public') {
-        throw new Error('Report not available');
-      }
-      // Enrich with extracted/mapped fields
-      setReport({
-        ...data,
-        ticker: data.ticker || extractTicker(data.title),
-        rating: data.rating || extractRating(data.summary || ''),
-        type: data.type || data.category || 'research',
-        summary: data.summary || data.description || '',
-        tags: data.tags || [],
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load report');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // 1. Try Supabase first (new reports)
+  const { data: dbReport } = await supabase
+    .from('research_reports')
+    .select('*')
+    .eq('id', id)
+    .single();
 
-  const getRatingColor = (rating: string | undefined | null) => {
-    if (!rating) return 'text-slate-400';
-    if (rating.includes('BUY') || rating.includes('BULLISH')) return 'text-green-400';
-    if (rating.includes('AVOID') || rating.includes('SHORT') || rating.includes('BEARISH') || rating.includes('SELL')) return 'text-red-400';
-    if (rating.includes('SPECULATIVE') || rating.includes('HOLD')) return 'text-yellow-400';
-    return 'text-slate-400';
-  };
+  if (dbReport) {
+    if (dbReport.visibility !== 'public') return null;
 
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white flex items-center justify-center">
-        <div className="text-slate-400">Loading report...</div>
-      </main>
-    );
+    return {
+      id: dbReport.id,
+      title: dbReport.title,
+      ticker: dbReport.ticker || extractTicker(dbReport.title),
+      summary: dbReport.summary || dbReport.description || '',
+      rating: dbReport.rating || extractRating(dbReport.summary || ''),
+      type: dbReport.type || dbReport.category || 'research',
+      visibility: dbReport.visibility,
+      date: dbReport.date,
+      tags: dbReport.tags || [],
+      content: markdownToHtml(dbReport.content),
+    };
   }
 
-  if (error || !report) {
-    return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white flex flex-col items-center justify-center">
-        <div className="text-slate-400 mb-4">{error || 'Report not found'}</div>
-        <Link href="/research" className="text-white hover:underline">
-          ← Back to Research
-        </Link>
-      </main>
-    );
+  // 2. Fall back to GitHub (legacy reports)
+  try {
+    const indexRes = await fetch(`${GITHUB_RAW_BASE}/reports/index.json`, {
+      next: { revalidate: 300 },
+    });
+
+    if (!indexRes.ok) return null;
+
+    const indexData = await indexRes.json();
+    const report = indexData.reports.find((r: any) => r.id === id);
+
+    if (!report || report.visibility !== 'public') return null;
+
+    const contentRes = await fetch(`${GITHUB_RAW_BASE}/${report.path || report.file}`, {
+      next: { revalidate: 300 },
+    });
+
+    if (!contentRes.ok) return null;
+
+    const markdown = await contentRes.text();
+
+    return {
+      ...report,
+      ticker: report.ticker || extractTicker(report.title),
+      rating: report.rating || extractRating(report.summary || ''),
+      type: report.type || report.category || 'research',
+      summary: report.summary || report.description || '',
+      tags: report.tags || [],
+      content: markdownToHtml(markdown),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ id: string }> }
+): Promise<Metadata> {
+  const { id } = await params;
+  const report = await getReport(id);
+
+  if (!report) {
+    return {
+      title: 'Report Not Found | MyJunto Research',
+    };
+  }
+
+  const description = report.summary
+    ? report.summary.length > 160
+      ? report.summary.slice(0, 157) + '...'
+      : report.summary
+    : 'Research report on MyJunto';
+
+  return {
+    title: `${report.title} | MyJunto Research`,
+    description,
+    keywords: report.tags,
+    openGraph: {
+      title: `${report.title} | MyJunto Research`,
+      description,
+      type: 'article',
+    },
+  };
+}
+
+export default async function ReportPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const report = await getReport(id);
+
+  if (!report) {
+    notFound();
   }
 
   return (
@@ -124,7 +173,7 @@ export default function ReportPage() {
             <span>{report.date}</span>
             {report.type && (
               <>
-                <span>•</span>
+                <span>&bull;</span>
                 <span>{report.type}</span>
               </>
             )}
@@ -135,7 +184,7 @@ export default function ReportPage() {
         {report.tags && report.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-8">
             {report.tags.map(tag => (
-              <span 
+              <span
                 key={tag}
                 className="px-3 py-1 bg-slate-700/50 rounded-full text-xs text-slate-400"
               >
@@ -147,7 +196,7 @@ export default function ReportPage() {
 
         {/* Content */}
         <article className="prose prose-invert prose-slate max-w-none">
-          <div 
+          <div
             className="research-content"
             dangerouslySetInnerHTML={{ __html: report.content || '' }}
           />
@@ -156,11 +205,11 @@ export default function ReportPage() {
         {/* Footer */}
         <div className="mt-16 pt-8 border-t border-slate-700/40 text-slate-500 text-sm">
           <p className="mb-4">
-            <strong>Disclaimer:</strong> This report is for informational purposes only and does not constitute investment advice. 
+            <strong>Disclaimer:</strong> This report is for informational purposes only and does not constitute investment advice.
             Always do your own research before making investment decisions.
           </p>
           <Link href="/research" className="text-white hover:underline">
-            ← View all research
+            &larr; View all research
           </Link>
         </div>
       </div>

@@ -1,0 +1,20 @@
+import { MetadataRoute } from 'next';
+
+export default function robots(): MetadataRoute.Robots {
+  return {
+    rules: [
+      {
+        userAgent: '*',
+        allow: '/',
+        disallow: [
+          '/api/',
+          '/dashboard',
+          '/settings',
+          '/history',
+          '/newsletter/*/edit',
+        ],
+      },
+    ],
+    sitemap: 'https://www.myjunto.xyz/sitemap.xml',
+  };
+}
