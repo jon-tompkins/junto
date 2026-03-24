@@ -1,40 +1,60 @@
 # Junto TODO
 
-## Immediate (Before Onboarding)
+## Done ✅
+- [x] Google OAuth
+- [x] Shared TopNav across all pages
+- [x] Self-contained research pipeline (Scout/Jeb/Ant)
+- [x] Credits charged on completion, not request
+- [x] Dashboard rewrite (3 tabs: subscriptions, newsletters, history)
+- [x] Day-of-week scheduling (owner send_days + subscriber receive_days)
+- [x] Send window picker (4 daily windows, PST-based)
+- [x] DST-aware send windows
+- [x] Timezone in settings
+- [x] Flat credit pricing with source tiers
+- [x] Content pull parallelized + only active sources
+- [x] SEO: metadata, sitemap.xml, robots.txt, OG tags, server-rendered research pages
+- [x] Migration 008-012 applied
 
-- [ ] **Upgrade Node to 20+** — local machine has Node 18.17, Next.js 16 requires 20+. Run `nvm install 20` or `brew upgrade node`
-- [ ] **Verify build compiles** — all Phase 2 code is written but build hasn't been verified yet
-- [ ] **Commit & push Phase 2 changes** — blocked on build verification. Includes:
-  - Subscription email + schedule cadence (migration 008 already applied)
-  - Credit deduction on send (owner + subscriber charging in cron)
-  - `resolveUserId()` fix across subscribe API
-  - Newsletter history page
-  - Account API (balance + email)
-  - Dashboard rewrite (credit balance, email banner)
-  - Onboarding page removed
-  - Stale v1 crons removed from vercel.json
-- [ ] **Update subscribe UI** — frontend subscribe button needs to collect `delivery_email`. API now requires it (returns 400 if no email and no account email set)
-- [ ] **Low-balance email reminders** — automated emails at 100 credits and 50 credits. Visual indicator in dashboard is done (amber at <=100, red at <=50), but actual email sending not yet implemented
-- [ ] **Add Google OAuth env vars to Vercel** — `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
+## Immediate
 
-## Needs More Thought
+- [ ] **Newsletter prompt update** — switch to synthesis-focused prompt (no citation numbers, "The Signal" framing). Already drafted, needs to be swapped in.
+- [ ] **Subscribe UI** — frontend subscribe button needs to collect delivery_email
+- [ ] **Low-balance email reminders** — automated emails at 100 and 50 credits (visual indicator done)
+- [ ] **Credit pricing in UI** — show cost on subscribe button, newsletter detail, dashboard
+- [ ] **Upgrade Node to 20+** — local machine has 18.17, needed for local builds
+- [ ] **OG image** — create `/public/og-image.png` (1200x630) for social sharing
 
-- [ ] **Scheduling deep dive** — currently cron runs every 5 min. Need to decide on fixed send times per day so we can batch content pulls before each send window. Affects `pull-content` and `generate-newsletters` crons
-- [ ] **Payment integration** — on hold. Will support credit card + stablecoin. Need to pick providers (Stripe? crypto payment rail?)
+## Growth / Marketing
 
-## Nice to Haves (Post-Onboarding)
+- [ ] **Auto-tweet newsletters** — tweet when a new briefing is generated, with subject + link. Needs Twitter API v2 write access (Free tier, $0/mo). Env vars: `TWITTER_API_KEY`, `TWITTER_API_SECRET`, `TWITTER_ACCESS_TOKEN`, `TWITTER_ACCESS_SECRET`
+- [ ] **Auto-tweet research reports** — tweet when a deep dive completes, with ticker + rating + link
+- [ ] **Submit sitemap to Google Search Console** — `https://www.myjunto.xyz/sitemap.xml`
+- [ ] **Logo** — design a logo for myjunto
 
-- [ ] Newsletter recommendation engine / discovery features
+## New Sources
+
+- [ ] **YouTube transcripts** — pull video transcripts as source content. Whisper API or YouTube captions API. Would bump source tier pricing.
+- [ ] **Podcast transcripts** — RSS feed → audio → Whisper/AssemblyAI transcription → summarize → store. ~$0.40/episode.
+
+## Product Vision
+
+- [ ] **Junto (source profiles)** — base primitive: curated group of voices. Newsletter and chat are both modes on top. Schema designed (migration 010), not applied.
+- [ ] **Agent chat** — Vercel AI SDK + pgvector embeddings on source content. Users chat with their junto's collective intelligence. 2 credits/message, split with maintainer.
+- [ ] **Payment integration** — CC (Stripe?) + stablecoin. On hold.
+
+## Nice to Haves
+
+- [ ] Newsletter recommendation engine / discovery
 - [ ] Analytics dashboard for creators (open rates, subscriber growth)
 - [ ] Newsletter preview before publish
-- [ ] Bulk import/export of newsletter configs
-- [ ] Webhook support for integrations
 - [ ] Rate limiting on API endpoints
-- [ ] Newsletter search / filtering on marketplace
+- [ ] Bulk import/export of newsletter configs
 
 ## Notes
 
 - Agent profile files in GitHub: archive, don't override
-- Pricing: owner pays 2x gen cost, subscriber pays 0.5x split 50/50 platform/creator
+- Pricing: owner 10-25 credits/send (tiered by source count), subscriber 2 credits/send split 50/50
 - Credits: 100 credits/$1, 1000 bonus for new users
-- Migration 008 already applied to Supabase
+- Send windows: 6AM, 12PM, 6PM, 12AM Pacific (DST-aware)
+- Content pull: 4x/day, 15 min before each send window
+- Migrations 008-012 applied to Supabase
