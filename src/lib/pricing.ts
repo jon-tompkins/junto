@@ -4,60 +4,57 @@
  * - 100 credits = $1.00
  * - New users get 1,000 free credits ($10 value)
  *
- * TWO PRICING TIERS:
- * - Owner (admin): pays 2x estimated generation cost per run (covers infra + margin)
- * - Subscriber: pays 0.5x estimated generation cost per run
- *   Split: 50% to platform, 50% to newsletter creator
+ * OWNER: flat rate per send based on source count tier
+ * SUBSCRIBER: flat 2 credits per send, split 50/50 platform/creator
  *
- * - Content pulling cost is negligible; cost scales with source count (more tokens)
- * - Pricing is adjustable per-newsletter via admin_cost_multiplier / subscriber_cost_multiplier
+ * Source tiers:
+ *   1-10 sources:  10 credits/send ($0.10)
+ *   11-20 sources: 15 credits/send ($0.15)
+ *   21-30 sources: 20 credits/send ($0.20)
+ *   31+ sources:   25 credits/send ($0.25)
+ *
+ * Future: YouTube/podcast transcripts add to source count and may
+ * have their own premium tier.
  */
 
 // ─── Constants ───────────────────────────────────────
 export const CREDITS_PER_DOLLAR = 100;
 export const NEW_USER_BONUS_CREDITS = 1000;
 
-// Default multipliers (can be overridden per-newsletter)
-export const DEFAULT_OWNER_COST_MULTIPLIER = 2.0;      // owner pays 2x gen cost
-export const DEFAULT_SUBSCRIBER_COST_MULTIPLIER = 0.5;  // subscriber pays 0.5x gen cost
+export const SUBSCRIBER_COST_PER_SEND = 2;  // 2 credits ($0.02) per delivery
 export const PLATFORM_SHARE = 0.5;  // platform gets 50% of subscriber credits
 export const CREATOR_SHARE = 0.5;   // creator gets 50% of subscriber credits
 
-// Estimated generation cost per run in dollars
-const BASE_GENERATION_COST = 0.02;   // ~$0.02 base for Grok-3-fast
-const PER_SOURCE_COST = 0.003;       // ~$0.003 per source (~500 tokens of tweet content)
+// ─── Source Tiers ────────────────────────────────────
 
-// ─── Cost Estimation ─────────────────────────────────
+const OWNER_COST_TIERS = [
+  { maxSources: 10, credits: 10 },
+  { maxSources: 20, credits: 15 },
+  { maxSources: 30, credits: 20 },
+  { maxSources: Infinity, credits: 25 },
+];
 
-/** Estimate the dollar cost to generate one run of a newsletter */
-export function estimateRunCostDollars(sourceCount: number): number {
-  return BASE_GENERATION_COST + (sourceCount * PER_SOURCE_COST);
+// ─── Cost Calculation ────────────────────────────────
+
+/**
+ * Calculate credit cost per send for the newsletter OWNER.
+ * Based on source count tier.
+ */
+export function calculateOwnerCreditCost(sourceCount: number): number {
+  for (const tier of OWNER_COST_TIERS) {
+    if (sourceCount <= tier.maxSources) {
+      return tier.credits;
+    }
+  }
+  return OWNER_COST_TIERS[OWNER_COST_TIERS.length - 1].credits;
 }
 
 /**
- * Calculate credit cost per run for the newsletter OWNER.
- * Default: 2x generation cost, rounded down. Min 1 credit.
+ * Calculate credit cost per delivery for a SUBSCRIBER.
+ * Flat rate regardless of source count.
  */
-export function calculateOwnerCreditCost(
-  sourceCount: number,
-  multiplier: number = DEFAULT_OWNER_COST_MULTIPLIER,
-): number {
-  const dollarCost = estimateRunCostDollars(sourceCount);
-  const credits = Math.floor(dollarCost * multiplier * CREDITS_PER_DOLLAR);
-  return Math.max(1, credits);
-}
-
-/**
- * Calculate credit cost per run for a SUBSCRIBER.
- * Default: 0.5x generation cost, rounded down. Min 1 credit.
- */
-export function calculateSubscriberCreditCost(
-  sourceCount: number,
-  multiplier: number = DEFAULT_SUBSCRIBER_COST_MULTIPLIER,
-): number {
-  const dollarCost = estimateRunCostDollars(sourceCount);
-  const credits = Math.floor(dollarCost * multiplier * CREDITS_PER_DOLLAR);
-  return Math.max(1, credits);
+export function calculateSubscriberCreditCost(): number {
+  return SUBSCRIBER_COST_PER_SEND;
 }
 
 /**
@@ -72,30 +69,42 @@ export function splitSubscriberPayment(creditCost: number): {
   return { platformCredits, creatorCredits };
 }
 
-// ─── Period Calculations ─────────────────────────────
+// ─── Display Helpers ─────────────────────────────────
 
-export function calculateCreditCostPerPeriod(
-  creditCostPerRun: number,
-  cadence: 'daily' | 'twice_daily' | 'weekly',
-): { perWeek: number; perMonth: number; runsPerWeek: number } {
-  const runsPerWeek =
-    cadence === 'twice_daily' ? 14 :
-    cadence === 'daily' ? 7 :
-    1;
-
-  return {
-    perWeek: creditCostPerRun * runsPerWeek,
-    perMonth: Math.round(creditCostPerRun * runsPerWeek * 4.33),
-    runsPerWeek,
-  };
+/** Get the owner cost tier label for a source count */
+export function getOwnerTierLabel(sourceCount: number): string {
+  const cost = calculateOwnerCreditCost(sourceCount);
+  return `${cost} credits/send ($${(cost / CREDITS_PER_DOLLAR).toFixed(2)})`;
 }
 
-// ─── Display Helpers ─────────────────────────────────
+/** Get subscriber cost label */
+export function getSubscriberCostLabel(): string {
+  return `${SUBSCRIBER_COST_PER_SEND} credits/send ($${(SUBSCRIBER_COST_PER_SEND / CREDITS_PER_DOLLAR).toFixed(2)})`;
+}
 
 export function creditsToDollars(credits: number): string {
   const dollars = credits / CREDITS_PER_DOLLAR;
   return `$${dollars.toFixed(2)}`;
 }
+
+/** Estimate dollar cost to generate one run (for internal use) */
+export function estimateRunCostDollars(sourceCount: number): number {
+  return calculateOwnerCreditCost(sourceCount) / CREDITS_PER_DOLLAR;
+}
+
+// ─── Period Calculations ─────────────────────────────
+
+export function calculateCreditCostPerPeriod(
+  creditCostPerRun: number,
+  sendsPerWeek: number,
+): { perWeek: number; perMonth: number } {
+  return {
+    perWeek: creditCostPerRun * sendsPerWeek,
+    perMonth: Math.round(creditCostPerRun * sendsPerWeek * 4.33),
+  };
+}
+
+// ─── Labels ──────────────────────────────────────────
 
 export const CADENCE_LABELS: Record<string, string> = {
   daily: 'Daily',

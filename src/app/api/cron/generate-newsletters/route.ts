@@ -125,7 +125,7 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
-        const subscriberCost = calculateSubscriberCreditCost(sources.length);
+        const subscriberCost = calculateSubscriberCreditCost();
         const deliveredEmails: string[] = [];
         const deliveredUserIds: string[] = [];
 
