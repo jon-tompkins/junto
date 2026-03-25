@@ -9,6 +9,20 @@ import {
   setNewsletterSources,
 } from '@/lib/db/newsletters-v2';
 import { getOrCreateSource } from '@/lib/db/sources';
+import { getSupabase } from '@/lib/db/client';
+
+async function resolveUserId(session: any): Promise<string | null> {
+  const supabase = getSupabase();
+  if (session.user?.twitterId) {
+    const { data } = await supabase.from('users').select('id').eq('twitter_id', session.user.twitterId).single();
+    return data?.id || null;
+  }
+  if (session.user?.googleId) {
+    const { data } = await supabase.from('users').select('id').eq('google_id', session.user.googleId).single();
+    return data?.id || null;
+  }
+  return null;
+}
 
 // GET /api/v2/newsletters — list public newsletters (+ own if authenticated)
 export async function GET(req: NextRequest) {
@@ -21,8 +35,7 @@ export async function GET(req: NextRequest) {
 
     let myNewsletters: Awaited<ReturnType<typeof getUserNewsletters>> = [];
     if (session?.user) {
-      // @ts-expect-error — session.user extended with id
-      const userId = session.user.id;
+      const userId = await resolveUserId(session);
       if (userId) {
         myNewsletters = await getUserNewsletters(userId);
       }
@@ -46,8 +59,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // @ts-expect-error — session.user extended with id
-    const userId = session.user.id;
+    const userId = await resolveUserId(session);
     if (!userId) {
       return NextResponse.json({ error: 'User ID not found' }, { status: 401 });
     }
