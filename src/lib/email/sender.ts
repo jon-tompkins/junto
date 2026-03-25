@@ -7,6 +7,7 @@ interface SendNewsletterParams {
   subject: string;
   content: string; // Markdown content
   date?: string;
+  newsletterId?: string;
 }
 
 export async function sendNewsletter({
@@ -14,107 +15,166 @@ export async function sendNewsletter({
   subject,
   content,
   date = new Date().toISOString(),
+  newsletterId,
 }: SendNewsletterParams): Promise<{ id: string }> {
   const resend = getResend();
-  
+
   const recipients = Array.isArray(to) ? to : [to];
   const formattedDate = formatDate(date, 'MMMM D, YYYY');
-  
-  // Convert markdown to simple HTML
+
   const htmlContent = markdownToHtml(content);
-  
+
   const { data, error } = await resend.emails.send({
     from: config.resend.fromEmail || 'Junto <onboarding@resend.dev>',
     to: recipients,
     subject: subject,
-    html: buildEmailHtml(htmlContent, formattedDate),
-    text: content, // Plain text fallback
+    html: buildEmailHtml(htmlContent, subject, formattedDate, newsletterId),
+    text: content,
   });
-  
+
   if (error) {
     console.error('Error sending email:', error);
     throw new Error(`Failed to send email: ${error.message}`);
   }
-  
+
   console.log(`Email sent successfully: ${data?.id}`);
   return { id: data?.id || '' };
 }
 
 function markdownToHtml(markdown: string): string {
-  return markdown
-    // Headers
-    .replace(/^### (.+)$/gm, '<h3 style="margin: 20px 0 10px; font-size: 16px; font-weight: 600;">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 style="margin: 24px 0 12px; font-size: 18px; font-weight: 600;">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 style="margin: 28px 0 14px; font-size: 22px; font-weight: 700;">$1</h1>')
-    // Bold
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    // Italic
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // Links
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" style="color: #2563eb;">$1</a>')
-    // Bullet lists
-    .replace(/^- (.+)$/gm, '<li style="margin: 4px 0;">$1</li>')
-    // Wrap consecutive li elements in ul
-    .replace(/(<li[^>]*>.*<\/li>\n?)+/g, '<ul style="margin: 12px 0; padding-left: 24px;">$&</ul>')
-    // Blockquotes
-    .replace(/^> (.+)$/gm, '<blockquote style="border-left: 3px solid #d1d5db; margin: 12px 0; padding-left: 16px; color: #6b7280;">$1</blockquote>')
-    // Line breaks
-    .replace(/\n\n/g, '</p><p style="margin: 16px 0;">')
-    .replace(/\n/g, '<br>');
+  let html = markdown;
+
+  // Horizontal rules → styled dividers
+  html = html.replace(/^---$/gm, '<div style="border-top: 1px solid #e5e7eb; margin: 24px 0;"></div>');
+
+  // Headers with proper styling
+  html = html.replace(/^#### (.+)$/gm, '<h4 style="margin: 16px 0 8px; font-size: 14px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.5px;">$1</h4>');
+  html = html.replace(/^### (.+)$/gm, '<h3 style="margin: 20px 0 8px; font-size: 15px; font-weight: 600; color: #1f2937;">$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2 style="margin: 28px 0 12px; font-size: 18px; font-weight: 700; color: #111827; border-bottom: 2px solid #2563eb; padding-bottom: 8px; display: inline-block;">$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1 style="margin: 0 0 16px; font-size: 22px; font-weight: 700; color: #111827;">$1</h1>');
+
+  // Bold + italic
+  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong style="color: #111827;">$1</strong>');
+  html = html.replace(/(?<!\*)\*([^*]+?)\*(?!\*)/g, '<em>$1</em>');
+
+  // Links
+  html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" style="color: #2563eb; text-decoration: none; border-bottom: 1px solid #93c5fd;">$1</a>');
+
+  // Ticker callouts: **$TICKER** at start of bullet → highlighted
+  html = html.replace(/^- \*\*(\$[A-Z]+)\*\*/gm, '- <span style="display: inline-block; background: #eff6ff; color: #1d4ed8; padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 13px;">$1</span>');
+
+  // Bullet lists
+  html = html.replace(/^- (.+)$/gm, '<li style="margin: 6px 0; padding-left: 4px; line-height: 1.5;">$1</li>');
+  html = html.replace(/(<li[^>]*>.*<\/li>\n?)+/g, '<ul style="margin: 12px 0; padding-left: 20px; list-style-type: disc;">$&</ul>');
+
+  // Blockquotes
+  html = html.replace(/^> (.+)$/gm, '<blockquote style="border-left: 3px solid #2563eb; margin: 16px 0; padding: 12px 16px; color: #4b5563; background: #f9fafb; border-radius: 0 6px 6px 0; font-style: italic;">$1</blockquote>');
+
+  // Consensus/Confidence/Shift labels (bold label on its own line)
+  html = html.replace(/\*\*(Consensus|Confidence|Shift from recent):\*\*\s*(.+)/g,
+    '<div style="margin: 8px 0; padding: 6px 12px; background: #f0f9ff; border-radius: 6px; font-size: 14px;"><strong style="color: #1e40af;">$1:</strong> <span style="color: #1e3a5f;">$2</span></div>');
+
+  // Paragraphs
+  html = html.replace(/\n\n+/g, '</p><p style="margin: 12px 0; line-height: 1.65; color: #374151;">');
+  html = html.replace(/\n/g, '<br>');
+
+  // Clean up empty paragraphs and fix nesting
+  html = html.replace(/<p style="[^"]*">\s*<\/p>/g, '');
+  html = html.replace(/<p style="[^"]*">\s*(<h[1-4])/g, '$1');
+  html = html.replace(/(<\/h[1-4]>)\s*<\/p>/g, '$1');
+  html = html.replace(/<p style="[^"]*">\s*(<ul)/g, '$1');
+  html = html.replace(/(<\/ul>)\s*<\/p>/g, '$1');
+  html = html.replace(/<p style="[^"]*">\s*(<div)/g, '$1');
+  html = html.replace(/(<\/div>)\s*<\/p>/g, '$1');
+  html = html.replace(/<p style="[^"]*">\s*(<blockquote)/g, '$1');
+  html = html.replace(/(<\/blockquote>)\s*<\/p>/g, '$1');
+
+  return html;
 }
 
-function buildEmailHtml(content: string, date: string): string {
-  return `
-<!DOCTYPE html>
+function buildEmailHtml(content: string, subject: string, date: string, newsletterId?: string): string {
+  const unsubUrl = newsletterId
+    ? `https://www.myjunto.xyz/newsletter/${newsletterId}?action=unsubscribe`
+    : 'https://www.myjunto.xyz/dashboard';
+
+  return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Junto Daily Briefing</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>${subject}</title>
+  <!--[if mso]><style>body{font-family:Arial,sans-serif!important}</style><![endif]-->
 </head>
-<body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb;">
+<body style="margin: 0; padding: 0; background-color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+
+  <!-- Preheader (hidden preview text) -->
+  <div style="display: none; max-height: 0; overflow: hidden;">
+    ${subject} — Your intelligence briefing from Junto
+  </div>
+
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0f172a;">
     <tr>
-      <td align="center" style="padding: 40px 20px;">
-        <table width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-          
-          <!-- Header -->
+      <td align="center" style="padding: 24px 16px;">
+        <table width="100%" style="max-width: 560px;">
+
+          <!-- Header Bar -->
           <tr>
-            <td style="padding: 32px 32px 24px; border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 20px 0;">
               <table width="100%">
                 <tr>
                   <td>
-                    <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">JUNTO</h1>
+                    <span style="font-size: 20px; font-weight: 700; letter-spacing: -0.5px;">
+                      <span style="color: #ffffff;">my</span><span style="color: #3b82f6;">junto</span>
+                    </span>
                   </td>
                   <td align="right">
-                    <span style="font-size: 14px; color: #6b7280;">${date}</span>
+                    <span style="font-size: 13px; color: #64748b;">${date}</span>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
-          
-          <!-- Content -->
+
+          <!-- Subject Line -->
           <tr>
-            <td style="padding: 32px; color: #374151; font-size: 16px; line-height: 1.6;">
-              <p style="margin: 0 0 16px;">${content}</p>
+            <td style="padding: 0 0 20px;">
+              <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #f1f5f9; line-height: 1.3;">
+                ${subject}
+              </h1>
             </td>
           </tr>
-          
+
+          <!-- Main Content Card -->
+          <tr>
+            <td style="background-color: #ffffff; border-radius: 12px; overflow: hidden;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding: 28px 24px; color: #374151; font-size: 15px; line-height: 1.65;">
+                    ${content}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
           <!-- Footer -->
           <tr>
-            <td style="padding: 24px 32px; border-top: 1px solid #e5e7eb; background-color: #f9fafb; border-radius: 0 0 8px 8px;">
-              <p style="margin: 0 0 8px; font-size: 12px; color: #9ca3af; text-align: center;">
-                Synthesized by <a href="https://www.myjunto.xyz" style="color: #6b7280; text-decoration: underline;">Junto</a> • Your intelligence briefing
+            <td style="padding: 24px 0; text-align: center;">
+              <p style="margin: 0 0 8px; font-size: 12px; color: #475569;">
+                Synthesized by <a href="https://www.myjunto.xyz" style="color: #3b82f6; text-decoration: none;">Junto</a> — intelligence from the noise
               </p>
-              <p style="margin: 0; font-size: 11px; color: #d1d5db; text-align: center;">
-                <a href="https://www.myjunto.xyz/dashboard" style="color: #9ca3af; text-decoration: underline;">Manage subscriptions</a>
-                &nbsp;•&nbsp;
-                <a href="https://www.myjunto.xyz/settings" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a>
+              <p style="margin: 0; font-size: 11px; color: #334155;">
+                <a href="https://www.myjunto.xyz/dashboard" style="color: #64748b; text-decoration: underline;">Dashboard</a>
+                &nbsp;&nbsp;·&nbsp;&nbsp;
+                <a href="https://www.myjunto.xyz/settings" style="color: #64748b; text-decoration: underline;">Settings</a>
+                &nbsp;&nbsp;·&nbsp;&nbsp;
+                <a href="${unsubUrl}" style="color: #64748b; text-decoration: underline;">Unsubscribe</a>
               </p>
             </td>
           </tr>
-          
+
         </table>
       </td>
     </tr>
