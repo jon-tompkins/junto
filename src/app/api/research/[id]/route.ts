@@ -12,12 +12,27 @@ export async function GET(
     const { id } = await params;
     const supabase = getSupabase();
 
-    // 1. Try Supabase first (new reports)
-    const { data: dbReport } = await supabase
-      .from('research_reports')
-      .select('*')
-      .eq('id', id)
-      .single();
+    // 1. Try Supabase first (new reports) — match by UUID or slug
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+    let dbReport;
+    if (isUUID) {
+      const { data } = await supabase
+        .from('research_reports')
+        .select('*')
+        .eq('id', id)
+        .single();
+      dbReport = data;
+    }
+
+    if (!dbReport) {
+      const { data } = await supabase
+        .from('research_reports')
+        .select('*')
+        .eq('slug', id)
+        .single();
+      dbReport = data;
+    }
 
     if (dbReport) {
       if (dbReport.visibility !== 'public') {

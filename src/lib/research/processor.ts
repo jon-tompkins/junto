@@ -4,6 +4,17 @@ import { getSupabase } from '@/lib/db/client';
 const CREDITS_PER_DEEPDIVE = 5;
 const CREDITS_PER_SCAN = 10;
 
+// ─── Slug Generation ────────────────────────────────────────────
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
 // ─── Chart Generation ───────────────────────────────────────────
 
 function generateChartUrl(ticker: string, prices: number[], dates: string[]): string | null {
@@ -179,16 +190,37 @@ Scout's preliminary analysis:
 ${scoutAnalysis}
 ---
 
-Now dig deeper into fundamentals. Cover:
-1. **Business Quality** — Moat width (none/narrow/wide), competitive advantages, switching costs
-2. **Financials** — Revenue growth, margins, FCF, debt levels. Use specific numbers.
-3. **Valuation** — P/E, P/S, EV/EBITDA vs peers. Is it cheap or expensive and why?
-4. **Balance Sheet** — Cash position, debt-to-equity, runway
-5. **Management** — Any notable insider activity, CEO track record
-6. **Jeb's Verdict** — Fair value estimate and whether current price is attractive
+Provide fundamental analysis. Use TABLES for all financial data. Cover:
 
-Be quantitative. Use real financial data where available. Write for investors who understand financial statements.
-Format as clean markdown with ## headers.`;
+## Business Quality
+- Moat width (none/narrow/wide) and why
+- Key competitive advantages as bullet points
+
+## Financial Snapshot
+
+Present key financials in a markdown table:
+
+| Metric | Value | YoY Change |
+|--------|-------|------------|
+| Revenue | $X | +X% |
+| Gross Margin | X% | +/-X% |
+| Operating Margin | X% | +/-X% |
+| Free Cash Flow | $X | +X% |
+| Net Debt | $X | — |
+
+## Valuation vs Peers
+
+| Metric | ${ticker} | Peer 1 | Peer 2 | Sector Avg |
+|--------|-----------|--------|--------|------------|
+| P/E | X | X | X | X |
+| P/S | X | X | X | X |
+| EV/EBITDA | X | X | X | X |
+
+## Jeb's Verdict
+- **Fair Value Estimate:** $X (X% upside/downside from current)
+- **Conviction:** High/Medium/Low
+
+Be quantitative. Every number must be specific. No vague language.`;
 }
 
 function antPrompt(
@@ -238,50 +270,65 @@ function synthesisPrompt(
   antAnalysis: string,
   chartUrl: string | null,
 ): string {
-  return `You are the lead analyst synthesizing research from three specialists into a final Deep Dive report.
+  return `Synthesize these three analyst reports into one cohesive Deep Dive. Do NOT repeat information — combine and distill. Use tables for financial data. Use bullet points for readability.
 
-**${ticker}**${companyName ? ` — ${companyName}` : ''}${price ? ` | Current Price: $${price}` : ''}
+**Input from analysts:**
 
-## Scout's Analysis (Opportunity):
-${scoutAnalysis}
+SCOUT: ${scoutAnalysis}
 
-## Jeb's Analysis (Fundamentals):
-${jebAnalysis}
+JEB: ${jebAnalysis}
 
-## Ant's Analysis (Technicals):
-${antAnalysis}
+ANT: ${antAnalysis}
 
-Synthesize into a cohesive Deep Dive report with this structure:
+**Write the final report in this exact structure:**
 
-# ${ticker} Deep Dive${companyName ? ` - ${companyName}` : ''}
+# ${ticker} Deep Dive${companyName ? ` — ${companyName}` : ''}
+${price ? `**Current Price:** $${price}` : ''}
 
 ## Executive Summary
-[2-3 sentence verdict combining all three analysts. Include the consensus rating.]
+[2-3 sentences. The verdict upfront — rating, fair value, and whether to buy/sell/wait. No fluff.]
 
-## Company Overview
-[From Scout's analysis — what they do, why interesting now]
+## What They Do
+[2-3 sentences max. Business model and why it matters now. Don't repeat what's in financials.]
 
-${chartUrl ? `## Price Action\n![${ticker} Chart](${chartUrl})\n` : ''}
-## Technical Analysis
-[From Ant — trend, key levels, Wyckoff phase, entry zones]
+${chartUrl ? `## Price Chart\n![${ticker} 5-Year Chart](${chartUrl})\n` : ''}
 
-## Fundamental Analysis
-[From Jeb — business quality, financials, valuation]
+## Technical Setup
+Use bullet points:
+- **Trend:** [direction + strength]
+- **Key Resistance:** $X, $X
+- **Key Support:** $X, $X
+- **Phase:** [Wyckoff phase]
+- **Entry Zone:** $X—$X
+- **Stop Loss:** $X
 
-## Bull Case
-[Combined bull arguments, ranked by conviction]
+## Financials
 
-## Bear Case
-[Combined bear arguments, ranked by risk]
+Preserve Jeb's tables exactly. Include the Financial Snapshot table and Valuation vs Peers table.
+
+## Bull vs Bear
+
+| Bull Case | Bear Case |
+|-----------|-----------|
+| [Point 1] | [Point 1] |
+| [Point 2] | [Point 2] |
+| [Point 3] | [Point 3] |
 
 ## The Verdict
-**Rating:** [Consensus of Scout, Jeb, Ant]
-**Fair Value:** [Jeb's estimate]
-**Entry Strategy:** [Ant's timing + levels]
-**Risk/Reward:** [Brief assessment]
 
-Write the final report in clean markdown. Be direct and opinionated. Every claim should be specific.
-Do NOT include disclaimers or "not financial advice" text — that's handled by the platform.`;
+| | |
+|---|---|
+| **Rating** | [STRONG BUY / BUY / HOLD / AVOID / SHORT] |
+| **Fair Value** | $X (X% upside/downside) |
+| **Entry** | $X—$X |
+| **Stop Loss** | $X |
+| **Risk/Reward** | X:X |
+
+Rules:
+- NO disclaimers, NO "not financial advice"
+- NO redundant information — if it's in the table, don't repeat in prose
+- Every number must be specific
+- Keep it dense and scannable — bullet points and tables over paragraphs`;
 }
 
 // ─── Main Processor ─────────────────────────────────────────────
@@ -373,6 +420,8 @@ export async function processDeepDive(requestId: string, ticker: string, userId:
     const title = `${ticker} Deep Dive${companyName ? ` - ${companyName}` : ''}`;
     const reportDate = new Date().toISOString().split('T')[0];
 
+    const slug = `${ticker.toLowerCase()}-${reportDate}`;
+
     const { data: report, error: reportError } = await supabase
       .from('research_reports')
       .insert({
@@ -386,6 +435,7 @@ export async function processDeepDive(requestId: string, ticker: string, userId:
         date: reportDate,
         requested_by: userId,
         tags: [ticker.toLowerCase()],
+        slug,
       })
       .select()
       .single();
@@ -512,6 +562,8 @@ Format as clean markdown.`,
     const summary = content.substring(0, 500);
     const reportDate = new Date().toISOString().split('T')[0];
 
+    const slug = `scan-${slugify(query.substring(0, 40))}-${reportDate}`;
+
     const { data: report } = await supabase
       .from('research_reports')
       .insert({
@@ -525,6 +577,7 @@ Format as clean markdown.`,
         date: reportDate,
         requested_by: userId,
         tags: ['scan'],
+        slug,
       })
       .select()
       .single();

@@ -7,6 +7,7 @@ import { TopNav } from '@/components/top-nav';
 
 interface Report {
   id: string;
+  slug?: string;
   title: string;
   ticker?: string;
   date: string;
@@ -514,7 +515,7 @@ export default function ResearchPage() {
           {filteredReports.map(report => (
             <Link
               key={report.id}
-              href={`/research/${report.id}`}
+              href={`/research/${report.slug || report.id}`}
               className="block p-6 bg-slate-800/30 rounded-lg border border-slate-700/40 hover:border-slate-600 transition-colors"
             >
               <div className="flex items-start justify-between mb-2">
