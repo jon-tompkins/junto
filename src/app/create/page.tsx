@@ -576,7 +576,7 @@ export default function CreateNewsletterPage() {
                   >
                     <div className="font-medium text-sm">Public</div>
                     <div className="text-xs text-slate-400 mt-0.5">
-                      Anyone can discover and subscribe. You earn 70% of credits.
+                      Anyone can discover and subscribe. You earn 50% of subscriber credits.
                     </div>
                   </button>
                   <button
