@@ -42,10 +42,12 @@ export async function fetchRecentVideos(
 
   try {
     // Fetch the channel page to get channel ID
+    // Cookie bypasses YouTube's consent page in EU/some regions
     const pageRes = await fetch(channelUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept-Language': 'en-US,en;q=0.9',
+        'Cookie': 'CONSENT=PENDING+987; SOCS=CAESEwgDEgk2ODE5MjEyNTQaAmVuIAEaBgiA_LyuBg',
       },
     });
     const html = await pageRes.text();
@@ -54,10 +56,11 @@ export async function fetchRecentVideos(
     const channelIdMatch =
       html.match(/"channelId":"([^"]+)"/) ||
       html.match(/channel_id=([^"&]+)/) ||
-      html.match(/"externalId":"([^"]+)"/);
+      html.match(/"externalId":"([^"]+)"/) ||
+      html.match(/"browseId":"(UC[^"]+)"/);
 
     if (!channelIdMatch) {
-      console.log(`[YouTube] Could not find channel ID for ${channelUrl}`);
+      console.log(`[YouTube] Could not find channel ID for ${channelUrl} (html length: ${html.length})`);
       return [];
     }
 
