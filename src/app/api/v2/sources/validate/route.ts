@@ -10,8 +10,32 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'handle is required' }, { status: 400 });
   }
 
+  if (type === 'youtube') {
+    // Validate YouTube URLs — check that the URL contains youtube.com
+    const isValidYouTube = handle.includes('youtube.com');
+    if (isValidYouTube) {
+      // Extract channel name from URL for display
+      const channelMatch = handle.match(/youtube\.com\/@([^\/\?]+)/);
+      const channelName = channelMatch ? channelMatch[1] : handle;
+      return NextResponse.json({
+        valid: true,
+        handle,
+        type,
+        validated: true,
+        profile: { name: channelName },
+      });
+    } else {
+      return NextResponse.json({
+        valid: false,
+        handle,
+        type,
+        error: 'Invalid YouTube URL. Please provide a URL containing youtube.com',
+      });
+    }
+  }
+
   if (type !== 'twitter') {
-    // For non-twitter sources, just accept for now
+    // For other non-twitter sources, just accept for now
     return NextResponse.json({ valid: true, handle, type });
   }
 

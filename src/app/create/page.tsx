@@ -11,8 +11,11 @@ import { calculateOwnerCreditCost } from '@/lib/pricing';
 // ============================================================
 // Source type for validation
 // ============================================================
+type SourceType = 'twitter' | 'youtube';
+
 interface SourceEntry {
   handle: string;
+  type: SourceType;
   status: 'pending' | 'validating' | 'valid' | 'invalid';
   name?: string;
   followers?: number;
@@ -125,18 +128,19 @@ export default function CreateNewsletterPage() {
   const [labelInput, setLabelInput] = useState('');
   const [sources, setSources] = useState<SourceEntry[]>([]);
   const [sourceInput, setSourceInput] = useState('');
+  const [sourceType, setSourceType] = useState<SourceType>('twitter');
   const [cadence, setCadence] = useState('daily');
   const [isPublic, setIsPublic] = useState(true);
   const [sendDays, setSendDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
 
-  // Validate a single Twitter handle via API
-  const validateSource = useCallback(async (handle: string) => {
+  // Validate a single source via API
+  const validateSource = useCallback(async (handle: string, type: SourceType = 'twitter') => {
     setSources((prev) =>
       prev.map((s) => (s.handle === handle ? { ...s, status: 'validating' as const } : s))
     );
 
     try {
-      const res = await fetch(`/api/v2/sources/validate?handle=${encodeURIComponent(handle)}&type=twitter`);
+      const res = await fetch(`/api/v2/sources/validate?handle=${encodeURIComponent(handle)}&type=${type}`);
       const data = await res.json();
 
       setSources((prev) =>
@@ -150,7 +154,7 @@ export default function CreateNewsletterPage() {
               followers: data.profile?.followers,
             };
           } else {
-            return { ...s, status: 'invalid' as const, error: data.error || 'Handle not found' };
+            return { ...s, status: 'invalid' as const, error: data.error || (type === 'youtube' ? 'Invalid YouTube URL' : 'Handle not found') };
           }
         })
       );
@@ -171,6 +175,7 @@ export default function CreateNewsletterPage() {
         setLabels([...t.labels]);
         const newSources: SourceEntry[] = t.suggested_sources.map((h) => ({
           handle: h,
+          type: 'twitter' as SourceType,
           status: 'pending' as const,
         }));
         setSources(newSources);
@@ -199,13 +204,18 @@ export default function CreateNewsletterPage() {
   }
 
   function addSource() {
-    const s = sourceInput.trim().replace('@', '').toLowerCase();
+    let s: string;
+    if (sourceType === 'twitter') {
+      s = sourceInput.trim().replace('@', '').toLowerCase();
+    } else {
+      s = sourceInput.trim();
+    }
     if (s && !sources.some((src) => src.handle === s)) {
-      const entry: SourceEntry = { handle: s, status: 'pending' };
+      const entry: SourceEntry = { handle: s, type: sourceType, status: 'pending' };
       setSources((prev) => [...prev, entry]);
       setSourceInput('');
       // Trigger validation
-      validateSource(s);
+      validateSource(s, sourceType);
     } else {
       setSourceInput('');
     }
@@ -236,7 +246,7 @@ export default function CreateNewsletterPage() {
           labels,
           sources: sources
             .filter((s) => s.status !== 'invalid')
-            .map((s) => ({ type: 'twitter', handle_or_url: s.handle })),
+            .map((s) => ({ type: s.type, handle_or_url: s.handle })),
           schedule_cadence: cadence,
           send_days: sendDays,
           is_public: isPublic,
@@ -429,18 +439,43 @@ export default function CreateNewsletterPage() {
           <div>
             <h2 className="text-2xl font-bold mb-2">Select Sources</h2>
             <p className="text-slate-400 mb-6 text-sm">
-              Add Twitter/X handles to pull from. Each handle is validated in real-time.
+              Add Twitter/X handles or YouTube channels to pull from. Each source is validated in real-time.
             </p>
+            {/* Source type toggle */}
+            <div className="flex gap-2 mb-3">
+              <button
+                onClick={() => { setSourceType('twitter'); setSourceInput(''); }}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${
+                  sourceType === 'twitter'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-800/60 text-slate-400 hover:text-white border border-slate-700/50'
+                }`}
+              >
+                Twitter
+              </button>
+              <button
+                onClick={() => { setSourceType('youtube'); setSourceInput(''); }}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${
+                  sourceType === 'youtube'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-slate-800/60 text-slate-400 hover:text-white border border-slate-700/50'
+                }`}
+              >
+                YouTube
+              </button>
+            </div>
             <div className="flex gap-2 mb-4">
               <div className="relative flex-1">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">@</span>
+                {sourceType === 'twitter' && (
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">@</span>
+                )}
                 <input
                   type="text"
                   value={sourceInput}
-                  onChange={(e) => setSourceInput(e.target.value.replace('@', ''))}
+                  onChange={(e) => sourceType === 'twitter' ? setSourceInput(e.target.value.replace('@', '')) : setSourceInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSource())}
-                  placeholder="twitter_handle"
-                  className="w-full bg-slate-800/80 border border-slate-700 rounded-xl pl-8 pr-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition"
+                  placeholder={sourceType === 'twitter' ? 'twitter_handle' : 'https://www.youtube.com/@ChannelName'}
+                  className={`w-full bg-slate-800/80 border border-slate-700 rounded-xl ${sourceType === 'twitter' ? 'pl-8' : 'pl-4'} pr-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition`}
                 />
               </div>
               <button
@@ -454,7 +489,7 @@ export default function CreateNewsletterPage() {
             {sources.length === 0 ? (
               <div className="text-center py-10 border border-dashed border-slate-700/50 rounded-xl">
                 <p className="text-sm text-slate-500">No sources added yet.</p>
-                <p className="text-xs text-slate-600 mt-1">Add Twitter handles above to get started.</p>
+                <p className="text-xs text-slate-600 mt-1">Add Twitter handles or YouTube channels above to get started.</p>
               </div>
             ) : (
               <div className="space-y-2 mb-6">
@@ -493,7 +528,12 @@ export default function CreateNewsletterPage() {
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">@{source.handle}</span>
+                          <span className="text-xs" title={source.type === 'youtube' ? 'YouTube' : 'Twitter'}>
+                            {source.type === 'youtube' ? '\u25B6\uFE0F' : '\uD83D\uDC26'}
+                          </span>
+                          <span className="text-sm font-medium truncate">
+                            {source.type === 'youtube' ? source.handle : `@${source.handle}`}
+                          </span>
                           {source.name && source.name !== source.handle && (
                             <span className="text-xs text-slate-400 truncate">{source.name}</span>
                           )}

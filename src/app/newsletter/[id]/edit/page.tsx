@@ -43,8 +43,10 @@ export default function EditNewsletterPage() {
   const [sendDays, setSendDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
 
   // Source management
+  type SourceType = 'twitter' | 'youtube';
   const [newSource, setNewSource] = useState('');
-  const [sources, setSources] = useState<{ id: string; handle: string; display_name: string | null }[]>([]);
+  const [newSourceType, setNewSourceType] = useState<SourceType>('twitter');
+  const [sources, setSources] = useState<{ id: string; handle: string; display_name: string | null; type: string }[]>([]);
 
   useEffect(() => {
     if (authStatus === 'unauthenticated') {
@@ -72,6 +74,7 @@ export default function EditNewsletterPage() {
           id: s.id,
           handle: s.handle_or_url,
           display_name: s.display_name,
+          type: s.type || 'twitter',
         })) || []);
       } catch {
         setError('Failed to load newsletter');
@@ -120,7 +123,7 @@ export default function EditNewsletterPage() {
   }
 
   async function addSource() {
-    const handle = newSource.trim().replace(/^@/, '');
+    const handle = newSourceType === 'twitter' ? newSource.trim().replace(/^@/, '') : newSource.trim();
     if (!handle) return;
     setNewSource('');
 
@@ -131,6 +134,7 @@ export default function EditNewsletterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           add_source: handle,
+          add_source_type: newSourceType,
         }),
       });
       if (res.ok) {
@@ -141,6 +145,7 @@ export default function EditNewsletterPage() {
           id: s.id,
           handle: s.handle_or_url,
           display_name: s.display_name,
+          type: s.type || 'twitter',
         })) || []);
       }
     } catch {
@@ -307,7 +312,10 @@ export default function EditNewsletterPage() {
             <div className="flex gap-2 flex-wrap mb-3">
               {sources.map(s => (
                 <span key={s.id} className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700/40 text-slate-300">
-                  @{s.handle}
+                  <span className="text-xs" title={s.type === 'youtube' ? 'YouTube' : 'Twitter'}>
+                    {s.type === 'youtube' ? '\u25B6\uFE0F' : '\uD83D\uDC26'}
+                  </span>
+                  {s.type === 'youtube' ? s.handle : `@${s.handle}`}
                   <button onClick={() => removeSource(s.id)} className="text-slate-500 hover:text-red-400 transition">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -316,12 +324,35 @@ export default function EditNewsletterPage() {
                 </span>
               ))}
             </div>
+            {/* Source type toggle */}
+            <div className="flex gap-2 mb-2">
+              <button
+                onClick={() => { setNewSourceType('twitter'); setNewSource(''); }}
+                className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
+                  newSourceType === 'twitter'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-800/60 text-slate-400 hover:text-white border border-slate-700/50'
+                }`}
+              >
+                Twitter
+              </button>
+              <button
+                onClick={() => { setNewSourceType('youtube'); setNewSource(''); }}
+                className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
+                  newSourceType === 'youtube'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-slate-800/60 text-slate-400 hover:text-white border border-slate-700/50'
+                }`}
+              >
+                YouTube
+              </button>
+            </div>
             <div className="flex gap-2">
               <input
                 value={newSource}
                 onChange={e => setNewSource(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addSource()}
-                placeholder="@handle"
+                placeholder={newSourceType === 'twitter' ? '@handle' : 'https://www.youtube.com/@ChannelName'}
                 className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-2.5 text-white text-sm focus:border-blue-500 focus:outline-none transition"
               />
               <button
