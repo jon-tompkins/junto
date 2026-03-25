@@ -13,8 +13,8 @@ const APIFY_BASE_URL = 'https://api.apify.com/v2';
 
 // Use a free/cheap YouTube channel scraper to get recent videos
 const YOUTUBE_CHANNEL_ACTOR = 'streamers~youtube-channel-scraper';
-// Use a transcript scraper for captions
-const YOUTUBE_TRANSCRIPT_ACTOR = 'topaz_sharingan~youtube-transcript-scraper';
+// supreme_coder's transcript scraper — $0.50/1k, most reliable on Apify
+const YOUTUBE_TRANSCRIPT_ACTOR = 'supreme_coder~youtube-transcript-scraper';
 
 function getToken(): string {
   const token = process.env.APIFY_API_KEY;
@@ -104,19 +104,34 @@ function extractVideoId(url: string): string {
 
 // ─── Fetch Transcript ───────────────────────────────
 
-export async function fetchTranscript(videoId: string): Promise<string | null> {
+export interface TranscriptResult {
+  text: string;
+  videoDetails: {
+    videoId: string;
+    title: string;
+    channelId: string;
+    author: string;
+    viewCount: string;
+    lengthSeconds: string;
+    shortDescription: string;
+  } | null;
+}
+
+export async function fetchTranscript(videoId: string): Promise<TranscriptResult | null> {
   const token = getToken();
+  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
   console.log(`[YouTube] Fetching transcript for ${videoId}...`);
 
+  // supreme_coder actor input format: { urls: [{ url }], outputFormat: "text" }
   const runRes = await fetch(
     `${APIFY_BASE_URL}/acts/${YOUTUBE_TRANSCRIPT_ACTOR}/runs?token=${token}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        urls: [`https://www.youtube.com/watch?v=${videoId}`],
-        language: 'en',
+        urls: [{ url: videoUrl }],
+        outputFormat: 'text', // Plain text for AI processing
       }),
     }
   );
@@ -130,21 +145,27 @@ export async function fetchTranscript(videoId: string): Promise<string | null> {
 
   if (!results || results.length === 0) return null;
 
-  // Different actors return transcript in different formats
   const result = results[0];
-  if (typeof result.transcript === 'string') return result.transcript;
-  if (Array.isArray(result.transcript)) {
-    return result.transcript.map((s: any) => s.text || s).join(' ');
-  }
-  if (result.text) return result.text;
-  if (result.content) return result.content;
-  if (Array.isArray(result.captions)) {
-    return result.captions.map((c: any) => c.text || c).join(' ');
+
+  // Check for errors from the actor
+  if (result.error) {
+    console.log(`[YouTube] Transcript error for ${videoId}: ${result.error}`);
+    return null;
   }
 
-  // Fallback: stringify and try to extract text
-  console.log('[YouTube] Unknown transcript format:', Object.keys(result));
-  return null;
+  // Text format returns transcript as a string
+  const text = typeof result.transcript === 'string'
+    ? result.transcript
+    : Array.isArray(result.transcript)
+      ? result.transcript.map((s: any) => s.text || s).join(' ')
+      : null;
+
+  if (!text || text.length < 50) return null;
+
+  return {
+    text,
+    videoDetails: result.videoDetails || null,
+  };
 }
 
 // ─── AI Summary (transcript → tweet-sized insights) ──
@@ -258,16 +279,20 @@ export async function fetchChannelInsights(
 
   for (const video of filtered) {
     try {
-      const transcript = await fetchTranscript(video.videoId);
-      if (!transcript || transcript.length < 100) {
+      const result = await fetchTranscript(video.videoId);
+      if (!result || result.text.length < 100) {
         console.log(`[YouTube] No transcript for "${video.title}", skipping`);
         continue;
       }
 
+      // Use video details from transcript result if available
+      const channelName = result.videoDetails?.author || video.channelName;
+      const title = result.videoDetails?.title || video.title;
+
       const insights = await summarizeTranscript(
-        transcript,
-        video.title,
-        video.channelName,
+        result.text,
+        title,
+        channelName,
         video.videoId,
         video.publishedAt,
       );
