@@ -152,10 +152,10 @@ async function fetchYahooData(ticker: string): Promise<{
 
 // ─── Agent Prompts ──────────────────────────────────────────────
 
-function scoutPrompt(ticker: string, companyName: string | null, price: number | null): string {
-  return `You are Scout, a market analyst specializing in opportunity identification.
+function scoutPrompt(ticker: string, companyName: string | null, price: number | null, today: string): string {
+  return `You are Scout, a market analyst specializing in opportunity identification. Today's date is ${today}. All analysis must reflect current conditions.
 
-Analyze **${ticker}**${companyName ? ` (${companyName})` : ''}${price ? ` currently trading at $${price}` : ''}.
+Analyze **${ticker}**${companyName ? ` (${companyName})` : ''}${price ? ` currently trading at $${price} as of ${today}` : ''}.
 
 Provide a concise overview covering:
 1. **What they do** — Business model, revenue streams, market position (2-3 sentences)
@@ -169,10 +169,10 @@ Be direct and opinionated. Write for experienced investors. No disclaimers.
 Format as clean markdown with ## headers.`;
 }
 
-function jebPrompt(ticker: string, companyName: string | null, price: number | null, scoutAnalysis: string): string {
-  return `You are Jeb, a fundamental analyst specializing in business quality, moats, and valuation.
+function jebPrompt(ticker: string, companyName: string | null, price: number | null, scoutAnalysis: string, today: string): string {
+  return `You are Jeb, a fundamental analyst specializing in business quality, moats, and valuation. Today's date is ${today}. Use the most recent financial data available.
 
-Analyze **${ticker}**${companyName ? ` (${companyName})` : ''}${price ? ` at $${price}` : ''}.
+Analyze **${ticker}**${companyName ? ` (${companyName})` : ''}${price ? ` at $${price} as of ${today}` : ''}.
 
 Scout's preliminary analysis:
 ---
@@ -311,6 +311,7 @@ export async function processDeepDive(requestId: string, ticker: string, userId:
     }
 
     const { currentPrice, name: companyName, prices, dates } = yahoo;
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     // 2. Generate chart
     const chartUrl = await generateChartUrl(ticker, prices, dates);
@@ -327,7 +328,7 @@ export async function processDeepDive(requestId: string, ticker: string, userId:
     console.log(`[research] Scout analyzing ${ticker}...`);
     const scoutResponse = await xai.chat.completions.create({
       model: 'grok-3-fast',
-      messages: [{ role: 'user', content: scoutPrompt(ticker, companyName, currentPrice) }],
+      messages: [{ role: 'user', content: scoutPrompt(ticker, companyName, currentPrice, today) }],
       max_tokens: 1500,
     });
     const scoutAnalysis = scoutResponse.choices[0]?.message?.content || '';
@@ -336,7 +337,7 @@ export async function processDeepDive(requestId: string, ticker: string, userId:
     console.log(`[research] Jeb analyzing ${ticker}...`);
     const jebResponse = await xai.chat.completions.create({
       model: 'grok-3-fast',
-      messages: [{ role: 'user', content: jebPrompt(ticker, companyName, currentPrice, scoutAnalysis) }],
+      messages: [{ role: 'user', content: jebPrompt(ticker, companyName, currentPrice, scoutAnalysis, today) }],
       max_tokens: 1500,
     });
     const jebAnalysis = jebResponse.choices[0]?.message?.content || '';
@@ -482,22 +483,26 @@ export async function processScan(requestId: string, query: string, userId: stri
   try {
     console.log(`[research] Processing scan: "${query}"`);
 
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
     const response = await xai.chat.completions.create({
       model: 'grok-3-fast',
       messages: [{
         role: 'user',
-        content: `You are a market research analyst. Answer this investment research question thoroughly and directly:
+        content: `You are a market research analyst. Today's date is ${today}. All data, prices, and analysis MUST reflect current market conditions as of today. Do NOT use outdated information.
+
+Answer this investment research question thoroughly and directly:
 
 "${query}"
 
 Structure your response as a research report with:
-1. **Summary** — Direct answer to the question
-2. **Analysis** — Supporting evidence, data, reasoning
-3. **Specific Names** — Ticker symbols, companies, or assets that answer the question
-4. **Risks** — What could go wrong with this thesis
-5. **Action Items** — What to buy/sell/watch, with specific entry levels if applicable
+1. **Summary** — Direct answer to the question with current data as of ${today}
+2. **Analysis** — Supporting evidence using the most recent available data, earnings, filings, and market conditions
+3. **Specific Names** — Ticker symbols, companies, or assets that answer the question with current prices
+4. **Risks** — What could go wrong with this thesis given current market conditions
+5. **Action Items** — What to buy/sell/watch, with specific entry levels based on current prices
 
-Be opinionated and specific. Use real data. Write for experienced investors.
+Be opinionated and specific. Use real, current data. Write for experienced investors.
 Format as clean markdown.`,
       }],
       max_tokens: 2500,
