@@ -67,7 +67,7 @@ export function TopNav() {
         {session?.user ? (
           <>
             {creditBalance !== null && (
-              <Link href="/dashboard" className={`text-xs font-medium ${creditColor} hover:opacity-80 transition`}>
+              <Link href="/credits" className={`text-xs font-medium ${creditColor} hover:opacity-80 transition`}>
                 {creditBalance.toLocaleString()} credits
               </Link>
             )}
@@ -93,6 +93,13 @@ export function TopNav() {
                         </p>
                       )}
                     </div>
+                    <Link
+                      href="/credits"
+                      onClick={() => setMenuOpen(false)}
+                      className="block px-3 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-slate-700/50 transition"
+                    >
+                      Buy Credits
+                    </Link>
                     <Link
                       href="/settings"
                       onClick={() => setMenuOpen(false)}

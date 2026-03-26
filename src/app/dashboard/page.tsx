@@ -349,6 +349,7 @@ export default function DashboardPage() {
               {creditBalance !== null ? creditBalance.toLocaleString() : '—'}
             </div>
             <div className="text-sm text-slate-400 mt-1">Credits</div>
+            <Link href="/credits" className="text-xs text-blue-400 hover:text-blue-300 mt-1 inline-block">Top up →</Link>
           </div>
           <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
             <div className="text-2xl font-bold text-white">{subscriptions.length}</div>
