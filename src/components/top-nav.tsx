@@ -55,6 +55,9 @@ export function TopNav() {
         <Link href="/research" className={navLinkClass('/research')}>
           Research
         </Link>
+        <Link href="/docs" className={navLinkClass('/docs')}>
+          Docs
+        </Link>
         {session?.user && (
           <Link href="/dashboard" className={navLinkClass('/dashboard')}>
             Dashboard
