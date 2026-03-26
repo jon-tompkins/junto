@@ -535,27 +535,85 @@ export async function processScan(requestId: string, query: string, userId: stri
 
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
+    // Step 1: Extract tickers from the query (use AI to identify them)
+    const tickerExtract = await xai.chat.completions.create({
+      model: 'grok-3-fast',
+      messages: [{
+        role: 'user',
+        content: `Extract all stock/crypto ticker symbols mentioned or implied in this query. Also suggest 3-5 tickers most relevant to answering it. Return ONLY a comma-separated list of tickers, nothing else. Example: "AAPL, MSFT, GOOGL, NVDA"
+
+Query: "${query}"`,
+      }],
+      max_tokens: 100,
+    });
+
+    const tickerList = tickerExtract.choices[0]?.message?.content || '';
+    const tickers = tickerList.split(',').map(t => t.trim().toUpperCase()).filter(t => /^[A-Z]{1,6}$/.test(t)).slice(0, 8);
+    console.log(`[research] Scan tickers extracted: ${tickers.join(', ')}`);
+
+    // Step 2: Fetch real-time data for each ticker
+    let marketDataSection = '';
+    if (tickers.length > 0) {
+      const tickerData = await Promise.all(
+        tickers.map(async (ticker) => {
+          const data = await fetchYahooData(ticker);
+          if (!data || !data.currentPrice) return null;
+          const prices = data.prices;
+          const weekAgo = prices.length > 5 ? prices[prices.length - 6] : null;
+          const monthAgo = prices.length > 22 ? prices[prices.length - 23] : null;
+          const yearAgo = prices.length > 252 ? prices[prices.length - 253] : null;
+          const high52w = prices.length > 252 ? Math.max(...prices.slice(-252)) : Math.max(...prices);
+          const low52w = prices.length > 252 ? Math.min(...prices.slice(-252)) : Math.min(...prices);
+
+          return {
+            ticker,
+            name: data.name,
+            price: data.currentPrice,
+            marketCap: data.marketCap,
+            weekChange: weekAgo ? (((data.currentPrice - weekAgo) / weekAgo) * 100).toFixed(1) : null,
+            monthChange: monthAgo ? (((data.currentPrice - monthAgo) / monthAgo) * 100).toFixed(1) : null,
+            yearChange: yearAgo ? (((data.currentPrice - yearAgo) / yearAgo) * 100).toFixed(1) : null,
+            high52w,
+            low52w,
+          };
+        })
+      );
+
+      const validData = tickerData.filter(Boolean);
+      if (validData.length > 0) {
+        marketDataSection = `\n\n## LIVE MARKET DATA (as of ${today})\nUse this real-time data in your analysis. These prices are current and accurate.\n\n| Ticker | Price | Market Cap | 1W | 1M | 1Y | 52W Range |\n|--------|-------|-----------|-----|-----|-----|----------|\n`;
+        for (const d of validData) {
+          if (!d) continue;
+          marketDataSection += `| **${d.ticker}** (${d.name || ''}) | $${d.price} | ${d.marketCap || 'N/A'} | ${d.weekChange ? d.weekChange + '%' : 'N/A'} | ${d.monthChange ? d.monthChange + '%' : 'N/A'} | ${d.yearChange ? d.yearChange + '%' : 'N/A'} | $${d.low52w?.toFixed(2)} - $${d.high52w?.toFixed(2)} |\n`;
+        }
+      }
+    }
+
+    // Step 3: Generate the actual scan report with real data
     const response = await xai.chat.completions.create({
       model: 'grok-3-fast',
       messages: [{
         role: 'user',
-        content: `You are a market research analyst. Today's date is ${today}. All data, prices, and analysis MUST reflect current market conditions as of today. Do NOT use outdated information.
+        content: `You are a market research analyst. Today's date is ${today}.
+${marketDataSection}
+
+IMPORTANT: Use the LIVE MARKET DATA provided above for all price references and analysis. Do NOT use any other price data — the table above contains the most current information.
 
 Answer this investment research question thoroughly and directly:
 
 "${query}"
 
 Structure your response as a research report with:
-1. **Summary** — Direct answer to the question with current data as of ${today}
-2. **Analysis** — Supporting evidence using the most recent available data, earnings, filings, and market conditions
-3. **Specific Names** — Ticker symbols, companies, or assets that answer the question with current prices
-4. **Risks** — What could go wrong with this thesis given current market conditions
-5. **Action Items** — What to buy/sell/watch, with specific entry levels based on current prices
+1. **Summary** — Direct answer with current prices from the data above
+2. **Analysis** — Supporting evidence using the live market data provided, plus your knowledge of fundamentals, earnings, and market conditions
+3. **Specific Names** — Ticker symbols with current prices from the data above
+4. **Risks** — What could go wrong given current market conditions
+5. **Action Items** — What to buy/sell/watch, with specific entry levels based on the current prices above
 
-Be opinionated and specific. Use real, current data. Write for experienced investors.
-Format as clean markdown.`,
+Be opinionated and specific. Reference the actual current prices provided. Write for experienced investors.
+Format as clean markdown with tables where appropriate.`,
       }],
-      max_tokens: 2500,
+      max_tokens: 3000,
     });
 
     const content = response.choices[0]?.message?.content || '';
