@@ -762,11 +762,32 @@ export async function processScan(requestId: string, query: string, userId: stri
 
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-    // Step 1: Extract tickers from query — no inference needed
-    const tickers = extractTickers(query);
-    console.log(`[research] Scan tickers extracted: ${tickers.join(', ')}`);
+    // ─── SCOUT: Identify relevant tickers (1 inference call) ───
+    // First try regex extraction, then use AI to find implied tickers
+    let tickers = extractTickers(query);
 
-    // Step 2: Fetch real-time price + fundamentals for each ticker (no inference)
+    if (tickers.length === 0) {
+      // Query doesn't mention specific tickers — ask Scout to identify them
+      console.log(`[research] Scout identifying tickers for: "${query}"`);
+      const scoutResponse = await xai.chat.completions.create({
+        model: 'grok-3-fast',
+        messages: [{
+          role: 'user',
+          content: `You are Scout, a market analyst. Identify the 5-8 most relevant stock/crypto tickers for answering this question. Return ONLY a comma-separated list of tickers, nothing else.
+
+Question: "${query}"
+
+Example response: NVDA, AMD, AVGO, TSM, MU, INTC`,
+        }],
+        max_tokens: 100,
+      });
+      const scoutTickers = scoutResponse.choices[0]?.message?.content || '';
+      tickers = scoutTickers.split(',').map(t => t.trim().toUpperCase()).filter(t => /^[A-Z]{1,6}(-USD)?$/.test(t)).slice(0, 8);
+    }
+
+    console.log(`[research] Scan tickers: ${tickers.join(', ')}`);
+
+    // ─── DATA GATHERING (no inference) ──────────────────────
     let marketDataSection = '';
     if (tickers.length > 0) {
       const tickerData = await Promise.all(
@@ -800,17 +821,15 @@ export async function processScan(requestId: string, query: string, userId: stri
 
       const validData = tickerData.filter(Boolean);
       if (validData.length > 0) {
-        // Price table
-        marketDataSection = `\n\n## LIVE MARKET DATA (as of ${today})\nUse this real-time data in your analysis. These prices are current and accurate.\n\n### Price Action\n| Ticker | Price | Market Cap | 1W | 1M | 1Y | 52W Range |\n|--------|-------|-----------|-----|-----|-----|----------|\n`;
+        marketDataSection = `\n\n## LIVE MARKET DATA (as of ${today})\n\n### Price Action\n| Ticker | Price | Market Cap | 1W | 1M | 1Y | 52W Range |\n|--------|-------|-----------|-----|-----|-----|----------|\n`;
         for (const d of validData) {
           if (!d) continue;
           marketDataSection += `| **${d.ticker}** (${d.name || ''}) | $${d.price} | ${d.marketCap || 'N/A'} | ${d.weekChange ? d.weekChange + '%' : 'N/A'} | ${d.monthChange ? d.monthChange + '%' : 'N/A'} | ${d.yearChange ? d.yearChange + '%' : 'N/A'} | $${d.low52w?.toFixed(2)} - $${d.high52w?.toFixed(2)} |\n`;
         }
 
-        // Fundamentals table
         const withFundamentals = validData.filter((d: any) => d?.pe || d?.revenue);
         if (withFundamentals.length > 0) {
-          marketDataSection += `\n### Fundamentals\n| Ticker | P/E | Forward P/E | EPS | Revenue | Rev Growth | Profit Margin | D/E |\n|--------|-----|------------|-----|---------|-----------|--------------|-----|\n`;
+          marketDataSection += `\n### Fundamentals\n| Ticker | P/E | Fwd P/E | EPS | Revenue | Rev Growth | Margin | D/E |\n|--------|-----|---------|-----|---------|-----------|--------|-----|\n`;
           for (const d of withFundamentals) {
             if (!d) continue;
             marketDataSection += `| **${d.ticker}** | ${d.pe?.toFixed(1) || 'N/A'} | ${d.forwardPe?.toFixed(1) || 'N/A'} | ${d.eps ? '$' + d.eps.toFixed(2) : 'N/A'} | ${d.revenue || 'N/A'} | ${d.revenueGrowth || 'N/A'} | ${d.profitMargin || 'N/A'} | ${d.debtToEquity || 'N/A'} |\n`;
@@ -819,60 +838,134 @@ export async function processScan(requestId: string, query: string, userId: stri
       }
     }
 
-    // Step 3: Run analysis + Pete (sentiment) in parallel
-    const mainTickers = tickers.slice(0, 3).join(', ');
+    // ─── JEB + ANT + PETE: Run in parallel ──────────────────
+    const tickerList = tickers.slice(0, 5).join(', ');
+    console.log(`[research] Running Jeb, Ant, Pete in parallel for scan...`);
 
-    const [analysisResponse, peteResponse] = await Promise.all([
+    const [jebResponse, antResponse, peteResponse] = await Promise.all([
+      // Jeb: fundamental analysis
       xai.chat.completions.create({
         model: 'grok-3-fast',
         messages: [{
           role: 'user',
-          content: `You are a market research analyst. Today's date is ${today}.
+          content: `You are Jeb, a fundamental analyst. Today is ${today}.
 ${marketDataSection}
 
-IMPORTANT: Use the LIVE MARKET DATA provided above for all price references and analysis. Do NOT use any other price data — the table above contains the most current information.
-
-Answer this investment research question thoroughly and directly:
-
+Using the LIVE DATA above, answer this from a fundamentals perspective:
 "${query}"
 
-Structure your response as a research report with:
-1. **Summary** — Direct answer with current prices from the data above
-2. **Analysis** — Supporting evidence using the live market data provided, plus your knowledge of fundamentals, earnings, and market conditions
-3. **Specific Names** — Ticker symbols with current prices from the data above, presented in a table
-4. **Risks** — What could go wrong given current market conditions
-5. **Action Items** — What to buy/sell/watch, with specific entry levels based on the current prices above
+Focus on:
+- Which names have the best fundamentals (valuation, growth, margins)?
+- Rank the tickers by fundamental attractiveness
+- Use a comparison table
+- Flag any red flags (high debt, declining revenue, etc.)
 
-Be opinionated and specific. Reference the actual current prices provided. Write for experienced investors.
-Format as clean markdown with tables where appropriate.`,
+Be specific. Use the real numbers provided. Keep it concise.`,
         }],
-        max_tokens: 2500,
+        max_tokens: 1500,
       }),
-      // Pete: Twitter sentiment for top tickers
-      mainTickers ? xai.chat.completions.create({
+      // Ant: technical analysis
+      xai.chat.completions.create({
         model: 'grok-3-fast',
         messages: [{
           role: 'user',
-          content: `Today is ${today}. What is the current Twitter/X sentiment on: ${mainTickers}?
+          content: `You are Ant, a technical analyst. Today is ${today}.
+${marketDataSection}
 
-For each ticker, provide in 2-3 sentences:
-- Overall social mood (bullish/bearish/mixed)
-- Key narrative or meme driving discussion
-- Any notable contrarian takes
+Using the LIVE DATA above, answer this from a technical perspective:
+"${query}"
 
-Keep it brief and specific. No generic statements.`,
+Focus on:
+- Which names have the best technical setup (trend, momentum, levels)?
+- Entry zones and stop losses for top picks
+- Any names showing bearish signals to avoid?
+- Use price levels from the data above
+
+Be precise with numbers. Keep it concise.`,
         }],
-        max_tokens: 600,
-      }) : Promise.resolve(null),
+        max_tokens: 1200,
+      }),
+      // Pete: Twitter/X sentiment
+      xai.chat.completions.create({
+        model: 'grok-3-fast',
+        messages: [{
+          role: 'user',
+          content: `You are Pete, a sentiment analyst. Today is ${today}.
+
+What is the current Twitter/X and social media sentiment relevant to this question:
+"${query}"
+
+${tickerList ? `Key tickers to cover: ${tickerList}` : ''}
+
+For each relevant ticker:
+- Social mood (bullish/bearish/mixed) with score [-5 to +5]
+- Key narrative driving discussion
+- Any contrarian takes worth noting
+- Is the crowd likely right or wrong?
+
+Be specific about what people are actually saying. No generic statements.`,
+        }],
+        max_tokens: 1000,
+      }),
     ]);
 
-    const analysisContent = analysisResponse.choices[0]?.message?.content || '';
-    const peteContent = peteResponse?.choices?.[0]?.message?.content || '';
+    const jebAnalysis = jebResponse.choices[0]?.message?.content || '';
+    const antAnalysis = antResponse.choices[0]?.message?.content || '';
+    const peteAnalysis = peteResponse.choices[0]?.message?.content || '';
 
-    // Combine analysis + sentiment
-    const content = peteContent
-      ? `${analysisContent}\n\n---\n\n## Social Sentiment\n${peteContent}`
-      : analysisContent;
+    // ─── SYNTHESIS ──────────────────────────────────────────
+    console.log(`[research] Synthesizing scan report...`);
+    const synthesisResponse = await xai.chat.completions.create({
+      model: 'grok-3-fast',
+      messages: [{
+        role: 'user',
+        content: `Synthesize these three analyst perspectives into one cohesive scan report. Today is ${today}.
+
+QUESTION: "${query}"
+
+${marketDataSection}
+
+JEB (Fundamentals): ${jebAnalysis}
+
+ANT (Technicals): ${antAnalysis}
+
+PETE (Sentiment): ${peteAnalysis}
+
+Write the final report:
+
+## Summary
+[Direct answer to the question in 2-3 sentences. Be opinionated.]
+
+## Top Picks
+| Rank | Ticker | Price | Fundamentals | Technicals | Sentiment | Action |
+|------|--------|-------|-------------|-----------|-----------|--------|
+| 1 | [best pick] | $X | [brief] | [brief] | [brief] | [buy/watch/avoid] |
+| 2 | ... | ... | ... | ... | ... | ... |
+
+## Analysis
+[Key insights from combining all three perspectives. Where do the analysts agree? Disagree?]
+
+## Risks
+[Top 3 risks to this thesis]
+
+## Action Items
+- [Specific action 1 with price levels]
+- [Specific action 2]
+- [Specific action 3]
+
+## Social Sentiment
+[Pete's key findings — mood, narratives, contrarian signals]
+
+Rules:
+- Use REAL prices from the data tables
+- Be opinionated — rank and recommend
+- No disclaimers
+- Tables and bullets for readability`,
+      }],
+      max_tokens: 2500,
+    });
+
+    const content = synthesisResponse.choices[0]?.message?.content || '';
     const summary = content.substring(0, 500);
     const reportDate = new Date().toISOString().split('T')[0];
 
