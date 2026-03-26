@@ -5,8 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import { TopNav } from '@/components/top-nav';
 
-export const dynamic = 'force-dynamic';
-
 const PACKAGES = [
   { id: 'credits_500', credits: 500, price: '$5', bonus: 0, popular: false },
   { id: 'credits_1000', credits: 1000, price: '$10', bonus: 0, popular: true },
