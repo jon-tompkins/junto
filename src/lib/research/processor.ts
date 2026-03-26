@@ -647,7 +647,7 @@ export async function processDeepDive(requestId: string, ticker: string, userId:
     const title = `${ticker} Deep Dive${companyName ? ` - ${companyName}` : ''}`;
     const reportDate = new Date().toISOString().split('T')[0];
 
-    const slug = `${ticker.toLowerCase()}-${reportDate}`;
+    const slug = `${ticker.toLowerCase()}-${reportDate}-${requestId.substring(0, 6)}`;
 
     const { data: report, error: reportError } = await supabase
       .from('research_reports')
@@ -969,7 +969,7 @@ Rules:
     const summary = content.substring(0, 500);
     const reportDate = new Date().toISOString().split('T')[0];
 
-    const slug = `scan-${slugify(query.substring(0, 40))}-${reportDate}`;
+    const slug = `scan-${slugify(query.substring(0, 40))}-${reportDate}-${requestId.substring(0, 6)}`;
 
     const { data: report } = await supabase
       .from('research_reports')
