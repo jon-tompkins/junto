@@ -120,7 +120,7 @@ function slugify(text: string): string {
 
 // ─── Chart Generation ───────────────────────────────────────────
 
-function generateChartUrl(ticker: string, prices: number[], dates: string[]): string | null {
+async function generateChartUrl(ticker: string, prices: number[], dates: string[]): Promise<string | null> {
   if (prices.length < 50) return null;
 
   // Calculate 200-day MA
@@ -209,7 +209,52 @@ function generateChartUrl(ticker: string, prices: number[], dates: string[]): st
     },
   };
 
-  const json = JSON.stringify(config);
+  // Use QuickChart's short URL API to avoid massive URL-encoded configs
+  // that eat into the AI's output token budget
+  try {
+    const shortRes = await fetch('https://quickchart.io/chart/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chart: config,
+        width: 800,
+        height: 400,
+        format: 'png',
+        backgroundColor: 'white',
+      }),
+    });
+
+    if (shortRes.ok) {
+      const shortData = await shortRes.json();
+      if (shortData.url) {
+        console.log(`[research] Chart short URL: ${shortData.url}`);
+        return shortData.url;
+      }
+    }
+  } catch (err) {
+    console.error('[research] QuickChart short URL failed:', err);
+  }
+
+  // Fallback: use direct URL but aggressively sample to keep it small
+  const thinConfig = {
+    type: 'line',
+    data: {
+      labels: sampledDates.filter((_, i) => i % 3 === 0),
+      datasets: [{
+        label: ticker,
+        data: sampledPrices.filter((_, i) => i % 3 === 0),
+        borderColor: '#3b82f6',
+        fill: false,
+        pointRadius: 0,
+        borderWidth: 2,
+      }],
+    },
+    options: {
+      title: { display: true, text: `${ticker} — 5Y` },
+      legend: { display: false },
+    },
+  };
+  const json = JSON.stringify(thinConfig);
   return `https://quickchart.io/chart?c=${encodeURIComponent(json)}&w=800&h=400&f=png`;
 }
 
