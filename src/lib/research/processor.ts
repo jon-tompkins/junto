@@ -4,6 +4,109 @@ import { getSupabase } from '@/lib/db/client';
 const CREDITS_PER_DEEPDIVE = 5;
 const CREDITS_PER_SCAN = 10;
 
+// ─── Ticker Extraction (no inference) ────────────────────────────
+
+const COMPANY_TO_TICKER: Record<string, string> = {
+  'apple': 'AAPL', 'microsoft': 'MSFT', 'google': 'GOOGL', 'alphabet': 'GOOGL',
+  'amazon': 'AMZN', 'meta': 'META', 'facebook': 'META', 'nvidia': 'NVDA',
+  'tesla': 'TSLA', 'netflix': 'NFLX', 'amd': 'AMD', 'intel': 'INTC',
+  'palantir': 'PLTR', 'coinbase': 'COIN', 'robinhood': 'HOOD',
+  'bitcoin': 'BTC-USD', 'ethereum': 'ETH-USD', 'solana': 'SOL-USD',
+  'disney': 'DIS', 'walmart': 'WMT', 'jpmorgan': 'JPM', 'goldman': 'GS',
+  'bank of america': 'BAC', 'wells fargo': 'WFC', 'citigroup': 'C',
+  'salesforce': 'CRM', 'adobe': 'ADBE', 'snowflake': 'SNOW',
+  'crowdstrike': 'CRWD', 'datadog': 'DDOG', 'cloudflare': 'NET',
+  'uber': 'UBER', 'airbnb': 'ABNB', 'spotify': 'SPOT',
+  'rocket lab': 'RKLB', 'micron': 'MU', 'broadcom': 'AVGO',
+  'lululemon': 'LULU', 'costco': 'COST', 'target': 'TGT',
+  'boeing': 'BA', 'lockheed': 'LMT', 'raytheon': 'RTX',
+  'exxon': 'XOM', 'chevron': 'CVX', 'conocophillips': 'COP',
+  'pfizer': 'PFE', 'johnson & johnson': 'JNJ', 'unitedhealth': 'UNH',
+  'visa': 'V', 'mastercard': 'MA', 'paypal': 'PYPL',
+  'berkshire': 'BRK-B', 'blackrock': 'BLK', 'vanguard': 'VTI',
+  'spy': 'SPY', 'qqq': 'QQQ', 'iwm': 'IWM', 'dia': 'DIA',
+  'ark': 'ARKK', 'gold': 'GLD', 'silver': 'SLV', 'oil': 'USO',
+  'xrp': 'XRP-USD', 'cardano': 'ADA-USD', 'dogecoin': 'DOGE-USD',
+};
+
+function extractTickers(query: string): string[] {
+  const tickers = new Set<string>();
+
+  // Pattern 1: $TICKER notation
+  const dollarMatches = query.match(/\$([A-Z]{1,6})/g);
+  if (dollarMatches) {
+    dollarMatches.forEach(m => tickers.add(m.replace('$', '')));
+  }
+
+  // Pattern 2: Standalone uppercase tickers (2-5 chars, not common words)
+  const commonWords = new Set(['THE', 'AND', 'FOR', 'ARE', 'NOT', 'YOU', 'ALL', 'CAN', 'HER', 'WAS', 'ONE', 'OUR', 'OUT', 'DAY', 'GET', 'HAS', 'HIM', 'HIS', 'HOW', 'ITS', 'MAY', 'NEW', 'NOW', 'OLD', 'SEE', 'WAY', 'WHO', 'DID', 'TOP', 'BIG', 'LOW', 'HIGH', 'BEST', 'MOST', 'NEXT', 'WHAT', 'WITH', 'THAT', 'THIS', 'FROM', 'THEM', 'SOME', 'WILL', 'BEEN', 'HAVE', 'MUCH', 'LONG', 'VERY', 'WHEN', 'COME', 'MAKE', 'LIKE', 'BACK', 'OVER', 'SUCH', 'GOOD', 'YEAR', 'ALSO', 'JUST', 'INTO', 'MORE', 'LAST', 'MADE', 'THAN', 'WELL', 'EACH', 'LOOK', 'ONLY', 'EVEN']);
+  const words = query.split(/[\s,.:;!?()\[\]{}]+/);
+  words.forEach(w => {
+    const upper = w.toUpperCase();
+    if (/^[A-Z]{2,5}$/.test(upper) && !commonWords.has(upper)) {
+      tickers.add(upper);
+    }
+  });
+
+  // Pattern 3: Company name lookup
+  const lowerQuery = query.toLowerCase();
+  for (const [name, ticker] of Object.entries(COMPANY_TO_TICKER)) {
+    if (lowerQuery.includes(name)) {
+      tickers.add(ticker);
+    }
+  }
+
+  return Array.from(tickers).slice(0, 10);
+}
+
+// ─── Yahoo Finance Fundamentals ─────────────────────────────────
+
+async function fetchYahooFinancials(ticker: string): Promise<{
+  pe?: number;
+  forwardPe?: number;
+  eps?: number;
+  revenue?: string;
+  revenueGrowth?: string;
+  profitMargin?: string;
+  debtToEquity?: string;
+  dividendYield?: string;
+} | null> {
+  try {
+    const res = await fetch(
+      `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=defaultKeyStatistics,financialData,incomeStatementHistory`,
+      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; JuntoResearch/1.0)' } },
+    );
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const stats = data.quoteSummary?.result?.[0]?.defaultKeyStatistics || {};
+    const fin = data.quoteSummary?.result?.[0]?.financialData || {};
+
+    const fmtB = (v: any) => {
+      if (!v?.raw) return undefined;
+      if (v.raw >= 1e12) return `$${(v.raw / 1e12).toFixed(1)}T`;
+      if (v.raw >= 1e9) return `$${(v.raw / 1e9).toFixed(1)}B`;
+      if (v.raw >= 1e6) return `$${(v.raw / 1e6).toFixed(0)}M`;
+      return `$${v.raw.toFixed(0)}`;
+    };
+
+    const fmtPct = (v: any) => v?.raw != null ? `${(v.raw * 100).toFixed(1)}%` : undefined;
+
+    return {
+      pe: stats.trailingPE?.raw || fin.trailingPE?.raw,
+      forwardPe: stats.forwardPE?.raw || fin.forwardPE?.raw,
+      eps: stats.trailingEps?.raw,
+      revenue: fmtB(fin.totalRevenue),
+      revenueGrowth: fmtPct(fin.revenueGrowth),
+      profitMargin: fmtPct(fin.profitMargins),
+      debtToEquity: fin.debtToEquity?.raw != null ? `${fin.debtToEquity.raw.toFixed(0)}%` : undefined,
+      dividendYield: fmtPct(stats.dividendYield),
+    };
+  } catch {
+    return null;
+  }
+}
+
 // ─── Slug Generation ────────────────────────────────────────────
 
 function slugify(text: string): string {
@@ -535,30 +638,21 @@ export async function processScan(requestId: string, query: string, userId: stri
 
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-    // Step 1: Extract tickers from the query (use AI to identify them)
-    const tickerExtract = await xai.chat.completions.create({
-      model: 'grok-3-fast',
-      messages: [{
-        role: 'user',
-        content: `Extract all stock/crypto ticker symbols mentioned or implied in this query. Also suggest 3-5 tickers most relevant to answering it. Return ONLY a comma-separated list of tickers, nothing else. Example: "AAPL, MSFT, GOOGL, NVDA"
-
-Query: "${query}"`,
-      }],
-      max_tokens: 100,
-    });
-
-    const tickerList = tickerExtract.choices[0]?.message?.content || '';
-    const tickers = tickerList.split(',').map(t => t.trim().toUpperCase()).filter(t => /^[A-Z]{1,6}$/.test(t)).slice(0, 8);
+    // Step 1: Extract tickers from query — no inference needed
+    const tickers = extractTickers(query);
     console.log(`[research] Scan tickers extracted: ${tickers.join(', ')}`);
 
-    // Step 2: Fetch real-time data for each ticker
+    // Step 2: Fetch real-time price + fundamentals for each ticker (no inference)
     let marketDataSection = '';
     if (tickers.length > 0) {
       const tickerData = await Promise.all(
         tickers.map(async (ticker) => {
-          const data = await fetchYahooData(ticker);
-          if (!data || !data.currentPrice) return null;
-          const prices = data.prices;
+          const [priceData, fundamentals] = await Promise.all([
+            fetchYahooData(ticker),
+            fetchYahooFinancials(ticker),
+          ]);
+          if (!priceData || !priceData.currentPrice) return null;
+          const prices = priceData.prices;
           const weekAgo = prices.length > 5 ? prices[prices.length - 6] : null;
           const monthAgo = prices.length > 22 ? prices[prices.length - 23] : null;
           const yearAgo = prices.length > 252 ? prices[prices.length - 253] : null;
@@ -567,24 +661,36 @@ Query: "${query}"`,
 
           return {
             ticker,
-            name: data.name,
-            price: data.currentPrice,
-            marketCap: data.marketCap,
-            weekChange: weekAgo ? (((data.currentPrice - weekAgo) / weekAgo) * 100).toFixed(1) : null,
-            monthChange: monthAgo ? (((data.currentPrice - monthAgo) / monthAgo) * 100).toFixed(1) : null,
-            yearChange: yearAgo ? (((data.currentPrice - yearAgo) / yearAgo) * 100).toFixed(1) : null,
+            name: priceData.name,
+            price: priceData.currentPrice,
+            marketCap: priceData.marketCap,
+            weekChange: weekAgo ? (((priceData.currentPrice - weekAgo) / weekAgo) * 100).toFixed(1) : null,
+            monthChange: monthAgo ? (((priceData.currentPrice - monthAgo) / monthAgo) * 100).toFixed(1) : null,
+            yearChange: yearAgo ? (((priceData.currentPrice - yearAgo) / yearAgo) * 100).toFixed(1) : null,
             high52w,
             low52w,
+            ...fundamentals,
           };
         })
       );
 
       const validData = tickerData.filter(Boolean);
       if (validData.length > 0) {
-        marketDataSection = `\n\n## LIVE MARKET DATA (as of ${today})\nUse this real-time data in your analysis. These prices are current and accurate.\n\n| Ticker | Price | Market Cap | 1W | 1M | 1Y | 52W Range |\n|--------|-------|-----------|-----|-----|-----|----------|\n`;
+        // Price table
+        marketDataSection = `\n\n## LIVE MARKET DATA (as of ${today})\nUse this real-time data in your analysis. These prices are current and accurate.\n\n### Price Action\n| Ticker | Price | Market Cap | 1W | 1M | 1Y | 52W Range |\n|--------|-------|-----------|-----|-----|-----|----------|\n`;
         for (const d of validData) {
           if (!d) continue;
           marketDataSection += `| **${d.ticker}** (${d.name || ''}) | $${d.price} | ${d.marketCap || 'N/A'} | ${d.weekChange ? d.weekChange + '%' : 'N/A'} | ${d.monthChange ? d.monthChange + '%' : 'N/A'} | ${d.yearChange ? d.yearChange + '%' : 'N/A'} | $${d.low52w?.toFixed(2)} - $${d.high52w?.toFixed(2)} |\n`;
+        }
+
+        // Fundamentals table
+        const withFundamentals = validData.filter((d: any) => d?.pe || d?.revenue);
+        if (withFundamentals.length > 0) {
+          marketDataSection += `\n### Fundamentals\n| Ticker | P/E | Forward P/E | EPS | Revenue | Rev Growth | Profit Margin | D/E |\n|--------|-----|------------|-----|---------|-----------|--------------|-----|\n`;
+          for (const d of withFundamentals) {
+            if (!d) continue;
+            marketDataSection += `| **${d.ticker}** | ${d.pe?.toFixed(1) || 'N/A'} | ${d.forwardPe?.toFixed(1) || 'N/A'} | ${d.eps ? '$' + d.eps.toFixed(2) : 'N/A'} | ${d.revenue || 'N/A'} | ${d.revenueGrowth || 'N/A'} | ${d.profitMargin || 'N/A'} | ${d.debtToEquity || 'N/A'} |\n`;
+          }
         }
       }
     }
