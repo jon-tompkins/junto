@@ -80,6 +80,7 @@ export async function GET(req: NextRequest) {
           contextTweets: contextGrouped,
           startDate,
           endDate,
+          newsletterName: newsletter.name,
         });
 
         // 5. Store the run
@@ -163,6 +164,8 @@ export async function GET(req: NextRequest) {
             to: deliveredEmails,
             subject: result.subject,
             content: result.content,
+            newsletterId: newsletter.id,
+            newsletterName: newsletter.name,
           });
 
           await recordBulkDeliveries(run.id, deliveredUserIds, 'email');

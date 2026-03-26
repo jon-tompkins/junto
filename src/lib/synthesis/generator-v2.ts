@@ -14,6 +14,7 @@ interface GenerateV2Params {
   contextTweets?: GroupedTweets; // Historical context (180d)
   startDate: string;
   endDate: string;
+  newsletterName?: string;      // For subject line fallback
 }
 
 interface GenerateV2Result {
@@ -31,6 +32,7 @@ export async function generateNewsletterV2({
   contextTweets,
   startDate,
   endDate,
+  newsletterName,
 }: GenerateV2Params): Promise<GenerateV2Result> {
   const client = getXAI();
 
@@ -48,7 +50,7 @@ export async function generateNewsletterV2({
 
   const rawContent = response.choices[0]?.message?.content || '';
 
-  const { subject } = parseNewsletterResponse(rawContent);
+  const { subject } = parseNewsletterResponse(rawContent, newsletterName);
   const { content } = extractTweetReferences(rawContent, recentTweets, contextTweets);
 
   return {

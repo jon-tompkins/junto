@@ -199,9 +199,17 @@ ${watchlistSection}
 Write the newsletter following the structure above. Focus on RECENT tweets for the main content, and integrate newsletter insights where relevant.`;
 }
 
-export function parseNewsletterResponse(response: string): { subject: string; content: string } {
-  const subjectMatch = response.match(/^SUBJECT:\s*(.+)$/m);
-  const subject = subjectMatch?.[1]?.trim() || 'Your Daily Briefing';
+export function parseNewsletterResponse(response: string, newsletterName?: string): { subject: string; content: string } {
+  // Try multiple patterns for subject extraction
+  const subjectMatch =
+    response.match(/^SUBJECT:\s*(.+)$/m) ||
+    response.match(/^#\s*SUBJECT:\s*(.+)$/m) ||
+    response.match(/^\*\*SUBJECT:\*\*\s*(.+)$/m) ||
+    response.match(/^Subject:\s*(.+)$/m);
+
+  const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const fallback = newsletterName ? `${newsletterName} — ${today}` : 'Your Daily Briefing';
+  const subject = subjectMatch?.[1]?.trim().replace(/^["']|["']$/g, '') || fallback;
   
   let content = response
     .replace(/^SUBJECT:\s*.+$/m, '')

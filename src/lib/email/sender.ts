@@ -8,6 +8,15 @@ interface SendNewsletterParams {
   content: string; // Markdown content
   date?: string;
   newsletterId?: string;
+  newsletterName?: string;
+}
+
+function slugifyName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 40);
 }
 
 export async function sendNewsletter({
@@ -16,6 +25,7 @@ export async function sendNewsletter({
   content,
   date = new Date().toISOString(),
   newsletterId,
+  newsletterName,
 }: SendNewsletterParams): Promise<{ id: string }> {
   const resend = getResend();
 
@@ -24,8 +34,15 @@ export async function sendNewsletter({
 
   const htmlContent = markdownToHtml(content);
 
+  // Use newsletter-specific from address if name provided
+  // e.g., "Crypto Daily Brief <crypto-daily-brief@myjunto.xyz>"
+  const defaultFrom = config.resend.fromEmail || 'Junto <briefing@myjunto.xyz>';
+  const fromAddress = newsletterName
+    ? `${newsletterName} <${slugifyName(newsletterName)}@myjunto.xyz>`
+    : defaultFrom;
+
   const { data, error } = await resend.emails.send({
-    from: config.resend.fromEmail || 'Junto <onboarding@resend.dev>',
+    from: fromAddress,
     to: recipients,
     subject: subject,
     html: buildEmailHtml(htmlContent, subject, formattedDate, newsletterId),
