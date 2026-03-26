@@ -311,122 +311,187 @@ async function fetchYahooData(ticker: string): Promise<{
 
 // ─── Agent Prompts ──────────────────────────────────────────────
 
-function scoutPrompt(ticker: string, companyName: string | null, price: number | null, today: string): string {
-  return `You are Scout, a market analyst specializing in opportunity identification. Today's date is ${today}. All analysis must reflect current conditions.
+// Scout is now a DATA ORCHESTRATOR — no inference, just assembles the data package
+function buildScoutDataPackage(
+  ticker: string,
+  companyName: string | null,
+  price: number | null,
+  marketCap: string | null,
+  fundamentals: any,
+  keyLevels: any,
+  prices: number[],
+  today: string,
+): string {
+  let pkg = `# Scout Data Package: ${ticker}${companyName ? ` (${companyName})` : ''}
+**Date:** ${today}
+**Current Price:** ${price ? `$${price}` : 'N/A'}
+**Market Cap:** ${marketCap || 'N/A'}
 
-Analyze **${ticker}**${companyName ? ` (${companyName})` : ''}${price ? ` currently trading at $${price} as of ${today}` : ''}.
+## Price Action Summary`;
 
-Provide a concise overview covering:
-1. **What they do** — Business model, revenue streams, market position (2-3 sentences)
-2. **Why it's interesting now** — Recent catalysts, news, earnings, sector trends
-3. **Bull case** — 3 strongest arguments for upside
-4. **Bear case** — 3 strongest arguments for downside
-5. **Comparable companies** — 2-3 comps with brief comparison
-6. **Scout Rating** — One of: STRONG BUY, BUY, SPECULATIVE BUY, HOLD, AVOID, SHORT
+  if (prices.length > 0) {
+    const weekAgo = prices.length > 5 ? prices[prices.length - 6] : null;
+    const monthAgo = prices.length > 22 ? prices[prices.length - 23] : null;
+    const yearAgo = prices.length > 252 ? prices[prices.length - 253] : null;
+    const pctChange = (curr: number, prev: number) => ((curr - prev) / prev * 100).toFixed(1);
 
-Be direct and opinionated. Write for experienced investors. No disclaimers.
-Format as clean markdown with ## headers.`;
+    pkg += `
+| Period | Change |
+|--------|--------|
+| 1 Week | ${weekAgo ? pctChange(price!, weekAgo) + '%' : 'N/A'} |
+| 1 Month | ${monthAgo ? pctChange(price!, monthAgo) + '%' : 'N/A'} |
+| 1 Year | ${yearAgo ? pctChange(price!, yearAgo) + '%' : 'N/A'} |`;
+  }
+
+  if (keyLevels) {
+    pkg += `
+
+## Key Levels
+- **5yr High (R2):** $${keyLevels.resistance2.toFixed(2)}
+- **200d High (R1):** $${keyLevels.resistance1.toFixed(2)}
+- **Current:** $${price}
+- **200d Low (S1):** $${keyLevels.support1.toFixed(2)}
+- **5yr Low (S2):** $${keyLevels.support2.toFixed(2)}`;
+  }
+
+  if (fundamentals) {
+    pkg += `
+
+## Fundamentals (Yahoo Finance)
+| Metric | Value |
+|--------|-------|`;
+    if (fundamentals.pe) pkg += `\n| P/E (Trailing) | ${fundamentals.pe.toFixed(1)} |`;
+    if (fundamentals.forwardPe) pkg += `\n| P/E (Forward) | ${fundamentals.forwardPe.toFixed(1)} |`;
+    if (fundamentals.eps) pkg += `\n| EPS | $${fundamentals.eps.toFixed(2)} |`;
+    if (fundamentals.revenue) pkg += `\n| Revenue | ${fundamentals.revenue} |`;
+    if (fundamentals.revenueGrowth) pkg += `\n| Revenue Growth | ${fundamentals.revenueGrowth} |`;
+    if (fundamentals.profitMargin) pkg += `\n| Profit Margin | ${fundamentals.profitMargin} |`;
+    if (fundamentals.debtToEquity) pkg += `\n| Debt/Equity | ${fundamentals.debtToEquity} |`;
+    if (fundamentals.dividendYield) pkg += `\n| Dividend Yield | ${fundamentals.dividendYield} |`;
+  }
+
+  return pkg;
 }
 
-function jebPrompt(ticker: string, companyName: string | null, price: number | null, scoutAnalysis: string, today: string): string {
-  return `You are Jeb, a fundamental analyst specializing in business quality, moats, and valuation. Today's date is ${today}. Use the most recent financial data available.
+function jebPrompt(ticker: string, scoutData: string, today: string): string {
+  return `You are Jeb, a fundamental analyst. Today is ${today}. You've been given real-time financial data — use it, don't make up numbers.
 
-Analyze **${ticker}**${companyName ? ` (${companyName})` : ''}${price ? ` at $${price} as of ${today}` : ''}.
+${scoutData}
 
-Scout's preliminary analysis:
----
-${scoutAnalysis}
 ---
 
-Provide fundamental analysis. Use TABLES for all financial data. Cover:
+Provide fundamental analysis using the REAL DATA above. Use TABLES for all financials.
 
 ## Business Quality
 - Moat width (none/narrow/wide) and why
 - Key competitive advantages as bullet points
 
 ## Financial Snapshot
+Use the data provided. Fill in any gaps with your knowledge, but mark estimated values with (est).
 
-Present key financials in a markdown table:
-
-| Metric | Value | YoY Change |
+| Metric | Value | Assessment |
 |--------|-------|------------|
-| Revenue | $X | +X% |
-| Gross Margin | X% | +/-X% |
-| Operating Margin | X% | +/-X% |
-| Free Cash Flow | $X | +X% |
-| Net Debt | $X | — |
+| Revenue | [from data] | [growing/declining/stable] |
+| Profit Margin | [from data] | [healthy/thin/negative] |
+| Debt/Equity | [from data] | [low/moderate/high risk] |
 
 ## Valuation vs Peers
-
 | Metric | ${ticker} | Peer 1 | Peer 2 | Sector Avg |
 |--------|-----------|--------|--------|------------|
-| P/E | X | X | X | X |
-| P/S | X | X | X | X |
-| EV/EBITDA | X | X | X | X |
+| P/E | [from data] | [est] | [est] | [est] |
+| EV/EBITDA | [est] | [est] | [est] | [est] |
 
 ## Jeb's Verdict
-- **Fair Value Estimate:** $X (X% upside/downside from current)
+- **Fair Value Estimate:** $X (X% upside/downside)
 - **Conviction:** High/Medium/Low
+- **Key Risk:** [single biggest fundamental risk]
 
-Be quantitative. Every number must be specific. No vague language.`;
+Be quantitative. Every number specific. No filler.`;
 }
 
-function antPrompt(
-  ticker: string,
-  price: number | null,
-  chartUrl: string | null,
-  keyLevels: { support1: number; support2: number; resistance1: number; resistance2: number } | null,
-  scoutAnalysis: string,
-): string {
-  const levelsText = keyLevels
-    ? `\nKey levels from price data:
-- Resistance 2 (5yr high): $${keyLevels.resistance2}
-- Resistance 1 (200d high): $${keyLevels.resistance1}
-- Current: $${price}
-- Support 1 (200d low): $${keyLevels.support1}
-- Support 2 (5yr low): $${keyLevels.support2}`
-    : '';
-
+function antPrompt(ticker: string, scoutData: string, chartUrl: string | null): string {
   return `You are Ant, a technical analyst specializing in price action, Wyckoff phases, and entry timing.
 
-Analyze **${ticker}**${price ? ` currently at $${price}` : ''}.
-${levelsText}
+${scoutData}
 
-Scout's analysis for context:
----
-${scoutAnalysis}
+${chartUrl ? `Chart: ${chartUrl}` : ''}
+
 ---
 
-Provide technical analysis covering:
-1. **Trend** — Primary trend direction and strength
-2. **Wyckoff Phase** — Current accumulation/distribution/markup/markdown phase
-3. **Support & Resistance** — Key levels to watch with significance
-4. **Entry Zones** — Where to buy if bullish, where to short if bearish
-5. **Risk Management** — Stop loss levels and position sizing guidance
-6. **Ant's Timing Verdict** — BUY NOW / WAIT FOR PULLBACK / AVOID / SHORT with specific price targets
+Using the REAL price data and key levels above, provide:
 
-Be precise with numbers. Reference specific price levels.
-Format as clean markdown with ## headers.`;
+## Trend
+- Primary direction + strength (1 sentence)
+
+## Wyckoff Phase
+- Current phase and what it means for positioning
+
+## Key Levels
+Use the support/resistance from the data. Add any additional levels you identify.
+
+| Level | Price | Significance |
+|-------|-------|-------------|
+| Resistance 2 | [from data] | [why it matters] |
+| Resistance 1 | [from data] | [why] |
+| Support 1 | [from data] | [why] |
+| Support 2 | [from data] | [why] |
+
+## Entry Strategy
+- **If bullish:** Buy zone $X—$X, stop loss $X
+- **If bearish:** Short zone $X—$X, stop loss $X
+
+## Ant's Verdict
+**[BUY NOW / WAIT FOR PULLBACK / AVOID / SHORT]** — [1 sentence with specific target]
+
+Be precise with numbers. No vague language.`;
+}
+
+function petePrompt(ticker: string, companyName: string | null, today: string): string {
+  return `You are Pete, a sentiment analyst with deep knowledge of financial Twitter/X discourse. Today is ${today}.
+
+What is the current sentiment on **${ticker}**${companyName ? ` (${companyName})` : ''} across Twitter/X and social media?
+
+Cover:
+
+## Social Sentiment
+- **Overall mood:** [Bullish / Bearish / Mixed / Neutral]
+- **Retail vs Institutional:** Are retail traders excited? What are fund managers saying?
+- **Trending narratives:** What are the 2-3 dominant stories/memes around this ticker?
+
+## Notable Voices
+- Who are the most influential accounts talking about ${ticker}?
+- Any notable bulls or bears? What's their thesis?
+- Any contrarian takes worth noting?
+
+## Sentiment Shift
+- Has sentiment changed recently? In which direction?
+- Any catalysts driving the shift?
+- Sentiment score: [-5 to +5] where -5 is extreme fear, +5 is extreme greed
+
+## Pete's Read
+[2-3 sentences: what does the social sentiment tell us that the fundamentals don't? Is the crowd right or wrong here?]
+
+Be specific about what people are saying. Reference real narratives, not generic "bullish on fundamentals."`;
 }
 
 function synthesisPrompt(
   ticker: string,
   companyName: string | null,
   price: number | null,
-  scoutAnalysis: string,
   jebAnalysis: string,
   antAnalysis: string,
+  peteAnalysis: string,
   chartUrl: string | null,
 ): string {
   return `Synthesize these three analyst reports into one cohesive Deep Dive. Do NOT repeat information — combine and distill. Use tables for financial data. Use bullet points for readability.
 
 **Input from analysts:**
 
-SCOUT: ${scoutAnalysis}
+JEB (Fundamentals): ${jebAnalysis}
 
-JEB: ${jebAnalysis}
+ANT (Technicals): ${antAnalysis}
 
-ANT: ${antAnalysis}
+PETE (Sentiment): ${peteAnalysis}
 
 **Write the final report in this exact structure:**
 
@@ -434,15 +499,14 @@ ANT: ${antAnalysis}
 ${price ? `**Current Price:** $${price}` : ''}
 
 ## Executive Summary
-[2-3 sentences. The verdict upfront — rating, fair value, and whether to buy/sell/wait. No fluff.]
+[2-3 sentences. The verdict upfront — rating, fair value, and whether to buy/sell/wait. Factor in fundamentals, technicals, AND sentiment.]
 
 ## What They Do
-[2-3 sentences max. Business model and why it matters now. Don't repeat what's in financials.]
+[2-3 sentences max. Business model and why it matters now.]
 
 ${chartUrl ? `## Price Chart\n![${ticker} 5-Year Chart](${chartUrl})\n` : ''}
 
 ## Technical Setup
-Use bullet points:
 - **Trend:** [direction + strength]
 - **Key Resistance:** $X, $X
 - **Key Support:** $X, $X
@@ -451,8 +515,13 @@ Use bullet points:
 - **Stop Loss:** $X
 
 ## Financials
+Preserve Jeb's tables exactly. Include Financial Snapshot and Valuation vs Peers tables.
 
-Preserve Jeb's tables exactly. Include the Financial Snapshot table and Valuation vs Peers table.
+## Social Sentiment
+- **Mood:** [Bullish/Bearish/Mixed] — [1 sentence why]
+- **Score:** [X/5]
+- **Key narrative:** [what the crowd is focused on]
+- **Contrarian signal?** [Is the crowd likely right or wrong?]
 
 ## Bull vs Bear
 
@@ -470,6 +539,7 @@ Preserve Jeb's tables exactly. Include the Financial Snapshot table and Valuatio
 | **Fair Value** | $X (X% upside/downside) |
 | **Entry** | $X—$X |
 | **Stop Loss** | $X |
+| **Sentiment** | [Bullish/Bearish X/5] |
 | **Risk/Reward** | X:X |
 
 Rules:
@@ -496,22 +566,24 @@ export async function processDeepDive(requestId: string, ticker: string, userId:
     .eq('id', requestId);
 
   try {
-    // 1. Fetch market data
-    console.log(`[research] Fetching data for ${ticker}...`);
-    const yahoo = await fetchYahooData(ticker);
+    // ─── SCOUT: Data Orchestrator (no inference) ─────────────
+    console.log(`[research] Scout gathering data for ${ticker}...`);
+
+    // 1. Fetch market data + fundamentals + chart in parallel
+    const [yahoo, fundamentals] = await Promise.all([
+      fetchYahooData(ticker),
+      fetchYahooFinancials(ticker),
+    ]);
 
     if (!yahoo || yahoo.prices.length === 0) {
       await failRequest(supabase, requestId, 'Symbol not found or no price data available');
       return { success: false, error: 'Symbol not found' };
     }
 
-    const { currentPrice, name: companyName, prices, dates } = yahoo;
+    const { currentPrice, name: companyName, prices, dates, marketCap } = yahoo;
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-    // 2. Generate chart
-    const chartUrl = await generateChartUrl(ticker, prices, dates);
-
-    // Calculate key levels
+    // Calculate key levels (no inference)
     const keyLevels = prices.length >= 200 ? {
       support1: Math.min(...prices.slice(-200)),
       support2: Math.min(...prices),
@@ -519,40 +591,47 @@ export async function processDeepDive(requestId: string, ticker: string, userId:
       resistance2: Math.max(...prices),
     } : null;
 
-    // 3. Run Scout
-    console.log(`[research] Scout analyzing ${ticker}...`);
-    const scoutResponse = await xai.chat.completions.create({
-      model: 'grok-3-fast',
-      messages: [{ role: 'user', content: scoutPrompt(ticker, companyName, currentPrice, today) }],
-      max_tokens: 1500,
-    });
-    const scoutAnalysis = scoutResponse.choices[0]?.message?.content || '';
+    // Generate chart (API call, no inference)
+    const chartUrl = await generateChartUrl(ticker, prices, dates);
 
-    // 4. Run Jeb (needs Scout context)
-    console.log(`[research] Jeb analyzing ${ticker}...`);
-    const jebResponse = await xai.chat.completions.create({
-      model: 'grok-3-fast',
-      messages: [{ role: 'user', content: jebPrompt(ticker, companyName, currentPrice, scoutAnalysis, today) }],
-      max_tokens: 1500,
-    });
+    // Build Scout's data package (pure string formatting, no inference)
+    const scoutData = buildScoutDataPackage(
+      ticker, companyName, currentPrice, marketCap, fundamentals, keyLevels, prices, today
+    );
+
+    console.log(`[research] Scout data package ready. Launching Jeb, Ant, Pete in parallel...`);
+
+    // ─── JEB + ANT + PETE: Run in parallel ──────────────────
+    const [jebResponse, antResponse, peteResponse] = await Promise.all([
+      xai.chat.completions.create({
+        model: 'grok-3-fast',
+        messages: [{ role: 'user', content: jebPrompt(ticker, scoutData, today) }],
+        max_tokens: 1500,
+      }),
+      xai.chat.completions.create({
+        model: 'grok-3-fast',
+        messages: [{ role: 'user', content: antPrompt(ticker, scoutData, chartUrl) }],
+        max_tokens: 1500,
+      }),
+      xai.chat.completions.create({
+        model: 'grok-3-fast',
+        messages: [{ role: 'user', content: petePrompt(ticker, companyName, today) }],
+        max_tokens: 1000,
+      }),
+    ]);
+
     const jebAnalysis = jebResponse.choices[0]?.message?.content || '';
-
-    // 5. Run Ant (needs Scout context + chart data)
-    console.log(`[research] Ant analyzing ${ticker}...`);
-    const antResponse = await xai.chat.completions.create({
-      model: 'grok-3-fast',
-      messages: [{ role: 'user', content: antPrompt(ticker, currentPrice, chartUrl, keyLevels, scoutAnalysis) }],
-      max_tokens: 1500,
-    });
     const antAnalysis = antResponse.choices[0]?.message?.content || '';
+    const peteAnalysis = peteResponse.choices[0]?.message?.content || '';
 
-    // 6. Synthesize final report
-    console.log(`[research] Synthesizing ${ticker} report...`);
+    console.log(`[research] All agents complete. Synthesizing ${ticker} report...`);
+
+    // ─── SYNTHESIS: Combine all perspectives ─────────────────
     const synthesisResponse = await xai.chat.completions.create({
       model: 'grok-3-fast',
       messages: [{
         role: 'user',
-        content: synthesisPrompt(ticker, companyName, currentPrice, scoutAnalysis, jebAnalysis, antAnalysis, chartUrl),
+        content: synthesisPrompt(ticker, companyName, currentPrice, jebAnalysis, antAnalysis, peteAnalysis, chartUrl),
       }],
       max_tokens: 3000,
     });
@@ -740,12 +819,15 @@ export async function processScan(requestId: string, query: string, userId: stri
       }
     }
 
-    // Step 3: Generate the actual scan report with real data
-    const response = await xai.chat.completions.create({
-      model: 'grok-3-fast',
-      messages: [{
-        role: 'user',
-        content: `You are a market research analyst. Today's date is ${today}.
+    // Step 3: Run analysis + Pete (sentiment) in parallel
+    const mainTickers = tickers.slice(0, 3).join(', ');
+
+    const [analysisResponse, peteResponse] = await Promise.all([
+      xai.chat.completions.create({
+        model: 'grok-3-fast',
+        messages: [{
+          role: 'user',
+          content: `You are a market research analyst. Today's date is ${today}.
 ${marketDataSection}
 
 IMPORTANT: Use the LIVE MARKET DATA provided above for all price references and analysis. Do NOT use any other price data — the table above contains the most current information.
@@ -757,17 +839,40 @@ Answer this investment research question thoroughly and directly:
 Structure your response as a research report with:
 1. **Summary** — Direct answer with current prices from the data above
 2. **Analysis** — Supporting evidence using the live market data provided, plus your knowledge of fundamentals, earnings, and market conditions
-3. **Specific Names** — Ticker symbols with current prices from the data above
+3. **Specific Names** — Ticker symbols with current prices from the data above, presented in a table
 4. **Risks** — What could go wrong given current market conditions
 5. **Action Items** — What to buy/sell/watch, with specific entry levels based on the current prices above
 
 Be opinionated and specific. Reference the actual current prices provided. Write for experienced investors.
 Format as clean markdown with tables where appropriate.`,
-      }],
-      max_tokens: 3000,
-    });
+        }],
+        max_tokens: 2500,
+      }),
+      // Pete: Twitter sentiment for top tickers
+      mainTickers ? xai.chat.completions.create({
+        model: 'grok-3-fast',
+        messages: [{
+          role: 'user',
+          content: `Today is ${today}. What is the current Twitter/X sentiment on: ${mainTickers}?
 
-    const content = response.choices[0]?.message?.content || '';
+For each ticker, provide in 2-3 sentences:
+- Overall social mood (bullish/bearish/mixed)
+- Key narrative or meme driving discussion
+- Any notable contrarian takes
+
+Keep it brief and specific. No generic statements.`,
+        }],
+        max_tokens: 600,
+      }) : Promise.resolve(null),
+    ]);
+
+    const analysisContent = analysisResponse.choices[0]?.message?.content || '';
+    const peteContent = peteResponse?.choices?.[0]?.message?.content || '';
+
+    // Combine analysis + sentiment
+    const content = peteContent
+      ? `${analysisContent}\n\n---\n\n## Social Sentiment\n${peteContent}`
+      : analysisContent;
     const summary = content.substring(0, 500);
     const reportDate = new Date().toISOString().split('T')[0];
 
