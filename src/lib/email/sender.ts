@@ -78,6 +78,10 @@ function markdownToHtml(markdown: string): string {
   // Links
   html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" style="color: #2563eb; text-decoration: none; border-bottom: 1px solid #93c5fd;">$1</a>');
 
+  // @handle → link to X profile (but not inside existing <a> tags or already-linked)
+  html = html.replace(/(?<!["\w])@([A-Za-z0-9_]{1,15})(?!["\w])/g,
+    '<a href="https://x.com/$1" style="color: #2563eb; text-decoration: none; font-weight: 500;">@$1</a>');
+
   // Ticker callouts: **$TICKER** at start of bullet → highlighted
   html = html.replace(/^- \*\*(\$[A-Z]+)\*\*/gm, '- <span style="display: inline-block; background: #eff6ff; color: #1d4ed8; padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 13px;">$1</span>');
 

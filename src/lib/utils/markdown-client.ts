@@ -26,6 +26,10 @@ export function markdownToHtml(markdown: string): string {
   // Links
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
 
+  // @handle → link to X profile
+  html = html.replace(/(?<!["\w])@([A-Za-z0-9_]{1,15})(?!["\w])/g,
+    '<a href="https://x.com/$1" target="_blank" rel="noopener" style="color: #3b82f6;">@$1</a>');
+
   // Horizontal rules
   html = html.replace(/^---$/gm, '<hr>');
 
