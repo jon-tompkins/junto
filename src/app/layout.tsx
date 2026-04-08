@@ -32,7 +32,7 @@ export const metadata: Metadata = {
       "Create and subscribe to AI-powered newsletters built from curated Twitter sources. Daily intelligence briefings from the voices you trust.",
     images: [
       {
-        url: "/og-image.png",
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
         alt: "MyJunto — Intelligence from the information tsunami",
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     title: "MyJunto — AI-Powered Newsletter Marketplace",
     description:
       "AI-powered newsletters from curated Twitter sources. Daily intelligence briefings from the voices you trust.",
-    images: ["/og-image.png"],
+    images: ["/opengraph-image"],
     creator: "@myjunto",
   },
   robots: {

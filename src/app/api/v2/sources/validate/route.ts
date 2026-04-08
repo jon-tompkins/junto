@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { searchLimiter } from '@/lib/rate-limit';
 
 // GET /api/v2/sources/validate?handle=cburniske&type=twitter
 // Validates a Twitter handle exists using Apify's quick profile fetch
 export async function GET(req: NextRequest) {
+  const limited = searchLimiter(req);
+  if (limited) return limited;
   const handle = req.nextUrl.searchParams.get('handle')?.replace('@', '').trim();
   const type = req.nextUrl.searchParams.get('type') || 'twitter';
 

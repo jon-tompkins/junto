@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getSupabase } from '@/lib/db/client';
 import { getStripe } from '@/lib/stripe/client';
+import { authLimiter } from '@/lib/rate-limit';
 
 const CREDIT_PACKAGES = [
   { id: 'credits_500', credits: 500, price: 500, label: '500 credits', bonus: 0 },
@@ -25,6 +26,9 @@ async function resolveUserId(session: any): Promise<string | null> {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = authLimiter(req);
+  if (limited) return limited;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {

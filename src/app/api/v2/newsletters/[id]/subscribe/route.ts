@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { subscribe, unsubscribe, isSubscribed, getSubscription } from '@/lib/db/subscriptions';
 import { getNewsletterById } from '@/lib/db/newsletters-v2';
 import { getSupabase } from '@/lib/db/client';
+import { authLimiter } from '@/lib/rate-limit';
 
 async function resolveUserId(session: any): Promise<string | null> {
   const supabase = getSupabase();
@@ -34,6 +35,9 @@ async function getUserEmail(userId: string): Promise<string | null> {
 
 // POST /api/v2/newsletters/[id]/subscribe — subscribe
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const limited = authLimiter(req);
+  if (limited) return limited;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {

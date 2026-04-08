@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getNewsletterWithSources, updateNewsletter, deleteNewsletter, setNewsletterLabels, addNewsletterSource, removeNewsletterSource } from '@/lib/db/newsletters-v2';
+import { getNewsletterWithSources, updateNewsletter, deleteNewsletter, setNewsletterLabels, addNewsletterSource, removeNewsletterSource, getCuratorInfo } from '@/lib/db/newsletters-v2';
 import { getOrCreateSource } from '@/lib/db/sources';
 import { getSupabase } from '@/lib/db/client';
+import { apiLimiter } from '@/lib/rate-limit';
 
 async function resolveUserId(session: any): Promise<string | null> {
   const supabase = getSupabase();
@@ -23,6 +24,9 @@ async function resolveUserId(session: any): Promise<string | null> {
 
 // GET /api/v2/newsletters/[id]
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const limited = apiLimiter(req);
+  if (limited) return limited;
+
   try {
     const { id } = await params;
     const newsletter = await getNewsletterWithSources(id);
@@ -31,7 +35,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Newsletter not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ newsletter });
+    const curator = await getCuratorInfo(newsletter.admin_user_id);
+
+    return NextResponse.json({
+      newsletter: {
+        ...newsletter,
+        curator: curator ? {
+          name: curator.display_name,
+          twitter_handle: curator.twitter_handle,
+          avatar_url: curator.avatar_url,
+        } : null,
+      },
+    });
   } catch (error) {
     console.error('[GET /api/v2/newsletters/[id]]', error);
     return NextResponse.json({ error: 'Failed to fetch newsletter' }, { status: 500 });

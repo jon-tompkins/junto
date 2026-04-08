@@ -6,6 +6,12 @@ import { useSession } from 'next-auth/react';
 import { AuthModal } from '@/components/auth-modal';
 import { TopNav } from '@/components/top-nav';
 
+interface Curator {
+  name: string | null;
+  twitter_handle: string | null;
+  avatar_url: string | null;
+}
+
 interface NewsletterCard {
   id: string;
   name: string;
@@ -14,7 +20,7 @@ interface NewsletterCard {
   subscriber_count: number;
   schedule_cadence: string;
   source_count: number;
-  admin_name: string | null;
+  curator: Curator | null;
 }
 
 const CADENCE_LABELS: Record<string, string> = {
@@ -157,8 +163,27 @@ export default function ExplorePage() {
                     {CADENCE_LABELS[nl.schedule_cadence] || nl.schedule_cadence}
                   </span>
                 </div>
-                {nl.admin_name && (
-                  <p className="text-xs text-slate-500 mb-2">by {nl.admin_name}</p>
+                {nl.curator && (
+                  <div className="flex items-center gap-1.5 mb-2">
+                    {nl.curator.avatar_url ? (
+                      <img src={nl.curator.avatar_url} alt="" className="w-4 h-4 rounded-full" />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full bg-slate-700" />
+                    )}
+                    {nl.curator.twitter_handle ? (
+                      <a
+                        href={`https://x.com/${nl.curator.twitter_handle}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-slate-500 hover:text-blue-400 transition"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        @{nl.curator.twitter_handle}
+                      </a>
+                    ) : (
+                      <span className="text-xs text-slate-500">{nl.curator.name || 'Anonymous'}</span>
+                    )}
+                  </div>
                 )}
                 <p className="text-sm text-slate-400 mb-4 leading-relaxed line-clamp-2">
                   {nl.description}

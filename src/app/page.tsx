@@ -21,6 +21,12 @@ interface NewsletterSource {
   display_name: string | null;
 }
 
+interface Curator {
+  name: string | null;
+  twitter_handle: string | null;
+  avatar_url: string | null;
+}
+
 interface Newsletter {
   id: string;
   name: string;
@@ -31,6 +37,7 @@ interface Newsletter {
   subscriber_count: number;
   schedule_cadence: string;
   credit_cost: number;
+  curator?: Curator | null;
 }
 
 // Placeholder featured newsletters — shown when DB has no public newsletters yet
@@ -272,6 +279,18 @@ export default function LandingPage() {
                   <p className="text-sm text-slate-400 mt-1.5 leading-relaxed">
                     {nl.description}
                   </p>
+                  {nl.curator && (
+                    <div className="flex items-center gap-1.5 mt-2">
+                      {nl.curator.avatar_url ? (
+                        <img src={nl.curator.avatar_url} alt="" className="w-4 h-4 rounded-full" />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full bg-slate-700" />
+                      )}
+                      <span className="text-xs text-slate-500">
+                        {nl.curator.twitter_handle ? `@${nl.curator.twitter_handle}` : nl.curator.name || 'Anonymous'}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center justify-between pt-3 border-t border-slate-700/30 ml-15">
@@ -431,6 +450,31 @@ function NewsletterModal({
             </div>
             <div className="flex-1 min-w-0 pr-6">
               <h2 className="text-xl font-bold">{newsletter.name}</h2>
+              {newsletter.curator && (
+                <div className="flex items-center gap-2 mt-1.5">
+                  {newsletter.curator.avatar_url ? (
+                    <img src={newsletter.curator.avatar_url} alt="" className="w-5 h-5 rounded-full" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-slate-700" />
+                  )}
+                  <span className="text-xs text-slate-500">
+                    Curated by{' '}
+                    {newsletter.curator.twitter_handle ? (
+                      <a
+                        href={`https://x.com/${newsletter.curator.twitter_handle}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 transition"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        @{newsletter.curator.twitter_handle}
+                      </a>
+                    ) : (
+                      <span className="text-slate-300">{newsletter.curator.name || 'Anonymous'}</span>
+                    )}
+                  </span>
+                </div>
+              )}
               {newsletter.description && (
                 <p className="text-sm text-slate-400 mt-1.5 leading-relaxed">{newsletter.description}</p>
               )}

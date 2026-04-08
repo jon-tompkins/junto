@@ -141,6 +141,43 @@ export async function searchNewslettersByLabel(label: string, limit: number = 20
 }
 
 // ============================================================
+// Curator Info
+// ============================================================
+
+export interface CuratorInfo {
+  display_name: string | null;
+  twitter_handle: string | null;
+  avatar_url: string | null;
+}
+
+export async function getCuratorInfo(userId: string): Promise<CuratorInfo | null> {
+  const { data, error } = await supabase()
+    .from('users')
+    .select('display_name, twitter_handle, avatar_url')
+    .eq('id', userId)
+    .single();
+
+  if (error) return null;
+  return data;
+}
+
+export async function getCuratorInfoBatch(userIds: string[]): Promise<Record<string, CuratorInfo>> {
+  if (userIds.length === 0) return {};
+  const unique = [...new Set(userIds)];
+  const { data, error } = await supabase()
+    .from('users')
+    .select('id, display_name, twitter_handle, avatar_url')
+    .in('id', unique);
+
+  if (error || !data) return {};
+  const map: Record<string, CuratorInfo> = {};
+  for (const u of data) {
+    map[u.id] = { display_name: u.display_name, twitter_handle: u.twitter_handle, avatar_url: u.avatar_url };
+  }
+  return map;
+}
+
+// ============================================================
 // Newsletter Sources
 // ============================================================
 

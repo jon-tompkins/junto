@@ -36,6 +36,7 @@ export default function EditNewsletterPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [prompt, setPrompt] = useState('');
+  const [useDefaultPrompt, setUseDefaultPrompt] = useState(false);
   const [secondaryPrompt, setSecondaryPrompt] = useState('');
   const [cadence, setCadence] = useState('daily');
   const [isPublic, setIsPublic] = useState(true);
@@ -64,7 +65,8 @@ export default function EditNewsletterPage() {
         setNewsletter(nl);
         setName(nl.name);
         setDescription(nl.description || '');
-        setPrompt(nl.prompt);
+        setPrompt(nl.prompt || '');
+        setUseDefaultPrompt(!nl.prompt);
         setSecondaryPrompt(nl.secondary_prompt || '');
         setCadence(nl.schedule_cadence);
         setIsPublic(nl.is_public);
@@ -99,7 +101,7 @@ export default function EditNewsletterPage() {
         body: JSON.stringify({
           name,
           description: description || null,
-          prompt,
+          prompt: useDefaultPrompt ? '' : prompt,
           secondary_prompt: secondaryPrompt || null,
           schedule_cadence: cadence,
           is_public: isPublic,
@@ -214,13 +216,38 @@ export default function EditNewsletterPage() {
 
           {/* Prompt */}
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Prompt</label>
-            <textarea
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-              rows={8}
-              className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white font-mono text-sm focus:border-blue-500 focus:outline-none transition resize-none"
-            />
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-400">Synthesis Prompt</label>
+              <button
+                type="button"
+                onClick={() => setUseDefaultPrompt(v => !v)}
+                className={`flex items-center gap-2 text-xs px-3 py-1 rounded-lg transition font-medium ${
+                  useDefaultPrompt
+                    ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-slate-800/60 text-slate-500 border border-slate-700/50 hover:text-white'
+                }`}
+              >
+                <span className={`w-3 h-3 rounded-full border-2 flex items-center justify-center transition ${
+                  useDefaultPrompt ? 'bg-emerald-400 border-emerald-400' : 'border-slate-500'
+                }`}>
+                  {useDefaultPrompt && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
+                </span>
+                Use default prompt
+              </button>
+            </div>
+            {useDefaultPrompt ? (
+              <div className="w-full bg-slate-800/20 border border-slate-700/30 border-dashed rounded-xl px-4 py-3 text-slate-500 text-sm">
+                Uses the Junto default — hedge fund PM briefing format, ~350 words, tight and opinionated.
+              </div>
+            ) : (
+              <textarea
+                value={prompt}
+                onChange={e => setPrompt(e.target.value)}
+                rows={8}
+                placeholder="Write a custom system prompt to control tone, format, and focus..."
+                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white font-mono text-sm focus:border-blue-500 focus:outline-none transition resize-none"
+              />
+            )}
           </div>
 
           {/* Secondary Prompt */}
@@ -376,7 +403,7 @@ export default function EditNewsletterPage() {
           <div className="flex gap-3 pt-4">
             <button
               onClick={handleSave}
-              disabled={saving || !name || !prompt}
+              disabled={saving || !name || (!useDefaultPrompt && !prompt)}
               className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-semibold transition shadow-lg shadow-blue-600/20 disabled:opacity-50"
             >
               {saving ? 'Saving...' : 'Save Changes'}

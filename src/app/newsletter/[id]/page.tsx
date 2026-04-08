@@ -8,6 +8,12 @@ import { AuthModal } from '@/components/auth-modal';
 import { TopNav } from '@/components/top-nav';
 import { markdownToHtml } from '@/lib/utils/markdown-client';
 
+interface Curator {
+  name: string | null;
+  twitter_handle: string | null;
+  avatar_url: string | null;
+}
+
 interface NewsletterDetail {
   id: string;
   name: string;
@@ -21,6 +27,7 @@ interface NewsletterDetail {
   sources: { id: string; type: string; handle_or_url: string; display_name: string | null }[];
   labels: string[];
   created_at: string;
+  curator: Curator | null;
 }
 
 interface Run {
@@ -195,6 +202,30 @@ export default function NewsletterDetailPage() {
           <div className="flex items-start justify-between gap-4 mb-5">
             <div>
               <h1 className="text-3xl font-bold mb-3">{newsletter.name}</h1>
+              {newsletter.curator && (
+                <div className="flex items-center gap-2.5 mb-3">
+                  {newsletter.curator.avatar_url ? (
+                    <img src={newsletter.curator.avatar_url} alt="" className="w-7 h-7 rounded-full ring-1 ring-slate-700" />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-slate-700 ring-1 ring-slate-600" />
+                  )}
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <span className="text-slate-500">Curated by</span>
+                    {newsletter.curator.twitter_handle ? (
+                      <a
+                        href={`https://x.com/${newsletter.curator.twitter_handle}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 font-medium transition"
+                      >
+                        @{newsletter.curator.twitter_handle}
+                      </a>
+                    ) : (
+                      <span className="text-slate-300 font-medium">{newsletter.curator.name || 'Anonymous'}</span>
+                    )}
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-3 text-sm text-slate-400 flex-wrap">
                 <span className="flex items-center gap-1.5">
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
