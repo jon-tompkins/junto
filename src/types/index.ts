@@ -147,6 +147,8 @@ export interface NewsletterV2 {
   subscriber_count: number;
   created_at: string;
   updated_at: string;
+  prompt_template_id?: string | null;
+  send_days?: string[];
 }
 
 export interface NewsletterLabel {
