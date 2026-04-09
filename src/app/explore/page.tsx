@@ -170,19 +170,9 @@ export default function ExplorePage() {
                     ) : (
                       <div className="w-4 h-4 rounded-full bg-slate-700" />
                     )}
-                    {nl.curator.twitter_handle ? (
-                      <a
-                        href={`https://x.com/${nl.curator.twitter_handle}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-slate-500 hover:text-blue-400 transition"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        @{nl.curator.twitter_handle}
-                      </a>
-                    ) : (
-                      <span className="text-xs text-slate-500">{nl.curator.name || 'Anonymous'}</span>
-                    )}
+                    <span className="text-xs text-slate-500">
+                      {nl.curator.twitter_handle ? `@${nl.curator.twitter_handle}` : nl.curator.name || 'Anonymous'}
+                    </span>
                   </div>
                 )}
                 <p className="text-sm text-slate-400 mb-4 leading-relaxed line-clamp-2">

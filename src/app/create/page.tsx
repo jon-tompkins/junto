@@ -1,12 +1,19 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { AuthModal } from '@/components/auth-modal';
 import { TopNav } from '@/components/top-nav';
 import { calculateOwnerCreditCost } from '@/lib/pricing';
+
+interface PromptTemplateOption {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+}
 
 // ============================================================
 // Source type for validation
@@ -118,6 +125,17 @@ export default function CreateNewsletterPage() {
   const [error, setError] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
 
+  // Prompt templates from DB
+  const [promptTemplates, setPromptTemplates] = useState<PromptTemplateOption[]>([]);
+  const [promptTemplateId, setPromptTemplateId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/v2/prompt-templates')
+      .then(r => r.json())
+      .then(data => setPromptTemplates(data.templates || []))
+      .catch(() => {});
+  }, []);
+
   // Form state
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -226,8 +244,8 @@ export default function CreateNewsletterPage() {
       setShowAuthModal(true);
       return;
     }
-    if (!name || !prompt) {
-      setError('Name and prompt are required');
+    if (!name || (!prompt && !promptTemplateId)) {
+      setError('Name and either a template or custom prompt are required');
       return;
     }
 
@@ -241,7 +259,8 @@ export default function CreateNewsletterPage() {
         body: JSON.stringify({
           name,
           description,
-          prompt,
+          prompt: promptTemplateId ? '' : prompt,
+          prompt_template_id: promptTemplateId || undefined,
           secondary_prompt: secondaryPrompt || undefined,
           labels,
           sources: sources
@@ -366,16 +385,47 @@ export default function CreateNewsletterPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                  Prompt <span className="text-slate-500 font-normal">(the &ldquo;code&rdquo; for your newsletter)</span>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Synthesis Style
                 </label>
-                <textarea
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Describe what the AI should synthesize and how..."
-                  rows={10}
-                  className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 resize-y font-mono text-sm transition"
-                />
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {promptTemplates.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => { setPromptTemplateId(t.id); setPrompt(''); }}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        promptTemplateId === t.id
+                          ? 'border-blue-500/60 bg-blue-600/10'
+                          : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
+                      }`}
+                    >
+                      <div className="text-sm font-medium">{t.name}</div>
+                      <div className="text-xs text-slate-400 mt-0.5 line-clamp-2">{t.description}</div>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => { setPromptTemplateId(null); }}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      promptTemplateId === null
+                        ? 'border-blue-500/60 bg-blue-600/10'
+                        : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="text-sm font-medium">Custom</div>
+                    <div className="text-xs text-slate-400 mt-0.5">Write your own synthesis prompt</div>
+                  </button>
+                </div>
+                {promptTemplateId === null && (
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Describe what the AI should synthesize and how..."
+                    rows={10}
+                    className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 resize-y font-mono text-sm transition"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">
@@ -425,7 +475,7 @@ export default function CreateNewsletterPage() {
               </button>
               <button
                 onClick={() => setStep('sources')}
-                disabled={!name || !prompt}
+                disabled={!name || (!prompt && !promptTemplateId)}
                 className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-xl font-medium transition shadow-lg shadow-blue-600/20"
               >
                 Next: Sources
@@ -683,7 +733,7 @@ export default function CreateNewsletterPage() {
               </button>
               <button
                 onClick={handleCreate}
-                disabled={creating || !name || !prompt}
+                disabled={creating || !name || (!prompt && !promptTemplateId)}
                 className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-semibold transition shadow-lg shadow-blue-600/20"
               >
                 {creating ? 'Creating...' : 'Create Newsletter'}

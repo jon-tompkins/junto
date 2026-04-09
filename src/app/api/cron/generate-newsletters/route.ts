@@ -8,6 +8,8 @@ import { generateNewsletterV2 } from '@/lib/synthesis/generator-v2';
 import { sendNewsletter } from '@/lib/email/sender';
 import { chargeOwner, chargeSubscriber } from '@/lib/db/credits';
 import { calculateOwnerCreditCost, calculateSubscriberCreditCost } from '@/lib/pricing';
+import { getPromptTemplateById } from '@/lib/db/prompt-templates';
+import { NEWSLETTER_SYSTEM_PROMPT } from '@/lib/synthesis/prompts';
 
 export const maxDuration = 300; // 5 minutes
 
@@ -73,8 +75,17 @@ export async function GET(req: NextRequest) {
 
         console.log(`[generate] Generating ${newsletter.name} from ${recentContent.length} recent tweets...`);
 
+        // Resolve prompt: template > custom > system default
+        let resolvedPrompt = NEWSLETTER_SYSTEM_PROMPT;
+        if (newsletter.prompt_template_id) {
+          const template = await getPromptTemplateById(newsletter.prompt_template_id);
+          if (template) resolvedPrompt = template.prompt;
+        } else if (newsletter.prompt) {
+          resolvedPrompt = newsletter.prompt;
+        }
+
         const result = await generateNewsletterV2({
-          prompt: newsletter.prompt,
+          prompt: resolvedPrompt,
           secondaryPrompt: newsletter.secondary_prompt,
           recentTweets: recentGrouped,
           contextTweets: contextGrouped,

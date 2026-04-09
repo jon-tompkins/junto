@@ -7,11 +7,19 @@ import { useSession } from 'next-auth/react';
 import { CADENCE_LABELS } from '@/lib/pricing';
 import { TopNav } from '@/components/top-nav';
 
+interface PromptTemplateOption {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+}
+
 interface NewsletterDetail {
   id: string;
   name: string;
   description: string | null;
   prompt: string;
+  prompt_template_id: string | null;
   secondary_prompt: string | null;
   schedule_cadence: string;
   credit_cost: number;
@@ -32,11 +40,21 @@ export default function EditNewsletterPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  // Prompt templates
+  const [promptTemplates, setPromptTemplates] = useState<PromptTemplateOption[]>([]);
+  const [promptTemplateId, setPromptTemplateId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/v2/prompt-templates')
+      .then(r => r.json())
+      .then(data => setPromptTemplates(data.templates || []))
+      .catch(() => {});
+  }, []);
+
   // Editable fields
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [prompt, setPrompt] = useState('');
-  const [useDefaultPrompt, setUseDefaultPrompt] = useState(false);
   const [secondaryPrompt, setSecondaryPrompt] = useState('');
   const [cadence, setCadence] = useState('daily');
   const [isPublic, setIsPublic] = useState(true);
@@ -66,7 +84,7 @@ export default function EditNewsletterPage() {
         setName(nl.name);
         setDescription(nl.description || '');
         setPrompt(nl.prompt || '');
-        setUseDefaultPrompt(!nl.prompt);
+        setPromptTemplateId(nl.prompt_template_id || null);
         setSecondaryPrompt(nl.secondary_prompt || '');
         setCadence(nl.schedule_cadence);
         setIsPublic(nl.is_public);
@@ -101,7 +119,8 @@ export default function EditNewsletterPage() {
         body: JSON.stringify({
           name,
           description: description || null,
-          prompt: useDefaultPrompt ? '' : prompt,
+          prompt: promptTemplateId ? '' : prompt,
+          prompt_template_id: promptTemplateId || null,
           secondary_prompt: secondaryPrompt || null,
           schedule_cadence: cadence,
           is_public: isPublic,
@@ -216,30 +235,37 @@ export default function EditNewsletterPage() {
 
           {/* Prompt */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-slate-400">Synthesis Prompt</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Synthesis Style</label>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              {promptTemplates.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => { setPromptTemplateId(t.id); setPrompt(''); }}
+                  className={`p-3 rounded-xl border text-left transition-all ${
+                    promptTemplateId === t.id
+                      ? 'border-blue-500/60 bg-blue-600/10'
+                      : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
+                  }`}
+                >
+                  <div className="text-sm font-medium text-white">{t.name}</div>
+                  <div className="text-xs text-slate-400 mt-0.5 line-clamp-2">{t.description}</div>
+                </button>
+              ))}
               <button
                 type="button"
-                onClick={() => setUseDefaultPrompt(v => !v)}
-                className={`flex items-center gap-2 text-xs px-3 py-1 rounded-lg transition font-medium ${
-                  useDefaultPrompt
-                    ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-slate-800/60 text-slate-500 border border-slate-700/50 hover:text-white'
+                onClick={() => setPromptTemplateId(null)}
+                className={`p-3 rounded-xl border text-left transition-all ${
+                  promptTemplateId === null
+                    ? 'border-blue-500/60 bg-blue-600/10'
+                    : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
                 }`}
               >
-                <span className={`w-3 h-3 rounded-full border-2 flex items-center justify-center transition ${
-                  useDefaultPrompt ? 'bg-emerald-400 border-emerald-400' : 'border-slate-500'
-                }`}>
-                  {useDefaultPrompt && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
-                </span>
-                Use default prompt
+                <div className="text-sm font-medium text-white">Custom</div>
+                <div className="text-xs text-slate-400 mt-0.5">Write your own synthesis prompt</div>
               </button>
             </div>
-            {useDefaultPrompt ? (
-              <div className="w-full bg-slate-800/20 border border-slate-700/30 border-dashed rounded-xl px-4 py-3 text-slate-500 text-sm">
-                Uses the Junto default — hedge fund PM briefing format, ~350 words, tight and opinionated.
-              </div>
-            ) : (
+            {promptTemplateId === null && (
               <textarea
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
@@ -403,7 +429,7 @@ export default function EditNewsletterPage() {
           <div className="flex gap-3 pt-4">
             <button
               onClick={handleSave}
-              disabled={saving || !name || (!useDefaultPrompt && !prompt)}
+              disabled={saving || !name || (!promptTemplateId && !prompt)}
               className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-semibold transition shadow-lg shadow-blue-600/20 disabled:opacity-50"
             >
               {saving ? 'Saving...' : 'Save Changes'}

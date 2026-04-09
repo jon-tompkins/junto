@@ -1,6 +1,7 @@
 import { GroupedTweets } from '@/types';
 import { getXAI, DEFAULT_MODEL } from './client';
 import { NEWSLETTER_SYSTEM_PROMPT, buildUserPromptWithSentiment, parseNewsletterResponse, extractTweetReferences, PROMPT_VERSION, buildCustomSystemPrompt } from './prompts';
+import { getPromptTemplateById } from '@/lib/db/prompt-templates';
 import { 
   extractTickersFromTweets, 
   fetchMultiTickerSentiment, 
@@ -34,7 +35,8 @@ export async function generateNewsletter(
   customPrompt?: string | null,
   newsletterContent?: NewsletterContent[],
   watchlistTweets?: any[],
-  userWatchlist?: string[]
+  userWatchlist?: string[],
+  promptTemplateId?: string | null
 ): Promise<NewsletterResult> {
   const client = getXAI();
   
@@ -67,10 +69,14 @@ export async function generateNewsletter(
     watchlistTweets
   );
   
-  // Use custom prompt if provided, otherwise default
-  const systemPrompt = customPrompt 
-    ? buildCustomSystemPrompt(customPrompt, keywords)
-    : NEWSLETTER_SYSTEM_PROMPT;
+  // Resolve system prompt: template > custom > default
+  let systemPrompt = NEWSLETTER_SYSTEM_PROMPT;
+  if (promptTemplateId) {
+    const template = await getPromptTemplateById(promptTemplateId);
+    if (template) systemPrompt = template.prompt;
+  } else if (customPrompt) {
+    systemPrompt = buildCustomSystemPrompt(customPrompt, keywords);
+  }
   
   const response = await client.chat.completions.create({
     model: DEFAULT_MODEL,

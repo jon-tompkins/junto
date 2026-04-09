@@ -17,6 +17,7 @@ export async function createNewsletter(newsletter: {
   schedule_cadence?: string;
   credit_cost?: number;
   send_days?: string[];
+  prompt_template_id?: string | null;
 }): Promise<NewsletterV2> {
   const { data, error } = await supabase()
     .from('newsletters_v2')
@@ -30,6 +31,7 @@ export async function createNewsletter(newsletter: {
       schedule_cadence: newsletter.schedule_cadence ?? 'daily',
       credit_cost: newsletter.credit_cost ?? 1,
       send_days: newsletter.send_days ?? ['mon', 'tue', 'wed', 'thu', 'fri'],
+      prompt_template_id: newsletter.prompt_template_id || null,
     })
     .select()
     .single();
@@ -84,7 +86,7 @@ export async function getUserNewsletters(userId: string): Promise<NewsletterV2[]
   return data || [];
 }
 
-export async function updateNewsletter(id: string, updates: Partial<Pick<NewsletterV2, 'name' | 'description' | 'prompt' | 'secondary_prompt' | 'is_public' | 'schedule_cadence' | 'credit_cost'>> & { send_days?: string[] }): Promise<NewsletterV2> {
+export async function updateNewsletter(id: string, updates: Partial<Pick<NewsletterV2, 'name' | 'description' | 'prompt' | 'secondary_prompt' | 'is_public' | 'schedule_cadence' | 'credit_cost'>> & { send_days?: string[]; prompt_template_id?: string | null }): Promise<NewsletterV2> {
   const { data, error } = await supabase()
     .from('newsletters_v2')
     .update({ ...updates, updated_at: new Date().toISOString() })
