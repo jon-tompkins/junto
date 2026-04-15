@@ -374,39 +374,82 @@ function buildScoutDataPackage(
 }
 
 function jebPrompt(ticker: string, scoutData: string, today: string): string {
-  return `You are Jeb, a fundamental analyst. Today is ${today}. You've been given real-time financial data — use it, don't make up numbers.
+  return `You are Jeb, a senior fundamental analyst producing sell-side-quality research. Today is ${today}. You have the real-time financial data below — use it, don't invent numbers. CROSS-REFERENCE with SEC EDGAR filings (10-Q/10-K for the past 2 quarters) via live search and note any material discrepancies.
 
 ${scoutData}
 
 ---
 
-Provide fundamental analysis using the REAL DATA above. Use TABLES for all financials.
+Produce the following sections. Use TABLES for all financials. Be quantitative — every number specific.
 
 ## Business Quality
-- Moat width (none/narrow/wide) and why
-- Key competitive advantages as bullet points
+- Moat width (none/narrow/wide) and why (1-2 sentences)
+- 2-3 key competitive advantages as bullet points
 
 ## Financial Snapshot
-Use the data provided. Fill in any gaps with your knowledge, but mark estimated values with (est).
+Expand the fundamentals beyond Yahoo — cross-reference with recent SEC 10-Q/10-K filings. Mark estimates with (est). If SEC data diverges from Yahoo, flag in the Assessment column.
 
-| Metric | Value | Assessment |
-|--------|-------|------------|
-| Revenue | [from data] | [growing/declining/stable] |
-| Profit Margin | [from data] | [healthy/thin/negative] |
-| Debt/Equity | [from data] | [low/moderate/high risk] |
+| Metric | Value | Source | Assessment |
+|--------|-------|--------|------------|
+| Revenue (TTM) | [value] | [Yahoo/SEC 10-Q] | [growing/declining/stable + YoY %] |
+| Revenue (prior Q) | [value] | [SEC 10-Q] | [trend] |
+| Free Cash Flow | [value] | [SEC/Yahoo] | [positive/negative + trend] |
+| Cash on Hand | [value] | [SEC 10-Q] | [runway adequate?] |
+| EBITDA | [value] | [SEC/Yahoo] | [margin %] |
+| Profit Margin | [value] | [calculated] | [healthy/thin/negative] |
+| Book Value | [value] | [SEC 10-Q] | [vs price] |
+| EPS (TTM) | [value] | [Yahoo] | [trend] |
+| Debt/Equity | [value] | [SEC 10-Q] | [low/moderate/high] |
+| P/E | [value] | [Yahoo] | [vs sector] |
+| Forward P/E | [value] | [Yahoo] | [vs trailing] |
 
 ## Valuation vs Peers
 | Metric | ${ticker} | Peer 1 | Peer 2 | Sector Avg |
 |--------|-----------|--------|--------|------------|
-| P/E | [from data] | [est] | [est] | [est] |
+| P/E | [value] | [est] | [est] | [est] |
+| P/B | [value] | [est] | [est] | [est] |
 | EV/EBITDA | [est] | [est] | [est] | [est] |
+
+## Ownership & Recent Funding
+Pull from recent SEC filings, 13-F data, and news. Table of top holders:
+
+| Holder | Stake | Change (2yr) | Notes |
+|--------|-------|-------------|-------|
+| [Institution/fund] | [%] | [+/- %] | [why notable] |
+| [Institution/fund] | [%] | [+/- %] | [why notable] |
+
+**Recent Funding / Transactions (past 24 months):**
+- [bullet: round / secondary / insider transaction]
+- [bullet]
+
+## Competition & Sector Dynamics
+3–5 direct competitors + sector tailwinds/headwinds.
+
+| Competitor | Positioning | Threat Level |
+|-----------|-------------|--------------|
+| [name] | [how they compete] | [high/med/low] |
+| [name] | [how they compete] | [high/med/low] |
+
+**Tailwinds:** [2-3 bullets]
+**Headwinds:** [2-3 bullets]
+
+## 12-Month Catalyst Timeline
+Company-specific + relevant market catalysts for the next 12 months. Use approximate dates/quarters.
+
+| Date/Quarter | Catalyst | Type | Impact |
+|--------------|----------|------|--------|
+| [Q1] | [earnings / product launch / FOMC / etc.] | [company/macro] | [bull/bear/neutral] |
+| [Q2] | [catalyst] | [type] | [impact] |
+| [Q3] | [catalyst] | [type] | [impact] |
+| [Q4] | [catalyst] | [type] | [impact] |
 
 ## Jeb's Verdict
 - **Fair Value Estimate:** $X (X% upside/downside)
-- **Conviction:** High/Medium/Low
+- **12-Month Price Target:** $X
+- **Conviction:** High / Medium / Low
 - **Key Risk:** [single biggest fundamental risk]
 
-Be quantitative. Every number specific. No filler.`;
+No filler. Be specific about companies, dollar amounts, and dates.`;
 }
 
 function antPrompt(ticker: string, scoutData: string, chartUrl: string | null): string {
@@ -447,31 +490,39 @@ Be precise with numbers. No vague language.`;
 }
 
 function petePrompt(ticker: string, companyName: string | null, today: string): string {
-  return `You are Pete, a sentiment analyst with deep knowledge of financial Twitter/X discourse. Today is ${today}.
+  return `You are Pete, a senior analyst covering news flow, M&A chatter, and social sentiment on ${ticker}${companyName ? ` (${companyName})` : ''}. Today is ${today}. Use live search extensively.
 
-What is the current sentiment on **${ticker}**${companyName ? ` (${companyName})` : ''} across Twitter/X and social media?
+Produce four sections:
 
-Cover:
+## Recent News (past 12 months)
+Pull from major financial outlets (Bloomberg, Reuters, WSJ, FT, CNBC, Barron's). List 5–8 material stories in reverse chronological order.
+
+| Date | Outlet | Headline | Material? |
+|------|--------|----------|-----------|
+| [YYYY-MM] | [outlet] | [headline] | [Yes/No + why] |
+
+## M&A / Rumor Watch
+Pull credible rumors from past 12 months. Only include sourced items — flag speculation vs confirmed.
+
+- **[Rumor / Event]** — [source, date] — [credibility: high/med/low] — [potential impact]
+- **[Rumor / Event]** — [source, date] — [credibility] — [impact]
+- **Insider transactions (past 6 months):** [notable buys/sells with amounts]
+- **Activist / 13D filings:** [if any — firm name, stake, stated goals]
+
+If no credible M&A chatter, say so explicitly: "No credible M&A activity identified in past 12 months."
 
 ## Social Sentiment
 - **Overall mood:** [Bullish / Bearish / Mixed / Neutral]
-- **Retail vs Institutional:** Are retail traders excited? What are fund managers saying?
-- **Trending narratives:** What are the 2-3 dominant stories/memes around this ticker?
-
-## Notable Voices
-- Who are the most influential accounts talking about ${ticker}?
-- Any notable bulls or bears? What's their thesis?
-- Any contrarian takes worth noting?
-
-## Sentiment Shift
-- Has sentiment changed recently? In which direction?
-- Any catalysts driving the shift?
-- Sentiment score: [-5 to +5] where -5 is extreme fear, +5 is extreme greed
+- **Retail vs Institutional:** What are retail traders saying on Reddit/X? What are fund managers saying?
+- **Trending narratives:** 2–3 dominant stories around this ticker right now
+- **Notable voices:** 2–3 influential accounts + their stance (bull/bear/neutral + 1-sentence thesis)
+- **Sentiment shift:** Has sentiment changed in past 30 days? What drove it?
+- **Sentiment score:** [-5 to +5] (-5 = extreme fear, +5 = extreme greed)
 
 ## Pete's Read
-[2-3 sentences: what does the social sentiment tell us that the fundamentals don't? Is the crowd right or wrong here?]
+[3-4 sentences: what does the news + sentiment tell us that fundamentals alone miss? Any credible catalysts or warning signs? Is the crowd right or wrong right now?]
 
-Be specific about what people are saying. Reference real narratives, not generic "bullish on fundamentals."`;
+Be specific with outlet names, dates, and dollar amounts. Reference real stories and real people.`;
 }
 
 function synthesisPrompt(
@@ -483,70 +534,105 @@ function synthesisPrompt(
   peteAnalysis: string,
   chartUrl: string | null,
 ): string {
-  return `Synthesize these three analyst reports into one cohesive Deep Dive. Do NOT repeat information — combine and distill. Use tables for financial data. Use bullet points for readability.
+  return `You are the Head of Research. Combine the three analyst memos below into a single, institutional-quality equity research report. Preserve tables verbatim from analysts where possible. Do not invent data. Do not repeat the same fact in multiple sections.
 
 **Input from analysts:**
 
-JEB (Fundamentals): ${jebAnalysis}
+JEB (Fundamentals + Ownership + Competition + Catalysts): ${jebAnalysis}
 
 ANT (Technicals): ${antAnalysis}
 
-PETE (Sentiment): ${peteAnalysis}
+PETE (News + M&A + Sentiment): ${peteAnalysis}
 
-**Write the final report in this exact structure:**
+**Write the final report in EXACTLY this structure. Preserve section numbers and headings.**
 
-# ${ticker} Deep Dive${companyName ? ` — ${companyName}` : ''}
-${price ? `**Current Price:** $${price}` : ''}
+# Equity Research Report: ${companyName || ticker} ($${ticker})
+${price ? `**Current Price:** $${price} | ` : ''}**Rating:** [STRONG BUY / BUY / HOLD / AVOID / SHORT] | **Fair Value:** $X | **12-Mo Price Target:** $X
 
-## Executive Summary
-[2-3 sentences. The verdict upfront — rating, fair value, and whether to buy/sell/wait. Factor in fundamentals, technicals, AND sentiment.]
+---
 
-## What They Do
-[2-3 sentences max. Business model and why it matters now.]
+## One-Page Summary
 
-${chartUrl ? `## Price Chart\n![${ticker} 5-Year Chart](${chartUrl})\n` : ''}
+**Thesis** — [2-3 sentences. The core call: what, why, and over what timeframe. Factor in fundamentals, technicals, AND sentiment.]
 
-## Technical Setup
+### Top 5 Reasons [to Own / to Pass]
+1. **[Headline]** — [1-2 sentences with a specific data point]
+2. **[Headline]** — [1-2 sentences with a specific data point]
+3. **[Headline]** — [1-2 sentences with a specific data point]
+4. **[Headline]** — [1-2 sentences with a specific data point]
+5. **[Headline]** — [1-2 sentences with a specific data point]
+
+---
+
+## 1. Company Overview
+[3-4 sentences. Business model, revenue segments, geographic exposure. Why this name matters right now.]
+
+${chartUrl ? `## 2. Price Chart\n![${ticker} 5-Year Chart with 200d/200w MAs](${chartUrl})\n` : ''}
+
+## 3. Technical Setup
+Preserve Ant's tables and entry strategy. Include:
 - **Trend:** [direction + strength]
-- **Key Resistance:** $X, $X
-- **Key Support:** $X, $X
-- **Phase:** [Wyckoff phase]
-- **Entry Zone:** $X—$X
-- **Stop Loss:** $X
+- **Wyckoff Phase:** [phase]
+- **Key Levels table** (Resistance 2/1, Support 1/2 with prices + significance)
+- **Entry Strategy:** Buy/Short zone $X—$X, Stop Loss $X
 
-## Financials
-Preserve Jeb's tables exactly. Include Financial Snapshot and Valuation vs Peers tables.
+## 4. Financial Health
+Preserve Jeb's **Financial Snapshot** table verbatim (all 11 metrics). Add 2-3 sentences of commentary on the 2-quarter trend and flag any discrepancies noted between Yahoo data and SEC filings.
 
-## Social Sentiment
+Then preserve Jeb's **Valuation vs Peers** table verbatim.
+
+## 5. Ownership & Capital Structure
+Preserve Jeb's **Ownership** table and **Recent Funding / Transactions** bullets verbatim. Add 1 sentence on what the holder base tells us (concentrated/diffuse, smart money flow, etc.).
+
+## 6. Competition & Sector
+Preserve Jeb's **Competitors** table and **Tailwinds/Headwinds** bullets verbatim.
+
+## 7. 12-Month Catalyst Timeline
+Preserve Jeb's catalyst table verbatim. Add 1 sentence on the single most important catalyst to watch.
+
+## 8. Recent News & Material Events
+Preserve Pete's **Recent News** table verbatim. Add 1-2 sentences on the narrative arc.
+
+## 9. M&A & Rumor Watch
+Preserve Pete's **M&A / Rumor Watch** section verbatim.
+
+## 10. Social Sentiment
+Condense Pete's sentiment section:
 - **Mood:** [Bullish/Bearish/Mixed] — [1 sentence why]
 - **Score:** [X/5]
-- **Key narrative:** [what the crowd is focused on]
-- **Contrarian signal?** [Is the crowd likely right or wrong?]
+- **Trending narrative:** [what the crowd is focused on]
+- **Contrarian read:** [is the crowd right or wrong here?]
 
-## Bull vs Bear
+## 11. Bull vs Bear Case
 
 | Bull Case | Bear Case |
 |-----------|-----------|
-| [Point 1] | [Point 1] |
-| [Point 2] | [Point 2] |
-| [Point 3] | [Point 3] |
+| [Data-backed point] | [Data-backed point] |
+| [Data-backed point] | [Data-backed point] |
+| [Data-backed point] | [Data-backed point] |
 
-## The Verdict
+## 12. The Verdict
 
 | | |
 |---|---|
 | **Rating** | [STRONG BUY / BUY / HOLD / AVOID / SHORT] |
 | **Fair Value** | $X (X% upside/downside) |
-| **Entry** | $X—$X |
+| **12-Mo Price Target** | $X |
+| **Entry Zone** | $X—$X |
 | **Stop Loss** | $X |
-| **Sentiment** | [Bullish/Bearish X/5] |
+| **Sentiment Score** | [X/5] |
 | **Risk/Reward** | X:X |
+| **Conviction** | [High / Medium / Low] |
+
+---
+
+**Disclaimer:** This report is for informational purposes only and does not constitute investment advice, a recommendation, or a solicitation to buy or sell any security. All investments carry risk including loss of principal. Past performance is not indicative of future results. Do your own research before making any investment decision.
 
 Rules:
-- NO disclaimers, NO "not financial advice"
-- NO redundant information — if it's in the table, don't repeat in prose
-- Every number must be specific
-- Keep it dense and scannable — bullet points and tables over paragraphs`;
+- Preserve analyst tables verbatim — don't re-summarize, pass through
+- Every number must be specific — no "high", "low" without a value
+- No filler text between sections
+- Top 5 Reasons must include data points, not generic claims`;
 }
 
 // ─── Main Processor ─────────────────────────────────────────────
@@ -602,27 +688,33 @@ export async function processDeepDive(requestId: string, ticker: string, userId:
     console.log(`[research] Scout data package ready. Launching Jeb, Ant, Pete in parallel...`);
 
     // ─── JEB + ANT + PETE: Run in parallel ──────────────────
+    // Jeb and Pete use live search to pull fresh SEC filings, news, and M&A chatter
+    // xAI-specific `search_parameters` is not in OpenAI SDK types; we pass through as unknown
+    const jebParams = {
+      model: 'grok-3-fast',
+      messages: [{ role: 'user' as const, content: jebPrompt(ticker, scoutData, today) }],
+      max_tokens: 2500,
+      search_parameters: { mode: 'on', max_search_results: 15 },
+    };
+    const peteParams = {
+      model: 'grok-3-fast',
+      messages: [{ role: 'user' as const, content: petePrompt(ticker, companyName, today) }],
+      max_tokens: 2000,
+      search_parameters: { mode: 'on', max_search_results: 15 },
+    };
     const [jebResponse, antResponse, peteResponse] = await Promise.all([
-      xai.chat.completions.create({
-        model: 'grok-3-fast',
-        messages: [{ role: 'user', content: jebPrompt(ticker, scoutData, today) }],
-        max_tokens: 1500,
-      }),
+      xai.chat.completions.create(jebParams as unknown as Parameters<typeof xai.chat.completions.create>[0]),
       xai.chat.completions.create({
         model: 'grok-3-fast',
         messages: [{ role: 'user', content: antPrompt(ticker, scoutData, chartUrl) }],
         max_tokens: 1500,
       }),
-      xai.chat.completions.create({
-        model: 'grok-3-fast',
-        messages: [{ role: 'user', content: petePrompt(ticker, companyName, today) }],
-        max_tokens: 1000,
-      }),
+      xai.chat.completions.create(peteParams as unknown as Parameters<typeof xai.chat.completions.create>[0]),
     ]);
 
-    const jebAnalysis = jebResponse.choices[0]?.message?.content || '';
-    const antAnalysis = antResponse.choices[0]?.message?.content || '';
-    const peteAnalysis = peteResponse.choices[0]?.message?.content || '';
+    const jebAnalysis = (jebResponse as any).choices[0]?.message?.content || '';
+    const antAnalysis = (antResponse as any).choices[0]?.message?.content || '';
+    const peteAnalysis = (peteResponse as any).choices[0]?.message?.content || '';
 
     console.log(`[research] All agents complete. Synthesizing ${ticker} report...`);
 
@@ -633,7 +725,7 @@ export async function processDeepDive(requestId: string, ticker: string, userId:
         role: 'user',
         content: synthesisPrompt(ticker, companyName, currentPrice, jebAnalysis, antAnalysis, peteAnalysis, chartUrl),
       }],
-      max_tokens: 3000,
+      max_tokens: 5000,
     });
     const finalReport = synthesisResponse.choices[0]?.message?.content || '';
 
