@@ -39,6 +39,8 @@ export interface FetchedTweet {
   raw_data: Record<string, unknown>;
 }
 
+import { recordCost, apifyCostCents } from '../costs';
+
 const APIFY_ACTOR_ID = 'kaitoeasyapi~twitter-x-data-tweet-scraper-pay-per-result-cheapest';
 const APIFY_BASE_URL = 'https://api.apify.com/v2';
 
@@ -120,7 +122,17 @@ export async function fetchTweetsFromProfile(
   // Wait for results
   const tweets = await waitForRun(runId, token);
   console.log(`[Apify] Got ${tweets.length} tweets for @${cleanHandle}`);
-  
+
+  recordCost({
+    supplier: 'apify',
+    operation: 'tweet_pull_single',
+    cost_cents: apifyCostCents(tweets.length),
+    usage_amount: tweets.length,
+    usage_unit: 'tweets',
+    external_id: runId,
+    metadata: { handle: cleanHandle, actor: APIFY_ACTOR_ID },
+  });
+
   // Transform to our format
   return tweets.map((tweet: any, index: number) => {
     const isRetweet = tweet.text?.startsWith('RT @') || false;
@@ -200,6 +212,17 @@ export async function fetchTweetsForMultipleProfiles(
   const tweets = await waitForRun(runId, token, 120000); // 2 min for batched runs
   console.log(`[Apify BATCH] Got ${tweets.length} total tweets across ${handles.length} handles`);
 
+  // Record cost
+  recordCost({
+    supplier: 'apify',
+    operation: 'tweet_pull_batched',
+    cost_cents: apifyCostCents(tweets.length),
+    usage_amount: tweets.length,
+    usage_unit: 'tweets',
+    external_id: runId,
+    metadata: { handles: handles.length, actor: APIFY_ACTOR_ID },
+  });
+
   // Group tweets by author handle (case-insensitive)
   const byHandle: Record<string, FetchedTweet[]> = {};
   for (const h of cleanHandles) {
@@ -274,7 +297,17 @@ export async function searchTweets(
   
   const tweets = await waitForRun(runId, token);
   console.log(`[Apify] Got ${tweets.length} tweets for "${query}"`);
-  
+
+  recordCost({
+    supplier: 'apify',
+    operation: 'tweet_search',
+    cost_cents: apifyCostCents(tweets.length),
+    usage_amount: tweets.length,
+    usage_unit: 'tweets',
+    external_id: runId,
+    metadata: { query, actor: APIFY_ACTOR_ID },
+  });
+
   return tweets.map((tweet: any, index: number) => ({
     twitter_id: tweet.id?.toString() || '',
     content: tweet.text || '',

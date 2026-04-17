@@ -1,6 +1,7 @@
 import { getResend } from './client';
 import { config } from '@/lib/utils/config';
 import { formatDate } from '@/lib/utils/date';
+import { recordCost, resendCostCents } from '@/lib/costs';
 
 interface SendNewsletterParams {
   to: string | string[];
@@ -55,6 +56,18 @@ export async function sendNewsletter({
   }
 
   console.log(`Email sent successfully: ${data?.id}`);
+
+  recordCost({
+    supplier: 'resend',
+    operation: 'newsletter_delivery',
+    cost_cents: resendCostCents(recipients.length),
+    usage_amount: recipients.length,
+    usage_unit: 'emails',
+    external_id: data?.id || '',
+    newsletter_id: newsletterId || null,
+    metadata: { newsletterName },
+  });
+
   return { id: data?.id || '' };
 }
 

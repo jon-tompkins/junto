@@ -1,8 +1,35 @@
 import { getXAI } from '@/lib/synthesis/client';
 import { getSupabase } from '@/lib/db/client';
+import { recordCost, grokCostCents } from '@/lib/costs';
 
 const CREDITS_PER_DEEPDIVE = 5;
 const CREDITS_PER_SCAN = 10;
+
+/**
+ * Record a research agent API call cost.
+ * Accepts the raw xAI response (may be wrapped in `as any` due to SDK union types).
+ */
+function recordAgentCost(
+  operation: string,
+  response: any,
+  ticker: string,
+  userId: string,
+  liveSearch: boolean,
+) {
+  const input = response?.usage?.prompt_tokens || 0;
+  const output = response?.usage?.completion_tokens || 0;
+  recordCost({
+    supplier: 'grok',
+    operation,
+    cost_cents: grokCostCents(input, output, liveSearch),
+    usage_amount: input + output,
+    usage_unit: 'tokens',
+    input_tokens: input,
+    output_tokens: output,
+    user_id: userId,
+    metadata: { ticker, live_search: liveSearch, model: 'grok-3-fast' },
+  });
+}
 
 // ─── Ticker Extraction (no inference) ────────────────────────────
 
@@ -716,6 +743,11 @@ export async function processDeepDive(requestId: string, ticker: string, userId:
     const antAnalysis = (antResponse as any).choices[0]?.message?.content || '';
     const peteAnalysis = (peteResponse as any).choices[0]?.message?.content || '';
 
+    // Cost tracking for each agent
+    recordAgentCost('research_jeb', jebResponse, ticker, userId, true);
+    recordAgentCost('research_ant', antResponse, ticker, userId, false);
+    recordAgentCost('research_pete', peteResponse, ticker, userId, true);
+
     console.log(`[research] All agents complete. Synthesizing ${ticker} report...`);
 
     // ─── SYNTHESIS: Combine all perspectives ─────────────────
@@ -728,6 +760,8 @@ export async function processDeepDive(requestId: string, ticker: string, userId:
       max_tokens: 5000,
     });
     const finalReport = synthesisResponse.choices[0]?.message?.content || '';
+
+    recordAgentCost('research_synthesis_deepdive', synthesisResponse, ticker, userId, false);
 
     // 7. Extract rating and summary from report
     const ratingMatch = finalReport.match(/\*\*Rating:\*\*\s*(.+)/);
@@ -875,6 +909,7 @@ Example response: NVDA, AMD, AVGO, TSM, MU, INTC`,
       });
       const scoutTickers = scoutResponse.choices[0]?.message?.content || '';
       tickers = scoutTickers.split(',').map(t => t.trim().toUpperCase()).filter(t => /^[A-Z]{1,6}(-USD)?$/.test(t)).slice(0, 8);
+      recordAgentCost('research_scan_scout', scoutResponse, 'SCAN', userId, false);
     }
 
     console.log(`[research] Scan tickers: ${tickers.join(', ')}`);
@@ -1060,6 +1095,8 @@ Rules:
     const content = synthesisResponse.choices[0]?.message?.content || '';
     const summary = content.substring(0, 500);
     const reportDate = new Date().toISOString().split('T')[0];
+
+    recordAgentCost('research_synthesis_scan', synthesisResponse, 'SCAN', userId, false);
 
     const slug = `scan-${slugify(query.substring(0, 40))}-${reportDate}-${requestId.substring(0, 6)}`;
 

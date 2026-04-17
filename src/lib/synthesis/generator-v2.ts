@@ -1,6 +1,7 @@
 import { GroupedTweets } from '@/types';
 import { getXAI, DEFAULT_MODEL } from './client';
 import { parseNewsletterResponse, extractTweetReferences } from './prompts';
+import { recordCost, grokCostCents } from '../costs';
 
 /**
  * V2 Newsletter Generator — newsletter-centric, not user-centric.
@@ -53,12 +54,26 @@ export async function generateNewsletterV2({
   const { subject } = parseNewsletterResponse(rawContent, newsletterName);
   const { content } = extractTweetReferences(rawContent, recentTweets, contextTweets);
 
+  const inputTokens = response.usage?.prompt_tokens || 0;
+  const outputTokens = response.usage?.completion_tokens || 0;
+
+  recordCost({
+    supplier: 'grok',
+    operation: 'newsletter_synthesis',
+    cost_cents: grokCostCents(inputTokens, outputTokens),
+    usage_amount: inputTokens + outputTokens,
+    usage_unit: 'tokens',
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    metadata: { model: DEFAULT_MODEL, newsletterName },
+  });
+
   return {
     subject,
     content,
     model_used: DEFAULT_MODEL,
-    input_tokens: response.usage?.prompt_tokens || 0,
-    output_tokens: response.usage?.completion_tokens || 0,
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
   };
 }
 
