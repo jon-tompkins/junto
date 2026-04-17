@@ -145,6 +145,103 @@ export async function fetchTweetsFromProfile(
   });
 }
 
+/**
+ * Fetch tweets for MULTIPLE handles in a single Apify run.
+ * Collapses N runs into 1 by batching search queries via the actor's
+ * `searchTerms` array.
+ *
+ * Returns a map of { handle: tweets[] } so callers can store per-source.
+ */
+export async function fetchTweetsForMultipleProfiles(
+  handles: string[],
+  maxTweetsPerHandle = 30,
+  sinceDate?: string,
+): Promise<Record<string, FetchedTweet[]>> {
+  const token = process.env.APIFY_API_KEY;
+  if (!token) {
+    throw new Error('APIFY_API_KEY not configured');
+  }
+  if (handles.length === 0) return {};
+
+  const cleanHandles = handles.map((h) => h.replace('@', ''));
+  const dateStr = sinceDate ? sinceDate.split('T')[0] : undefined;
+
+  const searchTerms = cleanHandles.map((h) =>
+    dateStr ? `from:${h} since:${dateStr}` : `from:${h}`,
+  );
+
+  const totalDesired = handles.length * maxTweetsPerHandle;
+
+  console.log(
+    `[Apify BATCH] Fetching tweets for ${handles.length} handles${dateStr ? ` since ${dateStr}` : ''} (single run, up to ${totalDesired} tweets)...`,
+  );
+
+  const runRes = await fetch(
+    `${APIFY_BASE_URL}/acts/${APIFY_ACTOR_ID}/runs?token=${token}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        searchTerms,
+        tweetsDesired: totalDesired,
+      }),
+    },
+  );
+
+  const runData = await runRes.json();
+  const runId = runData.data?.id;
+
+  if (!runId) {
+    throw new Error('Failed to start Apify run');
+  }
+
+  console.log(`[Apify BATCH] Run started: ${runId}`);
+
+  const tweets = await waitForRun(runId, token, 120000); // 2 min for batched runs
+  console.log(`[Apify BATCH] Got ${tweets.length} total tweets across ${handles.length} handles`);
+
+  // Group tweets by author handle (case-insensitive)
+  const byHandle: Record<string, FetchedTweet[]> = {};
+  for (const h of cleanHandles) {
+    byHandle[h.toLowerCase()] = [];
+  }
+
+  for (const tweet of tweets) {
+    const author = (tweet.author?.userName || '').toLowerCase();
+    if (!author) continue;
+    if (!byHandle[author]) continue; // Skip tweets from authors we didn't ask for
+
+    const index = byHandle[author].length;
+    const isRetweet = tweet.text?.startsWith('RT @') || false;
+    const isReply = !!tweet.inReplyToStatusId;
+    const isQuote = !!tweet.quotedTweet;
+
+    byHandle[author].push({
+      twitter_id: tweet.id?.toString() || '',
+      content: tweet.text || '',
+      posted_at: parseDate(tweet.createdAt),
+      likes: tweet.likeCount || 0,
+      retweets: tweet.retweetCount || 0,
+      replies: tweet.replyCount || 0,
+      is_retweet: isRetweet,
+      is_reply: isReply,
+      is_quote_tweet: isQuote,
+      quoted_tweet_content: tweet.quotedTweet?.text || null,
+      thread_id: tweet.conversationId?.toString() || null,
+      thread_position: tweet.conversationId ? index : null,
+      raw_data: tweet as Record<string, unknown>,
+    });
+  }
+
+  // Return keyed by original handle casing (so callers can round-trip)
+  const keyed: Record<string, FetchedTweet[]> = {};
+  for (const h of handles) {
+    const clean = h.replace('@', '').toLowerCase();
+    keyed[h] = byHandle[clean] || [];
+  }
+  return keyed;
+}
+
 export async function searchTweets(
   query: string,
   maxTweets = 30

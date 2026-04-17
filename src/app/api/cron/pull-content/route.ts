@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSourcesWithActiveNewsletters } from '@/lib/db/sources';
 import { storeTwitterContent } from '@/lib/db/content-twitter';
-import { fetchTweetsForProfile } from '@/lib/twitter/client';
+import { fetchTweetsForMultipleProfiles } from '@/lib/twitter/client';
 import { fetchChannelInsights } from '@/lib/youtube/client';
 import { getSupabase } from '@/lib/db/client';
 
 export const maxDuration = 300; // 5 minutes
 
-const CONCURRENCY = 5;
+// Skip sources pulled within this window (prevents redundant Apify calls)
+const FRESHNESS_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
+// If any source was updated in the last OVERLAP_WINDOW, assume a prior cron is
+// running or just finished — bail to prevent duplicate runs.
+const OVERLAP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 
 // GET /api/cron/pull-content — pull fresh content from all source types
 export async function GET(req: NextRequest) {
@@ -22,57 +26,94 @@ export async function GET(req: NextRequest) {
     let totalFetched = 0;
     let totalStored = 0;
 
-    // ─── Twitter Sources ────────────────────────────
+    // ─── Twitter Sources (BATCHED) ──────────────────
     const twitterSources = await getSourcesWithActiveNewsletters('twitter');
+    const now = Date.now();
 
-    if (twitterSources.length > 0) {
-      console.log(`[pull-content] Pulling ${twitterSources.length} Twitter sources...`);
+    // Overlap guard: if any source was just updated (< 5 min ago), assume another
+    // pull-content cron is mid-flight or just finished. Bail to avoid duplicates.
+    const recentlyUpdated = twitterSources.some(
+      (s) => s.updated_at && now - new Date(s.updated_at).getTime() < OVERLAP_WINDOW_MS,
+    );
+    if (recentlyUpdated) {
+      console.log(`[pull-content] A source was updated within ${OVERLAP_WINDOW_MS / 1000}s — another run is active or just finished. Skipping Twitter pull.`);
+    } else if (twitterSources.length > 0) {
+      // Freshness filter: only pull sources last updated > 30 min ago (or never)
+      const stale = twitterSources.filter(
+        (s) => !s.updated_at || now - new Date(s.updated_at).getTime() >= FRESHNESS_WINDOW_MS,
+      );
+      const skipped = twitterSources.length - stale.length;
 
-      for (let i = 0; i < twitterSources.length; i += CONCURRENCY) {
-        const batch = twitterSources.slice(i, i + CONCURRENCY);
+      console.log(
+        `[pull-content] ${twitterSources.length} Twitter sources total, ${stale.length} stale (>30min), ${skipped} fresh (skipped).`,
+      );
 
-        const batchResults = await Promise.allSettled(
-          batch.map(async (source) => {
-            const sinceDate = source.updated_at || undefined;
-            const tweets = await fetchTweetsForProfile(source.handle_or_url, 30, sinceDate);
+      if (stale.length > 0) {
+        // Oldest `updated_at` across stale sources determines the `since` filter —
+        // this ensures we don't miss tweets posted between pulls. Fall back to 48h ago.
+        const oldestUpdate = stale.reduce<string | null>((min, s) => {
+          if (!s.updated_at) return null; // never pulled — need broader range
+          if (min === null) return min;
+          return s.updated_at < min ? s.updated_at : min;
+        }, new Date(now - 48 * 60 * 60 * 1000).toISOString());
 
-            const stored = await storeTwitterContent(
-              source.id,
-              tweets.map((t) => ({
-                twitter_id: t.twitter_id,
-                content: t.content,
-                posted_at: t.posted_at,
-                likes: t.likes,
-                retweets: t.retweets,
-                replies: t.replies,
-                is_retweet: t.is_retweet,
-                is_reply: t.is_reply,
-                thread_id: t.thread_id ?? undefined,
-                raw_data: t.raw_data,
-              }))
-            );
+        try {
+          const handles = stale.map((s) => s.handle_or_url);
+          const tweetsByHandle = await fetchTweetsForMultipleProfiles(
+            handles,
+            30,
+            oldestUpdate || undefined,
+          );
 
-            await supabase
-              .from('sources')
-              .update({ updated_at: new Date().toISOString() })
-              .eq('id', source.id);
+          // Store + update per source in parallel
+          const storeResults = await Promise.allSettled(
+            stale.map(async (source) => {
+              const tweets = tweetsByHandle[source.handle_or_url] || [];
+              const stored = await storeTwitterContent(
+                source.id,
+                tweets.map((t) => ({
+                  twitter_id: t.twitter_id,
+                  content: t.content,
+                  posted_at: t.posted_at,
+                  likes: t.likes,
+                  retweets: t.retweets,
+                  replies: t.replies,
+                  is_retweet: t.is_retweet,
+                  is_reply: t.is_reply,
+                  thread_id: t.thread_id ?? undefined,
+                  raw_data: t.raw_data,
+                })),
+              );
 
-            return { handle: source.handle_or_url, fetched: tweets.length, stored };
-          })
-        );
+              await supabase
+                .from('sources')
+                .update({ updated_at: new Date().toISOString() })
+                .eq('id', source.id);
 
-        for (let j = 0; j < batchResults.length; j++) {
-          const result = batchResults[j];
-          const handle = batch[j].handle_or_url;
+              return { handle: source.handle_or_url, fetched: tweets.length, stored };
+            }),
+          );
 
-          if (result.status === 'fulfilled') {
-            results[handle] = { fetched: result.value.fetched, stored: result.value.stored };
-            totalFetched += result.value.fetched;
-            totalStored += result.value.stored;
-          } else {
-            const errMsg = result.reason instanceof Error ? result.reason.message : 'Unknown error';
-            console.error(`[pull-content] Error @${handle}:`, errMsg);
-            results[handle] = { fetched: 0, stored: 0, error: errMsg };
+          for (let i = 0; i < storeResults.length; i++) {
+            const result = storeResults[i];
+            const handle = stale[i].handle_or_url;
+
+            if (result.status === 'fulfilled') {
+              results[handle] = { fetched: result.value.fetched, stored: result.value.stored };
+              totalFetched += result.value.fetched;
+              totalStored += result.value.stored;
+            } else {
+              const errMsg = result.reason instanceof Error ? result.reason.message : 'Unknown error';
+              console.error(`[pull-content] Store error @${handle}:`, errMsg);
+              results[handle] = { fetched: 0, stored: 0, error: errMsg };
+            }
+          }
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : 'Unknown error';
+          console.error('[pull-content] Batched Apify run failed:', errMsg);
+          // Mark all attempted sources as errored so the response is informative
+          for (const source of stale) {
+            results[source.handle_or_url] = { fetched: 0, stored: 0, error: errMsg };
           }
         }
       }

@@ -1,4 +1,18 @@
-import { fetchTweetsFromProfile as fetchViaApify } from './apify-client';
+import {
+  fetchTweetsFromProfile as fetchViaApify,
+  fetchTweetsForMultipleProfiles as fetchBatchViaApify,
+} from './apify-client';
+
+export async function fetchTweetsForMultipleProfiles(
+  handles: string[],
+  maxTweetsPerHandle = 30,
+  sinceDate?: string,
+): Promise<Record<string, FetchedTweet[]>> {
+  if (!process.env.APIFY_API_KEY) {
+    throw new Error('APIFY_API_KEY not configured — batched fetch requires Apify');
+  }
+  return fetchBatchViaApify(handles, maxTweetsPerHandle, sinceDate);
+}
 
 export interface FetchedTweet {
   twitter_id: string;
