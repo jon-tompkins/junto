@@ -168,6 +168,11 @@ export interface Subscription {
   user_id: string;
   newsletter_id: string;
   is_active: boolean;
+  delivery_email?: string | null;
+  delivery_channel?: 'email' | 'telegram';
+  send_windows?: string[];
+  receive_windows?: string[];
+  receive_days?: string[];
   created_at: string;
 }
 

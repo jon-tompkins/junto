@@ -9,6 +9,7 @@ export async function subscribe(
   deliveryEmail?: string,
   sendWindows?: string[],
   receiveDays?: string[],
+  deliveryChannel?: 'email' | 'telegram',
 ): Promise<Subscription> {
   const row: Record<string, any> = { user_id: userId, newsletter_id: newsletterId, is_active: true };
   if (deliveryEmail) row.delivery_email = deliveryEmail;
@@ -17,6 +18,7 @@ export async function subscribe(
     row.receive_windows = sendWindows;
   }
   if (receiveDays) row.receive_days = receiveDays;
+  if (deliveryChannel) row.delivery_channel = deliveryChannel;
 
   const { data, error } = await supabase()
     .from('subscriptions')
@@ -65,16 +67,19 @@ export async function getNewsletterSubscribers(newsletterId: string): Promise<{
   send_windows: string[];
   receive_windows: string[];
   receive_days: string[];
+  delivery_channel: 'email' | 'telegram';
+  telegram_chat_id: string | null;
 }[]> {
   const { data, error } = await supabase()
     .from('subscriptions')
-    .select('user_id, delivery_email, send_windows, receive_windows, receive_days, users(email)')
+    .select(
+      'user_id, delivery_email, send_windows, receive_windows, receive_days, delivery_channel, users(email, telegram_chat_id)',
+    )
     .eq('newsletter_id', newsletterId)
     .eq('is_active', true);
 
   if (error) throw error;
   return (data || [])
-    .filter((row: any) => row.delivery_email || row.users?.email)
     .map((row: any) => ({
       user_id: row.user_id,
       email: row.users?.email || '',
@@ -82,7 +87,14 @@ export async function getNewsletterSubscribers(newsletterId: string): Promise<{
       send_windows: row.send_windows || ['morning'],
       receive_windows: row.receive_windows || row.send_windows || ['morning'],
       receive_days: row.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
-    }));
+      delivery_channel: (row.delivery_channel || 'email') as 'email' | 'telegram',
+      telegram_chat_id: row.users?.telegram_chat_id || null,
+    }))
+    // Keep any subscriber with a valid route: email address OR linked telegram chat
+    .filter((row: any) => {
+      if (row.delivery_channel === 'telegram') return !!row.telegram_chat_id;
+      return !!(row.delivery_email || row.email);
+    });
 }
 
 export async function isSubscribed(userId: string, newsletterId: string): Promise<boolean> {

@@ -55,6 +55,10 @@ export default function NewsletterDetailPage() {
   const [subEmail, setSubEmail] = useState('');
   const [subWindows, setSubWindows] = useState<string[]>(['morning']);
   const [subDays, setSubDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
+  const [subDeliveryChannel, setSubDeliveryChannel] = useState<'email' | 'telegram'>('email');
+  const [tgLinked, setTgLinked] = useState<boolean | null>(null);
+  const [tgDeeplink, setTgDeeplink] = useState<string | null>(null);
+  const [tgLinkingPoll, setTgLinkingPoll] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -103,8 +107,43 @@ export default function NewsletterDetailPage() {
       fetch('/api/v2/account').then(r => r.json()).then(data => {
         if (data.email) setSubEmail(data.email);
       }).catch(() => {});
+      fetch('/api/telegram/link').then(r => r.json()).then(data => {
+        setTgLinked(!!data.linked);
+      }).catch(() => setTgLinked(false));
     }
   }, [session]);
+
+  async function startTelegramLink() {
+    const res = await fetch('/api/telegram/link', { method: 'POST' });
+    if (!res.ok) return;
+    const data = await res.json();
+    setTgDeeplink(data.deeplink);
+    window.open(data.deeplink, '_blank', 'noopener,noreferrer');
+
+    // Poll link status every 2s for up to 2 min — user DMs the bot, webhook
+    // captures chat_id, we flip tgLinked to true once it lands.
+    setTgLinkingPoll(true);
+    const start = Date.now();
+    const interval = setInterval(async () => {
+      if (Date.now() - start > 120_000) {
+        clearInterval(interval);
+        setTgLinkingPoll(false);
+        return;
+      }
+      try {
+        const r = await fetch('/api/telegram/link');
+        if (r.ok) {
+          const d = await r.json();
+          if (d.linked) {
+            setTgLinked(true);
+            setTgLinkingPoll(false);
+            setTgDeeplink(null);
+            clearInterval(interval);
+          }
+        }
+      } catch {}
+    }, 2000);
+  }
 
   async function toggleSubscription() {
     if (!session?.user) {
@@ -136,9 +175,10 @@ export default function NewsletterDetailPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          delivery_email: subEmail,
+          delivery_email: subDeliveryChannel === 'email' ? subEmail : undefined,
           receive_windows: subWindows,
           receive_days: subDays,
+          delivery_channel: subDeliveryChannel,
         }),
       });
       if (res.ok) {
@@ -397,17 +437,76 @@ export default function NewsletterDetailPage() {
               <p className="text-sm text-slate-400 mt-1">2 credits per delivery</p>
             </div>
 
-            {/* Delivery email */}
+            {/* Delivery channel */}
             <div>
-              <label className="block text-xs text-slate-400 font-medium mb-2">Delivery email</label>
-              <input
-                type="email"
-                value={subEmail}
-                onChange={(e) => setSubEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full px-3 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-              />
+              <label className="block text-xs text-slate-400 font-medium mb-2">Deliver via</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { key: 'email', label: 'Email' },
+                  { key: 'telegram', label: 'Telegram' },
+                ].map((opt) => (
+                  <button
+                    key={opt.key}
+                    onClick={() => setSubDeliveryChannel(opt.key as 'email' | 'telegram')}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                      subDeliveryChannel === opt.key
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* Email field — shown when email channel is selected */}
+            {subDeliveryChannel === 'email' && (
+              <div>
+                <label className="block text-xs text-slate-400 font-medium mb-2">Delivery email</label>
+                <input
+                  type="email"
+                  value={subEmail}
+                  onChange={(e) => setSubEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full px-3 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            )}
+
+            {/* Telegram linking — shown when telegram channel is selected */}
+            {subDeliveryChannel === 'telegram' && (
+              <div>
+                <label className="block text-xs text-slate-400 font-medium mb-2">Telegram</label>
+                {tgLinked ? (
+                  <div className="px-3 py-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-sm text-emerald-300">
+                    ✓ Connected — newsletters will arrive as DMs
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <button
+                      onClick={startTelegramLink}
+                      className="w-full px-3 py-2.5 bg-slate-800/60 border border-slate-700 hover:border-blue-500 rounded-xl text-sm text-white transition"
+                    >
+                      {tgLinkingPoll ? 'Waiting for you to message the bot…' : 'Link Telegram'}
+                    </button>
+                    {tgDeeplink && (
+                      <a
+                        href={tgDeeplink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-xs text-blue-400 hover:text-blue-300 text-center"
+                      >
+                        Open Telegram →
+                      </a>
+                    )}
+                    <p className="text-xs text-slate-500">
+                      Opens Telegram and starts a chat with our bot. One tap to link.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Send windows */}
             <div>
@@ -475,7 +574,13 @@ export default function NewsletterDetailPage() {
               </button>
               <button
                 onClick={handleSubscribe}
-                disabled={subscribing || !subEmail || subWindows.length === 0 || subDays.length === 0}
+                disabled={
+                  subscribing ||
+                  subWindows.length === 0 ||
+                  subDays.length === 0 ||
+                  (subDeliveryChannel === 'email' && !subEmail) ||
+                  (subDeliveryChannel === 'telegram' && !tgLinked)
+                }
                 className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition"
               >
                 {subscribing ? 'Subscribing...' : 'Subscribe'}
