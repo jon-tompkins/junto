@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSourcesWithActiveNewsletters } from '@/lib/db/sources';
 import { storeTwitterContent } from '@/lib/db/content-twitter';
-import { fetchTweetsForMultipleProfiles } from '@/lib/twitter/client';
+import { fetchTweetsForProfile } from '@/lib/twitter/client';
 import { fetchChannelInsights } from '@/lib/youtube/client';
 import { getSupabase } from '@/lib/db/client';
 
@@ -12,6 +12,11 @@ const FRESHNESS_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
 // If any source was updated in the last OVERLAP_WINDOW, assume a prior cron is
 // running or just finished — bail to prevent duplicate runs.
 const OVERLAP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+// Overlap window subtracted from each source's updated_at before passing as
+// since_time, so we don't miss tweets posted right before the prior pull.
+const SINCE_SAFETY_BUFFER_MS = 30 * 60 * 1000; // 30 minutes
+// First-time pull lookback when a source has never been fetched.
+const FIRST_PULL_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // GET /api/cron/pull-content — pull fresh content from all source types
 export async function GET(req: NextRequest) {
@@ -26,7 +31,7 @@ export async function GET(req: NextRequest) {
     let totalFetched = 0;
     let totalStored = 0;
 
-    // ─── Twitter Sources (BATCHED) ──────────────────
+    // ─── Twitter Sources (per-handle) ───────────────
     const twitterSources = await getSourcesWithActiveNewsletters('twitter');
     const now = Date.now();
 
@@ -48,73 +53,51 @@ export async function GET(req: NextRequest) {
         `[pull-content] ${twitterSources.length} Twitter sources total, ${stale.length} stale (>30min), ${skipped} fresh (skipped).`,
       );
 
-      if (stale.length > 0) {
-        // Oldest `updated_at` across stale sources determines the `since` filter —
-        // this ensures we don't miss tweets posted between pulls. Fall back to 48h ago.
-        const oldestUpdate = stale.reduce<string | null>((min, s) => {
-          if (!s.updated_at) return null; // never pulled — need broader range
-          if (min === null) return min;
-          return s.updated_at < min ? s.updated_at : min;
-        }, new Date(now - 48 * 60 * 60 * 1000).toISOString());
+      // Per-handle pulls: each source gets its own `since_time` based on its
+      // own last `updated_at` (minus a small safety buffer). First-ever pulls
+      // look back FIRST_PULL_LOOKBACK_MS.
+      for (const source of stale) {
+        const handle = source.handle_or_url;
+        const sinceDate = source.updated_at
+          ? new Date(new Date(source.updated_at).getTime() - SINCE_SAFETY_BUFFER_MS).toISOString()
+          : new Date(now - FIRST_PULL_LOOKBACK_MS).toISOString();
 
         try {
-          const handles = stale.map((s) => s.handle_or_url);
-          const tweetsByHandle = await fetchTweetsForMultipleProfiles(
-            handles,
-            30,
-            oldestUpdate || undefined,
+          const tweets = await fetchTweetsForProfile(handle, 30, sinceDate);
+
+          const stored = await storeTwitterContent(
+            source.id,
+            tweets.map((t) => ({
+              twitter_id: t.twitter_id,
+              content: t.content,
+              posted_at: t.posted_at,
+              likes: t.likes,
+              retweets: t.retweets,
+              replies: t.replies,
+              is_retweet: t.is_retweet,
+              is_reply: t.is_reply,
+              thread_id: t.thread_id ?? undefined,
+              raw_data: t.raw_data,
+            })),
           );
 
-          // Store + update per source in parallel
-          const storeResults = await Promise.allSettled(
-            stale.map(async (source) => {
-              const tweets = tweetsByHandle[source.handle_or_url] || [];
-              const stored = await storeTwitterContent(
-                source.id,
-                tweets.map((t) => ({
-                  twitter_id: t.twitter_id,
-                  content: t.content,
-                  posted_at: t.posted_at,
-                  likes: t.likes,
-                  retweets: t.retweets,
-                  replies: t.replies,
-                  is_retweet: t.is_retweet,
-                  is_reply: t.is_reply,
-                  thread_id: t.thread_id ?? undefined,
-                  raw_data: t.raw_data,
-                })),
-              );
+          // Only bump updated_at when the Apify call actually succeeded. On 0
+          // fetched we still bump — next window will re-check with a fresh
+          // since_time, so we don't thrash. On throw we skip the bump so the
+          // next cron retries.
+          await supabase
+            .from('sources')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', source.id);
 
-              await supabase
-                .from('sources')
-                .update({ updated_at: new Date().toISOString() })
-                .eq('id', source.id);
-
-              return { handle: source.handle_or_url, fetched: tweets.length, stored };
-            }),
-          );
-
-          for (let i = 0; i < storeResults.length; i++) {
-            const result = storeResults[i];
-            const handle = stale[i].handle_or_url;
-
-            if (result.status === 'fulfilled') {
-              results[handle] = { fetched: result.value.fetched, stored: result.value.stored };
-              totalFetched += result.value.fetched;
-              totalStored += result.value.stored;
-            } else {
-              const errMsg = result.reason instanceof Error ? result.reason.message : 'Unknown error';
-              console.error(`[pull-content] Store error @${handle}:`, errMsg);
-              results[handle] = { fetched: 0, stored: 0, error: errMsg };
-            }
-          }
+          results[handle] = { fetched: tweets.length, stored };
+          totalFetched += tweets.length;
+          totalStored += stored;
+          console.log(`[pull-content] @${handle}: ${tweets.length} fetched, ${stored} stored`);
         } catch (err) {
           const errMsg = err instanceof Error ? err.message : 'Unknown error';
-          console.error('[pull-content] Batched Apify run failed:', errMsg);
-          // Mark all attempted sources as errored so the response is informative
-          for (const source of stale) {
-            results[source.handle_or_url] = { fetched: 0, stored: 0, error: errMsg };
-          }
+          console.error(`[pull-content] Error @${handle}:`, errMsg);
+          results[handle] = { fetched: 0, stored: 0, error: errMsg };
         }
       }
     }
