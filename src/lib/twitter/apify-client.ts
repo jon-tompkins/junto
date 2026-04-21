@@ -77,7 +77,7 @@ async function waitForRun(runId: string, token: string, maxWaitMs = 60000): Prom
 export async function fetchTweetsFromProfile(
   handle: string,
   maxTweets = 30,
-  sinceDate?: string // ISO date string e.g. '2026-03-22'
+  sinceDate?: string // ISO date string — minute-precision via Twitter's since_time operator
 ): Promise<FetchedTweet[]> {
   const token = process.env.APIFY_API_KEY;
   if (!token) {
@@ -86,13 +86,14 @@ export async function fetchTweetsFromProfile(
 
   const cleanHandle = handle.replace('@', '');
 
-  // Build search query — only fetch tweets since last pull
+  // Twitter search's `since_time:<unix>` (seconds) gives minute-level precision,
+  // unlike `since:YYYY-MM-DD` which returns everything from 00:00 UTC that day
+  // and causes same-day duplicate fetches.
   let searchQuery = `from:${cleanHandle}`;
   if (sinceDate) {
-    // Use Twitter's since: operator to only get new tweets
-    const dateStr = sinceDate.split('T')[0]; // YYYY-MM-DD
-    searchQuery += ` since:${dateStr}`;
-    console.log(`[Apify] Fetching NEW tweets for @${cleanHandle} since ${dateStr}...`);
+    const sinceUnix = Math.floor(new Date(sinceDate).getTime() / 1000);
+    searchQuery += ` since_time:${sinceUnix}`;
+    console.log(`[Apify] Fetching NEW tweets for @${cleanHandle} since ${sinceDate} (unix ${sinceUnix})...`);
   } else {
     console.log(`[Apify] Fetching tweets for @${cleanHandle} (no date filter)...`);
   }
