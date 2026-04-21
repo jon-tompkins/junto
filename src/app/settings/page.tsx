@@ -35,13 +35,94 @@ export default function SettingsPage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
 
+  // Telegram linking
+  const [tgLinked, setTgLinked] = useState<boolean | null>(null);
+  const [tgCode, setTgCode] = useState<string | null>(null);
+  const [tgBotUsername, setTgBotUsername] = useState<string | null>(null);
+  const [tgPolling, setTgPolling] = useState(false);
+  const [tgCopied, setTgCopied] = useState(false);
+  const [tgUnlinking, setTgUnlinking] = useState(false);
+
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
   }, [status, router]);
 
   useEffect(() => {
-    if (session?.user) fetchAccount();
+    if (session?.user) {
+      fetchAccount();
+      fetchTelegramStatus();
+    }
   }, [session]);
+
+  const fetchTelegramStatus = async () => {
+    try {
+      const res = await fetch('/api/telegram/link');
+      if (res.ok) {
+        const data = await res.json();
+        setTgLinked(!!data.linked);
+      }
+    } catch {
+      setTgLinked(false);
+    }
+  };
+
+  const startTelegramLink = async () => {
+    const res = await fetch('/api/telegram/link', { method: 'POST' });
+    if (!res.ok) {
+      setError('Failed to generate link code. Try again.');
+      return;
+    }
+    const data = await res.json();
+    setTgCode(data.code);
+    setTgBotUsername(data.botUsername);
+
+    setTgPolling(true);
+    const start = Date.now();
+    const interval = setInterval(async () => {
+      if (Date.now() - start > 600_000) {
+        clearInterval(interval);
+        setTgPolling(false);
+        return;
+      }
+      try {
+        const r = await fetch('/api/telegram/link');
+        if (r.ok) {
+          const d = await r.json();
+          if (d.linked) {
+            setTgLinked(true);
+            setTgPolling(false);
+            setTgCode(null);
+            setTgBotUsername(null);
+            clearInterval(interval);
+          }
+        }
+      } catch {}
+    }, 2000);
+  };
+
+  const copyTelegramCommand = async () => {
+    if (!tgCode) return;
+    try {
+      await navigator.clipboard.writeText(`/start ${tgCode}`);
+      setTgCopied(true);
+      setTimeout(() => setTgCopied(false), 2000);
+    } catch {}
+  };
+
+  const unlinkTelegram = async () => {
+    if (!confirm('Unlink Telegram? Existing Telegram subscriptions will stop delivering until you re-link.')) return;
+    setTgUnlinking(true);
+    try {
+      const res = await fetch('/api/telegram/link', { method: 'DELETE' });
+      if (res.ok) {
+        setTgLinked(false);
+        setTgCode(null);
+        setTgBotUsername(null);
+      }
+    } finally {
+      setTgUnlinking(false);
+    }
+  };
 
   const fetchAccount = async () => {
     try {
@@ -194,6 +275,72 @@ export default function SettingsPage() {
           >
             {saving ? 'Saving...' : 'Save Settings'}
           </button>
+        </div>
+
+        {/* Telegram Section */}
+        <div className="mb-8 p-6 bg-slate-800/30 rounded-2xl border border-slate-700/40 space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold">Telegram</h2>
+            <p className="text-sm text-slate-400 mt-1">
+              Link your Telegram to receive newsletters as DMs instead of email.
+            </p>
+          </div>
+
+          {tgLinked === null ? (
+            <div className="text-sm text-slate-500">Loading…</div>
+          ) : tgLinked ? (
+            <div className="flex items-center justify-between gap-3 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
+              <div className="text-sm text-emerald-300">
+                ✓ Connected — newsletters set to Telegram delivery will arrive as DMs.
+              </div>
+              <button
+                onClick={unlinkTelegram}
+                disabled={tgUnlinking}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-lg transition whitespace-nowrap disabled:opacity-50"
+              >
+                {tgUnlinking ? 'Unlinking…' : 'Unlink'}
+              </button>
+            </div>
+          ) : tgCode && tgBotUsername ? (
+            <div className="space-y-3">
+              <div className="text-sm text-slate-300 leading-relaxed">
+                In Telegram, open a chat with{' '}
+                <a
+                  href={`https://t.me/${tgBotUsername}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 font-mono"
+                >
+                  @{tgBotUsername}
+                </a>{' '}
+                and send this message:
+              </div>
+
+              <button
+                onClick={copyTelegramCommand}
+                className="w-full px-4 py-3 bg-slate-950 border border-slate-700 hover:border-blue-500 rounded-xl text-left transition group"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <code className="text-sm text-blue-300 font-mono">/start {tgCode}</code>
+                  <span className={`text-xs ${tgCopied ? 'text-emerald-400' : 'text-slate-500 group-hover:text-slate-300'} transition`}>
+                    {tgCopied ? '✓ copied' : 'tap to copy'}
+                  </span>
+                </div>
+              </button>
+
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                {tgPolling ? 'Waiting for you to send the message…' : 'Checking link status…'}
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={startTelegramLink}
+              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-medium transition"
+            >
+              Link Telegram
+            </button>
+          )}
         </div>
 
         {/* Provider Info */}
