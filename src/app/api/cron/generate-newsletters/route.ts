@@ -6,6 +6,7 @@ import { storeRun } from '@/lib/db/newsletter-runs';
 import { recordBulkDeliveries } from '@/lib/db/newsletter-deliveries';
 import { generateNewsletterV2 } from '@/lib/synthesis/generator-v2';
 import { sendNewsletter } from '@/lib/email/sender';
+import { sendTelegramNewsletter } from '@/lib/telegram/client';
 import { chargeOwner, chargeSubscriber } from '@/lib/db/credits';
 import { calculateOwnerCreditCost, calculateSubscriberCreditCost } from '@/lib/pricing';
 import { getPromptTemplateById } from '@/lib/db/prompt-templates';
@@ -139,7 +140,8 @@ export async function GET(req: NextRequest) {
 
         const subscriberCost = calculateSubscriberCreditCost();
         const deliveredEmails: string[] = [];
-        const deliveredUserIds: string[] = [];
+        const deliveredEmailUserIds: string[] = [];
+        const telegramTargets: { chatId: string; userId: string }[] = [];
 
         for (const sub of subscribers) {
           const charged = await chargeSubscriber(
@@ -155,42 +157,80 @@ export async function GET(req: NextRequest) {
             continue;
           }
 
-          const email = sub.delivery_email || sub.email;
-          if (email) {
-            deliveredEmails.push(email);
-            deliveredUserIds.push(sub.user_id);
+          if (sub.delivery_channel === 'telegram' && sub.telegram_chat_id) {
+            telegramTargets.push({ chatId: sub.telegram_chat_id, userId: sub.user_id });
+          } else {
+            const email = sub.delivery_email || sub.email;
+            if (email) {
+              deliveredEmails.push(email);
+              deliveredEmailUserIds.push(sub.user_id);
+            }
           }
         }
 
-        if (deliveredEmails.length === 0) {
+        const totalTargets = deliveredEmails.length + telegramTargets.length;
+        if (totalTargets === 0) {
           console.log(`[generate] No payable subscribers for ${newsletter.name}`);
           results[newsletter.name] = { status: 'generated', subscribers: 0 };
           continue;
         }
 
-        console.log(`[generate] Sending to ${deliveredEmails.length} subscriber(s)...`);
+        console.log(
+          `[generate] Sending ${newsletter.name} to ${deliveredEmails.length} email, ${telegramTargets.length} telegram...`,
+        );
 
-        try {
-          await sendNewsletter({
-            to: deliveredEmails,
-            subject: result.subject,
-            content: result.content,
-            newsletterId: newsletter.id,
-            newsletterName: newsletter.name,
-          });
+        const deliveryErrors: string[] = [];
 
-          await recordBulkDeliveries(run.id, deliveredUserIds, 'email');
-
-          console.log(`[generate] Delivered ${newsletter.name} to ${deliveredEmails.length} subscribers`);
-          results[newsletter.name] = { status: 'delivered', subscribers: deliveredEmails.length };
-        } catch (emailError) {
-          console.error(`[generate] Email send failed for ${newsletter.name}:`, emailError);
-          results[newsletter.name] = {
-            status: 'generated_not_delivered',
-            subscribers: deliveredEmails.length,
-            error: emailError instanceof Error ? emailError.message : 'Email send failed',
-          };
+        // Email fanout
+        if (deliveredEmails.length > 0) {
+          try {
+            await sendNewsletter({
+              to: deliveredEmails,
+              subject: result.subject,
+              content: result.content,
+              newsletterId: newsletter.id,
+              newsletterName: newsletter.name,
+            });
+            await recordBulkDeliveries(run.id, deliveredEmailUserIds, 'email');
+          } catch (emailError) {
+            const msg = emailError instanceof Error ? emailError.message : 'Email send failed';
+            console.error(`[generate] Email send failed for ${newsletter.name}:`, emailError);
+            deliveryErrors.push(`email: ${msg}`);
+          }
         }
+
+        // Telegram fanout — one message per chat (TG is per-recipient, no batching)
+        const successfulTgUserIds: string[] = [];
+        for (const target of telegramTargets) {
+          try {
+            await sendTelegramNewsletter({
+              chatId: target.chatId,
+              subject: result.subject,
+              contentMarkdown: result.content,
+              newsletterId: newsletter.id,
+            });
+            successfulTgUserIds.push(target.userId);
+          } catch (tgError) {
+            const msg = tgError instanceof Error ? tgError.message : 'Telegram send failed';
+            console.error(`[generate] Telegram send failed for ${newsletter.name} chat ${target.chatId}:`, tgError);
+            deliveryErrors.push(`telegram ${target.chatId}: ${msg}`);
+          }
+        }
+        if (successfulTgUserIds.length > 0) {
+          await recordBulkDeliveries(run.id, successfulTgUserIds, 'telegram');
+        }
+
+        const delivered = deliveredEmailUserIds.length + successfulTgUserIds.length;
+        console.log(`[generate] Delivered ${newsletter.name} to ${delivered}/${totalTargets}`);
+
+        results[newsletter.name] =
+          deliveryErrors.length > 0
+            ? {
+                status: delivered > 0 ? 'partial_delivered' : 'generated_not_delivered',
+                subscribers: delivered,
+                error: deliveryErrors.join('; '),
+              }
+            : { status: 'delivered', subscribers: delivered };
       } catch (error) {
         console.error(`[generate] Error processing ${newsletter.name}:`, error);
         results[newsletter.name] = {

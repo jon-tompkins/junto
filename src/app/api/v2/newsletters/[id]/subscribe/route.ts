@@ -69,6 +69,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     let deliveryEmail = body.delivery_email;
     const sendWindows: string[] = body.receive_windows || body.send_windows || ['morning'];
     const receiveDays: string[] = body.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    const deliveryChannel: 'email' | 'telegram' = body.delivery_channel === 'telegram' ? 'telegram' : 'email';
 
     // Validate send_windows values
     const validWindows = ['morning', 'midday', 'evening', 'night'];
@@ -80,16 +81,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       );
     }
 
-    // Fall back to account email if no delivery_email provided
-    if (!deliveryEmail) {
-      deliveryEmail = await getUserEmail(userId);
-    }
-
-    if (!deliveryEmail) {
-      return NextResponse.json(
-        { error: 'Delivery email required. Set an account email or provide delivery_email.' },
-        { status: 400 },
-      );
+    // Telegram channel requires the user to have linked their account first
+    if (deliveryChannel === 'telegram') {
+      const { data: userRow } = await supabase.from('users').select('telegram_chat_id').eq('id', userId).single();
+      if (!userRow?.telegram_chat_id) {
+        return NextResponse.json(
+          { error: 'Telegram not linked. Link your account in settings first.', code: 'telegram_not_linked' },
+          { status: 400 },
+        );
+      }
+    } else {
+      // Email channel: fall back to account email if no delivery_email provided
+      if (!deliveryEmail) {
+        deliveryEmail = await getUserEmail(userId);
+      }
+      if (!deliveryEmail) {
+        return NextResponse.json(
+          { error: 'Delivery email required. Set an account email or provide delivery_email.' },
+          { status: 400 },
+        );
+      }
     }
 
     // Validate receive_days
@@ -102,7 +113,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       );
     }
 
-    const subscription = await subscribe(userId, id, deliveryEmail, sendWindows, receiveDays);
+    const subscription = await subscribe(userId, id, deliveryEmail, sendWindows, receiveDays, deliveryChannel);
     return NextResponse.json({ subscription, subscribed: true });
   } catch (error) {
     console.error('[POST /subscribe]', error);
