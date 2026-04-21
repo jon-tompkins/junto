@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   if (/^\/start(?:@\w+)?\s*$/.test(text)) {
     await sendTelegramMessage(
       chatId,
-      `👋 <b>Junto</b>\n\nTo link your account, open <a href="https://www.myjunto.xyz/settings">your Junto settings</a>, click <i>Link Telegram</i>, and tap the generated link.`,
+      `👋 <b>Junto</b>\n\nTo link your account, open any newsletter on <a href="https://www.myjunto.xyz">myjunto.xyz</a>, hit <i>Subscribe</i>, switch to Telegram delivery, and copy the <code>/start</code> command into this chat.`,
     );
     return NextResponse.json({ ok: true });
   }

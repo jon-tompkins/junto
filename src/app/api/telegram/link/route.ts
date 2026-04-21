@@ -43,7 +43,7 @@ export async function POST() {
   const clean = botUsername.replace('@', '');
   const deeplink = `https://t.me/${clean}?start=${code}`;
 
-  return NextResponse.json({ code, deeplink, expiresAt });
+  return NextResponse.json({ code, deeplink, expiresAt, botUsername: clean });
 }
 
 // GET — current link status for the signed-in user
