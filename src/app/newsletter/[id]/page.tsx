@@ -57,11 +57,6 @@ export default function NewsletterDetailPage() {
   const [subDays, setSubDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
   const [subDeliveryChannel, setSubDeliveryChannel] = useState<'email' | 'telegram'>('email');
   const [tgLinked, setTgLinked] = useState<boolean | null>(null);
-  const [tgDeeplink, setTgDeeplink] = useState<string | null>(null);
-  const [tgCode, setTgCode] = useState<string | null>(null);
-  const [tgBotUsername, setTgBotUsername] = useState<string | null>(null);
-  const [tgLinkingPoll, setTgLinkingPoll] = useState(false);
-  const [tgCopied, setTgCopied] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -116,49 +111,15 @@ export default function NewsletterDetailPage() {
     }
   }, [session]);
 
-  async function startTelegramLink() {
-    const res = await fetch('/api/telegram/link', { method: 'POST' });
-    if (!res.ok) return;
-    const data = await res.json();
-    setTgDeeplink(data.deeplink);
-    setTgCode(data.code);
-    setTgBotUsername(data.botUsername);
-
-    // Poll link status every 2s for up to 10 min — user DMs the bot, webhook
-    // captures chat_id, we flip tgLinked to true once it lands. Longer window
-    // since manual entry takes longer than a tap-through.
-    setTgLinkingPoll(true);
-    const start = Date.now();
-    const interval = setInterval(async () => {
-      if (Date.now() - start > 600_000) {
-        clearInterval(interval);
-        setTgLinkingPoll(false);
-        return;
-      }
-      try {
-        const r = await fetch('/api/telegram/link');
-        if (r.ok) {
-          const d = await r.json();
-          if (d.linked) {
-            setTgLinked(true);
-            setTgLinkingPoll(false);
-            setTgDeeplink(null);
-            setTgCode(null);
-            setTgBotUsername(null);
-            clearInterval(interval);
-          }
-        }
-      } catch {}
-    }, 2000);
-  }
-
-  async function copyLinkCommand() {
-    if (!tgCode) return;
-    const cmd = `/start ${tgCode}`;
+  // Refresh telegram link status when the subscribe modal opens, in case the
+  // user just linked in another tab (settings page).
+  async function refreshTelegramStatus() {
     try {
-      await navigator.clipboard.writeText(cmd);
-      setTgCopied(true);
-      setTimeout(() => setTgCopied(false), 2000);
+      const r = await fetch('/api/telegram/link');
+      if (r.ok) {
+        const d = await r.json();
+        setTgLinked(!!d.linked);
+      }
     } catch {}
   }
 
@@ -491,7 +452,7 @@ export default function NewsletterDetailPage() {
               </div>
             )}
 
-            {/* Telegram linking — shown when telegram channel is selected */}
+            {/* Telegram status — shown when telegram channel is selected */}
             {subDeliveryChannel === 'telegram' && (
               <div>
                 <label className="block text-xs text-slate-400 font-medium mb-2">Telegram</label>
@@ -499,53 +460,25 @@ export default function NewsletterDetailPage() {
                   <div className="px-3 py-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-sm text-emerald-300">
                     ✓ Connected — newsletters will arrive as DMs
                   </div>
-                ) : tgCode && tgBotUsername ? (
-                  <div className="space-y-3">
-                    <div className="text-xs text-slate-400 leading-relaxed">
-                      In Telegram, open a chat with{' '}
-                      <span className="text-white font-mono">@{tgBotUsername}</span>{' '}
-                      and send this message:
-                    </div>
-
-                    <button
-                      onClick={copyLinkCommand}
-                      className="w-full px-3 py-3 bg-slate-950 border border-slate-700 hover:border-blue-500 rounded-xl text-left transition group"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <code className="text-sm text-blue-300 font-mono">/start {tgCode}</code>
-                        <span className={`text-xs ${tgCopied ? 'text-emerald-400' : 'text-slate-500 group-hover:text-slate-300'} transition`}>
-                          {tgCopied ? '✓ copied' : 'tap to copy'}
-                        </span>
-                      </div>
-                    </button>
-
-                    {tgDeeplink && (
-                      <a
-                        href={tgDeeplink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-xs text-slate-400 hover:text-blue-300 text-center transition"
-                      >
-                        Or try auto-opening Telegram →
-                      </a>
-                    )}
-
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                      {tgLinkingPoll ? 'Waiting for you to send the message…' : 'Checking link status…'}
-                    </div>
-                  </div>
                 ) : (
                   <div className="space-y-2">
-                    <button
-                      onClick={startTelegramLink}
-                      className="w-full px-3 py-2.5 bg-slate-800/60 border border-slate-700 hover:border-blue-500 rounded-xl text-sm text-white transition"
+                    <Link
+                      href="/settings"
+                      className="block w-full px-3 py-2.5 bg-slate-800/60 border border-slate-700 hover:border-blue-500 rounded-xl text-sm text-white transition text-center"
                     >
-                      Link Telegram
-                    </button>
-                    <p className="text-xs text-slate-500">
-                      Generates a one-time code to DM our bot.
-                    </p>
+                      Link Telegram in Settings →
+                    </Link>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-slate-500">
+                        One-time setup. Applies to all your newsletters.
+                      </p>
+                      <button
+                        onClick={refreshTelegramStatus}
+                        className="text-xs text-slate-500 hover:text-blue-300 transition"
+                      >
+                        Already linked? Refresh
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
