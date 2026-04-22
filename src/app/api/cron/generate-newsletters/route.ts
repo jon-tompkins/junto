@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getNewslettersDueForGeneration, getNewslettersForForcedGeneration, getNewsletterSources, getCurrentSendWindow, getCurrentPSTDay } from '@/lib/db/newsletters-v2';
 import { getRecentContentForSources, getContextContentForSources, groupContentByHandle } from '@/lib/db/content-twitter';
 import { getNewsletterSubscribers } from '@/lib/db/subscriptions';
-import { storeRun } from '@/lib/db/newsletter-runs';
+import { storeRun, storeSkippedRun, updateRunStatus } from '@/lib/db/newsletter-runs';
 import { recordBulkDeliveries } from '@/lib/db/newsletter-deliveries';
 import { generateNewsletterV2 } from '@/lib/synthesis/generator-v2';
 import { sendNewsletter } from '@/lib/email/sender';
@@ -56,6 +56,7 @@ export async function GET(req: NextRequest) {
         const sources = await getNewsletterSources(newsletter.id);
         if (sources.length === 0) {
           console.log(`[generate] Skipping ${newsletter.name}: no sources`);
+          await storeSkippedRun(newsletter.id, 'skipped', 'No sources configured');
           results[newsletter.name] = { status: 'skipped', error: 'No sources configured' };
           continue;
         }
@@ -73,6 +74,9 @@ export async function GET(req: NextRequest) {
 
         if (recentContent.length === 0) {
           console.log(`[generate] Skipping ${newsletter.name}: no recent content (last 48h)`);
+          await storeSkippedRun(newsletter.id, 'skipped', 'No recent content in last 48 hours', {
+            source_count: sources.length,
+          });
           results[newsletter.name] = { status: 'skipped', error: 'No recent content in last 48 hours' };
           continue;
         }
@@ -109,13 +113,14 @@ export async function GET(req: NextRequest) {
           newsletterName: newsletter.name,
         });
 
-        // 5. Store the run
+        // 5. Store the run (status updated after delivery)
         const run = await storeRun({
           newsletter_id: newsletter.id,
           content: result.content,
           subject: result.subject,
           model_used: result.model_used,
           tokens_used: { input_tokens: result.input_tokens, output_tokens: result.output_tokens },
+          status: 'generated',
           metadata: {
             source_count: sources.length,
             recent_tweet_count: recentContent.length,
@@ -129,8 +134,10 @@ export async function GET(req: NextRequest) {
         const ownerCost = calculateOwnerCreditCost(sources.length);
         const ownerCharged = await chargeOwner(newsletter.admin_user_id, newsletter.name, ownerCost, run.id);
         if (!ownerCharged) {
-          console.log(`[generate] Owner has insufficient credits for ${newsletter.name} (needs ${ownerCost})`);
-          results[newsletter.name] = { status: 'generated_not_delivered', error: 'Owner insufficient credits' };
+          const errMsg = `Owner insufficient credits (needs ${ownerCost})`;
+          console.log(`[generate] ${newsletter.name}: ${errMsg}`);
+          await updateRunStatus(run.id, 'generated_not_delivered', errMsg);
+          results[newsletter.name] = { status: 'generated_not_delivered', error: errMsg };
           continue;
         }
 
@@ -151,6 +158,7 @@ export async function GET(req: NextRequest) {
 
         if (subscribers.length === 0) {
           console.log(`[generate] No subscribers for ${newsletter.name}`);
+          await updateRunStatus(run.id, 'generated');
           results[newsletter.name] = { status: 'generated', subscribers: 0 };
           continue;
         }
@@ -188,6 +196,7 @@ export async function GET(req: NextRequest) {
         const totalTargets = deliveredEmails.length + telegramTargets.length;
         if (totalTargets === 0) {
           console.log(`[generate] No payable subscribers for ${newsletter.name}`);
+          await updateRunStatus(run.id, 'generated', 'All subscribers had insufficient credits');
           results[newsletter.name] = { status: 'generated', subscribers: 0 };
           continue;
         }
@@ -240,20 +249,27 @@ export async function GET(req: NextRequest) {
         const delivered = deliveredEmailUserIds.length + successfulTgUserIds.length;
         console.log(`[generate] Delivered ${newsletter.name} to ${delivered}/${totalTargets}`);
 
-        results[newsletter.name] =
-          deliveryErrors.length > 0
-            ? {
-                status: delivered > 0 ? 'partial_delivered' : 'generated_not_delivered',
-                subscribers: delivered,
-                error: deliveryErrors.join('; '),
-              }
-            : { status: 'delivered', subscribers: delivered };
+        const finalStatus = deliveryErrors.length > 0
+          ? (delivered > 0 ? 'partial_delivered' : 'generated_not_delivered')
+          : 'delivered';
+
+        await updateRunStatus(
+          run.id,
+          finalStatus,
+          deliveryErrors.length > 0 ? deliveryErrors.join('; ') : undefined,
+        );
+
+        results[newsletter.name] = deliveryErrors.length > 0
+          ? { status: finalStatus, subscribers: delivered, error: deliveryErrors.join('; ') }
+          : { status: 'delivered', subscribers: delivered };
+
       } catch (error) {
+        const msg = error instanceof Error ? error.message : 'Unknown error';
         console.error(`[generate] Error processing ${newsletter.name}:`, error);
-        results[newsletter.name] = {
-          status: 'error',
-          error: error instanceof Error ? error.message : 'Unknown error',
-        };
+        try {
+          await storeSkippedRun(newsletter.id, 'error', msg);
+        } catch { /* ignore secondary failure */ }
+        results[newsletter.name] = { status: 'error', error: msg };
       }
     }
 

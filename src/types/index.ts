@@ -149,6 +149,7 @@ export interface NewsletterV2 {
   updated_at: string;
   prompt_template_id?: string | null;
   send_days?: string[];
+  keywords?: string[];
 }
 
 export interface NewsletterLabel {
@@ -176,15 +177,25 @@ export interface Subscription {
   created_at: string;
 }
 
+export type NewsletterRunStatus =
+  | 'delivered'
+  | 'partial_delivered'
+  | 'generated'
+  | 'generated_not_delivered'
+  | 'skipped'
+  | 'error';
+
 export interface NewsletterRun {
   id: string;
   newsletter_id: string;
-  content: string;
+  content: string | null;
   subject: string | null;
   model_used: string | null;
   tokens_used: { input_tokens?: number; output_tokens?: number };
   metadata: Record<string, unknown>;
   generated_at: string;
+  status: NewsletterRunStatus;
+  error_message: string | null;
 }
 
 export interface NewsletterDelivery {

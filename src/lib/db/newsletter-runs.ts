@@ -1,31 +1,68 @@
 import { getSupabase } from './client';
-import type { NewsletterRun } from '@/types';
+import type { NewsletterRun, NewsletterRunStatus } from '@/types';
 
 const supabase = () => getSupabase();
 
 export async function storeRun(run: {
   newsletter_id: string;
-  content: string;
+  content?: string | null;
   subject?: string;
   model_used?: string;
   tokens_used?: { input_tokens?: number; output_tokens?: number };
   metadata?: Record<string, unknown>;
+  status?: NewsletterRunStatus;
+  error_message?: string;
 }): Promise<NewsletterRun> {
   const { data, error } = await supabase()
     .from('newsletter_runs')
     .insert({
       newsletter_id: run.newsletter_id,
-      content: run.content,
+      content: run.content ?? null,
       subject: run.subject || null,
       model_used: run.model_used || null,
       tokens_used: run.tokens_used || {},
       metadata: run.metadata || {},
+      status: run.status || 'delivered',
+      error_message: run.error_message || null,
     })
     .select()
     .single();
 
   if (error) throw error;
   return data;
+}
+
+// Record a skipped or failed generation attempt without content.
+export async function storeSkippedRun(
+  newsletterId: string,
+  status: Extract<NewsletterRunStatus, 'skipped' | 'error'>,
+  errorMessage: string,
+  metadata?: Record<string, unknown>,
+): Promise<void> {
+  const { error } = await supabase()
+    .from('newsletter_runs')
+    .insert({
+      newsletter_id: newsletterId,
+      content: null,
+      status,
+      error_message: errorMessage,
+      metadata: metadata || {},
+    });
+
+  if (error) console.error('[newsletter-runs] Failed to store skipped run:', error);
+}
+
+export async function updateRunStatus(
+  runId: string,
+  status: NewsletterRunStatus,
+  errorMessage?: string,
+): Promise<void> {
+  const { error } = await supabase()
+    .from('newsletter_runs')
+    .update({ status, error_message: errorMessage || null })
+    .eq('id', runId);
+
+  if (error) console.error('[newsletter-runs] Failed to update run status:', error);
 }
 
 export async function getLatestRun(newsletterId: string): Promise<NewsletterRun | null> {
@@ -44,7 +81,7 @@ export async function getLatestRun(newsletterId: string): Promise<NewsletterRun 
 export async function getRunsByNewsletter(
   newsletterId: string,
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
 ): Promise<NewsletterRun[]> {
   const { data, error } = await supabase()
     .from('newsletter_runs')
@@ -66,4 +103,16 @@ export async function getRunById(id: string): Promise<NewsletterRun | null> {
 
   if (error && error.code !== 'PGRST116') throw error;
   return data;
+}
+
+// Returns the last N runs across ALL newsletters — useful for admin health checks.
+export async function getRecentRuns(limit: number = 50): Promise<NewsletterRun[]> {
+  const { data, error } = await supabase()
+    .from('newsletter_runs')
+    .select('*')
+    .order('generated_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return data || [];
 }
