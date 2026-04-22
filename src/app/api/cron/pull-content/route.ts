@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSourcesWithActiveNewsletters } from '@/lib/db/sources';
 import { storeTwitterContent } from '@/lib/db/content-twitter';
+import { storeNewsletterContent } from '@/lib/db/content-newsletter';
 import { fetchTweetsForProfile } from '@/lib/twitter/client';
 import { fetchChannelInsights } from '@/lib/youtube/client';
 import { getSupabase } from '@/lib/db/client';
@@ -164,7 +165,75 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const totalSources = twitterSources.length + youtubeSources.length;
+    // ─── Newsletter Sources ─────────────────────────
+    const newsletterSources = await getSourcesWithActiveNewsletters('newsletter');
+
+    if (newsletterSources.length > 0) {
+      console.log(`[pull-content] Pulling ${newsletterSources.length} Newsletter sources...`);
+
+      for (const source of newsletterSources) {
+        const slug = source.handle_or_url;
+        try {
+          // Look up the matching available_newsletter row by slug
+          const { data: availableNewsletter, error: anError } = await supabase
+            .from('available_newsletters')
+            .select('id, name')
+            .eq('slug', slug)
+            .single();
+
+          if (anError || !availableNewsletter) {
+            console.warn(`[pull-content] Newsletter slug not found in available_newsletters: ${slug}`);
+            results[slug] = { fetched: 0, stored: 0, error: 'slug not found in available_newsletters' };
+            continue;
+          }
+
+          // Query newsletter_content for issues received since source.updated_at (or last 7 days)
+          const since = source.updated_at
+            ? new Date(new Date(source.updated_at).getTime() - SINCE_SAFETY_BUFFER_MS).toISOString()
+            : new Date(now - FIRST_PULL_LOOKBACK_MS).toISOString();
+
+          const { data: issues, error: issuesError } = await supabase
+            .from('newsletter_content')
+            .select('id, subject, content, received_at, message_id')
+            .eq('newsletter_id', availableNewsletter.id)
+            .gte('received_at', since)
+            .order('received_at', { ascending: false });
+
+          if (issuesError) throw issuesError;
+
+          const fetched = issues?.length ?? 0;
+          let stored = 0;
+
+          if (fetched > 0) {
+            stored = await storeNewsletterContent(
+              source.id,
+              (issues || []).map((issue) => ({
+                newsletter_content_id: issue.id,
+                subject: issue.subject ?? null,
+                content: issue.content,
+                received_at: issue.received_at,
+              }))
+            );
+          }
+
+          await supabase
+            .from('sources')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', source.id);
+
+          results[slug] = { fetched, stored };
+          totalFetched += fetched;
+          totalStored += stored;
+          console.log(`[pull-content] Newsletter ${slug}: ${fetched} fetched, ${stored} stored`);
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : 'Unknown error';
+          console.error(`[pull-content] Newsletter error ${slug}:`, errMsg);
+          results[slug] = { fetched: 0, stored: 0, error: errMsg };
+        }
+      }
+    }
+
+    const totalSources = twitterSources.length + youtubeSources.length + newsletterSources.length;
     console.log(`[pull-content] Done. ${totalFetched} fetched, ${totalStored} stored from ${totalSources} sources.`);
 
     return NextResponse.json({
@@ -172,6 +241,7 @@ export async function GET(req: NextRequest) {
       sources: totalSources,
       twitter_sources: twitterSources.length,
       youtube_sources: youtubeSources.length,
+      newsletter_sources: newsletterSources.length,
       total_fetched: totalFetched,
       total_stored: totalStored,
       results,

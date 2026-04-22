@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getNewslettersDueForGeneration, getNewslettersForForcedGeneration, getNewsletterSources, getCurrentSendWindow, getCurrentPSTDay } from '@/lib/db/newsletters-v2';
 import { getRecentContentForSources, getContextContentForSources, groupContentByHandle } from '@/lib/db/content-twitter';
+import { getRecentContentForNewsletterSources, getContextContentForNewsletterSources, groupNewsletterContentBySlug } from '@/lib/db/content-newsletter';
 import { getNewsletterSubscribers } from '@/lib/db/subscriptions';
 import { storeRun, storeSkippedRun, updateRunStatus } from '@/lib/db/newsletter-runs';
 import { recordBulkDeliveries } from '@/lib/db/newsletter-deliveries';
@@ -65,14 +66,20 @@ export async function GET(req: NextRequest) {
         const sourceMap: Record<string, string> = {};
         sources.forEach((s) => { sourceMap[s.id] = s.handle_or_url; });
 
+        // Separate newsletter-type sources from other sources
+        const newsletterSourceIds = sources.filter((s) => s.type === 'newsletter').map((s) => s.id);
+        const twitterSourceIds = sourceIds.filter((id) => !newsletterSourceIds.includes(id));
+
         // 2. Fetch recent content (last 48h) and context (last 7d, not 180d)
         // Context is limited to 7 days to avoid stale data polluting the briefing
-        const [recentContent, contextContent] = await Promise.all([
-          getRecentContentForSources(sourceIds, 48),
-          getContextContentForSources(sourceIds, 7, 48),
+        const [recentContent, contextContent, recentNewsletterContent, contextNewsletterContent] = await Promise.all([
+          getRecentContentForSources(twitterSourceIds, 48),
+          getContextContentForSources(twitterSourceIds, 7, 48),
+          getRecentContentForNewsletterSources(newsletterSourceIds, 48),
+          getContextContentForNewsletterSources(newsletterSourceIds, 7, 48),
         ]);
 
-        if (recentContent.length === 0) {
+        if (recentContent.length === 0 && recentNewsletterContent.length === 0) {
           console.log(`[generate] Skipping ${newsletter.name}: no recent content (last 48h)`);
           await storeSkippedRun(newsletter.id, 'skipped', 'No recent content in last 48 hours', {
             source_count: sources.length,
@@ -81,11 +88,16 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
-        console.log(`[generate] ${newsletter.name}: ${recentContent.length} recent tweets, ${contextContent.length} context tweets (7d)`);
+        console.log(
+          `[generate] ${newsletter.name}: ${recentContent.length} recent tweets, ${contextContent.length} context tweets (7d)` +
+          (recentNewsletterContent.length > 0 ? `, ${recentNewsletterContent.length} recent newsletter issues` : '')
+        );
 
         // 3. Group content by handle for the synthesis pipeline
         const recentGrouped = groupContentByHandle(recentContent, sourceMap);
         const contextGrouped = groupContentByHandle(contextContent, sourceMap);
+        const recentNewsletterGrouped = groupNewsletterContentBySlug(recentNewsletterContent, sourceMap);
+        const contextNewsletterGrouped = groupNewsletterContentBySlug(contextNewsletterContent, sourceMap);
 
         // 4. Generate newsletter
         const now = new Date();
@@ -108,6 +120,8 @@ export async function GET(req: NextRequest) {
           secondaryPrompt: newsletter.secondary_prompt,
           recentTweets: recentGrouped,
           contextTweets: contextGrouped,
+          recentNewsletterContent: recentNewsletterGrouped,
+          contextNewsletterContent: contextNewsletterGrouped,
           startDate,
           endDate,
           newsletterName: newsletter.name,
@@ -125,6 +139,8 @@ export async function GET(req: NextRequest) {
             source_count: sources.length,
             recent_tweet_count: recentContent.length,
             context_tweet_count: contextContent.length,
+            recent_newsletter_count: recentNewsletterContent.length,
+            context_newsletter_count: contextNewsletterContent.length,
           },
         });
 

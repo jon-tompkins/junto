@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchLimiter } from '@/lib/rate-limit';
+import { getSupabase } from '@/lib/db/client';
 
 // GET /api/v2/sources/validate?handle=cburniske&type=twitter
 // Validates a Twitter handle exists using Apify's quick profile fetch
@@ -35,6 +36,34 @@ export async function GET(req: NextRequest) {
         error: 'Invalid YouTube URL. Please provide a URL containing youtube.com',
       });
     }
+  }
+
+  if (type === 'newsletter') {
+    // Validate that the slug exists in available_newsletters
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('available_newsletters')
+      .select('id, name, slug')
+      .eq('slug', handle)
+      .single();
+
+    if (error || !data) {
+      return NextResponse.json({
+        valid: false,
+        handle,
+        type,
+        error: `Newsletter slug "${handle}" not found. Please use an exact slug from available newsletters.`,
+      });
+    }
+
+    return NextResponse.json({
+      valid: true,
+      handle,
+      type,
+      validated: true,
+      profile: { name: data.name },
+      display_name: data.name,
+    });
   }
 
   if (type !== 'twitter') {

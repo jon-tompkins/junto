@@ -102,7 +102,7 @@ export interface NewsletterGenerationResult {
 // V2 Marketplace Types
 // ============================================================
 
-export type SourceType = 'twitter' | 'youtube' | 'rss';
+export type SourceType = 'twitter' | 'youtube' | 'rss' | 'newsletter';
 export type ScheduleCadence = 'daily' | 'twice_daily' | 'weekly';
 export type CreditTransactionType = 'subscription_charge' | 'creator_earning' | 'purchase' | 'bonus';
 
@@ -131,6 +131,16 @@ export interface ContentTwitter {
   is_reply: boolean;
   thread_id: string | null;
   raw_data: Record<string, unknown>;
+  fetched_at: string;
+}
+
+export interface ContentNewsletter {
+  id: string;
+  source_id: string;
+  newsletter_content_id: string;
+  subject: string | null;
+  content: string;
+  received_at: string;
   fetched_at: string;
 }
 
