@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getNewslettersDueForGeneration, getNewsletterSources, getCurrentSendWindow, getCurrentPSTDay } from '@/lib/db/newsletters-v2';
+import { getNewslettersDueForGeneration, getNewslettersForForcedGeneration, getNewsletterSources, getCurrentSendWindow, getCurrentPSTDay } from '@/lib/db/newsletters-v2';
 import { getRecentContentForSources, getContextContentForSources, groupContentByHandle } from '@/lib/db/content-twitter';
 import { getNewsletterSubscribers } from '@/lib/db/subscriptions';
 import { storeRun } from '@/lib/db/newsletter-runs';
@@ -24,13 +24,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const dueNewsletters = await getNewslettersDueForGeneration();
+    // Manual-testing escape hatch: ?force=true bypasses the time-of-day/day
+    // gate. Still requires active subscribers. Optional newsletter_id scopes
+    // to one newsletter. Auth header is already verified above.
+    const url = new URL(req.url);
+    const force = url.searchParams.get('force') === 'true';
+    const forceNewsletterId = url.searchParams.get('newsletter_id') || undefined;
+
+    const dueNewsletters = force
+      ? await getNewslettersForForcedGeneration(forceNewsletterId)
+      : await getNewslettersDueForGeneration();
 
     if (dueNewsletters.length === 0) {
-      return NextResponse.json({ success: true, message: 'No newsletters due', generated: 0 });
+      return NextResponse.json({
+        success: true,
+        message: force ? 'No newsletters with active subscribers' : 'No newsletters due',
+        generated: 0,
+        forced: force,
+      });
     }
 
-    console.log(`[generate] ${dueNewsletters.length} newsletter(s) due for generation`);
+    console.log(`[generate] ${dueNewsletters.length} newsletter(s) ${force ? 'forced' : 'due'} for generation`);
 
     const results: Record<string, { status: string; subscribers?: number; error?: string }> = {};
 
@@ -120,17 +134,20 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
-        // 7. Fan out to subscribers — charge each, send email
-        // Filter to subscribers who want this window AND this day
+        // 7. Fan out to subscribers — charge each, send
+        // Normally filter to subscribers who want this window AND this day.
+        // When force=true, send to every active subscriber regardless.
         const allSubscribers = await getNewsletterSubscribers(newsletter.id);
         const currentWindow = getCurrentSendWindow();
         const currentDay = getCurrentPSTDay();
-        const subscribers = allSubscribers.filter(sub => {
-          const windows = sub.receive_windows || sub.send_windows || ['morning'];
-          const days = sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-          return (!currentWindow || windows.includes(currentWindow)) &&
-                 (!currentDay || days.includes(currentDay));
-        });
+        const subscribers = force
+          ? allSubscribers
+          : allSubscribers.filter(sub => {
+              const windows = sub.receive_windows || sub.send_windows || ['morning'];
+              const days = sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+              return (!currentWindow || windows.includes(currentWindow)) &&
+                     (!currentDay || days.includes(currentDay));
+            });
 
         if (subscribers.length === 0) {
           console.log(`[generate] No subscribers for ${newsletter.name}`);

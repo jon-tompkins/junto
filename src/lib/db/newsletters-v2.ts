@@ -414,3 +414,34 @@ export async function getNewslettersDueForGeneration(): Promise<NewsletterV2[]> 
 
   return due;
 }
+
+// Bypass the time-of-day/day-of-week gate for manual testing. Still requires
+// at least one active subscriber. If newsletterId is provided, only that one
+// is returned (if it has subscribers).
+export async function getNewslettersForForcedGeneration(
+  newsletterId?: string,
+): Promise<NewsletterV2[]> {
+  const { data: subData, error: subError } = await supabase()
+    .from('subscriptions')
+    .select('newsletter_id')
+    .eq('is_active', true);
+
+  if (subError || !subData?.length) return [];
+
+  const subscribedIds = new Set<string>(subData.map((s) => s.newsletter_id));
+  if (subscribedIds.size === 0) return [];
+
+  const ids = newsletterId
+    ? [newsletterId].filter((id) => subscribedIds.has(id))
+    : Array.from(subscribedIds);
+
+  if (ids.length === 0) return [];
+
+  const { data: newsletters, error } = await supabase()
+    .from('newsletters_v2')
+    .select('*')
+    .in('id', ids);
+
+  if (error) return [];
+  return newsletters || [];
+}
