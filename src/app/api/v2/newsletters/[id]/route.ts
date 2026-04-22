@@ -76,7 +76,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Handle source add/remove
     if (body.add_source) {
-      const source = await getOrCreateSource({ type: 'twitter', handle_or_url: body.add_source });
+      const sourceType = body.add_source_type || 'twitter';
+      const source = await getOrCreateSource({ type: sourceType, handle_or_url: body.add_source });
       await addNewsletterSource(id, source.id);
       const refreshed = await getNewsletterWithSources(id);
       return NextResponse.json({ newsletter: refreshed });

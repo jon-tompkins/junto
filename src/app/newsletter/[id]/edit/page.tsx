@@ -29,6 +29,13 @@ interface NewsletterDetail {
   labels: string[];
 }
 
+interface AvailableNewsletter {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+}
+
 export default function EditNewsletterPage() {
   const { id } = useParams<{ id: string }>();
   const { data: session, status: authStatus } = useSession();
@@ -62,10 +69,24 @@ export default function EditNewsletterPage() {
   const [sendDays, setSendDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
 
   // Source management
-  type SourceType = 'twitter' | 'youtube';
+  type SourceType = 'twitter' | 'youtube' | 'newsletter';
   const [newSource, setNewSource] = useState('');
   const [newSourceType, setNewSourceType] = useState<SourceType>('twitter');
   const [sources, setSources] = useState<{ id: string; handle: string; display_name: string | null; type: string }[]>([]);
+
+  // Available newsletters (for newsletter tab)
+  const [availableNewsletters, setAvailableNewsletters] = useState<AvailableNewsletter[]>([]);
+  const [newslettersLoading, setNewslettersLoading] = useState(false);
+  const [newslettersLoaded, setNewslettersLoaded] = useState(false);
+
+  // Newsletter request form
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestName, setRequestName] = useState('');
+  const [requestUrl, setRequestUrl] = useState('');
+  const [requestDesc, setRequestDesc] = useState('');
+  const [requestSubmitting, setRequestSubmitting] = useState(false);
+  const [requestSuccess, setRequestSuccess] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
 
   useEffect(() => {
     if (authStatus === 'unauthenticated') {
@@ -140,6 +161,79 @@ export default function EditNewsletterPage() {
       setError('Failed to save');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function loadAvailableNewsletters() {
+    if (newslettersLoaded) return;
+    setNewslettersLoading(true);
+    try {
+      const res = await fetch('/api/newsletters/available');
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableNewsletters(data.newsletters || []);
+        setNewslettersLoaded(true);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setNewslettersLoading(false);
+    }
+  }
+
+  async function addNewsletterSourceBySlug(slug: string) {
+    try {
+      const res = await fetch(`/api/v2/newsletters/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          add_source: slug,
+          add_source_type: 'newsletter',
+        }),
+      });
+      if (res.ok) {
+        const nlRes = await fetch(`/api/v2/newsletters/${id}`);
+        const data = await nlRes.json();
+        setSources(data.newsletter.sources?.map((s: any) => ({
+          id: s.id,
+          handle: s.handle_or_url,
+          display_name: s.display_name,
+          type: s.type || 'twitter',
+        })) || []);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  async function submitNewsletterRequest() {
+    if (!requestName.trim()) return;
+    setRequestSubmitting(true);
+    setRequestError(null);
+    try {
+      const res = await fetch('/api/user/newsletter-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: requestName.trim(),
+          url: requestUrl.trim() || undefined,
+          description: requestDesc.trim() || undefined,
+        }),
+      });
+      if (res.ok) {
+        setRequestSuccess(true);
+        setRequestName('');
+        setRequestUrl('');
+        setRequestDesc('');
+        setShowRequestForm(false);
+      } else {
+        const data = await res.json();
+        setRequestError(data.error || 'Failed to submit request');
+      }
+    } catch {
+      setRequestError('Failed to submit request');
+    } finally {
+      setRequestSubmitting(false);
     }
   }
 
@@ -362,13 +456,14 @@ export default function EditNewsletterPage() {
           {/* Sources */}
           <div>
             <label className="block text-sm font-medium text-slate-400 mb-2">Sources</label>
+            {/* Current sources list */}
             <div className="flex gap-2 flex-wrap mb-3">
               {sources.map(s => (
                 <span key={s.id} className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700/40 text-slate-300">
-                  <span className="text-xs" title={s.type === 'youtube' ? 'YouTube' : 'Twitter'}>
-                    {s.type === 'youtube' ? '\u25B6\uFE0F' : '\uD83D\uDC26'}
+                  <span className="text-xs" title={s.type === 'youtube' ? 'YouTube' : s.type === 'newsletter' ? 'Newsletter' : 'Twitter'}>
+                    {s.type === 'youtube' ? '▶️' : s.type === 'newsletter' ? '✉️' : '🐦'}
                   </span>
-                  {s.type === 'youtube' ? s.handle : `@${s.handle}`}
+                  {s.type === 'newsletter' ? (s.display_name || s.handle) : s.type === 'youtube' ? s.handle : `@${s.handle}`}
                   <button onClick={() => removeSource(s.id)} className="text-slate-500 hover:text-red-400 transition">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -378,7 +473,7 @@ export default function EditNewsletterPage() {
               ))}
             </div>
             {/* Source type toggle */}
-            <div className="flex gap-2 mb-2">
+            <div className="flex gap-2 mb-3">
               <button
                 onClick={() => { setNewSourceType('twitter'); setNewSource(''); }}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
@@ -399,22 +494,138 @@ export default function EditNewsletterPage() {
               >
                 YouTube
               </button>
-            </div>
-            <div className="flex gap-2">
-              <input
-                value={newSource}
-                onChange={e => setNewSource(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addSource()}
-                placeholder={newSourceType === 'twitter' ? '@handle' : 'https://www.youtube.com/@ChannelName'}
-                className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-2.5 text-white text-sm focus:border-blue-500 focus:outline-none transition"
-              />
               <button
-                onClick={addSource}
-                className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-sm rounded-xl transition"
+                onClick={() => {
+                  setNewSourceType('newsletter');
+                  setNewSource('');
+                  loadAvailableNewsletters();
+                }}
+                className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
+                  newSourceType === 'newsletter'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-800/60 text-slate-400 hover:text-white border border-slate-700/50'
+                }`}
               >
-                Add
+                Newsletters
               </button>
             </div>
+
+            {/* Twitter / YouTube add input */}
+            {newSourceType !== 'newsletter' && (
+              <div className="flex gap-2">
+                <input
+                  value={newSource}
+                  onChange={e => setNewSource(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addSource()}
+                  placeholder={newSourceType === 'twitter' ? '@handle' : 'https://www.youtube.com/@ChannelName'}
+                  className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-2.5 text-white text-sm focus:border-blue-500 focus:outline-none transition"
+                />
+                <button
+                  onClick={addSource}
+                  className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-sm rounded-xl transition"
+                >
+                  Add
+                </button>
+              </div>
+            )}
+
+            {/* Newsletters browser */}
+            {newSourceType === 'newsletter' && (
+              <div className="space-y-3">
+                {newslettersLoading && (
+                  <div className="text-slate-500 text-sm animate-pulse">Loading newsletters...</div>
+                )}
+                {!newslettersLoading && newslettersLoaded && availableNewsletters.length === 0 && (
+                  <div className="text-slate-500 text-sm">No newsletters available yet.</div>
+                )}
+                {availableNewsletters.map(nl => {
+                  const alreadyAdded = sources.some(s => s.type === 'newsletter' && s.handle === nl.slug);
+                  return (
+                    <div
+                      key={nl.id}
+                      className="flex items-start justify-between gap-3 p-3 rounded-xl bg-slate-800/40 border border-slate-700/40"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-white">{nl.name}</div>
+                        {nl.description && (
+                          <div className="text-xs text-slate-400 mt-0.5 line-clamp-2">{nl.description}</div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => !alreadyAdded && addNewsletterSourceBySlug(nl.slug)}
+                        disabled={alreadyAdded}
+                        className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                          alreadyAdded
+                            ? 'bg-slate-700/50 text-slate-500 cursor-default'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                        }`}
+                      >
+                        {alreadyAdded ? 'Added' : 'Add'}
+                      </button>
+                    </div>
+                  );
+                })}
+
+                {/* Request a newsletter */}
+                <div className="pt-1">
+                  {!showRequestForm && !requestSuccess && (
+                    <button
+                      onClick={() => setShowRequestForm(true)}
+                      className="text-sm text-slate-400 hover:text-white underline underline-offset-2 transition"
+                    >
+                      Request a newsletter
+                    </button>
+                  )}
+                  {requestSuccess && (
+                    <div className="p-3 rounded-xl bg-emerald-600/10 border border-emerald-500/30 text-emerald-400 text-sm">
+                      Request submitted &mdash; we&apos;ll review and add it soon.
+                    </div>
+                  )}
+                  {showRequestForm && !requestSuccess && (
+                    <div className="space-y-2 p-3 rounded-xl bg-slate-800/40 border border-slate-700/40">
+                      <div className="text-xs font-medium text-slate-400 mb-1">Request a newsletter</div>
+                      <input
+                        value={requestName}
+                        onChange={e => setRequestName(e.target.value)}
+                        placeholder="Newsletter name *"
+                        className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none transition"
+                      />
+                      <input
+                        value={requestUrl}
+                        onChange={e => setRequestUrl(e.target.value)}
+                        placeholder="URL (optional)"
+                        className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none transition"
+                      />
+                      <textarea
+                        value={requestDesc}
+                        onChange={e => setRequestDesc(e.target.value)}
+                        placeholder="Description (optional)"
+                        rows={2}
+                        className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none transition resize-none"
+                      />
+                      {requestError && (
+                        <div className="text-red-400 text-xs">{requestError}</div>
+                      )}
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={submitNewsletterRequest}
+                          disabled={requestSubmitting || !requestName.trim()}
+                          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition disabled:opacity-50"
+                        >
+                          {requestSubmitting ? 'Submitting...' : 'Submit'}
+                        </button>
+                        <button
+                          onClick={() => { setShowRequestForm(false); setRequestError(null); }}
+                          className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-sm rounded-lg transition"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Status messages */}
