@@ -1,7 +1,7 @@
 import { GroupedTweets } from '@/types';
-import { getXAI, DEFAULT_MODEL } from './client';
+import { getAnthropic, HAIKU_MODEL } from './client';
 import { parseNewsletterResponse, extractTweetReferences } from './prompts';
-import { recordCost, grokCostCents } from '../costs';
+import { recordCost, anthropicHaikuCostCents } from '../costs';
 
 /**
  * V2 Newsletter Generator — newsletter-centric, not user-centric.
@@ -35,43 +35,44 @@ export async function generateNewsletterV2({
   endDate,
   newsletterName,
 }: GenerateV2Params): Promise<GenerateV2Result> {
-  const client = getXAI();
+  const client = getAnthropic();
 
   // Build the user prompt from source content
   const userPrompt = buildSourceContentPrompt(recentTweets, contextTweets, secondaryPrompt, `${startDate} to ${endDate}`);
 
-  const response = await client.chat.completions.create({
-    model: DEFAULT_MODEL,
+  const response = await client.messages.create({
+    model: HAIKU_MODEL,
     max_tokens: 2500,
-    messages: [
-      { role: 'system', content: prompt },
-      { role: 'user', content: userPrompt },
-    ],
+    system: prompt,
+    messages: [{ role: 'user', content: userPrompt }],
   });
 
-  const rawContent = response.choices[0]?.message?.content || '';
+  const rawContent = response.content
+    .filter((block): block is Extract<typeof block, { type: 'text' }> => block.type === 'text')
+    .map((block) => block.text)
+    .join('');
 
   const { subject } = parseNewsletterResponse(rawContent, newsletterName);
   const { content } = extractTweetReferences(rawContent, recentTweets, contextTweets);
 
-  const inputTokens = response.usage?.prompt_tokens || 0;
-  const outputTokens = response.usage?.completion_tokens || 0;
+  const inputTokens = response.usage.input_tokens;
+  const outputTokens = response.usage.output_tokens;
 
   recordCost({
-    supplier: 'grok',
+    supplier: 'anthropic',
     operation: 'newsletter_synthesis',
-    cost_cents: grokCostCents(inputTokens, outputTokens),
+    cost_cents: anthropicHaikuCostCents(inputTokens, outputTokens),
     usage_amount: inputTokens + outputTokens,
     usage_unit: 'tokens',
     input_tokens: inputTokens,
     output_tokens: outputTokens,
-    metadata: { model: DEFAULT_MODEL, newsletterName },
+    metadata: { model: HAIKU_MODEL, newsletterName },
   });
 
   return {
     subject,
     content,
-    model_used: DEFAULT_MODEL,
+    model_used: HAIKU_MODEL,
     input_tokens: inputTokens,
     output_tokens: outputTokens,
   };
