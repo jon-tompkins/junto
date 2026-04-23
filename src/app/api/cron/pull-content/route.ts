@@ -5,6 +5,7 @@ import { storeNewsletterContent } from '@/lib/db/content-newsletter';
 import { fetchTweetsForProfile } from '@/lib/twitter/client';
 import { fetchChannelInsights } from '@/lib/youtube/client';
 import { getSupabase } from '@/lib/db/client';
+import { updateSourceProfile } from '@/lib/synthesis/profile-updater';
 
 export const maxDuration = 300; // 5 minutes
 
@@ -95,6 +96,13 @@ export async function GET(req: NextRequest) {
           totalFetched += tweets.length;
           totalStored += stored;
           console.log(`[pull-content] @${handle}: ${tweets.length} fetched, ${stored} stored`);
+
+          // Update analyst profile when new content was stored
+          if (stored > 0) {
+            updateSourceProfile(source.id, handle, tweets).catch((err) =>
+              console.warn(`[pull-content] Profile update failed for @${handle}:`, err instanceof Error ? err.message : err)
+            );
+          }
         } catch (err) {
           const errMsg = err instanceof Error ? err.message : 'Unknown error';
           console.error(`[pull-content] Error @${handle}:`, errMsg);
