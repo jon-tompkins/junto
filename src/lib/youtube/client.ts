@@ -180,17 +180,15 @@ export async function summarizeTranscript(
       ? transcript.substring(0, maxChars) + '...[truncated]'
       : transcript;
 
-  const { getXAI } = await import('@/lib/synthesis/client');
-  const xai = getXAI();
+  const { getAnthropic, HAIKU_MODEL } = await import('@/lib/synthesis/client');
+  const anthropic = getAnthropic();
 
   console.log(`[YouTube] Summarizing "${videoTitle}" (${truncated.length} chars)...`);
 
-  const response = await xai.chat.completions.create({
-    model: 'grok-3-fast',
-    messages: [
-      {
-        role: 'system',
-        content: `You extract key insights from video transcripts and format them as tweet-length statements (under 280 characters each).
+  const response = await anthropic.messages.create({
+    model: HAIKU_MODEL,
+    max_tokens: 1500,
+    system: `You extract key insights from video transcripts and format them as tweet-length statements (under 280 characters each).
 
 Each insight should:
 - Be a standalone, self-contained statement
@@ -201,7 +199,7 @@ Each insight should:
 - Be relevant to investors, analysts, or market participants
 
 Return 5-10 insights as a JSON array of strings. Nothing else.`,
-      },
+    messages: [
       {
         role: 'user',
         content: `Video: "${videoTitle}" by ${channelName}
@@ -212,11 +210,9 @@ ${truncated}
 Extract 5-10 key insights as tweet-length statements. Return a JSON array of strings.`,
       },
     ],
-    max_tokens: 1500,
-    temperature: 0.3,
   });
 
-  const raw = response.choices[0]?.message?.content || '[]';
+  const raw = response.content[0]?.type === 'text' ? response.content[0].text : '[]';
 
   try {
     const jsonMatch = raw.match(/\[[\s\S]*\]/);

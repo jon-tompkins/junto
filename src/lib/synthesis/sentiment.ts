@@ -1,4 +1,4 @@
-import { getXAI } from './client';
+import { getAnthropic, HAIKU_MODEL } from './client';
 
 export interface TickerSentiment {
   ticker: string;
@@ -20,7 +20,7 @@ export interface TrendingHashtag {
 export function extractTickersFromTweets(tweets: Record<string, any[]>): string[] {
   const tickers = new Set<string>();
   const tickerRegex = /\$([A-Z]{1,5})/g;
-  
+
   Object.values(tweets).forEach(userTweets => {
     userTweets.forEach((tweet: any) => {
       const matches = tweet.content?.match(tickerRegex);
@@ -29,8 +29,18 @@ export function extractTickersFromTweets(tweets: Record<string, any[]>): string[
       }
     });
   });
-  
-  return Array.from(tickers).slice(0, 10); // Limit to top 10
+
+  return Array.from(tickers).slice(0, 10);
+}
+
+async function callHaiku(prompt: string, maxTokens: number): Promise<string> {
+  const anthropic = getAnthropic();
+  const response = await anthropic.messages.create({
+    model: HAIKU_MODEL,
+    max_tokens: maxTokens,
+    messages: [{ role: 'user', content: prompt }],
+  });
+  return response.content[0]?.type === 'text' ? response.content[0].text : '[]';
 }
 
 /**
@@ -40,9 +50,7 @@ export async function fetchMultiTickerSentiment(
   tickers: string[]
 ): Promise<TickerSentiment[]> {
   if (tickers.length === 0) return [];
-  
-  const client = getXAI();
-  
+
   const prompt = `Analyze Twitter/X sentiment for these tickers: ${tickers.join(', ')}
 
 For each ticker, provide:
@@ -65,14 +73,7 @@ Return as JSON array:
 Be concise. Focus on what's being discussed TODAY. Return valid JSON only.`;
 
   try {
-    const response = await client.chat.completions.create({
-      model: 'grok-3-fast',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 1000,
-    });
-    
-    const content = response.choices[0]?.message?.content || '[]';
-    // Extract JSON if wrapped in markdown
+    const content = await callHaiku(prompt, 1000);
     const jsonMatch = content.match(/\[[\s\S]*\]/);
     return JSON.parse(jsonMatch ? jsonMatch[0] : content);
   } catch (error) {
@@ -85,8 +86,6 @@ Be concise. Focus on what's being discussed TODAY. Return valid JSON only.`;
  * Fetch trending hashtags on X/Twitter
  */
 export async function fetchTrendingHashtags(): Promise<TrendingHashtag[]> {
-  const client = getXAI();
-  
   const prompt = `What are the top 5 trending financial/market hashtags on X/Twitter right now?
 
 Return as JSON:
@@ -95,13 +94,7 @@ Return as JSON:
 Include mention count if available (e.g., "145K", "89K", "1.2M"). Return valid JSON only.`;
 
   try {
-    const response = await client.chat.completions.create({
-      model: 'grok-3-fast',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 300,
-    });
-    
-    const content = response.choices[0]?.message?.content || '[]';
+    const content = await callHaiku(prompt, 300);
     const jsonMatch = content.match(/\[[\s\S]*\]/);
     return JSON.parse(jsonMatch ? jsonMatch[0] : content);
   } catch (error) {
@@ -117,9 +110,7 @@ export async function fetchSmartMoneySignals(
   tickers: string[]
 ): Promise<string[]> {
   if (tickers.length === 0) return [];
-  
-  const client = getXAI();
-  
+
   const prompt = `Any notable smart money signals or unusual options flow on these tickers: ${tickers.slice(0, 5).join(', ')}
 
 Look for:
@@ -134,13 +125,7 @@ Return as array of strings (max 3 signals):
 If nothing notable, return empty array []. Return valid JSON only.`;
 
   try {
-    const response = await client.chat.completions.create({
-      model: 'grok-3-fast',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 300,
-    });
-    
-    const content = response.choices[0]?.message?.content || '[]';
+    const content = await callHaiku(prompt, 300);
     const jsonMatch = content.match(/\[[\s\S]*\]/);
     return JSON.parse(jsonMatch ? jsonMatch[0] : content);
   } catch (error) {
