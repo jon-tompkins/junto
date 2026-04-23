@@ -5,7 +5,7 @@ export default function Hero() {
         Stop Scrolling, Start Acting
       </h1>
       <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
-        Expert-curated newsletters that cut through the noise.
+        Expert-curated dispatches that cut through the noise.
       </p>
     </section>
   );

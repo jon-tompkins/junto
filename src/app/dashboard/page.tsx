@@ -304,7 +304,7 @@ export default function DashboardPage() {
         {accountEmail === null && !loading && (
           <div className="mb-8 p-4 bg-amber-900/20 border border-amber-700/40 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="flex-1">
-              <p className="text-amber-300 font-medium text-sm">Add your email to receive newsletters</p>
+              <p className="text-amber-300 font-medium text-sm">Add your email to receive dispatches</p>
               <p className="text-amber-400/60 text-xs mt-0.5">This will be used as the default delivery email for your subscriptions.</p>
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
@@ -338,7 +338,7 @@ export default function DashboardPage() {
             href="/create"
             className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-medium transition shadow-lg shadow-blue-600/20 text-sm shrink-0"
           >
-            + New Newsletter
+            + New Dispatch
           </Link>
         </div>
 
@@ -357,7 +357,7 @@ export default function DashboardPage() {
           </div>
           <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
             <div className="text-2xl font-bold text-white">{created.length}</div>
-            <div className="text-sm text-slate-400 mt-1">My Newsletters</div>
+            <div className="text-sm text-slate-400 mt-1">My Dispatches</div>
           </div>
           <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
             <div className="text-2xl font-bold text-white">
@@ -371,7 +371,7 @@ export default function DashboardPage() {
         <div className="flex gap-1 bg-slate-800/40 rounded-xl p-1 mb-8 w-fit">
           {[
             { key: 'subscriptions', label: `My Subscriptions (${subscriptions.length})` },
-            { key: 'newsletters', label: `My Newsletters (${created.length})` },
+            { key: 'newsletters', label: `My Dispatches (${created.length})` },
             { key: 'history', label: 'History' },
           ].map((tab) => (
             <button
@@ -396,7 +396,7 @@ export default function DashboardPage() {
             <EmptyState
               icon="mail"
               title="No subscriptions yet"
-              subtitle="Discover newsletters to subscribe to."
+              subtitle="Discover dispatches to subscribe to."
               actionLabel="Explore Newsletters"
               actionHref="/explore"
             />
@@ -531,9 +531,9 @@ export default function DashboardPage() {
           ) : created.length === 0 ? (
             <EmptyState
               icon="plus"
-              title="No newsletters created"
-              subtitle="Create your first newsletter and start building an audience."
-              actionLabel="Create Newsletter"
+              title="No dispatches created"
+              subtitle="Create your first dispatch and start building an audience."
+              actionLabel="Create Dispatch"
               actionHref="/create"
             />
           ) : (

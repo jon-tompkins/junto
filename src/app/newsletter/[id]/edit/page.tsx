@@ -303,7 +303,7 @@ export default function EditNewsletterPage() {
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <h1 className="text-2xl font-bold mb-8">Edit Newsletter</h1>
+        <h1 className="text-2xl font-bold mb-8">Edit Dispatch</h1>
 
         <div className="space-y-6">
           {/* Name */}

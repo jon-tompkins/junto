@@ -75,7 +75,7 @@ export default function ExplorePage() {
         <div className="flex items-start justify-between mb-10">
           <div className="max-w-3xl">
             <h1 className="text-4xl font-bold mb-3">
-              Explore <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Newsletters</span>
+              Explore <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Dispatches</span>
             </h1>
             <p className="text-slate-400 text-lg">
               Discover community-created intelligence briefs. Subscribe with credits, or create your own.
@@ -85,7 +85,7 @@ export default function ExplorePage() {
             href="/create"
             className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-medium transition shadow-lg shadow-blue-600/20 text-sm shrink-0"
           >
-            + Create Newsletter
+            + Create Dispatch
           </Link>
         </div>
 
@@ -97,7 +97,7 @@ export default function ExplorePage() {
             </svg>
             <input
               type="text"
-              placeholder="Search newsletters..."
+              placeholder="Search dispatches..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-slate-800/80 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition"
@@ -138,13 +138,13 @@ export default function ExplorePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
               </svg>
             </div>
-            <p className="text-slate-400 text-lg mb-2 font-medium">No newsletters found</p>
+            <p className="text-slate-400 text-lg mb-2 font-medium">No dispatches found</p>
             <p className="text-slate-500 text-sm mb-6">Be the first to create an intelligence brief.</p>
             <Link
               href="/create"
               className="inline-block bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-medium transition shadow-lg shadow-blue-600/20"
             >
-              Create a Newsletter
+              Create a Dispatch
             </Link>
           </div>
         ) : (

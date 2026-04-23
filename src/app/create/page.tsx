@@ -327,7 +327,7 @@ export default function CreateNewsletterPage() {
         {/* Step 1: Template Selection */}
         {step === 'template' && (
           <div>
-            <h1 className="text-3xl font-bold mb-2">Create a Newsletter</h1>
+            <h1 className="text-3xl font-bold mb-2">Create a Dispatch</h1>
             <p className="text-slate-400 mb-8">
               Start with a template or build from scratch.
             </p>
@@ -362,7 +362,7 @@ export default function CreateNewsletterPage() {
         {/* Step 2: Details */}
         {step === 'details' && (
           <div>
-            <h2 className="text-2xl font-bold mb-6">Newsletter Details</h2>
+            <h2 className="text-2xl font-bold mb-6">Dispatch Details</h2>
             <div className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">Name</label>
@@ -370,7 +370,7 @@ export default function CreateNewsletterPage() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="My Newsletter"
+                  placeholder="My Dispatch"
                   className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition"
                 />
               </div>
@@ -379,7 +379,7 @@ export default function CreateNewsletterPage() {
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="What does this newsletter cover?"
+                  placeholder="What does this dispatch cover?"
                   rows={2}
                   className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 resize-none transition"
                 />
@@ -688,7 +688,7 @@ export default function CreateNewsletterPage() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-3">Generation Days</label>
-                <p className="text-xs text-slate-500 mb-3">Newsletter only generates on selected days.</p>
+                <p className="text-xs text-slate-500 mb-3">Dispatch only generates on selected days.</p>
                 <div className="flex gap-2">
                   {[
                     { key: 'mon', label: 'Mon' },
@@ -736,7 +736,7 @@ export default function CreateNewsletterPage() {
                 disabled={creating || !name || (!prompt && !promptTemplateId)}
                 className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-semibold transition shadow-lg shadow-blue-600/20"
               >
-                {creating ? 'Creating...' : 'Create Newsletter'}
+                {creating ? 'Creating...' : 'Create Dispatch'}
               </button>
             </div>
           </div>

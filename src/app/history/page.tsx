@@ -96,13 +96,13 @@ export default function HistoryPage() {
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <h1 className="text-3xl font-bold mb-2">Newsletter History</h1>
-        <p className="text-slate-400 mb-8">All generated issues from your subscriptions and newsletters.</p>
+        <h1 className="text-3xl font-bold mb-2">Dispatch History</h1>
+        <p className="text-slate-400 mb-8">All generated issues from your subscriptions and dispatches.</p>
 
         {runs.length === 0 ? (
           <div className="text-center py-16 border border-dashed border-slate-700/40 rounded-2xl">
             <p className="text-slate-400 font-medium mb-2">No issues yet</p>
-            <p className="text-slate-500 text-sm">Issues will appear here once newsletters start generating.</p>
+            <p className="text-slate-500 text-sm">Issues will appear here once dispatches start generating.</p>
           </div>
         ) : (
           <div className="space-y-3">

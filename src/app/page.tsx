@@ -251,9 +251,9 @@ export default function LandingPage() {
       {/* Newsletter Grid */}
       <section className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-3">Popular Newsletters</h2>
+          <h2 className="text-3xl font-bold mb-3">Popular Dispatches</h2>
           <p className="text-slate-400">
-            Click any newsletter to preview details and subscribe.
+            Click any dispatch to preview details and subscribe.
           </p>
         </div>
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-5">

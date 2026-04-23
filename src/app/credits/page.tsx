@@ -90,7 +90,7 @@ export default function CreditsPage() {
 
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold mb-2">Buy Credits</h1>
-          <p className="text-slate-400 mb-4">Credits power your newsletters and research reports.</p>
+          <p className="text-slate-400 mb-4">Credits power your dispatches and research reports.</p>
           {creditBalance !== null && (
             <p className="text-sm">
               Current balance: <span className={`font-bold ${creditColor}`}>{creditBalance.toLocaleString()} credits</span>
@@ -102,11 +102,11 @@ export default function CreditsPage() {
         <div className="mb-8 p-4 bg-slate-800/30 border border-slate-700/40 rounded-xl">
           <div className="grid grid-cols-3 gap-4 text-center text-sm">
             <div>
-              <div className="text-slate-400">Newsletter send</div>
+              <div className="text-slate-400">Dispatch send</div>
               <div className="text-white font-medium mt-1">2 credits</div>
             </div>
             <div>
-              <div className="text-slate-400">Newsletter (owner)</div>
+              <div className="text-slate-400">Dispatch (owner)</div>
               <div className="text-white font-medium mt-1">10-25 credits</div>
             </div>
             <div>

@@ -1,11 +1,11 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Explore Newsletters',
-  description: 'Browse and discover AI-powered newsletters on MyJunto. Find curated intelligence briefings from trusted Twitter sources on crypto, markets, tech, and more.',
+  title: 'Explore Dispatches',
+  description: 'Browse and discover AI-powered dispatches on MyJunto. Find curated intelligence briefings from trusted Twitter sources on crypto, markets, tech, and more.',
   openGraph: {
-    title: 'Explore Newsletters | MyJunto',
-    description: 'Browse and discover AI-powered newsletters from curated Twitter sources.',
+    title: 'Explore Dispatches | MyJunto',
+    description: 'Browse and discover AI-powered dispatches from curated Twitter sources.',
   },
 };
 
