@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProfileByHandle } from '@/lib/db/source-analyst-profiles';
 
-export async function GET(_req: NextRequest, { params }: { params: { handle: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ handle: string }> }) {
   try {
-    const profile = await getProfileByHandle(params.handle);
+    const { handle } = await params;
+    const profile = await getProfileByHandle(handle);
     if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ profile });
   } catch (err) {
