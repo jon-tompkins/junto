@@ -89,6 +89,10 @@ export async function generateNewsletterV2({
   };
 }
 
+function engagementScore(likes: number, retweets: number): number {
+  return (likes || 0) + (retweets || 0) * 1.5;
+}
+
 function buildSourceContentPrompt(
   recentTweets: GroupedTweets,
   contextTweets?: GroupedTweets,
@@ -99,15 +103,37 @@ function buildSourceContentPrompt(
 ): string {
   const sections: string[] = [];
 
-  // Date range
   if (dateRange) {
     sections.push(`DATE RANGE: ${dateRange}`);
   }
 
-  // Recent tweets (primary content)
-  sections.push('## RECENT TWEETS (last 24-48 hours) — PRIMARY FOCUS');
-  let tweetIndex = 1;
   const handles = Object.keys(recentTweets);
+
+  // Sort each handle's tweets by engagement in place — extractTweetReferences sees the same order
+  for (const handle of handles) {
+    if (recentTweets[handle]?.length) {
+      recentTweets[handle].sort((a, b) =>
+        engagementScore(b.likes, b.retweets) - engagementScore(a.likes, a.retweets)
+      );
+    }
+  }
+
+  // Top signals — highest-conviction content across all sources
+  const topSignals = handles
+    .flatMap(h => (recentTweets[h] || []).map(t => ({ handle: h, ...t })))
+    .sort((a, b) => engagementScore(b.likes, b.retweets) - engagementScore(a.likes, a.retweets))
+    .slice(0, 4);
+
+  if (topSignals.length > 0) {
+    sections.push('\n## TOP SIGNALS (highest conviction by engagement — weight these most)');
+    for (const t of topSignals) {
+      sections.push(`- @${t.handle} [${t.likes} likes, ${t.retweets} RTs]: ${t.content}`);
+    }
+  }
+
+  // Recent tweets (primary content) — sorted by engagement within each handle
+  sections.push('\n## RECENT TWEETS (last 24-48 hours) — PRIMARY FOCUS');
+  let tweetIndex = 1;
 
   if (handles.length === 0) {
     sections.push('No recent tweets available.');
@@ -132,9 +158,8 @@ function buildSourceContentPrompt(
       const tweets = contextTweets[handle];
       if (!tweets || tweets.length === 0) continue;
 
-      // Only include top tweets by engagement for context
       const top = tweets
-        .sort((a, b) => b.likes - a.likes)
+        .sort((a, b) => engagementScore(b.likes, b.retweets) - engagementScore(a.likes, a.retweets))
         .slice(0, 5);
 
       sections.push(`\n### @${handle} (historical highlights)`);
@@ -171,7 +196,6 @@ function buildSourceContentPrompt(
       for (const issue of issues.slice(0, 3)) {
         const date = new Date(issue.received_at).toLocaleDateString();
         const subjectLine = issue.subject ? `"${issue.subject}"` : '(no subject)';
-        // Truncate long content for context window
         const snippet = issue.content.length > 500 ? issue.content.slice(0, 500) + '...' : issue.content;
         sections.push(`- (${date}) ${subjectLine}: ${snippet}`);
       }
@@ -182,6 +206,38 @@ function buildSourceContentPrompt(
   if (secondaryPrompt) {
     sections.push(`\n---\n## ADDITIONAL INSTRUCTIONS FROM NEWSLETTER CREATOR\n${secondaryPrompt}`);
   }
+
+  // Output structure — appended to user message so it doesn't conflict with custom system prompts
+  sections.push(`\n---\n## OUTPUT FORMAT (mandatory — no deviations)
+
+SUBJECT: [One sharp line naming the actual signal — never generic like "Daily Update"]
+
+---
+
+**The Signal** — [MAX 50 words. Lead with the conclusion. State the bullish/bearish lean directly.]
+
+**Consensus:** [Bullish / Bearish / Mixed] | **Conviction:** [High / Medium / Low]
+
+---
+
+**What's Moving**
+- **$TICKER or theme** — [what sources are doing/saying] — [tight reason] *(via @handle)* [MAX 20 words per bullet]
+- [3–5 bullets total]
+
+---
+
+**Blind Spot** — [MAX 75 words. What the consensus is missing — contrarian view, underweighted risk, ignored signal.]
+
+---
+
+**One Actionable Idea** — [1 sentence. A trade, a name to research, or a confident pass.]
+
+---
+
+**Sources:** @handle (bullish $X, cautious $Y), @handle (2-word stance)
+
+Strict limits: Signal ≤50w · Each bullet ≤20w · Blind Spot ≤75w · Total ≤350w.
+Write in the voice of the tracked analysts — match their directness and framing.`);
 
   return sections.join('\n');
 }
