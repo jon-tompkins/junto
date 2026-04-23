@@ -15,6 +15,15 @@ export interface SourceAnalystProfile {
   created_at: string;
 }
 
+export interface SourceProfileWithSource extends SourceAnalystProfile {
+  source: {
+    handle_or_url: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    type: string;
+  };
+}
+
 export async function getSourceProfile(sourceId: string): Promise<SourceAnalystProfile | null> {
   const supabase = getSupabase();
   const { data, error } = await supabase
@@ -47,4 +56,35 @@ export async function upsertSourceProfile(
     );
 
   if (error) throw error;
+}
+
+export async function getAllProfilesWithSources(): Promise<SourceProfileWithSource[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('source_analyst_profiles')
+    .select(`
+      *,
+      source:sources(handle_or_url, display_name, avatar_url, type)
+    `)
+    .eq('sources.type', 'twitter')
+    .order('last_updated', { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as SourceProfileWithSource[];
+}
+
+export async function getProfileByHandle(handle: string): Promise<SourceProfileWithSource | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('source_analyst_profiles')
+    .select(`
+      *,
+      source:sources(handle_or_url, display_name, avatar_url, type)
+    `)
+    .eq('sources.handle_or_url', handle.toLowerCase().replace('@', ''))
+    .single();
+
+  if (error?.code === 'PGRST116') return null;
+  if (error) throw error;
+  return data as SourceProfileWithSource;
 }

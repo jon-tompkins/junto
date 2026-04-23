@@ -50,10 +50,10 @@ export function TopNav() {
       {/* Center nav links */}
       <div className="hidden md:flex items-center gap-6">
         <Link href="/explore" className={navLinkClass('/explore')}>
-          Newsletters
+          Dispatches
         </Link>
-        <Link href="/research" className={navLinkClass('/research')}>
-          Research
+        <Link href="/sources" className={navLinkClass('/sources')}>
+          Analysts
         </Link>
         <Link href="/docs" className={navLinkClass('/docs')}>
           Docs
@@ -129,7 +129,7 @@ export function TopNav() {
                       onClick={() => setMenuOpen(false)}
                       className="block px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition"
                     >
-                      Create Newsletter
+                      Create Dispatch
                     </Link>
                     <div className="border-t border-slate-700 mt-1 pt-1">
                       <button
