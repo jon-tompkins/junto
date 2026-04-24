@@ -45,6 +45,7 @@ export default function EditJuntoPage() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [error, setError] = useState('');
+  const [adding, setAdding] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function refresh() {
@@ -86,6 +87,30 @@ export default function EditJuntoPage() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [query]);
+
+  async function addNewHandle(handle: string) {
+    const clean = handle.toLowerCase().replace('@', '').trim();
+    if (!clean) return;
+    if (junto?.junto_sources.some((js) => js.source?.handle_or_url === clean)) {
+      setQuery(''); setShowDropdown(false); return;
+    }
+    setAdding(true);
+    setError('');
+    try {
+      const createRes = await fetch('/api/sources', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handle: clean }),
+      });
+      if (!createRes.ok) throw new Error('Failed to create source');
+      const source = await createRes.json();
+      await addSource(source);
+    } catch {
+      setError(`Failed to add @${clean}`);
+    } finally {
+      setAdding(false);
+    }
+  }
 
   async function addSource(s: SearchResult) {
     if (junto?.junto_sources.some((js) => js.source_id === s.id)) return;
@@ -234,7 +259,7 @@ export default function EditJuntoPage() {
               placeholder="Search by handle or name..."
               className="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition"
             />
-            {showDropdown && results.length > 0 && (
+            {showDropdown && (
               <div className="absolute z-20 mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-64 overflow-y-auto">
                 {results.map((r) => {
                   const alreadyAdded = junto.junto_sources.some((js) => js.source_id === r.id);
@@ -263,6 +288,22 @@ export default function EditJuntoPage() {
                     </button>
                   );
                 })}
+                {query.trim() && !junto.junto_sources.some((js) => js.source?.handle_or_url === query.trim().toLowerCase().replace('@', '')) && (
+                  <button
+                    type="button"
+                    disabled={adding}
+                    onClick={() => addNewHandle(query)}
+                    className="w-full text-left flex items-center gap-3 px-3 py-2.5 border-t border-slate-700/50 hover:bg-emerald-900/20 transition"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-emerald-900/40 flex items-center justify-center text-emerald-400 text-sm font-bold">+</div>
+                    <div>
+                      <div className="text-sm font-medium text-emerald-400">
+                        {adding ? 'Adding...' : `Add @${query.trim().replace('@', '')}`}
+                      </div>
+                      <div className="text-xs text-slate-500">New source — will start pulling tweets</div>
+                    </div>
+                  </button>
+                )}
               </div>
             )}
           </div>
