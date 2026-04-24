@@ -4,6 +4,7 @@ export interface PositionEntry {
   stance: 'bullish' | 'bearish' | 'neutral' | 'cautious';
   since: string;  // ISO date string
   note?: string;
+  target_price?: number;
 }
 
 export interface SourceAnalystProfile {
