@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -117,7 +117,7 @@ STYLE: Institutional quality. Reference data points and historical context. Cite
 // ============================================================
 type WizardStep = 'template' | 'details' | 'sources' | 'schedule';
 
-export default function CreateNewsletterPage() {
+function CreateNewsletterPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -795,5 +795,23 @@ export default function CreateNewsletterPage() {
         message="Sign in to create your newsletter and start building your audience."
       />
     </main>
+  );
+}
+
+export default function CreateNewsletterPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+        <TopNav />
+        <div className="container mx-auto px-4 py-16 max-w-3xl">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-slate-700 rounded w-64" />
+            <div className="h-4 bg-slate-700/60 rounded w-96" />
+          </div>
+        </div>
+      </main>
+    }>
+      <CreateNewsletterPageInner />
+    </Suspense>
   );
 }
