@@ -66,7 +66,6 @@ export async function getAllProfilesWithSources(): Promise<SourceProfileWithSour
       *,
       source:sources(handle_or_url, display_name, avatar_url, type)
     `)
-    .eq('sources.type', 'twitter')
     .order('last_updated', { ascending: false });
 
   if (error) throw error;
@@ -75,13 +74,24 @@ export async function getAllProfilesWithSources(): Promise<SourceProfileWithSour
 
 export async function getProfileByHandle(handle: string): Promise<SourceProfileWithSource | null> {
   const supabase = getSupabase();
+  const cleanHandle = handle.toLowerCase().replace('@', '');
+
+  const { data: source, error: sourceError } = await supabase
+    .from('sources')
+    .select('id')
+    .eq('handle_or_url', cleanHandle)
+    .single();
+
+  if (sourceError?.code === 'PGRST116') return null;
+  if (sourceError) throw sourceError;
+
   const { data, error } = await supabase
     .from('source_analyst_profiles')
     .select(`
       *,
       source:sources(handle_or_url, display_name, avatar_url, type)
     `)
-    .eq('sources.handle_or_url', handle.toLowerCase().replace('@', ''))
+    .eq('source_id', source.id)
     .single();
 
   if (error?.code === 'PGRST116') return null;
