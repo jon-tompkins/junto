@@ -14,9 +14,10 @@ const FRESHNESS_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
 // If any source was updated in the last OVERLAP_WINDOW, assume a prior cron is
 // running or just finished — bail to prevent duplicate runs.
 const OVERLAP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
-// Overlap window subtracted from each source's updated_at before passing as
-// since_time, so we don't miss tweets posted right before the prior pull.
-const SINCE_SAFETY_BUFFER_MS = 30 * 60 * 1000; // 30 minutes
+// How far back to look on each pull — covers the full freshness window plus a
+// safety buffer so tweets posted right at the edge of the last window aren't
+// missed. Duplicates are safe: storeTwitterContent deduplicates by twitter_id.
+const PULL_LOOKBACK_MS = FRESHNESS_WINDOW_MS + 10 * 60 * 1000; // 40 minutes
 // First-time pull lookback when a source has never been fetched.
 const FIRST_PULL_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -36,6 +37,9 @@ export async function GET(req: NextRequest) {
     // ─── Twitter Sources (per-handle) ───────────────
     const twitterSources = await getSourcesWithActiveNewsletters('twitter');
     const now = Date.now();
+    // Shared since_time for all sources in this run — covers the full freshness
+    // window plus a buffer. First-ever pulls use FIRST_PULL_LOOKBACK_MS instead.
+    const defaultSinceDate = new Date(now - PULL_LOOKBACK_MS).toISOString();
 
     // Overlap guard: if any source was just updated (< 5 min ago), assume another
     // pull-content cron is mid-flight or just finished. Bail to avoid duplicates.
@@ -55,13 +59,10 @@ export async function GET(req: NextRequest) {
         `[pull-content] ${twitterSources.length} Twitter sources total, ${stale.length} stale (>30min), ${skipped} fresh (skipped).`,
       );
 
-      // Per-handle pulls: each source gets its own `since_time` based on its
-      // own last `updated_at` (minus a small safety buffer). First-ever pulls
-      // look back FIRST_PULL_LOOKBACK_MS.
       for (const source of stale) {
         const handle = source.handle_or_url;
         const sinceDate = source.updated_at
-          ? new Date(new Date(source.updated_at).getTime() - SINCE_SAFETY_BUFFER_MS).toISOString()
+          ? defaultSinceDate
           : new Date(now - FIRST_PULL_LOOKBACK_MS).toISOString();
 
         try {
@@ -195,9 +196,8 @@ export async function GET(req: NextRequest) {
             continue;
           }
 
-          // Query newsletter_content for issues received since source.updated_at (or last 7 days)
           const since = source.updated_at
-            ? new Date(new Date(source.updated_at).getTime() - SINCE_SAFETY_BUFFER_MS).toISOString()
+            ? defaultSinceDate
             : new Date(now - FIRST_PULL_LOOKBACK_MS).toISOString();
 
           const { data: issues, error: issuesError } = await supabase
