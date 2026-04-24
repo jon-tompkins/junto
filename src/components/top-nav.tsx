@@ -52,6 +52,9 @@ export function TopNav() {
         <Link href="/explore" className={navLinkClass('/explore')}>
           Dispatches
         </Link>
+        <Link href="/junto/new" className={navLinkClass('/junto')}>
+          Juntos
+        </Link>
         <Link href="/sources" className={navLinkClass('/sources')}>
           Analysts
         </Link>
@@ -123,6 +126,13 @@ export function TopNav() {
                       className="block px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition"
                     >
                       History
+                    </Link>
+                    <Link
+                      href="/junto/new"
+                      onClick={() => setMenuOpen(false)}
+                      className="block px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition"
+                    >
+                      My Juntos
                     </Link>
                     <Link
                       href="/create"
