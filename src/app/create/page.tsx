@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { AuthModal } from '@/components/auth-modal';
@@ -119,11 +119,17 @@ type WizardStep = 'template' | 'details' | 'sources' | 'schedule';
 
 export default function CreateNewsletterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const [step, setStep] = useState<WizardStep>('template');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Junto preselection
+  const juntoIdParam = searchParams?.get('junto_id') || null;
+  const [juntoId, setJuntoId] = useState<string | null>(juntoIdParam);
+  const [juntoName, setJuntoName] = useState<string | null>(null);
 
   // Prompt templates from DB
   const [promptTemplates, setPromptTemplates] = useState<PromptTemplateOption[]>([]);
@@ -150,6 +156,31 @@ export default function CreateNewsletterPage() {
   const [cadence, setCadence] = useState('daily');
   const [isPublic, setIsPublic] = useState(true);
   const [sendDays, setSendDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
+
+  // Pre-populate sources from a junto if junto_id was provided
+  useEffect(() => {
+    if (!juntoIdParam) return;
+    fetch(`/api/juntos/${juntoIdParam}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data?.junto) return;
+        setJuntoName(data.junto.name);
+        const fromJunto: SourceEntry[] = (data.junto.junto_sources || [])
+          .map((js: any) => js.source)
+          .filter((s: any) => !!s)
+          .map((s: any) => ({
+            handle: s.handle_or_url,
+            type: (s.type as SourceType) || 'twitter',
+            status: 'valid' as const,
+            name: s.display_name || s.handle_or_url,
+          }));
+        setSources((prev) => {
+          const handles = new Set(prev.map((p) => p.handle));
+          return [...prev, ...fromJunto.filter((s) => !handles.has(s.handle))];
+        });
+      })
+      .catch(() => {});
+  }, [juntoIdParam]);
 
   // Validate a single source via API
   const validateSource = useCallback(async (handle: string, type: SourceType = 'twitter') => {
@@ -269,6 +300,7 @@ export default function CreateNewsletterPage() {
           schedule_cadence: cadence,
           send_days: sendDays,
           is_public: isPublic,
+          junto_id: juntoId || undefined,
         }),
       });
 
@@ -491,6 +523,20 @@ export default function CreateNewsletterPage() {
             <p className="text-slate-400 mb-6 text-sm">
               Add Twitter/X handles or YouTube channels to pull from. Each source is validated in real-time.
             </p>
+            {juntoId && juntoName && (
+              <div className="mb-4 flex items-center justify-between gap-3 bg-emerald-900/20 border border-emerald-700/40 rounded-xl px-4 py-2.5">
+                <span className="text-sm text-emerald-300">
+                  Sources from: <span className="font-semibold">{juntoName}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { setJuntoId(null); setJuntoName(null); }}
+                  className="text-xs text-emerald-400 hover:text-emerald-200 transition"
+                >
+                  Unlink
+                </button>
+              </div>
+            )}
             {/* Source type toggle */}
             <div className="flex gap-2 mb-3">
               <button

@@ -217,7 +217,7 @@ export default function NewsletterDetailPage() {
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header card */}
         <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-8 mb-8">
-          <div className="flex items-start justify-between gap-4 mb-5">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
             <div>
               <h1 className="text-3xl font-bold mb-3">{newsletter.name}</h1>
               {newsletter.curator && (
@@ -253,7 +253,7 @@ export default function NewsletterDetailPage() {
                 <span>2 credits/delivery</span>
               </div>
             </div>
-            <div className="flex gap-2 shrink-0">
+            <div className="flex gap-2 shrink-0 flex-wrap">
               {isOwner && (
                 <Link
                   href={`/newsletter/${id}/edit`}

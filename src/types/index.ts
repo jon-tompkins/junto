@@ -160,6 +160,7 @@ export interface NewsletterV2 {
   prompt_template_id?: string | null;
   send_days?: string[];
   keywords?: string[];
+  junto_id?: string | null;
 }
 
 export interface NewsletterLabel {

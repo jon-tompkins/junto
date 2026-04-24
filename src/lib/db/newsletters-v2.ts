@@ -18,6 +18,7 @@ export async function createNewsletter(newsletter: {
   credit_cost?: number;
   send_days?: string[];
   prompt_template_id?: string | null;
+  junto_id?: string | null;
 }): Promise<NewsletterV2> {
   const { data, error } = await supabase()
     .from('newsletters_v2')
@@ -32,6 +33,7 @@ export async function createNewsletter(newsletter: {
       credit_cost: newsletter.credit_cost ?? 1,
       send_days: newsletter.send_days ?? ['mon', 'tue', 'wed', 'thu', 'fri'],
       prompt_template_id: newsletter.prompt_template_id || null,
+      junto_id: newsletter.junto_id || null,
     })
     .select()
     .single();

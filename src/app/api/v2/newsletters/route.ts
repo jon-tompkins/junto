@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, description, prompt, secondary_prompt, is_public, schedule_cadence, credit_cost, labels, sources, send_days, prompt_template_id } = body;
+    const { name, description, prompt, secondary_prompt, is_public, schedule_cadence, credit_cost, labels, sources, send_days, prompt_template_id, junto_id } = body;
 
     if (!name || (!prompt && !prompt_template_id)) {
       return NextResponse.json({ error: 'name and either prompt or prompt_template_id are required' }, { status: 400 });
@@ -83,6 +83,7 @@ export async function POST(req: NextRequest) {
       credit_cost,
       send_days: send_days || ['mon', 'tue', 'wed', 'thu', 'fri'],
       prompt_template_id: prompt_template_id || null,
+      junto_id: junto_id || null,
     });
 
     // Set labels if provided
