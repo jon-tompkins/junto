@@ -1,22 +1,29 @@
--- Migration 030: Reconcile juntos schema for dispatch-first flow
--- 010_juntos.sql already created juntos/junto_sources with maintainer_id.
--- This migration adds owner_id (app code uses this column name), adjusts
--- is_public default to true, makes slug nullable, links newsletters_v2
--- to juntos, and adds RLS policies.
+-- Migration 030: Create juntos tables from scratch
+-- (010_juntos.sql was never applied to the DB)
 
--- Add owner_id (app uses this; 010 used maintainer_id)
-ALTER TABLE juntos ADD COLUMN IF NOT EXISTS owner_id UUID REFERENCES users(id) ON DELETE CASCADE;
+CREATE TABLE IF NOT EXISTS juntos (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        TEXT NOT NULL,
+  description TEXT,
+  owner_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  is_public   BOOLEAN NOT NULL DEFAULT true,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
--- Backfill owner_id from maintainer_id for existing rows
-UPDATE juntos SET owner_id = maintainer_id WHERE owner_id IS NULL AND maintainer_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_juntos_owner  ON juntos(owner_id);
+CREATE INDEX IF NOT EXISTS idx_juntos_public ON juntos(is_public) WHERE is_public = true;
 
--- Flip is_public default to true (010 defaulted false)
-ALTER TABLE juntos ALTER COLUMN is_public SET DEFAULT true;
+CREATE TABLE IF NOT EXISTS junto_sources (
+  id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  junto_id  UUID NOT NULL REFERENCES juntos(id) ON DELETE CASCADE,
+  source_id UUID NOT NULL REFERENCES sources(id) ON DELETE CASCADE,
+  added_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(junto_id, source_id)
+);
 
--- 010 required slug; new flow doesn't — make nullable
-ALTER TABLE juntos ALTER COLUMN slug DROP NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_junto_sources_junto ON junto_sources(junto_id);
 
--- Link dispatches to a junto
 ALTER TABLE newsletters_v2 ADD COLUMN IF NOT EXISTS junto_id UUID REFERENCES juntos(id) ON DELETE SET NULL;
 
 -- RLS
@@ -25,7 +32,7 @@ ALTER TABLE junto_sources ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public juntos visible to all" ON juntos;
 CREATE POLICY "Public juntos visible to all" ON juntos
-  FOR SELECT USING (is_public = true OR owner_id = auth.uid() OR maintainer_id = auth.uid());
+  FOR SELECT USING (is_public = true OR owner_id = auth.uid());
 
 DROP POLICY IF EXISTS "Owners can insert juntos" ON juntos;
 CREATE POLICY "Owners can insert juntos" ON juntos
@@ -33,28 +40,20 @@ CREATE POLICY "Owners can insert juntos" ON juntos
 
 DROP POLICY IF EXISTS "Owners can update juntos" ON juntos;
 CREATE POLICY "Owners can update juntos" ON juntos
-  FOR UPDATE USING (owner_id = auth.uid() OR maintainer_id = auth.uid());
+  FOR UPDATE USING (owner_id = auth.uid());
 
 DROP POLICY IF EXISTS "Owners can delete juntos" ON juntos;
 CREATE POLICY "Owners can delete juntos" ON juntos
-  FOR DELETE USING (owner_id = auth.uid() OR maintainer_id = auth.uid());
+  FOR DELETE USING (owner_id = auth.uid());
 
 DROP POLICY IF EXISTS "Junto sources visible with junto" ON junto_sources;
 CREATE POLICY "Junto sources visible with junto" ON junto_sources
   FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM juntos
-      WHERE id = junto_id
-        AND (is_public = true OR owner_id = auth.uid() OR maintainer_id = auth.uid())
-    )
+    EXISTS (SELECT 1 FROM juntos WHERE id = junto_id AND (is_public = true OR owner_id = auth.uid()))
   );
 
 DROP POLICY IF EXISTS "Junto owners can manage sources" ON junto_sources;
 CREATE POLICY "Junto owners can manage sources" ON junto_sources
   FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM juntos
-      WHERE id = junto_id
-        AND (owner_id = auth.uid() OR maintainer_id = auth.uid())
-    )
+    EXISTS (SELECT 1 FROM juntos WHERE id = junto_id AND owner_id = auth.uid())
   );
