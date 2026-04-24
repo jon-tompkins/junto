@@ -21,6 +21,7 @@ export default function NewJuntoPage() {
   const [added, setAdded] = useState<SearchResult[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [error, setError] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -37,7 +38,7 @@ export default function NewJuntoPage() {
         .then((data) => {
           if (Array.isArray(data)) {
             setResults(data);
-            setShowDropdown(true);
+            setShowDropdown(true); // show even with 0 results to show "Add new" option
           }
         })
         .catch(() => {});
@@ -53,6 +54,32 @@ export default function NewJuntoPage() {
     setQuery('');
     setResults([]);
     setShowDropdown(false);
+  }
+
+  async function addNewHandle(handle: string) {
+    const clean = handle.toLowerCase().replace('@', '').trim();
+    if (!clean) return;
+    if (added.some((a) => a.handle_or_url === clean)) {
+      setQuery(''); setShowDropdown(false); return;
+    }
+    setAdding(true);
+    try {
+      const res = await fetch('/api/sources', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handle: clean }),
+      });
+      if (!res.ok) throw new Error('Failed to add source');
+      const source = await res.json();
+      setAdded((prev) => [...prev, source]);
+      setQuery('');
+      setResults([]);
+      setShowDropdown(false);
+    } catch {
+      setError(`Failed to add @${clean}`);
+    } finally {
+      setAdding(false);
+    }
   }
 
   function removeSource(id: string) {
@@ -130,7 +157,7 @@ export default function NewJuntoPage() {
               placeholder="Search by handle or name..."
               className="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition"
             />
-            {showDropdown && results.length > 0 && (
+            {showDropdown && (
               <div className="absolute z-20 mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-64 overflow-y-auto">
                 {results.map((r) => {
                   const alreadyAdded = added.some((a) => a.id === r.id);
@@ -159,6 +186,23 @@ export default function NewJuntoPage() {
                     </button>
                   );
                 })}
+                {/* Always show "Add new handle" option */}
+                {query.trim() && !added.some((a) => a.handle_or_url === query.trim().toLowerCase().replace('@', '')) && (
+                  <button
+                    type="button"
+                    disabled={adding}
+                    onClick={() => addNewHandle(query)}
+                    className="w-full text-left flex items-center gap-3 px-3 py-2.5 border-t border-slate-700/50 hover:bg-emerald-900/20 transition"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-emerald-900/40 flex items-center justify-center text-emerald-400 text-sm font-bold">+</div>
+                    <div>
+                      <div className="text-sm font-medium text-emerald-400">
+                        {adding ? 'Adding...' : `Add @${query.trim().replace('@', '')}`}
+                      </div>
+                      <div className="text-xs text-slate-500">New source — will start pulling tweets</div>
+                    </div>
+                  </button>
+                )}
               </div>
             )}
           </div>
