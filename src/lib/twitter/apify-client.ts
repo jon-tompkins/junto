@@ -177,10 +177,9 @@ export async function fetchTweetsForMultipleProfiles(
   if (handles.length === 0) return {};
 
   const cleanHandles = handles.map((h) => h.replace('@', ''));
-  const dateStr = sinceDate ? sinceDate.split('T')[0] : undefined;
-
+  const sinceUnix = sinceDate ? Math.floor(new Date(sinceDate).getTime() / 1000) : null;
   const searchTerms = cleanHandles.map((h) =>
-    dateStr ? `from:${h} since:${dateStr}` : `from:${h}`,
+    sinceUnix ? `from:${h} since_time:${sinceUnix}` : `from:${h}`,
   );
 
   const totalDesired = handles.length * maxTweetsPerHandle;

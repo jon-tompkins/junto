@@ -67,7 +67,8 @@ export async function getSourcesWithActiveNewsletters(type?: SourceType): Promis
     .from('sources')
     .select('*')
     .eq('is_active', true)
-    .in('id', uniqueSourceIds);
+    .in('id', uniqueSourceIds)
+    .order('updated_at', { ascending: true, nullsFirst: true });
 
   if (type) {
     query = query.eq('type', type);
