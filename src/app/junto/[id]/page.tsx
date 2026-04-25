@@ -89,24 +89,39 @@ function aggregatePositions(sources: JuntoSourceWithProfile[]): TickerStance[] {
   return Array.from(map.values()).sort((a, b) => b.total - a.total).slice(0, 20);
 }
 
+const CADENCE_LABELS: Record<string, string> = {
+  daily: 'Daily',
+  twice_daily: '2× Daily',
+  weekly: 'Weekly',
+};
+
+interface Dispatch {
+  id: string;
+  name: string;
+  description: string | null;
+  schedule_cadence: string;
+  subscriber_count: number;
+}
+
 export default function JuntoViewPage() {
   const params = useParams();
   const id = params.id as string;
   const [junto, setJunto] = useState<JuntoData | null>(null);
+  const [dispatches, setDispatches] = useState<Dispatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/juntos/${id}`)
-      .then((r) => {
-        if (r.status === 404) {
-          setNotFound(true);
-          return null;
-        }
+    Promise.all([
+      fetch(`/api/juntos/${id}`).then((r) => {
+        if (r.status === 404) { setNotFound(true); return null; }
         return r.json();
-      })
-      .then((data) => {
-        if (data?.junto) setJunto(data.junto);
+      }),
+      fetch(`/api/juntos/${id}/dispatches`).then((r) => r.json()).catch(() => ({ dispatches: [] })),
+    ])
+      .then(([juntoData, dispatchData]) => {
+        if (juntoData?.junto) setJunto(juntoData.junto);
+        setDispatches(dispatchData?.dispatches || []);
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
@@ -233,6 +248,33 @@ export default function JuntoViewPage() {
             </div>
           )}
         </section>
+
+        {/* Dispatches using this Junto */}
+        {dispatches.length > 0 && (
+          <section className="mb-10">
+            <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Dispatches using this Junto</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {dispatches.map((d) => (
+                <Link
+                  key={d.id}
+                  href={`/newsletter/${d.id}`}
+                  className="bg-slate-800/30 border border-slate-700/40 hover:border-slate-600 rounded-xl p-4 transition group"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <span className="font-medium text-sm group-hover:text-emerald-400 transition">{d.name}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-400 border border-slate-600/40 shrink-0">
+                      {CADENCE_LABELS[d.schedule_cadence] ?? d.schedule_cadence}
+                    </span>
+                  </div>
+                  {d.description && <p className="text-xs text-slate-500 line-clamp-2">{d.description}</p>}
+                  {d.subscriber_count > 0 && (
+                    <p className="text-xs text-slate-600 mt-2">{d.subscriber_count} subscriber{d.subscriber_count !== 1 ? 's' : ''}</p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Stance Heatmap */}
         <section className="mb-10">
