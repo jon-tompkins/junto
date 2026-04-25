@@ -23,11 +23,7 @@ export async function GET() {
     // Fetch public juntos (+ user's own if logged in)
     let query = supabase
       .from('juntos')
-      .select(`
-        id, name, description, owner_id, is_public, created_at,
-        junto_sources(count),
-        newsletters_v2(id, name, subscriber_count, schedule_cadence)
-      `)
+      .select('id, name, description, owner_id, is_public, created_at')
       .order('created_at', { ascending: false });
 
     if (userId) {
@@ -39,6 +35,20 @@ export async function GET() {
     const { data, error } = await query;
     if (error) throw error;
 
+    const juntoIds = (data || []).map((j: any) => j.id);
+
+    // Fetch source counts separately to avoid schema-cache issues with nested selects
+    const sourceCountMap: Record<string, number> = {};
+    if (juntoIds.length > 0) {
+      const { data: sourceCounts } = await supabase
+        .from('junto_sources')
+        .select('junto_id')
+        .in('junto_id', juntoIds);
+      (sourceCounts || []).forEach((row: any) => {
+        sourceCountMap[row.junto_id] = (sourceCountMap[row.junto_id] || 0) + 1;
+      });
+    }
+
     const juntos = (data || []).map((j: any) => ({
       id: j.id,
       name: j.name,
@@ -47,13 +57,8 @@ export async function GET() {
       is_public: j.is_public,
       created_at: j.created_at,
       is_own: j.owner_id === userId,
-      source_count: j.junto_sources?.[0]?.count ?? 0,
-      dispatches: (j.newsletters_v2 || []).map((n: any) => ({
-        id: n.id,
-        name: n.name,
-        subscriber_count: n.subscriber_count,
-        schedule_cadence: n.schedule_cadence,
-      })),
+      source_count: sourceCountMap[j.id] ?? 0,
+      dispatches: [],
     }));
 
     return NextResponse.json({ juntos });
