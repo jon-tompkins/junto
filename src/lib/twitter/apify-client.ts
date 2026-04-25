@@ -185,7 +185,7 @@ export async function fetchTweetsForMultipleProfiles(
   const totalDesired = handles.length * maxTweetsPerHandle;
 
   console.log(
-    `[Apify BATCH] Fetching tweets for ${handles.length} handles${dateStr ? ` since ${dateStr}` : ''} (single run, up to ${totalDesired} tweets)...`,
+    `[Apify BATCH] Fetching tweets for ${handles.length} handles${sinceDate ? ` since ${sinceDate}` : ''} (single run, up to ${totalDesired} tweets)...`,
   );
 
   const runRes = await fetch(
