@@ -52,7 +52,7 @@ export function TopNav() {
         <Link href="/explore" className={navLinkClass('/explore')}>
           Dispatches
         </Link>
-        <Link href="/junto/new" className={navLinkClass('/junto')}>
+        <Link href="/juntos" className={navLinkClass('/juntos')}>
           Juntos
         </Link>
         <Link href="/sources" className={navLinkClass('/sources')}>
