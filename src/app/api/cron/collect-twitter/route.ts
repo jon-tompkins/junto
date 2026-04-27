@@ -5,8 +5,9 @@ import {
   markRunCompleted,
   markRunFailed,
 } from '@/lib/db/apify-runs';
-import { storeTwitterContent } from '@/lib/db/content-twitter';
+import { storeTwitterContent, getRecentContentForSources } from '@/lib/db/content-twitter';
 import { updateSourceProfile } from '@/lib/synthesis/profile-updater';
+import { getSourceProfile } from '@/lib/db/source-analyst-profiles';
 import { getSupabase } from '@/lib/db/client';
 
 export const maxDuration = 300; // 5 minutes
@@ -112,6 +113,36 @@ export async function GET(req: NextRequest) {
                   err instanceof Error ? err.message : err,
                 ),
               );
+            } else {
+              // No new tweets, but check if this source is missing a profile entirely.
+              // If so, seed it from existing stored tweets.
+              getSourceProfile(sourceId).then((profile) => {
+                if (!profile) {
+                  getRecentContentForSources([sourceId], 200).then((recent) => {
+                    const seed = recent.map((r) => ({
+                      twitter_id: r.twitter_id,
+                      content: r.content,
+                      posted_at: r.posted_at,
+                      likes: r.likes ?? 0,
+                      retweets: r.retweets ?? 0,
+                      replies: r.replies ?? 0,
+                      is_retweet: r.is_retweet ?? false,
+                      is_reply: r.is_reply ?? false,
+                      thread_id: r.thread_id ?? undefined,
+                      raw_data: r.raw_data,
+                    }));
+                    if (seed.length > 0) {
+                      console.log(`[collect-twitter] Seeding missing profile for @${handle} from ${seed.length} stored tweets`);
+                      updateSourceProfile(sourceId, handle, seed).catch((err) =>
+                        console.warn(
+                          `[collect-twitter] Profile seed failed for @${handle}:`,
+                          err instanceof Error ? err.message : err,
+                        ),
+                      );
+                    }
+                  }).catch(() => {});
+                }
+              }).catch(() => {});
             }
           } catch (err) {
             const errMsg = err instanceof Error ? err.message : 'Unknown error';
