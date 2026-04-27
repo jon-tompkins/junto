@@ -43,6 +43,12 @@ Rules:
 - summary: 1–2 sentences on what this analyst focuses on and their style (update only if new tweets reveal something not in the current summary)
 - Return ONLY valid JSON, no prose
 
+Key normalization — apply before choosing any position key:
+- Use canonical ticker symbols: BTC not Bitcoin, ETH not Ethereum, SOL not Solana, XRP not Ripple, etc.
+- If an existing key covers the same asset under a different name, update that key — never create a duplicate
+- Prefer broad themes over overly specific labels: "AI" not "AI infrastructure", "DeFi" not "decentralized lending"
+- Reuse an existing key whenever the new stance clearly belongs to it
+
 Output schema:
 {
   "summary": "string or null",
