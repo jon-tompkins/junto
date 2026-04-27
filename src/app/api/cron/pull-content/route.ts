@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSourcesWithActiveNewsletters } from '@/lib/db/sources';
-import { storeTwitterContent } from '@/lib/db/content-twitter';
 import { storeNewsletterContent } from '@/lib/db/content-newsletter';
-import { fetchTweetsForMultipleProfiles } from '@/lib/twitter/client';
+import { startBatchRun } from '@/lib/twitter/apify-client';
+import { createPendingRun } from '@/lib/db/apify-runs';
 import { fetchChannelInsights } from '@/lib/youtube/client';
+import { storeTwitterContent } from '@/lib/db/content-twitter';
 import { getSupabase } from '@/lib/db/client';
-import { updateSourceProfile } from '@/lib/synthesis/profile-updater';
 
 export const maxDuration = 300; // 5 minutes
 
@@ -59,7 +59,10 @@ export async function GET(req: NextRequest) {
         `[pull-content] ${twitterSources.length} Twitter sources total, ${stale.length} stale (>30min), ${skipped} fresh (skipped).`,
       );
 
-      // Single Apify run for all stale handles — pay-per-result, same cost, ~30s instead of N×17s
+      // Single Apify run for all stale handles — pay-per-result, same cost.
+      // Fire-and-forget: store the run_id and let /api/cron/collect-twitter
+      // ingest results once Apify finishes. This keeps us under Vercel's
+      // function timeout when Apify needs > 1-2 minutes for the batch.
       const staleHandles = stale.map((s) => s.handle_or_url);
       // First-time sources need a longer lookback; use the oldest applicable window
       const hasFirstTimeSources = stale.some((s) => !s.updated_at);
@@ -67,56 +70,41 @@ export async function GET(req: NextRequest) {
         ? new Date(now - FIRST_PULL_LOOKBACK_MS).toISOString()
         : defaultSinceDate;
 
-      try {
-        const tweetsByHandle = await fetchTweetsForMultipleProfiles(staleHandles, 30, batchSinceDate);
+      if (stale.length > 0) {
+        try {
+          const { runId } = await startBatchRun(staleHandles, 30, batchSinceDate);
 
-        for (const source of stale) {
-          const handle = source.handle_or_url;
-          const tweets = tweetsByHandle[handle] || [];
-
-          try {
-            const stored = await storeTwitterContent(
-              source.id,
-              tweets.map((t) => ({
-                twitter_id: t.twitter_id,
-                content: t.content,
-                posted_at: t.posted_at,
-                likes: t.likes,
-                retweets: t.retweets,
-                replies: t.replies,
-                is_retweet: t.is_retweet,
-                is_reply: t.is_reply,
-                thread_id: t.thread_id ?? undefined,
-                raw_data: t.raw_data,
-              })),
-            );
-
-            await supabase
-              .from('sources')
-              .update({ updated_at: new Date().toISOString() })
-              .eq('id', source.id);
-
-            results[handle] = { fetched: tweets.length, stored };
-            totalFetched += tweets.length;
-            totalStored += stored;
-            console.log(`[pull-content] @${handle}: ${tweets.length} fetched, ${stored} stored`);
-
-            if (stored > 0) {
-              updateSourceProfile(source.id, handle, tweets).catch((err) =>
-                console.warn(`[pull-content] Profile update failed for @${handle}:`, err instanceof Error ? err.message : err)
-              );
-            }
-          } catch (err) {
-            const errMsg = err instanceof Error ? err.message : 'Unknown error';
-            console.error(`[pull-content] Store error @${handle}:`, errMsg);
-            results[handle] = { fetched: 0, stored: 0, error: errMsg };
+          // Map clean handle → source_id so the collector can write tweets back
+          // to the right source even if `sources` rows change between now and
+          // the next collect tick.
+          const handleSourceMap: Record<string, string> = {};
+          for (const source of stale) {
+            const clean = source.handle_or_url.replace('@', '').toLowerCase();
+            handleSourceMap[clean] = source.id;
           }
-        }
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : 'Unknown error';
-        console.error(`[pull-content] Apify batch error:`, errMsg);
-        for (const source of stale) {
-          results[source.handle_or_url] = { fetched: 0, stored: 0, error: errMsg };
+
+          await createPendingRun({
+            runId,
+            handleSourceMap,
+            sinceDate: batchSinceDate,
+          });
+
+          for (const source of stale) {
+            results[source.handle_or_url] = {
+              fetched: 0,
+              stored: 0,
+              error: `pending (apify run ${runId})`,
+            };
+          }
+          console.log(
+            `[pull-content] Twitter batch dispatched (${stale.length} handles, run ${runId}) — collect-twitter cron will ingest results.`,
+          );
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : 'Unknown error';
+          console.error(`[pull-content] Apify start error:`, errMsg);
+          for (const source of stale) {
+            results[source.handle_or_url] = { fetched: 0, stored: 0, error: errMsg };
+          }
         }
       }
     }

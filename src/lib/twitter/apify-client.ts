@@ -159,22 +159,22 @@ export async function fetchTweetsFromProfile(
 }
 
 /**
- * Fetch tweets for MULTIPLE handles in a single Apify run.
- * Collapses N runs into 1 by batching search queries via the actor's
- * `searchTerms` array.
- *
- * Returns a map of { handle: tweets[] } so callers can store per-source.
+ * Start a batched Apify run for many handles in one go and return the run_id
+ * immediately. Does NOT poll for completion — pair with `collectBatchResults`
+ * via a separate cron so we don't burn Vercel function time waiting on Apify.
  */
-export async function fetchTweetsForMultipleProfiles(
+export async function startBatchRun(
   handles: string[],
   maxTweetsPerHandle = 30,
   sinceDate?: string,
-): Promise<Record<string, FetchedTweet[]>> {
+): Promise<{ runId: string; cleanHandles: string[] }> {
   const token = process.env.APIFY_API_KEY;
   if (!token) {
     throw new Error('APIFY_API_KEY not configured');
   }
-  if (handles.length === 0) return {};
+  if (handles.length === 0) {
+    throw new Error('startBatchRun called with no handles');
+  }
 
   const cleanHandles = handles.map((h) => h.replace('@', ''));
   const sinceUnix = sinceDate ? Math.floor(new Date(sinceDate).getTime() / 1000) : null;
@@ -185,7 +185,7 @@ export async function fetchTweetsForMultipleProfiles(
   const totalDesired = handles.length * maxTweetsPerHandle;
 
   console.log(
-    `[Apify BATCH] Fetching tweets for ${handles.length} handles${sinceDate ? ` since ${sinceDate}` : ''} (single run, up to ${totalDesired} tweets)...`,
+    `[Apify BATCH] Starting async run for ${handles.length} handles${sinceDate ? ` since ${sinceDate}` : ''} (up to ${totalDesired} tweets)...`,
   );
 
   const runRes = await fetch(
@@ -207,12 +207,63 @@ export async function fetchTweetsForMultipleProfiles(
     throw new Error('Failed to start Apify run');
   }
 
-  console.log(`[Apify BATCH] Run started: ${runId}`);
+  console.log(`[Apify BATCH] Run started: ${runId} (will be collected later)`);
+  return { runId, cleanHandles };
+}
 
-  const tweets = await waitForRun(runId, token, 120000); // 2 min for batched runs
-  console.log(`[Apify BATCH] Got ${tweets.length} total tweets across ${handles.length} handles`);
+export type CollectResult =
+  | { status: 'pending' }
+  | { status: 'failed'; reason: string }
+  | {
+      status: 'completed';
+      tweetCount: number;
+      tweetsByHandle: Record<string, FetchedTweet[]>;
+    };
 
-  // Record cost
+/**
+ * Check status of a previously-started Apify run. If SUCCEEDED, fetch results
+ * and group them by the originally-requested handles. Records cost on success.
+ */
+export async function collectBatchResults(
+  runId: string,
+  handles: string[],
+): Promise<CollectResult> {
+  const token = process.env.APIFY_API_KEY;
+  if (!token) {
+    throw new Error('APIFY_API_KEY not configured');
+  }
+
+  const statusRes = await fetch(
+    `${APIFY_BASE_URL}/actor-runs/${runId}?token=${token}`,
+  );
+  const statusData = await statusRes.json();
+  const status = statusData.data?.status;
+
+  if (!status) {
+    return { status: 'failed', reason: 'Apify status response missing data.status' };
+  }
+
+  // Apify run statuses: READY, RUNNING, SUCCEEDED, FAILED, ABORTING, ABORTED,
+  // TIMING-OUT, TIMED-OUT
+  if (status === 'READY' || status === 'RUNNING') {
+    return { status: 'pending' };
+  }
+  if (status !== 'SUCCEEDED') {
+    return { status: 'failed', reason: `Apify run ${status}` };
+  }
+
+  const resultsRes = await fetch(
+    `${APIFY_BASE_URL}/actor-runs/${runId}/dataset/items?token=${token}`,
+  );
+  const rawResults = await resultsRes.json();
+  const tweets = (Array.isArray(rawResults) ? rawResults : []).filter(
+    (r: any) => r.type !== 'mock_tweet',
+  );
+
+  console.log(
+    `[Apify BATCH] Collected ${tweets.length} tweets for run ${runId} across ${handles.length} handles`,
+  );
+
   recordCost({
     supplier: 'apify',
     operation: 'tweet_pull_batched',
@@ -223,7 +274,7 @@ export async function fetchTweetsForMultipleProfiles(
     metadata: { handles: handles.length, actor: APIFY_ACTOR_ID },
   });
 
-  // Group tweets by author handle (case-insensitive)
+  const cleanHandles = handles.map((h) => h.replace('@', ''));
   const byHandle: Record<string, FetchedTweet[]> = {};
   for (const h of cleanHandles) {
     byHandle[h.toLowerCase()] = [];
@@ -262,7 +313,34 @@ export async function fetchTweetsForMultipleProfiles(
     const clean = h.replace('@', '').toLowerCase();
     keyed[h] = byHandle[clean] || [];
   }
-  return keyed;
+
+  return { status: 'completed', tweetCount: tweets.length, tweetsByHandle: keyed };
+}
+
+/**
+ * Synchronous one-shot batch fetch — kept for callers (e.g. validation, ad-hoc
+ * tools) that genuinely need to wait inline. The cron pull pipeline now uses
+ * the async startBatchRun + collectBatchResults pair instead.
+ */
+export async function fetchTweetsForMultipleProfiles(
+  handles: string[],
+  maxTweetsPerHandle = 30,
+  sinceDate?: string,
+): Promise<Record<string, FetchedTweet[]>> {
+  if (handles.length === 0) return {};
+  const { runId } = await startBatchRun(handles, maxTweetsPerHandle, sinceDate);
+
+  const startTime = Date.now();
+  const maxWaitMs = 120000;
+  while (Date.now() - startTime < maxWaitMs) {
+    const result = await collectBatchResults(runId, handles);
+    if (result.status === 'completed') return result.tweetsByHandle;
+    if (result.status === 'failed') {
+      throw new Error(`Apify batch failed: ${result.reason}`);
+    }
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  throw new Error('Apify batch timed out');
 }
 
 export async function searchTweets(
