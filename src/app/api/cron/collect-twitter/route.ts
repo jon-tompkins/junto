@@ -7,7 +7,7 @@ import {
 } from '@/lib/db/apify-runs';
 import { storeTwitterContent, getRecentContentForSources } from '@/lib/db/content-twitter';
 import { updateSourceProfile } from '@/lib/synthesis/profile-updater';
-import { getSourceProfile, getSourcesMissingProfiles } from '@/lib/db/source-analyst-profiles';
+import { getSourcesMissingProfiles } from '@/lib/db/source-analyst-profiles';
 import { getSupabase } from '@/lib/db/client';
 
 export const maxDuration = 300; // 5 minutes
@@ -41,6 +41,10 @@ export async function GET(req: NextRequest) {
     let totalFetched = 0;
     let processedCount = 0;
 
+    // Collect profile update tasks so we can await them all before responding.
+    // Fire-and-forget was getting killed by Vercel before Haiku could finish.
+    const profileTasks: Array<{ sourceId: string; handle: string; tweets: any[] }> = [];
+
     for (const run of pending) {
       const handles = Object.keys(run.handle_source_map);
       try {
@@ -53,9 +57,7 @@ export async function GET(req: NextRequest) {
 
         if (result.status === 'failed') {
           await markRunFailed(run.id, result.reason);
-          console.error(
-            `[collect-twitter] Run ${run.run_id} failed: ${result.reason}`,
-          );
+          console.error(`[collect-twitter] Run ${run.run_id} failed: ${result.reason}`);
           summary.push({
             run_id: run.run_id,
             status: 'failed',
@@ -71,8 +73,6 @@ export async function GET(req: NextRequest) {
         for (const handle of handles) {
           const sourceId = run.handle_source_map[handle];
           if (!sourceId) continue;
-          // collectBatchResults keys results by the handles we passed in; we
-          // passed clean handles, so look those up directly.
           const tweets = result.tweetsByHandle[handle] || [];
 
           try {
@@ -98,51 +98,10 @@ export async function GET(req: NextRequest) {
               .eq('id', sourceId);
 
             runStored += stored;
-            console.log(
-              `[collect-twitter] @${handle}: ${tweets.length} fetched, ${stored} stored`,
-            );
+            console.log(`[collect-twitter] @${handle}: ${tweets.length} fetched, ${stored} stored`);
 
             if (stored > 0) {
-              updateSourceProfile(sourceId, handle, tweets).catch((err) =>
-                console.warn(
-                  `[collect-twitter] Profile update failed for @${handle}:`,
-                  err instanceof Error ? err.message : err,
-                ),
-              );
-            } else {
-              // No new tweets, but check if this source is missing a profile entirely.
-              // If so, seed it from existing stored tweets.
-              getSourceProfile(sourceId).then((profile) => {
-                if (!profile) {
-                  getRecentContentForSources([sourceId], 336).then((allRecent) => {
-                    // Cap at 30 tweets sorted by engagement to keep Haiku prompt manageable
-                    const recent = allRecent
-                      .sort((a, b) => (b.likes + b.retweets * 2) - (a.likes + a.retweets * 2))
-                      .slice(0, 30);
-                    const seed = recent.map((r) => ({
-                      twitter_id: r.twitter_id,
-                      content: r.content,
-                      posted_at: r.posted_at,
-                      likes: r.likes ?? 0,
-                      retweets: r.retweets ?? 0,
-                      replies: r.replies ?? 0,
-                      is_retweet: r.is_retweet ?? false,
-                      is_reply: r.is_reply ?? false,
-                      thread_id: r.thread_id ?? undefined,
-                      raw_data: r.raw_data,
-                    }));
-                    if (seed.length > 0) {
-                      console.log(`[collect-twitter] Seeding missing profile for @${handle} from ${seed.length} stored tweets`);
-                      updateSourceProfile(sourceId, handle, seed).catch((err) =>
-                        console.warn(
-                          `[collect-twitter] Profile seed failed for @${handle}:`,
-                          err instanceof Error ? err.message : err,
-                        ),
-                      );
-                    }
-                  }).catch(() => {});
-                }
-              }).catch(() => {});
+              profileTasks.push({ sourceId, handle, tweets });
             }
           } catch (err) {
             const errMsg = err instanceof Error ? err.message : 'Unknown error';
@@ -173,41 +132,51 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Await all profile updates from this cycle's new tweets
+    for (const { sourceId, handle, tweets } of profileTasks) {
+      try {
+        await updateSourceProfile(sourceId, handle, tweets);
+      } catch (err) {
+        console.warn(
+          `[collect-twitter] Profile update failed for @${handle}:`,
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }
+
+    // Sweep for sources with tweets but no profile yet (capped at 3 per cycle)
+    try {
+      const missing = await getSourcesMissingProfiles();
+      const toSeed = missing.slice(0, 3);
+      for (const src of toSeed) {
+        const recent = await getRecentContentForSources([src.id], 336);
+        const tweets = recent
+          .sort((a, b) => (b.likes + b.retweets * 2) - (a.likes + a.retweets * 2))
+          .slice(0, 30)
+          .map((r) => ({
+            twitter_id: r.twitter_id,
+            content: r.content,
+            posted_at: r.posted_at,
+            likes: r.likes ?? 0,
+            retweets: r.retweets ?? 0,
+            replies: r.replies ?? 0,
+            is_retweet: r.is_retweet ?? false,
+            is_reply: r.is_reply ?? false,
+            thread_id: r.thread_id ?? undefined,
+            raw_data: r.raw_data,
+          }));
+        if (tweets.length > 0) {
+          console.log(`[collect-twitter] Seeding missing profile for @${src.handle_or_url} from ${tweets.length} stored tweets`);
+          await updateSourceProfile(src.id, src.handle_or_url, tweets);
+        }
+      }
+    } catch (err) {
+      console.warn('[collect-twitter] Missing-profile sweep error:', err instanceof Error ? err.message : err);
+    }
+
     console.log(
       `[collect-twitter] Done. Processed ${processedCount}/${pending.length} runs. ${totalFetched} tweets fetched, ${totalStored} stored.`,
     );
-
-    // Sweep for sources that have tweets but no profile yet. Fire-and-forget so
-    // we don't block the response; capped at 3 per cycle to stay within budget.
-    getSourcesMissingProfiles().then(async (missing) => {
-      const toSeed = missing.slice(0, 3);
-      for (const src of toSeed) {
-        try {
-          const recent = await getRecentContentForSources([src.id], 336);
-          const tweets = recent
-            .sort((a, b) => (b.likes + b.retweets * 2) - (a.likes + a.retweets * 2))
-            .slice(0, 30)
-            .map((r) => ({
-              twitter_id: r.twitter_id,
-              content: r.content,
-              posted_at: r.posted_at,
-              likes: r.likes ?? 0,
-              retweets: r.retweets ?? 0,
-              replies: r.replies ?? 0,
-              is_retweet: r.is_retweet ?? false,
-              is_reply: r.is_reply ?? false,
-              thread_id: r.thread_id ?? undefined,
-              raw_data: r.raw_data,
-            }));
-          if (tweets.length > 0) {
-            console.log(`[collect-twitter] Seeding missing profile for @${src.handle_or_url} from ${tweets.length} stored tweets`);
-            await updateSourceProfile(src.id, src.handle_or_url, tweets);
-          }
-        } catch (err) {
-          console.warn(`[collect-twitter] Seed failed for @${src.handle_or_url}:`, err instanceof Error ? err.message : err);
-        }
-      }
-    }).catch(() => {});
 
     return NextResponse.json({
       success: true,
