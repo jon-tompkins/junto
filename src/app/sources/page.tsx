@@ -8,6 +8,7 @@ interface PositionEntry {
   stance: 'bullish' | 'bearish' | 'neutral' | 'cautious';
   since: string;
   note?: string;
+  target_price?: number;
 }
 
 interface SourceProfile {
@@ -37,6 +38,130 @@ const STANCE_ICONS: Record<string, string> = {
   neutral: '–',
 };
 
+function AnalystRow({ p }: { p: SourceProfile }) {
+  const [expanded, setExpanded] = useState(false);
+  const handle = p.source.handle_or_url;
+  const positionEntries = Object.entries(p.positions);
+
+  return (
+    <>
+      <tr
+        className="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors cursor-pointer"
+        onClick={() => setExpanded((e) => !e)}
+      >
+        {/* Handle */}
+        <td className="px-4 py-3 whitespace-nowrap">
+          <div className="flex items-center gap-3">
+            {p.source.avatar_url ? (
+              <img
+                src={p.source.avatar_url}
+                alt={handle}
+                className="w-8 h-8 rounded-full bg-slate-700 object-cover shrink-0"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-400 text-xs font-medium shrink-0">
+                {handle[0]?.toUpperCase()}
+              </div>
+            )}
+            <div>
+              <Link
+                href={`/sources/${handle}`}
+                className="font-medium text-white hover:text-blue-400 transition text-sm"
+                onClick={(e) => e.stopPropagation()}
+              >
+                @{handle}
+              </Link>
+              {p.source.display_name && (
+                <div className="text-xs text-slate-500">{p.source.display_name}</div>
+              )}
+            </div>
+          </div>
+        </td>
+
+        {/* Summary snippet */}
+        <td className="px-4 py-3 max-w-sm">
+          <p className="text-sm text-slate-400 line-clamp-1">
+            {p.summary || <span className="text-slate-600 italic">No analysis yet</span>}
+          </p>
+        </td>
+
+        {/* Stances */}
+        <td className="px-4 py-3">
+          <div className="flex gap-1.5 flex-wrap">
+            {positionEntries.slice(0, 5).map(([ticker, pos]) => (
+              <span
+                key={ticker}
+                className={`text-xs px-2 py-0.5 rounded-full font-medium font-mono ${STANCE_COLORS[pos.stance]}`}
+              >
+                {STANCE_ICONS[pos.stance]} {ticker}
+              </span>
+            ))}
+            {positionEntries.length > 5 && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700/40 text-slate-500">
+                +{positionEntries.length - 5}
+              </span>
+            )}
+            {positionEntries.length === 0 && (
+              <span className="text-xs text-slate-600">—</span>
+            )}
+          </div>
+        </td>
+
+        {/* Updated */}
+        <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-600 text-right">
+          <div className="flex items-center justify-end gap-2">
+            <span>{new Date(p.last_updated).toLocaleDateString()}</span>
+            <span className="text-slate-700">{expanded ? '▲' : '▼'}</span>
+          </div>
+        </td>
+      </tr>
+
+      {/* Expanded row */}
+      {expanded && (
+        <tr className="border-b border-slate-800/60 bg-slate-900/40">
+          <td colSpan={4} className="px-4 py-4">
+            <div className="pl-11 space-y-4">
+              {p.summary && (
+                <p className="text-sm text-slate-300 leading-relaxed max-w-2xl">{p.summary}</p>
+              )}
+
+              {positionEntries.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {positionEntries.map(([ticker, pos]) => (
+                    <div
+                      key={ticker}
+                      className={`text-xs px-3 py-1.5 rounded-lg font-mono border flex flex-col gap-0.5 ${STANCE_COLORS[pos.stance]}`}
+                    >
+                      <div className="font-semibold">
+                        {STANCE_ICONS[pos.stance]} {ticker}
+                      </div>
+                      {pos.note && <div className="opacity-75 font-sans normal-case">{pos.note}</div>}
+                      {pos.target_price && (
+                        <div className="opacity-60 font-sans">target ${pos.target_price.toLocaleString()}</div>
+                      )}
+                      <div className="opacity-50 font-sans">
+                        since {new Date(pos.since).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Link
+                href={`/sources/${handle}`}
+                className="inline-block text-xs text-blue-400 hover:text-blue-300 transition"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Full profile →
+              </Link>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
 export default function SourcesPage() {
   const [profiles, setProfiles] = useState<SourceProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,18 +184,13 @@ export default function SourcesPage() {
     if (search && !handle.includes(search.toLowerCase()) && !name.toLowerCase().includes(search.toLowerCase())) {
       return false;
     }
-
     if (tickerFilter) {
       const ticker = tickerFilter.toUpperCase();
-      const hasPosition = Object.keys(p.positions).some((k) => k.toUpperCase().includes(ticker));
-      if (!hasPosition) return false;
+      if (!Object.keys(p.positions).some((k) => k.toUpperCase().includes(ticker))) return false;
     }
-
     if (stanceFilter) {
-      const hasStance = Object.values(p.positions).some((pos) => pos.stance === stanceFilter);
-      if (!hasStance) return false;
+      if (!Object.values(p.positions).some((pos) => pos.stance === stanceFilter)) return false;
     }
-
     return true;
   });
 
@@ -83,38 +203,36 @@ export default function SourcesPage() {
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
-        <div className="mb-10">
-          <h1 className="text-4xl font-bold mb-3">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">
             Analyst <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Profiles</span>
           </h1>
-          <p className="text-slate-400 text-lg">
-            Live stances tracked across all dispatch sources. Updated each content pull.
-          </p>
+          <p className="text-slate-400">Live stances tracked across all sources. Updated each content pull.</p>
         </div>
 
         {/* Filters */}
-        <div className="mb-8 space-y-4">
-          <div className="flex gap-3 flex-wrap">
+        <div className="mb-6 space-y-3">
+          <div className="flex gap-3 flex-wrap items-center">
             <input
               type="text"
               placeholder="Search analysts..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition w-56"
+              className="bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition text-sm w-48"
             />
             <input
               type="text"
-              placeholder="Filter by ticker (e.g. BTC)"
+              placeholder="Filter ticker (BTC...)"
               value={tickerFilter}
               onChange={(e) => setTickerFilter(e.target.value)}
-              className="bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition w-56"
+              className="bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition text-sm w-44"
             />
             <div className="flex gap-2">
               {(['bullish', 'bearish', 'cautious', 'neutral'] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setStanceFilter(stanceFilter === s ? null : s)}
-                  className={`px-3 py-2 rounded-xl text-xs font-medium transition capitalize ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition capitalize ${
                     stanceFilter === s ? STANCE_COLORS[s] : 'bg-slate-800/40 text-slate-400 hover:text-white border border-slate-700/50'
                   }`}
                 >
@@ -143,21 +261,11 @@ export default function SourcesPage() {
           )}
         </div>
 
-        {/* Grid */}
+        {/* Table */}
         {loading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-slate-800/40 border border-slate-700/30 rounded-2xl p-5 animate-pulse">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-700" />
-                  <div>
-                    <div className="h-4 bg-slate-700 rounded w-24 mb-1" />
-                    <div className="h-3 bg-slate-700/60 rounded w-16" />
-                  </div>
-                </div>
-                <div className="h-3 bg-slate-700/60 rounded w-full mb-2" />
-                <div className="h-3 bg-slate-700/60 rounded w-3/4" />
-              </div>
+          <div className="space-y-2">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="animate-pulse bg-slate-800/30 border border-slate-700/40 rounded-xl h-14" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
@@ -172,69 +280,30 @@ export default function SourcesPage() {
             </p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map((p) => {
-              const handle = p.source.handle_or_url;
-              const topPositions = Object.entries(p.positions).slice(0, 4);
-
-              return (
-                <Link
-                  key={p.id}
-                  href={`/sources/${handle}`}
-                  className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5 hover:border-slate-600/60 hover:bg-slate-800/50 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 block"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    {p.source.avatar_url ? (
-                      <img
-                        src={p.source.avatar_url}
-                        alt={handle}
-                        className="w-10 h-10 rounded-full bg-slate-700 object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-400 text-sm font-medium">
-                        {handle[0]?.toUpperCase()}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <div className="font-semibold truncate">
-                        {p.source.display_name || `@${handle}`}
-                      </div>
-                      <div className="text-xs text-slate-500">@{handle}</div>
-                    </div>
-                  </div>
-
-                  {p.summary && (
-                    <p className="text-sm text-slate-400 mb-3 line-clamp-2 leading-relaxed">{p.summary}</p>
-                  )}
-
-                  {topPositions.length > 0 ? (
-                    <div className="flex gap-1.5 flex-wrap">
-                      {topPositions.map(([ticker, pos]) => (
-                        <span
-                          key={ticker}
-                          className={`text-xs px-2 py-0.5 rounded-full font-medium font-mono ${STANCE_COLORS[pos.stance]}`}
-                          title={pos.note}
-                        >
-                          {STANCE_ICONS[pos.stance]} {ticker}
-                        </span>
-                      ))}
-                      {Object.keys(p.positions).length > 4 && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700/40 text-slate-500">
-                          +{Object.keys(p.positions).length - 4}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-600">No positions tracked yet</p>
-                  )}
-
-                  <div className="mt-3 text-xs text-slate-600">
-                    Updated {new Date(p.last_updated).toLocaleDateString()}
-                  </div>
-                </Link>
-              );
-            })}
+          <div className="rounded-xl border border-slate-700/40 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-800/60 border-b border-slate-700/60">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide w-48">Analyst</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">Analysis</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide w-72">Stances</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-slate-400 uppercase tracking-wide w-28">Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p) => (
+                  <AnalystRow key={p.id} p={p} />
+                ))}
+              </tbody>
+            </table>
           </div>
+        )}
+
+        {!loading && filtered.length > 0 && (
+          <p className="text-xs text-slate-600 mt-4 text-right">
+            {filtered.length} analyst{filtered.length !== 1 ? 's' : ''}
+            {filtered.length !== profiles.length ? ` of ${profiles.length}` : ''}
+          </p>
         )}
       </div>
     </main>

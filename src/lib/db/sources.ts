@@ -51,17 +51,30 @@ export async function getAllActiveSources(type?: SourceType): Promise<Source[]> 
   return data || [];
 }
 
-// Get only sources that are attached to at least one active newsletter
+// Get sources attached to at least one active newsletter OR any junto (for content pulling)
 export async function getSourcesWithActiveNewsletters(type?: SourceType): Promise<Source[]> {
-  // Get distinct source IDs from newsletter_sources where the newsletter exists
-  const { data: linkedSourceIds, error: linkError } = await supabase()
+  // Newsletter-linked sources
+  const { data: newsletterLinked, error: linkError } = await supabase()
     .from('newsletter_sources')
     .select('source_id, newsletters_v2!inner(id)');
 
   if (linkError) throw linkError;
-  if (!linkedSourceIds?.length) return [];
 
-  const uniqueSourceIds = [...new Set(linkedSourceIds.map((ls: any) => ls.source_id))];
+  // Junto-linked sources (junto members need fresh tweets for stance analysis)
+  const { data: juntoLinked, error: juntoError } = await supabase()
+    .from('junto_sources')
+    .select('source_id');
+
+  if (juntoError) throw juntoError;
+
+  const allSourceIds = [
+    ...(newsletterLinked || []).map((ls: any) => ls.source_id),
+    ...(juntoLinked || []).map((js: any) => js.source_id),
+  ];
+
+  if (!allSourceIds.length) return [];
+
+  const uniqueSourceIds = [...new Set(allSourceIds)];
 
   let query = supabase()
     .from('sources')
