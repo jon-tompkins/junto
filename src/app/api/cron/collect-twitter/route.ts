@@ -118,7 +118,11 @@ export async function GET(req: NextRequest) {
               // If so, seed it from existing stored tweets.
               getSourceProfile(sourceId).then((profile) => {
                 if (!profile) {
-                  getRecentContentForSources([sourceId], 200).then((recent) => {
+                  getRecentContentForSources([sourceId], 336).then((allRecent) => {
+                    // Cap at 30 tweets sorted by engagement to keep Haiku prompt manageable
+                    const recent = allRecent
+                      .sort((a, b) => (b.likes + b.retweets * 2) - (a.likes + a.retweets * 2))
+                      .slice(0, 30);
                     const seed = recent.map((r) => ({
                       twitter_id: r.twitter_id,
                       content: r.content,
