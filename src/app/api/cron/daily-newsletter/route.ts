@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRecentTweetsGrouped, getTweetsForContext, storeTweets } from '@/lib/db/tweets';
-import { getProfileByHandle, updateProfileFetchTime } from '@/lib/db/profiles';
-import { fetchTweetsForProfile } from '@/lib/twitter/client';
+import { getRecentTweetsGrouped, getTweetsForContext } from '@/lib/db/tweets';
 import { storeNewsletter, updateNewsletterSentStatus } from '@/lib/db/newsletters';
 import { generateNewsletter, PROMPT_VERSION } from '@/lib/synthesis/generator';
 import { sendNewsletter } from '@/lib/email/sender';
+import { startBatchRun } from '@/lib/twitter/apify-client';
+import { createPendingRun } from '@/lib/db/apify-runs';
 import { config } from '@/lib/utils/config';
 import { getDateRange } from '@/lib/utils/date';
 import { getSupabase } from '@/lib/db/client';
@@ -142,42 +142,58 @@ export async function GET(request: NextRequest) {
     // Step 1: Get all profiles that users actually follow
     console.log('Finding profiles that users actually follow...');
     const allProfileHandles = new Set<string>();
-    
+
     for (const user of users) {
       const userProfileHandles = await getUserProfiles(user.id);
       userProfileHandles.forEach(handle => allProfileHandles.add(handle));
     }
-    
+
     console.log(`Found ${allProfileHandles.size} unique profiles followed by users`);
-    
-    // Step 2: Fetch fresh tweets for only followed profiles
-    let totalFetched = 0;
-    
-    for (const profileHandle of allProfileHandles) {
+
+    // Step 2: Fire-and-forget Apify batch for all followed handles. The
+    // collect-twitter cron polls apify_pending_runs and ingests results into
+    // content_twitter once Apify finishes — keeps this cron under Vercel's
+    // 5-min function limit. Newsletter generation below uses tweets already
+    // in the DB; the freshly-kicked batch benefits the next run.
+    const supabase = getSupabase();
+    const handles = Array.from(allProfileHandles);
+    let dispatchedRunId: string | null = null;
+
+    if (handles.length > 0) {
       try {
-        const profile = await getProfileByHandle(profileHandle);
-        if (profile) {
-          const tweets = await fetchTweetsForProfile(profile.twitter_handle, 30);
-          await storeTweets(profile.id, tweets);
-          await updateProfileFetchTime(profile.id);
-          totalFetched += tweets.length;
+        const { data: matchingSources } = await supabase
+          .from('sources')
+          .select('id, handle_or_url')
+          .eq('type', 'twitter')
+          .in('handle_or_url', handles);
+
+        const handleSourceMap: Record<string, string> = {};
+        for (const src of matchingSources || []) {
+          const clean = src.handle_or_url.replace('@', '').toLowerCase();
+          handleSourceMap[clean] = src.id;
         }
-      } catch (error) {
-        console.error(`Error fetching @${profileHandle}:`, error);
+
+        const sinceDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { runId } = await startBatchRun(handles, 30, sinceDate);
+        await createPendingRun({ runId, handleSourceMap, sinceDate });
+        dispatchedRunId = runId;
+        console.log(
+          `[daily-newsletter] Dispatched async Apify batch for ${handles.length} handles (run ${runId}, ${Object.keys(handleSourceMap).length} mapped to V2 sources) — collect-twitter cron will ingest.`
+        );
+      } catch (err) {
+        console.error('[daily-newsletter] Error kicking off Apify batch:', err);
       }
     }
-    
-    console.log(`Fetched ${totalFetched} tweets from ${allProfileHandles.size} followed profiles`);
     
     // Step 3: Get all tweets (we'll filter per user)
     const recentHours = 48;
     const contextDays = 180;
     const { start, end } = getDateRange(recentHours);
-    
+
     const allRecentTweets = await getRecentTweetsGrouped(recentHours);
     const allContextTweets = await getTweetsForContext(contextDays, recentHours);
-    
-    // Step 3: Generate and send newsletter for each user
+
+    // Step 4: Generate and send newsletter for each user
     const results: Record<string, { success: boolean; error?: string }> = {};
     
     for (const user of users) {
@@ -294,7 +310,7 @@ export async function GET(request: NextRequest) {
       success: true,
       usersProcessed: users.length,
       newslettersSent: successCount,
-      tweetsFetched: totalFetched,
+      apifyRunDispatched: dispatchedRunId,
       results,
     });
     

@@ -9,17 +9,16 @@ export async function GET() {
 
   try {
     const supabase = getSupabase();
-    
-    // Check 1: Tweets in last 24 hours
+
+    // Check 1: Tweets pulled in last 24 hours (V2 content_twitter)
     try {
       const since24h = dayjs().subtract(24, 'hour').toISOString();
-      
+
       const { data: recentTweets, error: tweetsError } = await supabase
-        .from('tweets')
+        .from('content_twitter')
         .select(`
-          twitter_handle,
           posted_at,
-          profiles!inner(twitter_handle)
+          sources!inner(handle_or_url)
         `)
         .gte('posted_at', since24h)
         .order('posted_at', { ascending: false });
@@ -27,166 +26,143 @@ export async function GET() {
       if (tweetsError) {
         checks.tweets_last_24h = {
           count: 0,
-          by_profile: {},
+          by_source: {},
           status: 'fail',
           error: tweetsError.message
         };
         overallStatus = 'failing';
       } else {
-        // Group tweets by profile handle
-        const byProfile: Record<string, number> = {};
+        const bySource: Record<string, number> = {};
         for (const tweet of recentTweets || []) {
-          // profiles can be an object or array depending on join type
-          const profiles = tweet.profiles as any;
-          const handle = Array.isArray(profiles) 
-            ? profiles[0]?.twitter_handle 
-            : profiles?.twitter_handle;
+          const sources = tweet.sources as any;
+          const handle = Array.isArray(sources)
+            ? sources[0]?.handle_or_url
+            : sources?.handle_or_url;
           if (handle) {
-            byProfile[handle] = (byProfile[handle] || 0) + 1;
+            bySource[handle] = (bySource[handle] || 0) + 1;
           }
         }
 
         const totalCount = recentTweets?.length || 0;
-        const profileCount = Object.keys(byProfile).length;
-        const profilesWithZeroTweets = Object.entries(byProfile).filter(([_, count]) => count === 0).length;
-        
+        const sourceCount = Object.keys(bySource).length;
+
         let status = 'ok';
         if (totalCount === 0) {
           status = 'fail';
           overallStatus = 'failing';
-        } else if (profilesWithZeroTweets > 0) {
-          status = 'warn';
-          if (overallStatus === 'ok') overallStatus = 'degraded';
         }
 
         checks.tweets_last_24h = {
           count: totalCount,
-          by_profile: byProfile,
+          source_count: sourceCount,
+          by_source: bySource,
           status
         };
       }
     } catch (error) {
       checks.tweets_last_24h = {
         count: 0,
-        by_profile: {},
+        by_source: {},
         status: 'fail',
         error: error instanceof Error ? error.message : 'Unknown error'
       };
       overallStatus = 'failing';
     }
 
-    // Check 2: Newsletter sent today
+    // Check 2: Newsletter runs in last 24 hours (V2 newsletter_runs)
     try {
-      const today = dayjs().format('YYYY-MM-DD');
-      const expectedSendTime = '07:00'; // 7am local time expected
-      const currentHour = dayjs().hour();
-      
-      const { data: todayNewsletters, error: newsletterError } = await supabase
-        .from('newsletters')
-        .select('*')
-        .gte('sent_at', today + 'T00:00:00Z')
-        .lt('sent_at', today + 'T23:59:59Z')
-        .not('sent_at', 'is', null)
-        .order('sent_at', { ascending: false })
-        .limit(1);
+      const since24h = dayjs().subtract(24, 'hour').toISOString();
 
-      if (newsletterError) {
-        checks.newsletter_today = {
-          sent: false,
+      const { data: recentRuns, error: runsError } = await supabase
+        .from('newsletter_runs')
+        .select('id, generated_at, status, newsletter_id')
+        .gte('generated_at', since24h)
+        .order('generated_at', { ascending: false });
+
+      if (runsError) {
+        checks.newsletter_runs_last_24h = {
+          count: 0,
           status: 'fail',
-          error: newsletterError.message
+          error: runsError.message
         };
         overallStatus = 'failing';
       } else {
-        const latestNewsletter = todayNewsletters?.[0];
-        const wasExpected = currentHour >= 7; // After 7am, we expect a newsletter
+        const total = recentRuns?.length || 0;
+        const delivered = (recentRuns || []).filter((r: any) => r.status === 'delivered').length;
+        const errored = (recentRuns || []).filter((r: any) => r.status === 'error').length;
+        const latest = recentRuns?.[0];
 
-        if (latestNewsletter) {
-          checks.newsletter_today = {
-            sent: true,
-            sent_at: latestNewsletter.sent_at,
-            recipient: latestNewsletter.sent_to?.[0] || 'unknown',
-            status: 'ok'
-          };
-        } else if (wasExpected) {
-          checks.newsletter_today = {
-            sent: false,
-            status: 'fail',
-            message: `No newsletter sent today (expected by ${expectedSendTime})`
-          };
+        let status = 'ok';
+        if (total === 0) {
+          status = 'fail';
           overallStatus = 'failing';
-        } else {
-          checks.newsletter_today = {
-            sent: false,
-            status: 'ok',
-            message: 'Newsletter not yet due (before 7am)'
-          };
+        } else if (errored > 0 && overallStatus === 'ok') {
+          status = 'warn';
+          overallStatus = 'degraded';
         }
+
+        checks.newsletter_runs_last_24h = {
+          total,
+          delivered,
+          errored,
+          latest_at: latest?.generated_at ?? null,
+          status
+        };
       }
     } catch (error) {
-      checks.newsletter_today = {
-        sent: false,
+      checks.newsletter_runs_last_24h = {
+        count: 0,
         status: 'fail',
         error: error instanceof Error ? error.message : 'Unknown error'
       };
       overallStatus = 'failing';
     }
 
-    // Check 3: Last fetch activity
+    // Check 3: Most recent tweet — flags stalled pull/collect pipeline
     try {
-      // Get most recent tweet across all profiles to check if fetching is working
       const { data: latestTweet, error: fetchError } = await supabase
-        .from('tweets')
-        .select(`
-          posted_at,
-          profiles!inner(twitter_handle)
-        `)
+        .from('content_twitter')
+        .select('posted_at, fetched_at')
         .order('posted_at', { ascending: false })
         .limit(1)
         .single();
 
       if (fetchError) {
         checks.last_fetch = {
-          timestamp: null,
-          profiles_fetched: 0,
+          posted_at: null,
+          fetched_at: null,
           status: 'fail',
           error: fetchError.message
         };
         overallStatus = 'failing';
       } else {
-        // Check how recent the latest tweet is
-        const latestTimestamp = latestTweet?.posted_at;
-        const hoursAgo = latestTimestamp ? dayjs().diff(dayjs(latestTimestamp), 'hour') : null;
-        
-        // Get count of unique profiles that have tweets
-        const { data: profilesWithTweets } = await supabase
-          .from('tweets')
-          .select('profile_id', { count: 'exact' })
-          .not('profile_id', 'is', null);
+        const latestPosted = latestTweet?.posted_at;
+        const latestFetched = latestTweet?.fetched_at;
+        const hoursSincePosted = latestPosted ? dayjs().diff(dayjs(latestPosted), 'hour') : null;
+        const hoursSinceFetched = latestFetched ? dayjs().diff(dayjs(latestFetched), 'hour') : null;
 
-        const uniqueProfiles = new Set(profilesWithTweets?.map((t: any) => t.profile_id) || []).size;
-        
         let status = 'ok';
-        if (!latestTimestamp) {
+        if (!latestPosted) {
           status = 'fail';
           overallStatus = 'failing';
-        } else if (hoursAgo && hoursAgo > 6) {
-          // If latest tweet is more than 6 hours old, something might be wrong
+        } else if (hoursSinceFetched != null && hoursSinceFetched > 12) {
+          // pull-content + collect-twitter run every 6h; >12h since last fetch = stalled
           status = 'fail';
           overallStatus = 'failing';
         }
 
         checks.last_fetch = {
-          timestamp: latestTimestamp,
-          profiles_fetched: uniqueProfiles,
-          hours_since_latest: hoursAgo,
+          posted_at: latestPosted,
+          fetched_at: latestFetched,
+          hours_since_posted: hoursSincePosted,
+          hours_since_fetched: hoursSinceFetched,
           status
         };
       }
     } catch (error) {
       checks.last_fetch = {
-        timestamp: null,
-        profiles_fetched: 0,
+        posted_at: null,
+        fetched_at: null,
         status: 'fail',
         error: error instanceof Error ? error.message : 'Unknown error'
       };
@@ -194,7 +170,6 @@ export async function GET() {
     }
 
   } catch (error) {
-    // Supabase connection failed
     return NextResponse.json({
       status: 'failing',
       checks: {
@@ -216,7 +191,6 @@ export async function GET() {
   }, { status: httpStatus });
 }
 
-// Support POST for testing
 export async function POST() {
   return GET();
 }
