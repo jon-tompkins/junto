@@ -7,7 +7,7 @@ import {
 } from '@/lib/db/apify-runs';
 import { storeTwitterContent, getRecentContentForSources } from '@/lib/db/content-twitter';
 import { updateSourceProfile } from '@/lib/synthesis/profile-updater';
-import { getSourceProfile } from '@/lib/db/source-analyst-profiles';
+import { getSourceProfile, getSourcesMissingProfiles } from '@/lib/db/source-analyst-profiles';
 import { getSupabase } from '@/lib/db/client';
 
 export const maxDuration = 300; // 5 minutes
@@ -25,10 +25,6 @@ export async function GET(req: NextRequest) {
 
     const supabase = getSupabase();
     const pending = await listPendingRuns();
-
-    if (pending.length === 0) {
-      return NextResponse.json({ success: true, pending: 0, processed: 0 });
-    }
 
     console.log(`[collect-twitter] Checking ${pending.length} pending Apify run(s)...`);
 
@@ -180,6 +176,38 @@ export async function GET(req: NextRequest) {
     console.log(
       `[collect-twitter] Done. Processed ${processedCount}/${pending.length} runs. ${totalFetched} tweets fetched, ${totalStored} stored.`,
     );
+
+    // Sweep for sources that have tweets but no profile yet. Fire-and-forget so
+    // we don't block the response; capped at 3 per cycle to stay within budget.
+    getSourcesMissingProfiles().then(async (missing) => {
+      const toSeed = missing.slice(0, 3);
+      for (const src of toSeed) {
+        try {
+          const recent = await getRecentContentForSources([src.id], 336);
+          const tweets = recent
+            .sort((a, b) => (b.likes + b.retweets * 2) - (a.likes + a.retweets * 2))
+            .slice(0, 30)
+            .map((r) => ({
+              twitter_id: r.twitter_id,
+              content: r.content,
+              posted_at: r.posted_at,
+              likes: r.likes ?? 0,
+              retweets: r.retweets ?? 0,
+              replies: r.replies ?? 0,
+              is_retweet: r.is_retweet ?? false,
+              is_reply: r.is_reply ?? false,
+              thread_id: r.thread_id ?? undefined,
+              raw_data: r.raw_data,
+            }));
+          if (tweets.length > 0) {
+            console.log(`[collect-twitter] Seeding missing profile for @${src.handle_or_url} from ${tweets.length} stored tweets`);
+            await updateSourceProfile(src.id, src.handle_or_url, tweets);
+          }
+        } catch (err) {
+          console.warn(`[collect-twitter] Seed failed for @${src.handle_or_url}:`, err instanceof Error ? err.message : err);
+        }
+      }
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,
