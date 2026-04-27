@@ -70,24 +70,24 @@ export async function getSourcesMissingProfiles(): Promise<Array<{ id: string; h
     .select('source_id');
   const existingIds = new Set((existing || []).map((r: any) => r.source_id));
 
-  // Twitter sources that have at least one tweet
+  // Distinct source_ids that have tweets — content_twitter is twitter-only by definition
   const { data: active } = await supabase
     .from('content_twitter')
-    .select('source_id, sources!inner(id, handle_or_url, type)')
-    .eq('sources.type', 'twitter')
-    .limit(500);
+    .select('source_id')
+    .limit(1000);
 
-  const seen = new Set<string>();
-  const missing: Array<{ id: string; handle_or_url: string }> = [];
-  for (const row of active || []) {
-    const src = row.sources as any;
-    const id: string = src?.id ?? row.source_id;
-    const handle: string = src?.handle_or_url ?? '';
-    if (!id || seen.has(id) || existingIds.has(id)) continue;
-    seen.add(id);
-    missing.push({ id, handle_or_url: handle });
-  }
-  return missing;
+  const missingIds = [...new Set((active || []).map((r: any) => r.source_id as string))]
+    .filter((id) => !existingIds.has(id));
+
+  if (missingIds.length === 0) return [];
+
+  // Resolve handles from sources table
+  const { data: sources } = await supabase
+    .from('sources')
+    .select('id, handle_or_url')
+    .in('id', missingIds);
+
+  return (sources || []).map((s: any) => ({ id: s.id, handle_or_url: s.handle_or_url }));
 }
 
 export async function getAllProfilesWithSources(): Promise<SourceProfileWithSource[]> {
