@@ -24,6 +24,12 @@ interface SourceProfile {
   };
 }
 
+interface JuntoOption {
+  id: string;
+  name: string;
+  source_ids: string[];
+}
+
 const STANCE_COLORS: Record<string, string> = {
   bullish: 'bg-emerald-900/40 text-emerald-400 border border-emerald-700/40',
   bearish: 'bg-red-900/40 text-red-400 border border-red-700/40',
@@ -85,16 +91,18 @@ function AnalystRow({ p }: { p: SourceProfile }) {
           </p>
         </td>
 
-        {/* Stances */}
+        {/* Positions — clickable, link to /positions/[ticker] */}
         <td className="px-4 py-3">
           <div className="flex gap-1.5 flex-wrap">
             {positionEntries.slice(0, 5).map(([ticker, pos]) => (
-              <span
+              <Link
                 key={ticker}
-                className={`text-xs px-2 py-0.5 rounded-full font-medium font-mono ${STANCE_COLORS[pos.stance]}`}
+                href={`/positions/${encodeURIComponent(ticker)}`}
+                onClick={(e) => e.stopPropagation()}
+                className={`text-xs px-2 py-0.5 rounded-full font-medium font-mono hover:opacity-80 transition ${STANCE_COLORS[pos.stance]}`}
               >
                 {STANCE_ICONS[pos.stance]} {ticker}
-              </span>
+              </Link>
             ))}
             {positionEntries.length > 5 && (
               <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700/40 text-slate-500">
@@ -128,9 +136,11 @@ function AnalystRow({ p }: { p: SourceProfile }) {
               {positionEntries.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {positionEntries.map(([ticker, pos]) => (
-                    <div
+                    <Link
                       key={ticker}
-                      className={`text-xs px-3 py-1.5 rounded-lg font-mono border flex flex-col gap-0.5 ${STANCE_COLORS[pos.stance]}`}
+                      href={`/positions/${encodeURIComponent(ticker)}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className={`text-xs px-3 py-1.5 rounded-lg font-mono border flex flex-col gap-0.5 hover:opacity-80 transition ${STANCE_COLORS[pos.stance]}`}
                     >
                       <div className="font-semibold">
                         {STANCE_ICONS[pos.stance]} {ticker}
@@ -142,7 +152,7 @@ function AnalystRow({ p }: { p: SourceProfile }) {
                       <div className="opacity-50 font-sans">
                         since {new Date(pos.since).toLocaleDateString()}
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -164,18 +174,36 @@ function AnalystRow({ p }: { p: SourceProfile }) {
 
 export default function SourcesPage() {
   const [profiles, setProfiles] = useState<SourceProfile[]>([]);
+  const [juntos, setJuntos] = useState<JuntoOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [tickerFilter, setTickerFilter] = useState('');
   const [stanceFilter, setStanceFilter] = useState<string | null>(null);
+  const [juntoFilter, setJuntoFilter] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetch('/api/sources')
-      .then((r) => r.json())
-      .then((d) => setProfiles(d.profiles || []))
-      .catch(() => setProfiles([]))
+    Promise.all([
+      fetch('/api/sources').then((r) => r.json()),
+      fetch('/api/juntos/public').then((r) => r.json()),
+    ])
+      .then(([sourceData, juntoData]) => {
+        setProfiles(sourceData.profiles || []);
+        setJuntos(
+          (juntoData.juntos || []).filter((j: JuntoOption) => j.source_ids?.length > 0),
+        );
+      })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  // Build set of source_ids allowed by selected juntos
+  const juntoSourceIds = juntoFilter.size === 0
+    ? null
+    : new Set(
+        juntos
+          .filter((j) => juntoFilter.has(j.id))
+          .flatMap((j) => j.source_ids),
+      );
 
   const filtered = profiles.filter((p) => {
     const handle = p.source.handle_or_url;
@@ -191,12 +219,21 @@ export default function SourcesPage() {
     if (stanceFilter) {
       if (!Object.values(p.positions).some((pos) => pos.stance === stanceFilter)) return false;
     }
+    if (juntoSourceIds && !juntoSourceIds.has(p.source_id)) return false;
     return true;
   });
 
   const allTickers = Array.from(
     new Set(profiles.flatMap((p) => Object.keys(p.positions).map((k) => k.toUpperCase())))
   ).sort().slice(0, 12);
+
+  const toggleJunto = (id: string) => {
+    setJuntoFilter((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
@@ -207,7 +244,7 @@ export default function SourcesPage() {
           <h1 className="text-4xl font-bold mb-2">
             Analyst <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Profiles</span>
           </h1>
-          <p className="text-slate-400">Live stances tracked across all sources. Updated each content pull.</p>
+          <p className="text-slate-400">Live positions tracked across all sources. Click any position to see aggregate sentiment.</p>
         </div>
 
         {/* Filters */}
@@ -242,6 +279,7 @@ export default function SourcesPage() {
             </div>
           </div>
 
+          {/* Quick ticker pills */}
           {allTickers.length > 0 && (
             <div className="flex gap-2 flex-wrap">
               {allTickers.map((ticker) => (
@@ -257,6 +295,34 @@ export default function SourcesPage() {
                   {ticker}
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* Junto multi-select */}
+          {juntos.length > 0 && (
+            <div className="flex gap-2 flex-wrap items-center">
+              <span className="text-xs text-slate-500 font-medium">Junto:</span>
+              {juntos.map((j) => (
+                <button
+                  key={j.id}
+                  onClick={() => toggleJunto(j.id)}
+                  className={`text-xs px-2.5 py-1 rounded-full transition font-medium ${
+                    juntoFilter.has(j.id)
+                      ? 'bg-purple-700/60 text-purple-200 border border-purple-600/50'
+                      : 'bg-slate-800/60 text-slate-400 hover:bg-slate-700 border border-slate-700/50'
+                  }`}
+                >
+                  {j.name}
+                </button>
+              ))}
+              {juntoFilter.size > 0 && (
+                <button
+                  onClick={() => setJuntoFilter(new Set())}
+                  className="text-xs text-slate-500 hover:text-slate-300 transition px-1"
+                >
+                  clear
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -286,7 +352,7 @@ export default function SourcesPage() {
                 <tr className="bg-slate-800/60 border-b border-slate-700/60">
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide w-48">Analyst</th>
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">Analysis</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide w-72">Stances</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide w-72">Positions</th>
                   <th className="px-4 py-2.5 text-right text-xs font-semibold text-slate-400 uppercase tracking-wide w-28">Updated</th>
                 </tr>
               </thead>

@@ -37,15 +37,18 @@ export async function GET() {
 
     const juntoIds = (data || []).map((j: any) => j.id);
 
-    // Fetch source counts separately to avoid schema-cache issues with nested selects
+    // Fetch source counts + source_ids separately to avoid schema-cache issues
     const sourceCountMap: Record<string, number> = {};
+    const sourceIdsMap: Record<string, string[]> = {};
     if (juntoIds.length > 0) {
       const { data: sourceCounts } = await supabase
         .from('junto_sources')
-        .select('junto_id')
+        .select('junto_id, source_id')
         .in('junto_id', juntoIds);
       (sourceCounts || []).forEach((row: any) => {
         sourceCountMap[row.junto_id] = (sourceCountMap[row.junto_id] || 0) + 1;
+        if (!sourceIdsMap[row.junto_id]) sourceIdsMap[row.junto_id] = [];
+        sourceIdsMap[row.junto_id].push(row.source_id);
       });
     }
 
@@ -58,6 +61,7 @@ export async function GET() {
       created_at: j.created_at,
       is_own: j.owner_id === userId,
       source_count: sourceCountMap[j.id] ?? 0,
+      source_ids: sourceIdsMap[j.id] ?? [],
       dispatches: [],
     }));
 
