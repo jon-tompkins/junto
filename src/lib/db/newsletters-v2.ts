@@ -193,7 +193,26 @@ export async function getNewsletterSources(newsletterId: string): Promise<Source
 
   if (error) throw error;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []).map((row: any) => row.sources as Source);
+  const direct = (data || []).map((row: any) => row.sources as Source).filter(Boolean);
+  if (direct.length > 0) return direct;
+
+  // Fall through to junto sources for junto-based dispatches
+  const { data: nl } = await supabase()
+    .from('newsletters_v2')
+    .select('junto_id')
+    .eq('id', newsletterId)
+    .single();
+
+  if (!nl?.junto_id) return [];
+
+  const { data: js, error: jsError } = await supabase()
+    .from('junto_sources')
+    .select('source_id, sources(*)')
+    .eq('junto_id', nl.junto_id);
+
+  if (jsError) throw jsError;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (js || []).map((row: any) => row.sources as Source).filter(Boolean);
 }
 
 export async function addNewsletterSource(newsletterId: string, sourceId: string): Promise<void> {
