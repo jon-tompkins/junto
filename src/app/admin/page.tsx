@@ -25,10 +25,10 @@ interface CostSummary {
 }
 
 const SUPPLIER_COLORS: Record<string, string> = {
-  grok: 'bg-purple-500',
-  apify: 'bg-blue-500',
-  resend: 'bg-emerald-500',
-  supadata: 'bg-orange-500',
+  grok: 'bg-[#B08D57]',
+  apify: 'bg-[#3ecf6a]',
+  resend: 'bg-amber-500',
+  supadata: 'bg-[#e8453c]',
 };
 
 function fmtUsd(cents: number): string {
@@ -59,20 +59,20 @@ export default function AdminDashboard() {
 
   if (status === 'loading' || loading) {
     return (
-      <main className="min-h-screen bg-slate-950 text-white">
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
         <TopNav />
-        <div className="max-w-6xl mx-auto px-6 py-12 text-slate-400">Loading admin dashboard…</div>
+        <div className="max-w-6xl mx-auto px-6 py-12 text-[#F5EFE0]/45">Loading admin dashboard…</div>
       </main>
     );
   }
 
   if (status !== 'authenticated') {
     return (
-      <main className="min-h-screen bg-slate-950 text-white">
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
         <TopNav />
         <div className="max-w-6xl mx-auto px-6 py-12">
-          <p className="text-slate-400">Sign in required.</p>
-          <Link href="/login" className="text-blue-400 hover:underline">Sign in</Link>
+          <p className="text-[#F5EFE0]/60">Sign in required.</p>
+          <Link href="/login" className="text-[#B08D57] hover:text-[#B08D57]/80 transition">Sign in</Link>
         </div>
       </main>
     );
@@ -80,11 +80,11 @@ export default function AdminDashboard() {
 
   if (error || !summary) {
     return (
-      <main className="min-h-screen bg-slate-950 text-white">
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
         <TopNav />
         <div className="max-w-6xl mx-auto px-6 py-12">
-          <h1 className="text-2xl font-bold mb-2">Admin — Costs</h1>
-          <p className="text-red-400">{error || 'No data.'}</p>
+          <h1 className="text-2xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Admin — Costs</h1>
+          <p className="text-[#e8453c]">{error || 'No data.'}</p>
         </div>
       </main>
     );
@@ -95,13 +95,13 @@ export default function AdminDashboard() {
   const maxDailyTotal = Math.max(...summary.daily.map((d) => Number(d.total) || 0), 1);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
       <div className="max-w-6xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold">Admin · Costs</h1>
-            <p className="text-sm text-slate-500 mt-1">
+            <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">Admin · Costs</h1>
+            <p className="text-sm text-[#F5EFE0]/45 mt-1">
               Since {new Date(summary.since).toLocaleDateString()} · {summary.total_calls.toLocaleString()} API calls
             </p>
           </div>
@@ -110,10 +110,10 @@ export default function AdminDashboard() {
               <button
                 key={d}
                 onClick={() => setWindowDays(d)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                className={`px-3 py-1.5 rounded text-sm font-medium transition ${
                   windowDays === d
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-800/60 border border-slate-700 text-slate-400 hover:text-white'
+                    ? 'bg-[#B08D57] text-[#080604] font-semibold'
+                    : 'bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/60 hover:text-[#F5EFE0]'
                 }`}
               >
                 {d}d
@@ -123,10 +123,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* Big number */}
-        <div className="bg-gradient-to-br from-blue-600/10 via-slate-900 to-slate-900 border border-slate-700/50 rounded-2xl p-8 mb-8">
-          <div className="text-sm text-slate-400 uppercase tracking-wider mb-1">Total platform spend</div>
-          <div className="text-5xl font-bold mb-2">{fmtUsd(summary.total_cents)}</div>
-          <div className="text-sm text-slate-500">
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-8 mb-8">
+          <div className="text-sm text-[#F5EFE0]/45 uppercase tracking-wider mb-1 font-[var(--font-oswald)]">Total platform spend</div>
+          <div className="text-5xl font-bold mb-2 text-[#F5EFE0]">{fmtUsd(summary.total_cents)}</div>
+          <div className="text-sm text-[#F5EFE0]/45">
             {summary.total_calls.toLocaleString()} calls · avg {fmtUsd(summary.total_cents / Math.max(summary.total_calls, 1))} per call
           </div>
         </div>
@@ -134,19 +134,19 @@ export default function AdminDashboard() {
         {/* Suppliers grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {suppliers.map(([supplier, stats]) => (
-            <div key={supplier} className="bg-slate-800/30 border border-slate-700/40 rounded-xl p-5">
+            <div key={supplier} className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
               <div className="flex items-center gap-2 mb-2">
-                <div className={`w-2 h-2 rounded-full ${SUPPLIER_COLORS[supplier] || 'bg-slate-500'}`} />
-                <div className="text-xs uppercase tracking-wider text-slate-400">{supplier}</div>
+                <div className={`w-2 h-2 rounded-full ${SUPPLIER_COLORS[supplier] || 'bg-[#F5EFE0]/30'}`} />
+                <div className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">{supplier}</div>
               </div>
-              <div className="text-2xl font-bold">{fmtUsd(stats.cost_cents)}</div>
-              <div className="text-xs text-slate-500 mt-1">
+              <div className="text-2xl font-bold text-[#F5EFE0]">{fmtUsd(stats.cost_cents)}</div>
+              <div className="text-xs text-[#F5EFE0]/30 mt-1">
                 {stats.calls.toLocaleString()} calls · {stats.usage_amount.toLocaleString()} units
               </div>
             </div>
           ))}
           {suppliers.length === 0 && (
-            <div className="col-span-4 text-slate-500 text-sm text-center py-6">
+            <div className="col-span-4 text-[#F5EFE0]/45 text-sm text-center py-6">
               No cost events recorded yet. Costs start tracking after the next API call.
             </div>
           )}
@@ -154,8 +154,8 @@ export default function AdminDashboard() {
 
         {/* Daily chart */}
         {summary.daily.length > 0 && (
-          <div className="bg-slate-800/30 border border-slate-700/40 rounded-xl p-6 mb-8">
-            <h2 className="text-sm uppercase tracking-wider text-slate-400 mb-4">Daily Spend</h2>
+          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-8">
+            <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">Daily Spend</h2>
             <div className="flex items-end gap-1 h-32">
               {summary.daily.map((d) => {
                 const total = Number(d.total) || 0;
@@ -164,18 +164,18 @@ export default function AdminDashboard() {
                   <div key={d.day as string} className="flex-1 flex flex-col items-center gap-1 group relative">
                     <div className="w-full flex-1 flex items-end">
                       <div
-                        className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t hover:from-blue-500 hover:to-blue-300 transition"
+                        className="w-full bg-[#B08D57] hover:bg-[#B08D57]/80 rounded-t transition"
                         style={{ height: `${Math.max(heightPct, 2)}%` }}
                       />
                     </div>
-                    <div className="opacity-0 group-hover:opacity-100 transition absolute -top-8 text-xs bg-slate-900 border border-slate-700 rounded px-2 py-1 whitespace-nowrap z-10">
+                    <div className="opacity-0 group-hover:opacity-100 transition absolute -top-8 text-xs bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-2 py-1 whitespace-nowrap z-10 text-[#F5EFE0]">
                       {d.day}: {fmtUsd(total)}
                     </div>
                   </div>
                 );
               })}
             </div>
-            <div className="flex justify-between text-xs text-slate-600 mt-2">
+            <div className="flex justify-between text-xs text-[#F5EFE0]/30 mt-2">
               <span>{summary.daily[0]?.day}</span>
               <span>{summary.daily[summary.daily.length - 1]?.day}</span>
             </div>
@@ -183,27 +183,27 @@ export default function AdminDashboard() {
         )}
 
         {/* Operation breakdown */}
-        <div className="bg-slate-800/30 border border-slate-700/40 rounded-xl p-6 mb-8">
-          <h2 className="text-sm uppercase tracking-wider text-slate-400 mb-4">By Operation</h2>
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-8">
+          <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">By Operation</h2>
           <div className="space-y-2">
             {operations.map(([op, stats]) => (
-              <div key={op} className="flex items-center justify-between py-2 border-b border-slate-700/30 last:border-0">
+              <div key={op} className="flex items-center justify-between py-2 border-b border-[rgba(176,141,87,0.18)] last:border-0">
                 <div>
-                  <div className="font-mono text-sm text-slate-300">{op}</div>
-                  <div className="text-xs text-slate-500">{stats.calls} calls</div>
+                  <div className="font-mono text-sm text-[#F5EFE0]/80">{op}</div>
+                  <div className="text-xs text-[#F5EFE0]/30">{stats.calls} calls</div>
                 </div>
-                <div className="text-sm font-semibold">{fmtUsd(stats.cost_cents)}</div>
+                <div className="text-sm font-semibold text-[#F5EFE0]">{fmtUsd(stats.cost_cents)}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* Recent events */}
-        <div className="bg-slate-800/30 border border-slate-700/40 rounded-xl p-6">
-          <h2 className="text-sm uppercase tracking-wider text-slate-400 mb-4">Recent events (last 100)</h2>
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6">
+          <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">Recent events (last 100)</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase text-slate-500 border-b border-slate-700/40">
+              <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
                 <tr>
                   <th className="py-2 pr-4">When</th>
                   <th className="py-2 pr-4">Supplier</th>
@@ -214,24 +214,24 @@ export default function AdminDashboard() {
               </thead>
               <tbody>
                 {summary.recent_events.map((e, i) => (
-                  <tr key={i} className="border-b border-slate-700/20 last:border-0">
-                    <td className="py-2 pr-4 text-slate-400 whitespace-nowrap">
+                  <tr key={i} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
+                    <td className="py-2 pr-4 text-[#F5EFE0]/45 whitespace-nowrap">
                       {new Date(e.created_at).toLocaleString()}
                     </td>
-                    <td className="py-2 pr-4">
-                      <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${SUPPLIER_COLORS[e.supplier] || 'bg-slate-500'}`} />
+                    <td className="py-2 pr-4 text-[#F5EFE0]/80">
+                      <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${SUPPLIER_COLORS[e.supplier] || 'bg-[#F5EFE0]/30'}`} />
                       {e.supplier}
                     </td>
-                    <td className="py-2 pr-4 font-mono text-xs">{e.operation}</td>
-                    <td className="py-2 pr-4 text-slate-400">
+                    <td className="py-2 pr-4 font-mono text-xs text-[#F5EFE0]/60">{e.operation}</td>
+                    <td className="py-2 pr-4 text-[#F5EFE0]/45">
                       {e.usage_amount.toLocaleString()} {e.usage_unit}
                       {e.input_tokens !== null && (
-                        <span className="text-slate-600 ml-2 text-xs">
+                        <span className="text-[#F5EFE0]/30 ml-2 text-xs">
                           ({e.input_tokens} in / {e.output_tokens} out)
                         </span>
                       )}
                     </td>
-                    <td className="py-2 pr-4 text-right font-semibold">{fmtUsd(e.cost_cents)}</td>
+                    <td className="py-2 pr-4 text-right font-semibold text-[#F5EFE0]">{fmtUsd(e.cost_cents)}</td>
                   </tr>
                 ))}
               </tbody>

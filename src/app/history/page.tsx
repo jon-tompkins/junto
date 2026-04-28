@@ -85,45 +85,45 @@ export default function HistoryPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white flex items-center justify-center">
-        <div className="animate-pulse text-slate-500">Loading...</div>
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0] flex items-center justify-center">
+        <div className="animate-pulse text-[#F5EFE0]/45">Loading...</div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <h1 className="text-3xl font-bold mb-2">Dispatch History</h1>
-        <p className="text-slate-400 mb-8">All generated issues from your subscriptions and dispatches.</p>
+        <h1 className="text-3xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Dispatch History</h1>
+        <p className="text-[#F5EFE0]/60 mb-8">All generated issues from your subscriptions and dispatches.</p>
 
         {runs.length === 0 ? (
-          <div className="text-center py-16 border border-dashed border-slate-700/40 rounded-2xl">
-            <p className="text-slate-400 font-medium mb-2">No issues yet</p>
-            <p className="text-slate-500 text-sm">Issues will appear here once dispatches start generating.</p>
+          <div className="text-center py-16 border border-dashed border-[rgba(176,141,87,0.28)] rounded">
+            <p className="text-[#F5EFE0]/60 font-medium mb-2">No issues yet</p>
+            <p className="text-[#F5EFE0]/45 text-sm">Issues will appear here once dispatches start generating.</p>
           </div>
         ) : (
           <div className="space-y-3">
             {runs.map((run) => (
-              <div key={run.id} className="bg-slate-800/30 border border-slate-700/40 rounded-2xl overflow-hidden">
+              <div key={run.id} className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
                 <button
                   onClick={() => setExpandedId(expandedId === run.id ? null : run.id)}
-                  className="w-full flex items-center justify-between p-5 hover:bg-slate-800/50 transition text-left"
+                  className="w-full flex items-center justify-between p-5 hover:bg-[#1c1a17] transition text-left"
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-3 mb-1">
-                      <h3 className="font-semibold text-white truncate">
+                      <h3 className="font-semibold text-[#F5EFE0] truncate">
                         {run.subject || 'Untitled issue'}
                       </h3>
                       {run.newsletter_name && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-600/15 text-blue-400 font-medium shrink-0">
+                        <span className="text-xs px-2 py-0.5 rounded-sm bg-[#B08D57]/15 text-[#B08D57] border border-[rgba(176,141,87,0.3)] font-medium shrink-0">
                           {run.newsletter_name}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-[#F5EFE0]/30">
                       {new Date(run.generated_at).toLocaleDateString('en-US', {
                         weekday: 'short',
                         month: 'short',
@@ -135,7 +135,7 @@ export default function HistoryPage() {
                     </p>
                   </div>
                   <svg
-                    className={`w-5 h-5 text-slate-500 transition-transform shrink-0 ml-4 ${expandedId === run.id ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-[#F5EFE0]/45 transition-transform shrink-0 ml-4 ${expandedId === run.id ? 'rotate-180' : ''}`}
                     fill="none" viewBox="0 0 24 24" stroke="currentColor"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -143,9 +143,9 @@ export default function HistoryPage() {
                 </button>
 
                 {expandedId === run.id && (
-                  <div className="border-t border-slate-700/30 p-6">
+                  <div className="border-t border-[rgba(176,141,87,0.18)] p-6">
                     <div
-                      className="prose prose-invert prose-sm max-w-none text-slate-300 leading-relaxed"
+                      className="prose prose-invert prose-sm max-w-none text-[#F5EFE0]/80 leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: run.content }}
                     />
                   </div>

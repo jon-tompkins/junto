@@ -71,18 +71,13 @@ const DAY_LABELS: Record<string, string> = {
 
 // Convert Pacific time hour to user's local timezone label (DST-aware)
 function pacificToLocal(pacificHour: number): string {
-  // Create a date at the target Pacific hour
   const now = new Date();
-  // Get today's date in Pacific time
   const pacificStr = now.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' });
   const [month, day, year] = pacificStr.split('/');
-  // Build a date string at the target hour in Pacific
   const targetDate = new Date(`${year}-${month}-${day}T${String(pacificHour).padStart(2, '0')}:00:00`);
-  // Get the Pacific offset for this date
   const pacificTime = new Date(targetDate.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
   const offsetMs = targetDate.getTime() - pacificTime.getTime();
   const utcDate = new Date(targetDate.getTime() + offsetMs);
-  // Display in user's local timezone
   return utcDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
@@ -147,7 +142,6 @@ export default function DashboardPage() {
         const data = await accountRes.json();
         setCreditBalance(data.balance ?? null);
         setAccountEmail(data.email ?? null);
-        // Redirect to onboarding if not completed
         if (data.isOnboarded === false) {
           router.push('/onboarding');
           return;
@@ -233,7 +227,7 @@ export default function DashboardPage() {
 
       if (res.ok) {
         setEditingSubId(null);
-        loadData(); // Refresh
+        loadData();
       }
     } catch {} finally {
       setSaving(false);
@@ -274,7 +268,6 @@ export default function DashboardPage() {
     );
   }
 
-  // Switch to history tab and load data
   function switchToHistory() {
     setActiveTab('history');
     if (runs.length === 0) loadHistory();
@@ -282,30 +275,30 @@ export default function DashboardPage() {
 
   const creditColor =
     creditBalance !== null && creditBalance <= 50
-      ? 'text-red-400'
+      ? 'text-[#e8453c]'
       : creditBalance !== null && creditBalance <= 100
         ? 'text-amber-400'
-        : 'text-emerald-400';
+        : 'text-[#3ecf6a]';
 
   if (status === 'loading') {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white flex items-center justify-center">
-        <div className="animate-pulse text-slate-500">Loading...</div>
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0] flex items-center justify-center">
+        <div className="animate-pulse text-[#F5EFE0]/45">Loading...</div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Email Collection Banner */}
         {accountEmail === null && !loading && (
-          <div className="mb-8 p-4 bg-amber-900/20 border border-amber-700/40 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="mb-8 p-4 bg-[#B08D57]/10 border border-[rgba(176,141,87,0.28)] rounded flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="flex-1">
-              <p className="text-amber-300 font-medium text-sm">Add your email to receive dispatches</p>
-              <p className="text-amber-400/60 text-xs mt-0.5">This will be used as the default delivery email for your subscriptions.</p>
+              <p className="text-[#B08D57] font-medium text-sm">Add your email to receive dispatches</p>
+              <p className="text-[#B08D57]/60 text-xs mt-0.5">This will be used as the default delivery email for your subscriptions.</p>
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
               <input
@@ -313,12 +306,12 @@ export default function DashboardPage() {
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 placeholder="you@example.com"
-                className="flex-1 sm:w-64 bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                className="flex-1 sm:w-64 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-1.5 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
               />
               <button
                 onClick={handleSaveEmail}
                 disabled={savingEmail || !emailInput.trim()}
-                className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium rounded-lg transition disabled:opacity-50"
+                className="px-4 py-1.5 bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] text-sm font-medium rounded transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
               >
                 {savingEmail ? 'Saving...' : 'Save'}
               </button>
@@ -329,14 +322,14 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex items-start justify-between mb-10">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-            <p className="text-slate-400">
+            <h1 className="text-3xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Dashboard</h1>
+            <p className="text-[#F5EFE0]/60">
               Welcome back{session?.user?.name ? `, ${session.user.name}` : ''}.
             </p>
           </div>
           <Link
             href="/create"
-            className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-medium transition shadow-lg shadow-blue-600/20 text-sm shrink-0"
+            className="bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] px-5 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition text-sm shrink-0"
           >
             + New Dispatch
           </Link>
@@ -344,31 +337,31 @@ export default function DashboardPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
-          <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
+          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
             <div className={`text-2xl font-bold ${creditColor}`}>
               {creditBalance !== null ? creditBalance.toLocaleString() : '—'}
             </div>
-            <div className="text-sm text-slate-400 mt-1">Credits</div>
-            <Link href="/credits" className="text-xs text-blue-400 hover:text-blue-300 mt-1 inline-block">Top up →</Link>
+            <div className="text-sm text-[#F5EFE0]/60 mt-1">Credits</div>
+            <Link href="/credits" className="text-xs text-[#B08D57] hover:text-[#B08D57]/80 mt-1 inline-block">Top up →</Link>
           </div>
-          <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
-            <div className="text-2xl font-bold text-white">{subscriptions.length}</div>
-            <div className="text-sm text-slate-400 mt-1">Subscriptions</div>
+          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
+            <div className="text-2xl font-bold text-[#F5EFE0]">{subscriptions.length}</div>
+            <div className="text-sm text-[#F5EFE0]/60 mt-1">Subscriptions</div>
           </div>
-          <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
-            <div className="text-2xl font-bold text-white">{created.length}</div>
-            <div className="text-sm text-slate-400 mt-1">My Dispatches</div>
+          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
+            <div className="text-2xl font-bold text-[#F5EFE0]">{created.length}</div>
+            <div className="text-sm text-[#F5EFE0]/60 mt-1">My Dispatches</div>
           </div>
-          <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
-            <div className="text-2xl font-bold text-white">
+          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
+            <div className="text-2xl font-bold text-[#F5EFE0]">
               {created.reduce((sum, n) => sum + n.subscriber_count, 0)}
             </div>
-            <div className="text-sm text-slate-400 mt-1">Total Subscribers</div>
+            <div className="text-sm text-[#F5EFE0]/60 mt-1">Total Subscribers</div>
           </div>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex gap-1 bg-slate-800/40 rounded-xl p-1 mb-8 w-fit">
+        <div className="flex gap-1 bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-1 mb-8 w-fit">
           {[
             { key: 'subscriptions', label: `My Subscriptions (${subscriptions.length})` },
             { key: 'newsletters', label: `My Dispatches (${created.length})` },
@@ -377,10 +370,10 @@ export default function DashboardPage() {
             <button
               key={tab.key}
               onClick={() => tab.key === 'history' ? switchToHistory() : setActiveTab(tab.key as any)}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
+              className={`px-5 py-2 rounded-sm text-sm font-medium transition ${
                 activeTab === tab.key
-                  ? 'bg-slate-700 text-white shadow'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-[#1c1a17] text-[#F5EFE0] shadow'
+                  : 'text-[#F5EFE0]/60 hover:text-[#F5EFE0]'
               }`}
             >
               {tab.label}
@@ -405,23 +398,23 @@ export default function DashboardPage() {
               {subscriptions.map((sub) => (
                 <div
                   key={sub.id}
-                  className={`bg-slate-800/30 border rounded-2xl transition-all duration-200 ${
-                    sub.is_active ? 'border-slate-700/40' : 'border-slate-700/20 opacity-60'
+                  className={`bg-[#141210] border rounded transition-all duration-200 ${
+                    sub.is_active ? 'border-[rgba(176,141,87,0.28)]' : 'border-[rgba(176,141,87,0.18)] opacity-60'
                   }`}
                 >
                   <div className="flex items-center justify-between p-5">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-3 mb-1">
-                        <Link href={`/newsletter/${sub.newsletter.id}`} className="font-semibold hover:text-blue-400 transition truncate">
+                        <Link href={`/newsletter/${sub.newsletter.id}`} className="font-semibold hover:text-[#B08D57] transition truncate">
                           {sub.newsletter.name}
                         </Link>
                         {!sub.is_active && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-400 shrink-0">
+                          <span className="text-xs px-2 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45 shrink-0">
                             Paused
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
+                      <div className="flex items-center gap-3 text-xs text-[#F5EFE0]/45 flex-wrap">
                         <span>{sub.delivery_email || accountEmail || 'No email set'}</span>
                         <span>·</span>
                         <span>
@@ -436,16 +429,16 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-2 shrink-0 ml-4">
                       <button
                         onClick={() => editingSubId === sub.id ? setEditingSubId(null) : startEditSub(sub)}
-                        className="text-xs px-3 py-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 transition"
+                        className="text-xs px-3 py-1.5 rounded-sm bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/80 transition"
                       >
                         {editingSubId === sub.id ? 'Cancel' : 'Edit'}
                       </button>
                       <button
                         onClick={() => handleToggleSubscription(sub.id, sub.is_active)}
-                        className={`text-xs px-3 py-1.5 rounded-lg transition ${
+                        className={`text-xs px-3 py-1.5 rounded-sm transition ${
                           sub.is_active
-                            ? 'bg-slate-700/50 hover:bg-red-900/30 text-slate-400 hover:text-red-400'
-                            : 'bg-emerald-900/30 hover:bg-emerald-900/50 text-emerald-400'
+                            ? 'bg-[#1c1a17] hover:bg-[#e8453c]/20 text-[#F5EFE0]/45 hover:text-[#e8453c]'
+                            : 'bg-[#3ecf6a]/15 hover:bg-[#3ecf6a]/25 text-[#3ecf6a]'
                         }`}
                       >
                         {sub.is_active ? 'Pause' : 'Reactivate'}
@@ -455,19 +448,19 @@ export default function DashboardPage() {
 
                   {/* Inline edit panel */}
                   {editingSubId === sub.id && (
-                    <div className="border-t border-slate-700/30 p-5 space-y-4">
+                    <div className="border-t border-[rgba(176,141,87,0.18)] p-5 space-y-4">
                       {/* Send windows */}
                       <div>
-                        <label className="text-xs text-slate-400 font-medium block mb-2">Send times (your local timezone)</label>
+                        <label className="text-xs text-[#F5EFE0]/60 font-medium block mb-2">Send times (your local timezone)</label>
                         <div className="flex gap-2 flex-wrap">
                           {WINDOW_OPTIONS.map((w) => (
                             <button
                               key={w.key}
                               onClick={() => toggleWindow(w.key)}
-                              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                              className={`px-3 py-1.5 rounded-sm text-sm font-medium transition ${
                                 editWindows.includes(w.key)
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
+                                  ? 'bg-[#B08D57] text-[#080604]'
+                                  : 'bg-[#1c1a17] text-[#F5EFE0]/60 hover:bg-[#1c1a17]/80'
                               }`}
                             >
                               {LOCAL_WINDOW_LABELS[w.key]}
@@ -478,16 +471,16 @@ export default function DashboardPage() {
 
                       {/* Days */}
                       <div>
-                        <label className="text-xs text-slate-400 font-medium block mb-2">Days</label>
+                        <label className="text-xs text-[#F5EFE0]/60 font-medium block mb-2">Days</label>
                         <div className="flex gap-1.5">
                           {DAY_OPTIONS.map((d) => (
                             <button
                               key={d.key}
                               onClick={() => toggleDay(d.key)}
-                              className={`w-9 h-9 rounded-lg text-sm font-medium transition ${
+                              className={`w-9 h-9 rounded-sm text-sm font-medium transition ${
                                 editDays.includes(d.key)
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
+                                  ? 'bg-[#B08D57] text-[#080604]'
+                                  : 'bg-[#1c1a17] text-[#F5EFE0]/60 hover:bg-[#1c1a17]/80'
                               }`}
                               title={DAY_LABELS[d.key]}
                             >
@@ -499,20 +492,20 @@ export default function DashboardPage() {
 
                       {/* Delivery email */}
                       <div>
-                        <label className="text-xs text-slate-400 font-medium block mb-2">Delivery email</label>
+                        <label className="text-xs text-[#F5EFE0]/60 font-medium block mb-2">Delivery email</label>
                         <input
                           type="email"
                           value={editEmail}
                           onChange={(e) => setEditEmail(e.target.value)}
                           placeholder={accountEmail || 'you@example.com'}
-                          className="w-full sm:w-80 bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                          className="w-full sm:w-80 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-1.5 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
                         />
                       </div>
 
                       <button
                         onClick={() => handleUpdateSubscription(sub.id)}
                         disabled={saving || editWindows.length === 0 || editDays.length === 0}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition disabled:opacity-50"
+                        className="px-4 py-2 bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] text-sm font-medium rounded transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
                       >
                         {saving ? 'Saving...' : 'Save Changes'}
                       </button>
@@ -541,24 +534,24 @@ export default function DashboardPage() {
               {created.map((nl) => (
                 <div
                   key={nl.id}
-                  className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5 hover:border-slate-600/60 transition-all duration-200"
+                  className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 hover:border-[rgba(176,141,87,0.5)] transition-all duration-200"
                 >
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-3 mb-1">
-                        <Link href={`/newsletter/${nl.id}`} className="font-semibold hover:text-blue-400 transition truncate">
+                        <Link href={`/newsletter/${nl.id}`} className="font-semibold hover:text-[#B08D57] transition truncate">
                           {nl.name}
                         </Link>
                         {!nl.is_public && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-400 shrink-0">
+                          <span className="text-xs px-2 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45 shrink-0">
                             Private
                           </span>
                         )}
                       </div>
                       {nl.description && (
-                        <p className="text-sm text-slate-400 truncate mb-2">{nl.description}</p>
+                        <p className="text-sm text-[#F5EFE0]/60 truncate mb-2">{nl.description}</p>
                       )}
-                      <div className="flex items-center gap-4 text-xs text-slate-500">
+                      <div className="flex items-center gap-4 text-xs text-[#F5EFE0]/45">
                         <span>{nl.subscriber_count} subscriber{nl.subscriber_count !== 1 ? 's' : ''}</span>
                         <span>·</span>
                         <span>~{nl.credit_cost || 5} credits/run (owner cost)</span>
@@ -568,7 +561,7 @@ export default function DashboardPage() {
                     </div>
                     <Link
                       href={`/newsletter/${nl.id}/edit`}
-                      className="text-xs px-3 py-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 transition shrink-0 ml-4"
+                      className="text-xs px-3 py-1.5 rounded-sm bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/80 transition shrink-0 ml-4"
                     >
                       Edit
                     </Link>
@@ -590,23 +583,23 @@ export default function DashboardPage() {
           ) : (
             <div className="space-y-3">
               {runs.map((run) => (
-                <div key={run.id} className="bg-slate-800/30 border border-slate-700/40 rounded-2xl overflow-hidden">
+                <div key={run.id} className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
                   <button
                     onClick={() => setExpandedRunId(expandedRunId === run.id ? null : run.id)}
-                    className="w-full flex items-center justify-between p-5 hover:bg-slate-800/50 transition text-left"
+                    className="w-full flex items-center justify-between p-5 hover:bg-[#1c1a17] transition text-left"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-3 mb-1">
-                        <h3 className="font-semibold text-white truncate">
+                        <h3 className="font-semibold text-[#F5EFE0] truncate">
                           {run.subject || 'Untitled issue'}
                         </h3>
                         {run.newsletter_name && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-600/15 text-blue-400 font-medium shrink-0">
+                          <span className="text-xs px-2 py-0.5 rounded-sm bg-[#B08D57]/15 text-[#B08D57] font-medium shrink-0">
                             {run.newsletter_name}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-[#F5EFE0]/45">
                         {new Date(run.generated_at).toLocaleDateString('en-US', {
                           weekday: 'short', month: 'short', day: 'numeric',
                           year: 'numeric', hour: 'numeric', minute: '2-digit',
@@ -614,7 +607,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <svg
-                      className={`w-5 h-5 text-slate-500 transition-transform shrink-0 ml-4 ${expandedRunId === run.id ? 'rotate-180' : ''}`}
+                      className={`w-5 h-5 text-[#F5EFE0]/45 transition-transform shrink-0 ml-4 ${expandedRunId === run.id ? 'rotate-180' : ''}`}
                       fill="none" viewBox="0 0 24 24" stroke="currentColor"
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -622,9 +615,9 @@ export default function DashboardPage() {
                   </button>
 
                   {expandedRunId === run.id && (
-                    <div className="border-t border-slate-700/30 p-6">
+                    <div className="border-t border-[rgba(176,141,87,0.18)] p-6">
                       <div
-                        className="research-content prose prose-invert prose-sm max-w-none text-slate-300 leading-relaxed"
+                        className="research-content prose prose-invert prose-sm max-w-none text-[#F5EFE0]/80 leading-relaxed"
                         dangerouslySetInnerHTML={{ __html: markdownToHtml(run.content) }}
                       />
                     </div>
@@ -645,9 +638,9 @@ function LoadingSkeleton() {
   return (
     <div className="space-y-4">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-slate-800/30 border border-slate-700/30 rounded-2xl p-6 animate-pulse">
-          <div className="h-5 bg-slate-700 rounded w-1/3 mb-3" />
-          <div className="h-3 bg-slate-700/60 rounded w-2/3" />
+        <div key={i} className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-6 animate-pulse">
+          <div className="h-5 bg-[#1c1a17] rounded w-1/3 mb-3" />
+          <div className="h-3 bg-[#1c1a17]/60 rounded w-2/3" />
         </div>
       ))}
     </div>
@@ -668,18 +661,18 @@ function EmptyState({ icon, title, subtitle, actionLabel, actionHref }: {
   };
 
   return (
-    <div className="text-center py-16 border border-dashed border-slate-700/40 rounded-2xl">
-      <div className="w-14 h-14 rounded-2xl bg-slate-800/60 flex items-center justify-center mx-auto mb-4">
-        <svg className="w-7 h-7 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div className="text-center py-16 border border-dashed border-[rgba(176,141,87,0.28)] rounded">
+      <div className="w-14 h-14 rounded bg-[#141210] border border-[rgba(176,141,87,0.18)] flex items-center justify-center mx-auto mb-4">
+        <svg className="w-7 h-7 text-[#F5EFE0]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={iconPaths[icon] || iconPaths.mail} />
         </svg>
       </div>
-      <p className="text-slate-400 font-medium mb-2">{title}</p>
-      <p className="text-slate-500 text-sm mb-6">{subtitle}</p>
+      <p className="text-[#F5EFE0]/60 font-medium mb-2">{title}</p>
+      <p className="text-[#F5EFE0]/45 text-sm mb-6">{subtitle}</p>
       {actionLabel && actionHref && (
         <Link
           href={actionHref}
-          className="inline-block bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-medium transition shadow-lg shadow-blue-600/20"
+          className="inline-block bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] px-6 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition"
         >
           {actionLabel}
         </Link>

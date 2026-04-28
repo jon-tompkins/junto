@@ -15,9 +15,6 @@ interface PromptTemplateOption {
   category: string | null;
 }
 
-// ============================================================
-// Source type for validation
-// ============================================================
 type SourceType = 'twitter' | 'youtube';
 
 interface SourceEntry {
@@ -29,9 +26,6 @@ interface SourceEntry {
   error?: string;
 }
 
-// ============================================================
-// Canned Templates
-// ============================================================
 const TEMPLATES = [
   {
     id: 'crypto-brief',
@@ -112,9 +106,6 @@ STYLE: Institutional quality. Reference data points and historical context. Cite
   },
 ];
 
-// ============================================================
-// Wizard Steps
-// ============================================================
 type WizardStep = 'template' | 'details' | 'sources' | 'schedule';
 
 function CreateNewsletterPageInner() {
@@ -126,12 +117,10 @@ function CreateNewsletterPageInner() {
   const [error, setError] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // Junto preselection
   const juntoIdParam = searchParams?.get('junto_id') || null;
   const [juntoId, setJuntoId] = useState<string | null>(juntoIdParam);
   const [juntoName, setJuntoName] = useState<string | null>(null);
 
-  // Prompt templates from DB
   const [promptTemplates, setPromptTemplates] = useState<PromptTemplateOption[]>([]);
   const [promptTemplateId, setPromptTemplateId] = useState<string | null>(null);
 
@@ -142,7 +131,6 @@ function CreateNewsletterPageInner() {
       .catch(() => {});
   }, []);
 
-  // Form state
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -157,7 +145,6 @@ function CreateNewsletterPageInner() {
   const [isPublic, setIsPublic] = useState(true);
   const [sendDays, setSendDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
 
-  // Pre-populate sources from a junto if junto_id was provided
   useEffect(() => {
     if (!juntoIdParam) return;
     fetch(`/api/juntos/${juntoIdParam}`)
@@ -182,7 +169,6 @@ function CreateNewsletterPageInner() {
       .catch(() => {});
   }, [juntoIdParam]);
 
-  // Validate a single source via API
   const validateSource = useCallback(async (handle: string, type: SourceType = 'twitter') => {
     setSources((prev) =>
       prev.map((s) => (s.handle === handle ? { ...s, status: 'validating' as const } : s))
@@ -228,7 +214,6 @@ function CreateNewsletterPageInner() {
           status: 'pending' as const,
         }));
         setSources(newSources);
-        // Auto-validate template sources
         newSources.forEach((s) => {
           setTimeout(() => validateSource(s.handle), 0);
         });
@@ -263,7 +248,6 @@ function CreateNewsletterPageInner() {
       const entry: SourceEntry = { handle: s, type: sourceType, status: 'pending' };
       setSources((prev) => [...prev, entry]);
       setSourceInput('');
-      // Trigger validation
       validateSource(s, sourceType);
     } else {
       setSourceInput('');
@@ -319,7 +303,7 @@ function CreateNewsletterPageInner() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-3xl">
@@ -335,18 +319,18 @@ function CreateNewsletterPageInner() {
             return (
               <div key={s} className="flex items-center gap-2">
                 {i > 0 && (
-                  <div className={`w-8 h-px transition ${isCompleted ? 'bg-blue-600/60' : 'bg-slate-700'}`} />
+                  <div className={`w-8 h-px transition ${isCompleted ? 'bg-[#B08D57]/60' : 'bg-[rgba(176,141,87,0.18)]'}`} />
                 )}
                 <button
                   onClick={() => {
                     if (s === 'template' || step !== 'template') setStep(s);
                   }}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition ${
+                  className={`px-3.5 py-1.5 rounded-sm text-xs font-medium transition ${
                     isCurrent
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                      ? 'bg-[#B08D57] text-[#080604] font-[var(--font-oswald)] uppercase tracking-wide'
                       : isCompleted
-                      ? 'bg-blue-600/15 text-blue-400 hover:bg-blue-600/25'
-                      : 'bg-slate-800/80 text-slate-500 hover:text-slate-300'
+                      ? 'bg-[#B08D57]/15 text-[#B08D57] hover:bg-[#B08D57]/25'
+                      : 'bg-[#141210] text-[#F5EFE0]/45 hover:text-[#F5EFE0]/80'
                   }`}
                 >
                   {i + 1}. {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -359,8 +343,8 @@ function CreateNewsletterPageInner() {
         {/* Step 1: Template Selection */}
         {step === 'template' && (
           <div>
-            <h1 className="text-3xl font-bold mb-2">Create a Dispatch</h1>
-            <p className="text-slate-400 mb-8">
+            <h1 className="text-3xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Create a Dispatch</h1>
+            <p className="text-[#F5EFE0]/60 mb-8">
               Start with a template or build from scratch.
             </p>
             <div className="grid md:grid-cols-2 gap-4 mb-6">
@@ -368,13 +352,13 @@ function CreateNewsletterPageInner() {
                 <button
                   key={t.id}
                   onClick={() => selectTemplate(t.id)}
-                  className="text-left bg-slate-800/30 hover:bg-slate-800/60 border border-slate-700/40 hover:border-blue-500/40 rounded-2xl p-6 transition-all duration-200 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5 group"
+                  className="text-left bg-[#141210] hover:bg-[#1c1a17] border border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.5)] rounded p-6 transition-all duration-200 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5 group"
                 >
-                  <h3 className="font-semibold mb-1.5 group-hover:text-blue-400 transition">{t.name}</h3>
-                  <p className="text-sm text-slate-400 mb-3 leading-relaxed">{t.description}</p>
+                  <h3 className="font-semibold mb-1.5 group-hover:text-[#B08D57] transition">{t.name}</h3>
+                  <p className="text-sm text-[#F5EFE0]/60 mb-3 leading-relaxed">{t.description}</p>
                   <div className="flex gap-1.5 flex-wrap">
                     {t.labels.map((l) => (
-                      <span key={l} className="text-xs px-2 py-0.5 rounded-full bg-slate-700/40 text-slate-400">
+                      <span key={l} className="text-xs px-2 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/60">
                         {l}
                       </span>
                     ))}
@@ -384,7 +368,7 @@ function CreateNewsletterPageInner() {
             </div>
             <button
               onClick={() => selectTemplate(null)}
-              className="w-full text-center border border-dashed border-slate-700/50 hover:border-slate-500 rounded-2xl p-6 text-slate-400 hover:text-white transition"
+              className="w-full text-center border border-dashed border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.5)] rounded p-6 text-[#F5EFE0]/60 hover:text-[#F5EFE0] transition"
             >
               <span className="text-lg">+</span> Start from Scratch
             </button>
@@ -394,30 +378,30 @@ function CreateNewsletterPageInner() {
         {/* Step 2: Details */}
         {step === 'details' && (
           <div>
-            <h2 className="text-2xl font-bold mb-6">Dispatch Details</h2>
+            <h2 className="text-2xl font-bold mb-6 font-[var(--font-oswald)] uppercase tracking-wide">Dispatch Details</h2>
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Name</label>
+                <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-1.5">Name</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="My Dispatch"
-                  className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition"
+                  className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Description</label>
+                <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-1.5">Description</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What does this dispatch cover?"
                   rows={2}
-                  className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 resize-none transition"
+                  className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 resize-none transition"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-2">
                   Synthesis Style
                 </label>
                 <div className="grid grid-cols-2 gap-2 mb-3">
@@ -426,27 +410,27 @@ function CreateNewsletterPageInner() {
                       key={t.id}
                       type="button"
                       onClick={() => { setPromptTemplateId(t.id); setPrompt(''); }}
-                      className={`p-3 rounded-xl border text-left transition-all ${
+                      className={`p-3 rounded border text-left transition-all ${
                         promptTemplateId === t.id
-                          ? 'border-blue-500/60 bg-blue-600/10'
-                          : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
+                          ? 'border-[#B08D57]/60 bg-[#B08D57]/10'
+                          : 'border-[rgba(176,141,87,0.18)] bg-[#141210] hover:border-[rgba(176,141,87,0.28)]'
                       }`}
                     >
-                      <div className="text-sm font-medium">{t.name}</div>
-                      <div className="text-xs text-slate-400 mt-0.5 line-clamp-2">{t.description}</div>
+                      <div className="text-sm font-medium text-[#F5EFE0]">{t.name}</div>
+                      <div className="text-xs text-[#F5EFE0]/60 mt-0.5 line-clamp-2">{t.description}</div>
                     </button>
                   ))}
                   <button
                     type="button"
                     onClick={() => { setPromptTemplateId(null); }}
-                    className={`p-3 rounded-xl border text-left transition-all ${
+                    className={`p-3 rounded border text-left transition-all ${
                       promptTemplateId === null
-                        ? 'border-blue-500/60 bg-blue-600/10'
-                        : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
+                        ? 'border-[#B08D57]/60 bg-[#B08D57]/10'
+                        : 'border-[rgba(176,141,87,0.18)] bg-[#141210] hover:border-[rgba(176,141,87,0.28)]'
                     }`}
                   >
-                    <div className="text-sm font-medium">Custom</div>
-                    <div className="text-xs text-slate-400 mt-0.5">Write your own synthesis prompt</div>
+                    <div className="text-sm font-medium text-[#F5EFE0]">Custom</div>
+                    <div className="text-xs text-[#F5EFE0]/60 mt-0.5">Write your own synthesis prompt</div>
                   </button>
                 </div>
                 {promptTemplateId === null && (
@@ -455,32 +439,32 @@ function CreateNewsletterPageInner() {
                     onChange={(e) => setPrompt(e.target.value)}
                     placeholder="Describe what the AI should synthesize and how..."
                     rows={10}
-                    className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 resize-y font-mono text-sm transition"
+                    className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 resize-y font-mono text-sm transition"
                   />
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                  Secondary Prompt <span className="text-slate-500 font-normal">(optional — watchlists, special instructions)</span>
+                <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-1.5">
+                  Secondary Prompt <span className="text-[#F5EFE0]/45 font-normal">(optional — watchlists, special instructions)</span>
                 </label>
                 <textarea
                   value={secondaryPrompt}
                   onChange={(e) => setSecondaryPrompt(e.target.value)}
                   placeholder="E.g., Watch these tickers: BTC, ETH, SOL..."
                   rows={3}
-                  className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 resize-none font-mono text-sm transition"
+                  className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 resize-none font-mono text-sm transition"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Labels</label>
+                <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-1.5">Labels</label>
                 <div className="flex gap-2 mb-2 flex-wrap">
                   {labels.map((l) => (
                     <span
                       key={l}
-                      className="text-xs px-2.5 py-1 rounded-full bg-blue-600/20 text-blue-400 flex items-center gap-1"
+                      className="text-xs px-2.5 py-1 rounded-sm bg-[#B08D57]/20 text-[#B08D57] flex items-center gap-1"
                     >
                       {l}
-                      <button onClick={() => setLabels(labels.filter((x) => x !== l))} className="hover:text-white">
+                      <button onClick={() => setLabels(labels.filter((x) => x !== l))} className="hover:text-[#F5EFE0]">
                         &times;
                       </button>
                     </span>
@@ -493,22 +477,22 @@ function CreateNewsletterPageInner() {
                     onChange={(e) => setLabelInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addLabel())}
                     placeholder="Add label..."
-                    className="flex-1 bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition"
+                    className="flex-1 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition"
                   />
-                  <button onClick={addLabel} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-sm font-medium transition">
+                  <button onClick={addLabel} className="px-4 py-2 bg-[#1c1a17] hover:bg-[#1c1a17]/80 rounded text-sm font-medium transition text-[#F5EFE0]">
                     Add
                   </button>
                 </div>
               </div>
             </div>
             <div className="flex justify-between mt-8">
-              <button onClick={() => setStep('template')} className="text-slate-400 hover:text-white text-sm transition">
+              <button onClick={() => setStep('template')} className="text-[#F5EFE0]/60 hover:text-[#F5EFE0] text-sm transition">
                 &larr; Back
               </button>
               <button
                 onClick={() => setStep('sources')}
                 disabled={!name || (!prompt && !promptTemplateId)}
-                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-xl font-medium transition shadow-lg shadow-blue-600/20"
+                className="bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 disabled:cursor-not-allowed text-[#080604] px-6 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition"
               >
                 Next: Sources
               </button>
@@ -519,19 +503,19 @@ function CreateNewsletterPageInner() {
         {/* Step 3: Sources */}
         {step === 'sources' && (
           <div>
-            <h2 className="text-2xl font-bold mb-2">Select Sources</h2>
-            <p className="text-slate-400 mb-6 text-sm">
+            <h2 className="text-2xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Select Sources</h2>
+            <p className="text-[#F5EFE0]/60 mb-6 text-sm">
               Add Twitter/X handles or YouTube channels to pull from. Each source is validated in real-time.
             </p>
             {juntoId && juntoName && (
-              <div className="mb-4 flex items-center justify-between gap-3 bg-emerald-900/20 border border-emerald-700/40 rounded-xl px-4 py-2.5">
-                <span className="text-sm text-emerald-300">
+              <div className="mb-4 flex items-center justify-between gap-3 bg-[#B08D57]/10 border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5">
+                <span className="text-sm text-[#B08D57]">
                   Sources from: <span className="font-semibold">{juntoName}</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => { setJuntoId(null); setJuntoName(null); }}
-                  className="text-xs text-emerald-400 hover:text-emerald-200 transition"
+                  className="text-xs text-[#B08D57] hover:text-[#B08D57]/80 transition"
                 >
                   Unlink
                 </button>
@@ -541,20 +525,20 @@ function CreateNewsletterPageInner() {
             <div className="flex gap-2 mb-3">
               <button
                 onClick={() => { setSourceType('twitter'); setSourceInput(''); }}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${
+                className={`px-4 py-1.5 rounded text-sm font-medium transition ${
                   sourceType === 'twitter'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-800/60 text-slate-400 hover:text-white border border-slate-700/50'
+                    ? 'bg-[#B08D57] text-[#080604]'
+                    : 'bg-[#141210] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
                 }`}
               >
                 Twitter
               </button>
               <button
                 onClick={() => { setSourceType('youtube'); setSourceInput(''); }}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${
+                className={`px-4 py-1.5 rounded text-sm font-medium transition ${
                   sourceType === 'youtube'
-                    ? 'bg-red-600 text-white'
-                    : 'bg-slate-800/60 text-slate-400 hover:text-white border border-slate-700/50'
+                    ? 'bg-[#e8453c] text-[#F5EFE0]'
+                    : 'bg-[#141210] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
                 }`}
               >
                 YouTube
@@ -563,7 +547,7 @@ function CreateNewsletterPageInner() {
             <div className="flex gap-2 mb-4">
               <div className="relative flex-1">
                 {sourceType === 'twitter' && (
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">@</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#F5EFE0]/45 text-sm">@</span>
                 )}
                 <input
                   type="text"
@@ -571,85 +555,82 @@ function CreateNewsletterPageInner() {
                   onChange={(e) => sourceType === 'twitter' ? setSourceInput(e.target.value.replace('@', '')) : setSourceInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSource())}
                   placeholder={sourceType === 'twitter' ? 'twitter_handle' : 'https://www.youtube.com/@ChannelName'}
-                  className={`w-full bg-slate-800/80 border border-slate-700 rounded-xl ${sourceType === 'twitter' ? 'pl-8' : 'pl-4'} pr-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition`}
+                  className={`w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded ${sourceType === 'twitter' ? 'pl-8' : 'pl-4'} pr-4 py-2.5 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition`}
                 />
               </div>
               <button
                 onClick={addSource}
                 disabled={!sourceInput.trim()}
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 rounded-xl text-sm font-medium transition"
+                className="px-5 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:bg-[#141210] disabled:text-[#F5EFE0]/30 rounded text-sm font-medium transition text-[#080604]"
               >
                 Add
               </button>
             </div>
             {sources.length === 0 ? (
-              <div className="text-center py-10 border border-dashed border-slate-700/50 rounded-xl">
-                <p className="text-sm text-slate-500">No sources added yet.</p>
-                <p className="text-xs text-slate-600 mt-1">Add Twitter handles or YouTube channels above to get started.</p>
+              <div className="text-center py-10 border border-dashed border-[rgba(176,141,87,0.28)] rounded">
+                <p className="text-sm text-[#F5EFE0]/45">No sources added yet.</p>
+                <p className="text-xs text-[#F5EFE0]/30 mt-1">Add Twitter handles or YouTube channels above to get started.</p>
               </div>
             ) : (
               <div className="space-y-2 mb-6">
                 {sources.map((source) => (
                   <div
                     key={source.handle}
-                    className={`flex items-center justify-between px-4 py-3 rounded-xl border transition ${
+                    className={`flex items-center justify-between px-4 py-3 rounded border transition ${
                       source.status === 'valid'
-                        ? 'bg-emerald-950/20 border-emerald-800/30'
+                        ? 'bg-[#3ecf6a]/5 border-[#3ecf6a]/30'
                         : source.status === 'invalid'
-                        ? 'bg-red-950/20 border-red-800/30'
-                        : source.status === 'validating'
-                        ? 'bg-slate-800/40 border-slate-700/50'
-                        : 'bg-slate-800/40 border-slate-700/50'
+                        ? 'bg-[#e8453c]/5 border-[#e8453c]/30'
+                        : 'bg-[#141210] border-[rgba(176,141,87,0.18)]'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      {/* Status indicator */}
                       <div className="shrink-0">
                         {source.status === 'validating' && (
-                          <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                          <div className="w-5 h-5 border-2 border-[#B08D57]/30 border-t-[#B08D57] rounded animate-spin" />
                         )}
                         {source.status === 'valid' && (
-                          <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg className="w-5 h-5 text-[#3ecf6a]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         )}
                         {source.status === 'invalid' && (
-                          <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg className="w-5 h-5 text-[#e8453c]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         )}
                         {source.status === 'pending' && (
-                          <div className="w-5 h-5 rounded-full bg-slate-700" />
+                          <div className="w-5 h-5 rounded bg-[#1c1a17]" />
                         )}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-xs" title={source.type === 'youtube' ? 'YouTube' : 'Twitter'}>
-                            {source.type === 'youtube' ? '\u25B6\uFE0F' : '\uD83D\uDC26'}
+                            {source.type === 'youtube' ? '▶️' : '🐦'}
                           </span>
                           <span className="text-sm font-medium truncate">
                             {source.type === 'youtube' ? source.handle : `@${source.handle}`}
                           </span>
                           {source.name && source.name !== source.handle && (
-                            <span className="text-xs text-slate-400 truncate">{source.name}</span>
+                            <span className="text-xs text-[#F5EFE0]/60 truncate">{source.name}</span>
                           )}
                         </div>
                         {source.status === 'valid' && source.followers !== undefined && (
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-[#F5EFE0]/45">
                             {source.followers.toLocaleString()} followers
                           </span>
                         )}
                         {source.status === 'invalid' && (
-                          <span className="text-xs text-red-400">{source.error || 'Handle not found'}</span>
+                          <span className="text-xs text-[#e8453c]">{source.error || 'Handle not found'}</span>
                         )}
                         {source.status === 'validating' && (
-                          <span className="text-xs text-slate-500">Validating...</span>
+                          <span className="text-xs text-[#F5EFE0]/45">Validating...</span>
                         )}
                       </div>
                     </div>
                     <button
                       onClick={() => setSources(sources.filter((s) => s.handle !== source.handle))}
-                      className="text-slate-500 hover:text-red-400 text-xs ml-3 shrink-0 transition"
+                      className="text-[#F5EFE0]/45 hover:text-[#e8453c] text-xs ml-3 shrink-0 transition"
                     >
                       Remove
                     </button>
@@ -658,12 +639,12 @@ function CreateNewsletterPageInner() {
               </div>
             )}
             <div className="flex justify-between mt-8">
-              <button onClick={() => setStep('details')} className="text-slate-400 hover:text-white text-sm transition">
+              <button onClick={() => setStep('details')} className="text-[#F5EFE0]/60 hover:text-[#F5EFE0] text-sm transition">
                 &larr; Back
               </button>
               <button
                 onClick={() => setStep('schedule')}
-                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-medium transition"
+                className="bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] px-6 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition"
               >
                 Next: Schedule
               </button>
@@ -674,10 +655,10 @@ function CreateNewsletterPageInner() {
         {/* Step 4: Schedule + Create */}
         {step === 'schedule' && (
           <div>
-            <h2 className="text-2xl font-bold mb-6">Schedule & Visibility</h2>
+            <h2 className="text-2xl font-bold mb-6 font-[var(--font-oswald)] uppercase tracking-wide">Schedule & Visibility</h2>
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-3">Delivery Cadence</label>
+                <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-3">Delivery Cadence</label>
                 <div className="grid grid-cols-3 gap-3">
                   {[
                     { value: 'daily', label: 'Daily', desc: 'Once per day' },
@@ -687,44 +668,44 @@ function CreateNewsletterPageInner() {
                     <button
                       key={opt.value}
                       onClick={() => setCadence(opt.value)}
-                      className={`p-4 rounded-2xl border text-left transition-all duration-200 ${
+                      className={`p-4 rounded border text-left transition-all duration-200 ${
                         cadence === opt.value
-                          ? 'border-blue-500/60 bg-blue-600/10 shadow-lg shadow-blue-600/10'
-                          : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
+                          ? 'border-[#B08D57]/60 bg-[#B08D57]/10'
+                          : 'border-[rgba(176,141,87,0.18)] bg-[#141210] hover:border-[rgba(176,141,87,0.28)]'
                       }`}
                     >
-                      <div className="font-medium text-sm">{opt.label}</div>
-                      <div className="text-xs text-slate-400 mt-0.5">{opt.desc}</div>
+                      <div className="font-medium text-sm text-[#F5EFE0]">{opt.label}</div>
+                      <div className="text-xs text-[#F5EFE0]/60 mt-0.5">{opt.desc}</div>
                     </button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-3">Visibility</label>
+                <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-3">Visibility</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setIsPublic(true)}
-                    className={`p-4 rounded-2xl border text-left transition-all duration-200 ${
+                    className={`p-4 rounded border text-left transition-all duration-200 ${
                       isPublic
-                        ? 'border-blue-500/60 bg-blue-600/10 shadow-lg shadow-blue-600/10'
-                        : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
+                        ? 'border-[#B08D57]/60 bg-[#B08D57]/10'
+                        : 'border-[rgba(176,141,87,0.18)] bg-[#141210] hover:border-[rgba(176,141,87,0.28)]'
                     }`}
                   >
-                    <div className="font-medium text-sm">Public</div>
-                    <div className="text-xs text-slate-400 mt-0.5">
+                    <div className="font-medium text-sm text-[#F5EFE0]">Public</div>
+                    <div className="text-xs text-[#F5EFE0]/60 mt-0.5">
                       Anyone can discover and subscribe. You earn 50% of subscriber credits.
                     </div>
                   </button>
                   <button
                     onClick={() => setIsPublic(false)}
-                    className={`p-4 rounded-2xl border text-left transition-all duration-200 ${
+                    className={`p-4 rounded border text-left transition-all duration-200 ${
                       !isPublic
-                        ? 'border-blue-500/60 bg-blue-600/10 shadow-lg shadow-blue-600/10'
-                        : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
+                        ? 'border-[#B08D57]/60 bg-[#B08D57]/10'
+                        : 'border-[rgba(176,141,87,0.18)] bg-[#141210] hover:border-[rgba(176,141,87,0.28)]'
                     }`}
                   >
-                    <div className="font-medium text-sm">Private</div>
-                    <div className="text-xs text-slate-400 mt-0.5">
+                    <div className="font-medium text-sm text-[#F5EFE0]">Private</div>
+                    <div className="text-xs text-[#F5EFE0]/60 mt-0.5">
                       Only you can see and use it. Personal intelligence brief.
                     </div>
                   </button>
@@ -732,9 +713,9 @@ function CreateNewsletterPageInner() {
               </div>
             </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-3">Generation Days</label>
-                <p className="text-xs text-slate-500 mb-3">Dispatch only generates on selected days.</p>
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-3">Generation Days</label>
+                <p className="text-xs text-[#F5EFE0]/45 mb-3">Dispatch only generates on selected days.</p>
                 <div className="flex gap-2">
                   {[
                     { key: 'mon', label: 'Mon' },
@@ -751,10 +732,10 @@ function CreateNewsletterPageInner() {
                       onClick={() => setSendDays(prev =>
                         prev.includes(d.key) ? prev.filter(x => x !== d.key) : [...prev, d.key]
                       )}
-                      className={`px-3 py-2 rounded-xl text-sm font-medium transition ${
+                      className={`px-3 py-2 rounded text-sm font-medium transition ${
                         sendDays.includes(d.key)
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-800/30 text-slate-400 hover:bg-slate-700 border border-slate-700/50'
+                          ? 'bg-[#B08D57] text-[#080604]'
+                          : 'bg-[#141210] text-[#F5EFE0]/60 hover:bg-[#1c1a17] border border-[rgba(176,141,87,0.18)]'
                       }`}
                     >
                       {d.label}
@@ -763,24 +744,24 @@ function CreateNewsletterPageInner() {
                 </div>
               </div>
 
-            <p className="text-xs text-slate-400 mb-4 mt-6">
+            <p className="text-xs text-[#F5EFE0]/60 mb-4 mt-6">
               Owner cost: {calculateOwnerCreditCost(sources.filter(s => s.status !== 'invalid').length)} credits/send
               {' '}• Subscriber cost: 2 credits/send
             </p>
             {error && (
-              <div className="mt-6 p-3 bg-red-600/10 border border-red-600/30 rounded-lg text-sm text-red-400">
+              <div className="mt-6 p-3 bg-[#e8453c]/10 border border-[#e8453c]/30 rounded text-sm text-[#e8453c]">
                 {error}
               </div>
             )}
 
             <div className="flex justify-between mt-8">
-              <button onClick={() => setStep('sources')} className="text-slate-400 hover:text-white text-sm transition">
+              <button onClick={() => setStep('sources')} className="text-[#F5EFE0]/60 hover:text-[#F5EFE0] text-sm transition">
                 &larr; Back
               </button>
               <button
                 onClick={handleCreate}
                 disabled={creating || !name || (!prompt && !promptTemplateId)}
-                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-semibold transition shadow-lg shadow-blue-600/20"
+                className="bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 disabled:cursor-not-allowed text-[#080604] px-8 py-3 rounded font-semibold transition font-[var(--font-oswald)] uppercase tracking-wide"
               >
                 {creating ? 'Creating...' : 'Create Dispatch'}
               </button>
@@ -801,12 +782,12 @@ function CreateNewsletterPageInner() {
 export default function CreateNewsletterPage() {
   return (
     <Suspense fallback={
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
         <TopNav />
         <div className="container mx-auto px-4 py-16 max-w-3xl">
           <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-slate-700 rounded w-64" />
-            <div className="h-4 bg-slate-700/60 rounded w-96" />
+            <div className="h-8 bg-[#141210] rounded w-64" />
+            <div className="h-4 bg-[#141210]/60 rounded w-96" />
           </div>
         </div>
       </main>

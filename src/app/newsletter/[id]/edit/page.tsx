@@ -243,7 +243,6 @@ export default function EditNewsletterPage() {
     setNewSource('');
 
     try {
-      // Create source via newsletter API — this will getOrCreate
       const res = await fetch(`/api/v2/newsletters/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -253,7 +252,6 @@ export default function EditNewsletterPage() {
         }),
       });
       if (res.ok) {
-        // Refresh sources
         const nlRes = await fetch(`/api/v2/newsletters/${id}`);
         const data = await nlRes.json();
         setSources(data.newsletter.sources?.map((s: any) => ({
@@ -283,80 +281,80 @@ export default function EditNewsletterPage() {
 
   if (loading || authStatus === 'loading') {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white flex items-center justify-center">
-        <div className="animate-pulse text-slate-500">Loading...</div>
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0] flex items-center justify-center">
+        <div className="animate-pulse text-[#F5EFE0]/45">Loading...</div>
       </main>
     );
   }
 
   if (error && !newsletter) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col items-center justify-center gap-4">
-        <p className="text-red-400">{error}</p>
-        <Link href="/dashboard" className="text-blue-400 hover:text-blue-300 text-sm">&larr; Dashboard</Link>
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0] flex flex-col items-center justify-center gap-4">
+        <p className="text-[#e8453c]">{error}</p>
+        <Link href="/dashboard" className="text-[#B08D57] hover:text-[#B08D57]/80 text-sm">&larr; Dashboard</Link>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <h1 className="text-2xl font-bold mb-8">Edit Dispatch</h1>
+        <h1 className="text-2xl font-bold mb-8 font-[var(--font-oswald)] uppercase tracking-wide">Edit Dispatch</h1>
 
         <div className="space-y-6">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Name</label>
+            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Name</label>
             <input
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:border-blue-500 focus:outline-none transition"
+              className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-3 text-[#F5EFE0] focus:border-[#B08D57] focus:outline-none transition"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Description</label>
+            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Description</label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={3}
-              className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:border-blue-500 focus:outline-none transition resize-none"
+              className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-3 text-[#F5EFE0] focus:border-[#B08D57] focus:outline-none transition resize-none"
             />
           </div>
 
           {/* Prompt */}
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Synthesis Style</label>
+            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Synthesis Style</label>
             <div className="grid grid-cols-2 gap-2 mb-3">
               {promptTemplates.map((t) => (
                 <button
                   key={t.id}
                   type="button"
                   onClick={() => { setPromptTemplateId(t.id); setPrompt(''); }}
-                  className={`p-3 rounded-xl border text-left transition-all ${
+                  className={`p-3 rounded border text-left transition-all ${
                     promptTemplateId === t.id
-                      ? 'border-blue-500/60 bg-blue-600/10'
-                      : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
+                      ? 'border-[#B08D57]/60 bg-[#B08D57]/10'
+                      : 'border-[rgba(176,141,87,0.18)] bg-[#141210] hover:border-[rgba(176,141,87,0.28)]'
                   }`}
                 >
-                  <div className="text-sm font-medium text-white">{t.name}</div>
-                  <div className="text-xs text-slate-400 mt-0.5 line-clamp-2">{t.description}</div>
+                  <div className="text-sm font-medium text-[#F5EFE0]">{t.name}</div>
+                  <div className="text-xs text-[#F5EFE0]/60 mt-0.5 line-clamp-2">{t.description}</div>
                 </button>
               ))}
               <button
                 type="button"
                 onClick={() => setPromptTemplateId(null)}
-                className={`p-3 rounded-xl border text-left transition-all ${
+                className={`p-3 rounded border text-left transition-all ${
                   promptTemplateId === null
-                    ? 'border-blue-500/60 bg-blue-600/10'
-                    : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
+                    ? 'border-[#B08D57]/60 bg-[#B08D57]/10'
+                    : 'border-[rgba(176,141,87,0.18)] bg-[#141210] hover:border-[rgba(176,141,87,0.28)]'
                 }`}
               >
-                <div className="text-sm font-medium text-white">Custom</div>
-                <div className="text-xs text-slate-400 mt-0.5">Write your own synthesis prompt</div>
+                <div className="text-sm font-medium text-[#F5EFE0]">Custom</div>
+                <div className="text-xs text-[#F5EFE0]/60 mt-0.5">Write your own synthesis prompt</div>
               </button>
             </div>
             {promptTemplateId === null && (
@@ -365,41 +363,41 @@ export default function EditNewsletterPage() {
                 onChange={e => setPrompt(e.target.value)}
                 rows={8}
                 placeholder="Write a custom system prompt to control tone, format, and focus..."
-                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white font-mono text-sm focus:border-blue-500 focus:outline-none transition resize-none"
+                className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-3 text-[#F5EFE0] font-mono text-sm focus:border-[#B08D57] focus:outline-none transition resize-none"
               />
             )}
           </div>
 
           {/* Secondary Prompt */}
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Secondary Prompt <span className="text-slate-600">(optional)</span></label>
+            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Secondary Prompt <span className="text-[#F5EFE0]/30">(optional)</span></label>
             <textarea
               value={secondaryPrompt}
               onChange={e => setSecondaryPrompt(e.target.value)}
               rows={4}
-              className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white font-mono text-sm focus:border-blue-500 focus:outline-none transition resize-none"
+              className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-3 text-[#F5EFE0] font-mono text-sm focus:border-[#B08D57] focus:outline-none transition resize-none"
             />
           </div>
 
           {/* Labels */}
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Labels <span className="text-slate-600">(comma separated)</span></label>
+            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Labels <span className="text-[#F5EFE0]/30">(comma separated)</span></label>
             <input
               value={labelsStr}
               onChange={e => setLabelsStr(e.target.value)}
               placeholder="crypto, defi, bitcoin"
-              className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:border-blue-500 focus:outline-none transition"
+              className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-3 text-[#F5EFE0] focus:border-[#B08D57] focus:outline-none transition"
             />
           </div>
 
           {/* Cadence + Visibility */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-2">Cadence</label>
+              <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Cadence</label>
               <select
                 value={cadence}
                 onChange={e => setCadence(e.target.value)}
-                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:border-blue-500 focus:outline-none transition"
+                className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-3 text-[#F5EFE0] focus:border-[#B08D57] focus:outline-none transition"
               >
                 {Object.entries(CADENCE_LABELS).map(([val, label]) => (
                   <option key={val} value={val}>{label}</option>
@@ -407,11 +405,11 @@ export default function EditNewsletterPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-2">Visibility</label>
+              <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Visibility</label>
               <select
                 value={isPublic ? 'public' : 'private'}
                 onChange={e => setIsPublic(e.target.value === 'public')}
-                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:border-blue-500 focus:outline-none transition"
+                className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-3 text-[#F5EFE0] focus:border-[#B08D57] focus:outline-none transition"
               >
                 <option value="public">Public</option>
                 <option value="private">Private</option>
@@ -421,9 +419,9 @@ export default function EditNewsletterPage() {
 
           {/* Send Days */}
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">
+            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">
               Generation Days
-              <span className="text-slate-600 font-normal ml-1">(newsletter generates on these days)</span>
+              <span className="text-[#F5EFE0]/30 font-normal ml-1">(newsletter generates on these days)</span>
             </label>
             <div className="flex gap-2">
               {[
@@ -441,10 +439,10 @@ export default function EditNewsletterPage() {
                   onClick={() => setSendDays(prev =>
                     prev.includes(d.key) ? prev.filter(x => x !== d.key) : [...prev, d.key]
                   )}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                  className={`px-3 py-2 rounded-sm text-sm font-medium transition ${
                     sendDays.includes(d.key)
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700 border border-slate-700/50'
+                      ? 'bg-[#B08D57] text-[#080604]'
+                      : 'bg-[#141210] text-[#F5EFE0]/60 hover:bg-[#1c1a17] border border-[rgba(176,141,87,0.18)]'
                   }`}
                 >
                   {d.label}
@@ -455,16 +453,16 @@ export default function EditNewsletterPage() {
 
           {/* Sources */}
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Sources</label>
+            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Sources</label>
             {/* Current sources list */}
             <div className="flex gap-2 flex-wrap mb-3">
               {sources.map(s => (
-                <span key={s.id} className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700/40 text-slate-300">
+                <span key={s.id} className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded bg-[#141210] border border-[rgba(176,141,87,0.18)] text-[#F5EFE0]/80">
                   <span className="text-xs" title={s.type === 'youtube' ? 'YouTube' : s.type === 'newsletter' ? 'Newsletter' : 'Twitter'}>
                     {s.type === 'youtube' ? '▶️' : s.type === 'newsletter' ? '✉️' : '🐦'}
                   </span>
                   {s.type === 'newsletter' ? (s.display_name || s.handle) : s.type === 'youtube' ? s.handle : `@${s.handle}`}
-                  <button onClick={() => removeSource(s.id)} className="text-slate-500 hover:text-red-400 transition">
+                  <button onClick={() => removeSource(s.id)} className="text-[#F5EFE0]/45 hover:text-[#e8453c] transition">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -476,20 +474,20 @@ export default function EditNewsletterPage() {
             <div className="flex gap-2 mb-3">
               <button
                 onClick={() => { setNewSourceType('twitter'); setNewSource(''); }}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
+                className={`px-3 py-1 rounded text-xs font-medium transition ${
                   newSourceType === 'twitter'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-800/60 text-slate-400 hover:text-white border border-slate-700/50'
+                    ? 'bg-[#B08D57] text-[#080604]'
+                    : 'bg-[#141210] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
                 }`}
               >
                 Twitter
               </button>
               <button
                 onClick={() => { setNewSourceType('youtube'); setNewSource(''); }}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
+                className={`px-3 py-1 rounded text-xs font-medium transition ${
                   newSourceType === 'youtube'
-                    ? 'bg-red-600 text-white'
-                    : 'bg-slate-800/60 text-slate-400 hover:text-white border border-slate-700/50'
+                    ? 'bg-[#e8453c] text-[#F5EFE0]'
+                    : 'bg-[#141210] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
                 }`}
               >
                 YouTube
@@ -500,10 +498,10 @@ export default function EditNewsletterPage() {
                   setNewSource('');
                   loadAvailableNewsletters();
                 }}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
+                className={`px-3 py-1 rounded text-xs font-medium transition ${
                   newSourceType === 'newsletter'
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-800/60 text-slate-400 hover:text-white border border-slate-700/50'
+                    ? 'bg-[#3ecf6a] text-[#080604]'
+                    : 'bg-[#141210] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
                 }`}
               >
                 Newsletters
@@ -518,11 +516,11 @@ export default function EditNewsletterPage() {
                   onChange={e => setNewSource(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && addSource()}
                   placeholder={newSourceType === 'twitter' ? '@handle' : 'https://www.youtube.com/@ChannelName'}
-                  className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-2.5 text-white text-sm focus:border-blue-500 focus:outline-none transition"
+                  className="flex-1 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] text-sm focus:border-[#B08D57] focus:outline-none transition"
                 />
                 <button
                   onClick={addSource}
-                  className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-sm rounded-xl transition"
+                  className="px-4 py-2.5 bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0] text-sm rounded transition"
                 >
                   Add
                 </button>
@@ -533,31 +531,31 @@ export default function EditNewsletterPage() {
             {newSourceType === 'newsletter' && (
               <div className="space-y-3">
                 {newslettersLoading && (
-                  <div className="text-slate-500 text-sm animate-pulse">Loading newsletters...</div>
+                  <div className="text-[#F5EFE0]/45 text-sm animate-pulse">Loading newsletters...</div>
                 )}
                 {!newslettersLoading && newslettersLoaded && availableNewsletters.length === 0 && (
-                  <div className="text-slate-500 text-sm">No newsletters available yet.</div>
+                  <div className="text-[#F5EFE0]/45 text-sm">No newsletters available yet.</div>
                 )}
                 {availableNewsletters.map(nl => {
                   const alreadyAdded = sources.some(s => s.type === 'newsletter' && s.handle === nl.slug);
                   return (
                     <div
                       key={nl.id}
-                      className="flex items-start justify-between gap-3 p-3 rounded-xl bg-slate-800/40 border border-slate-700/40"
+                      className="flex items-start justify-between gap-3 p-3 rounded bg-[#141210] border border-[rgba(176,141,87,0.18)]"
                     >
                       <div className="min-w-0">
-                        <div className="text-sm font-medium text-white">{nl.name}</div>
+                        <div className="text-sm font-medium text-[#F5EFE0]">{nl.name}</div>
                         {nl.description && (
-                          <div className="text-xs text-slate-400 mt-0.5 line-clamp-2">{nl.description}</div>
+                          <div className="text-xs text-[#F5EFE0]/60 mt-0.5 line-clamp-2">{nl.description}</div>
                         )}
                       </div>
                       <button
                         onClick={() => !alreadyAdded && addNewsletterSourceBySlug(nl.slug)}
                         disabled={alreadyAdded}
-                        className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                        className={`shrink-0 px-3 py-1.5 rounded text-xs font-medium transition ${
                           alreadyAdded
-                            ? 'bg-slate-700/50 text-slate-500 cursor-default'
-                            : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                            ? 'bg-[#1c1a17] text-[#F5EFE0]/45 cursor-default'
+                            : 'bg-[#3ecf6a] hover:bg-[#3ecf6a]/80 text-[#080604]'
                         }`}
                       >
                         {alreadyAdded ? 'Added' : 'Add'}
@@ -571,52 +569,52 @@ export default function EditNewsletterPage() {
                   {!showRequestForm && !requestSuccess && (
                     <button
                       onClick={() => setShowRequestForm(true)}
-                      className="text-sm text-slate-400 hover:text-white underline underline-offset-2 transition"
+                      className="text-sm text-[#F5EFE0]/60 hover:text-[#F5EFE0] underline underline-offset-2 transition"
                     >
                       Request a newsletter
                     </button>
                   )}
                   {requestSuccess && (
-                    <div className="p-3 rounded-xl bg-emerald-600/10 border border-emerald-500/30 text-emerald-400 text-sm">
+                    <div className="p-3 rounded bg-[#3ecf6a]/10 border border-[#3ecf6a]/30 text-[#3ecf6a] text-sm">
                       Request submitted &mdash; we&apos;ll review and add it soon.
                     </div>
                   )}
                   {showRequestForm && !requestSuccess && (
-                    <div className="space-y-2 p-3 rounded-xl bg-slate-800/40 border border-slate-700/40">
-                      <div className="text-xs font-medium text-slate-400 mb-1">Request a newsletter</div>
+                    <div className="space-y-2 p-3 rounded bg-[#141210] border border-[rgba(176,141,87,0.18)]">
+                      <div className="text-xs font-medium text-[#F5EFE0]/60 mb-1">Request a newsletter</div>
                       <input
                         value={requestName}
                         onChange={e => setRequestName(e.target.value)}
                         placeholder="Newsletter name *"
-                        className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none transition"
+                        className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-[#F5EFE0] text-sm focus:border-[#B08D57] focus:outline-none transition"
                       />
                       <input
                         value={requestUrl}
                         onChange={e => setRequestUrl(e.target.value)}
                         placeholder="URL (optional)"
-                        className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none transition"
+                        className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-[#F5EFE0] text-sm focus:border-[#B08D57] focus:outline-none transition"
                       />
                       <textarea
                         value={requestDesc}
                         onChange={e => setRequestDesc(e.target.value)}
                         placeholder="Description (optional)"
                         rows={2}
-                        className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none transition resize-none"
+                        className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-[#F5EFE0] text-sm focus:border-[#B08D57] focus:outline-none transition resize-none"
                       />
                       {requestError && (
-                        <div className="text-red-400 text-xs">{requestError}</div>
+                        <div className="text-[#e8453c] text-xs">{requestError}</div>
                       )}
                       <div className="flex gap-2 pt-1">
                         <button
                           onClick={submitNewsletterRequest}
                           disabled={requestSubmitting || !requestName.trim()}
-                          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition disabled:opacity-50"
+                          className="px-4 py-1.5 bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] text-sm rounded transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
                         >
                           {requestSubmitting ? 'Submitting...' : 'Submit'}
                         </button>
                         <button
                           onClick={() => { setShowRequestForm(false); setRequestError(null); }}
-                          className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-sm rounded-lg transition"
+                          className="px-4 py-1.5 bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0] text-sm rounded transition"
                         >
                           Cancel
                         </button>
@@ -630,10 +628,10 @@ export default function EditNewsletterPage() {
 
           {/* Status messages */}
           {error && (
-            <div className="p-3 rounded-xl bg-red-600/10 border border-red-500/30 text-red-400 text-sm">{error}</div>
+            <div className="p-3 rounded bg-[#e8453c]/10 border border-[#e8453c]/30 text-[#e8453c] text-sm">{error}</div>
           )}
           {success && (
-            <div className="p-3 rounded-xl bg-emerald-600/10 border border-emerald-500/30 text-emerald-400 text-sm">Saved successfully!</div>
+            <div className="p-3 rounded bg-[#3ecf6a]/10 border border-[#3ecf6a]/30 text-[#3ecf6a] text-sm">Saved successfully!</div>
           )}
 
           {/* Actions */}
@@ -641,13 +639,13 @@ export default function EditNewsletterPage() {
             <button
               onClick={handleSave}
               disabled={saving || !name || (!promptTemplateId && !prompt)}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-semibold transition shadow-lg shadow-blue-600/20 disabled:opacity-50"
+              className="bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] px-6 py-3 rounded font-semibold transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
             >
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
             <Link
               href={`/newsletter/${id}`}
-              className="border border-slate-700 hover:border-slate-500 text-slate-400 hover:text-white px-6 py-3 rounded-xl font-medium transition"
+              className="border border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.5)] text-[#F5EFE0]/60 hover:text-[#F5EFE0] px-6 py-3 rounded font-medium transition"
             >
               Cancel
             </Link>

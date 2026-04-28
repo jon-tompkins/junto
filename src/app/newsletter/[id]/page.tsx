@@ -111,8 +111,6 @@ export default function NewsletterDetailPage() {
     }
   }, [session]);
 
-  // Refresh telegram link status when the subscribe modal opens, in case the
-  // user just linked in another tab (settings page).
   async function refreshTelegramStatus() {
     try {
       const r = await fetch('/api/telegram/link');
@@ -129,7 +127,6 @@ export default function NewsletterDetailPage() {
       return;
     }
     if (subscribed) {
-      // Unsubscribe directly
       setSubscribing(true);
       try {
         const res = await fetch(`/api/v2/newsletters/${id}/subscribe`, { method: 'DELETE' });
@@ -141,7 +138,6 @@ export default function NewsletterDetailPage() {
         setSubscribing(false);
       }
     } else {
-      // Show subscribe modal
       setShowSubscribeModal(true);
     }
   }
@@ -193,17 +189,17 @@ export default function NewsletterDetailPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
-        <div className="animate-pulse text-slate-500">Loading...</div>
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0] flex items-center justify-center">
+        <div className="animate-pulse text-[#F5EFE0]/45">Loading...</div>
       </main>
     );
   }
 
   if (!newsletter) {
     return (
-      <main className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center gap-4">
-        <p className="text-slate-400">Newsletter not found</p>
-        <Link href="/explore" className="text-blue-400 hover:text-blue-300 text-sm">
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0] flex flex-col items-center justify-center gap-4">
+        <p className="text-[#F5EFE0]/60">Newsletter not found</p>
+        <Link href="/explore" className="text-[#B08D57] hover:text-[#B08D57]/80 text-sm">
           &larr; Back to Explore
         </Link>
       </main>
@@ -211,40 +207,40 @@ export default function NewsletterDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header card */}
-        <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-8 mb-8">
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-8 mb-8">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
             <div>
-              <h1 className="text-3xl font-bold mb-3">{newsletter.name}</h1>
+              <h1 className="text-3xl font-bold mb-3 font-[var(--font-oswald)] uppercase tracking-wide">{newsletter.name}</h1>
               {newsletter.curator && (
                 <div className="flex items-center gap-2.5 mb-3">
                   {newsletter.curator.avatar_url ? (
-                    <img src={newsletter.curator.avatar_url} alt="" className="w-7 h-7 rounded-full ring-1 ring-slate-700" />
+                    <img src={newsletter.curator.avatar_url} alt="" className="w-7 h-7 rounded ring-1 ring-[rgba(176,141,87,0.28)]" />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-slate-700 ring-1 ring-slate-600" />
+                    <div className="w-7 h-7 rounded bg-[#1c1a17] ring-1 ring-[rgba(176,141,87,0.28)]" />
                   )}
                   <div className="flex items-center gap-1.5 text-sm">
-                    <span className="text-slate-500">Curated by</span>
+                    <span className="text-[#F5EFE0]/45">Curated by</span>
                     {newsletter.curator.twitter_handle ? (
                       <a
                         href={`https://x.com/${newsletter.curator.twitter_handle}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 font-medium transition"
+                        className="text-[#B08D57] hover:text-[#B08D57]/80 font-medium transition"
                       >
                         @{newsletter.curator.twitter_handle}
                       </a>
                     ) : (
-                      <span className="text-slate-300 font-medium">{newsletter.curator.name || 'Anonymous'}</span>
+                      <span className="text-[#F5EFE0]/80 font-medium">{newsletter.curator.name || 'Anonymous'}</span>
                     )}
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-3 text-sm text-slate-400 flex-wrap">
+              <div className="flex items-center gap-3 text-sm text-[#F5EFE0]/60 flex-wrap">
                 <span className="flex items-center gap-1.5">
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                   {newsletter.subscriber_count} subscribers
@@ -257,7 +253,7 @@ export default function NewsletterDetailPage() {
               {isOwner && (
                 <Link
                   href={`/newsletter/${id}/edit`}
-                  className="px-5 py-3 rounded-xl font-medium transition border border-slate-600 hover:border-slate-400 text-slate-300 hover:text-white text-sm"
+                  className="px-5 py-3 rounded font-medium transition border border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.5)] text-[#F5EFE0]/80 hover:text-[#F5EFE0] text-sm"
                 >
                   Edit
                 </Link>
@@ -265,17 +261,17 @@ export default function NewsletterDetailPage() {
               <button
                 onClick={handleFork}
                 disabled={forking}
-                className="px-5 py-3 rounded-xl font-medium transition border border-slate-600 hover:border-purple-400 text-slate-300 hover:text-purple-400 text-sm disabled:opacity-50"
+                className="px-5 py-3 rounded font-medium transition border border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.5)] text-[#F5EFE0]/80 hover:text-[#B08D57] text-sm disabled:opacity-50"
               >
                 {forking ? '...' : 'Fork'}
               </button>
               <button
                 onClick={toggleSubscription}
                 disabled={subscribing}
-                className={`px-7 py-3 rounded-xl font-semibold transition shadow-lg ${
+                className={`px-7 py-3 rounded font-semibold transition ${
                   subscribed
-                    ? 'bg-slate-700 text-slate-300 hover:bg-slate-600 shadow-none'
-                    : 'bg-blue-600 text-white hover:bg-blue-500 shadow-blue-600/20'
+                    ? 'bg-[#1c1a17] text-[#F5EFE0]/80 hover:bg-[#1c1a17]/80'
+                    : 'bg-[#B08D57] text-[#080604] hover:bg-[#B08D57]/80 font-[var(--font-oswald)] uppercase tracking-wide'
                 }`}
               >
                 {subscribing ? '...' : subscribed ? 'Subscribed ✓' : 'Subscribe — 2 credits/send'}
@@ -284,13 +280,13 @@ export default function NewsletterDetailPage() {
           </div>
 
           {newsletter.description && (
-            <p className="text-slate-400 leading-relaxed mb-5">{newsletter.description}</p>
+            <p className="text-[#F5EFE0]/60 leading-relaxed mb-5">{newsletter.description}</p>
           )}
 
           {newsletter.labels.length > 0 && (
             <div className="flex gap-2 flex-wrap">
               {newsletter.labels.map((label) => (
-                <span key={label} className="text-xs px-2.5 py-1 rounded-full bg-slate-700/60 text-slate-400">
+                <span key={label} className="text-xs px-2.5 py-1 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/60">
                   {label}
                 </span>
               ))}
@@ -300,11 +296,11 @@ export default function NewsletterDetailPage() {
 
         {/* Sources */}
         <div className="mb-8">
-          <h2 className="text-sm font-semibold mb-3 text-slate-400 uppercase tracking-wider">
+          <h2 className="text-sm font-semibold mb-3 text-[#F5EFE0]/45 uppercase tracking-wider font-[var(--font-oswald)]">
             Sources ({newsletter.sources.length})
           </h2>
           {newsletter.sources.length === 0 ? (
-            <p className="text-sm text-slate-500">No sources yet.</p>
+            <p className="text-sm text-[#F5EFE0]/45">No sources yet.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {newsletter.sources.map((src) => (
@@ -313,12 +309,12 @@ export default function NewsletterDetailPage() {
                   href={`https://x.com/${src.handle_or_url}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-slate-800/40 hover:bg-slate-800/60 px-3 py-2 rounded-xl text-sm border border-slate-700/30 hover:border-slate-600/50 transition"
+                  className="flex items-center gap-2 bg-[#141210] hover:bg-[#1c1a17] px-3 py-2 rounded text-sm border border-[rgba(176,141,87,0.18)] hover:border-[rgba(176,141,87,0.28)] transition"
                 >
-                  <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-xs text-slate-400 font-bold shrink-0">
+                  <div className="w-6 h-6 rounded bg-[#1c1a17] flex items-center justify-center text-xs text-[#F5EFE0]/60 font-bold shrink-0">
                     {(src.display_name || src.handle_or_url).charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-slate-300">@{src.handle_or_url}</span>
+                  <span className="text-[#F5EFE0]/80">@{src.handle_or_url}</span>
                 </a>
               ))}
             </div>
@@ -329,8 +325,8 @@ export default function NewsletterDetailPage() {
         {latestRun && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Latest Issue</h2>
-              <span className="text-xs text-slate-500">
+              <h2 className="text-sm font-semibold text-[#F5EFE0]/45 uppercase tracking-wider font-[var(--font-oswald)]">Latest Issue</h2>
+              <span className="text-xs text-[#F5EFE0]/45">
                 {new Date(latestRun.generated_at).toLocaleDateString('en-US', {
                   weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
                   hour: 'numeric', minute: '2-digit',
@@ -339,12 +335,12 @@ export default function NewsletterDetailPage() {
             </div>
 
             {latestRun.subject && (
-              <h3 className="text-xl font-semibold mb-4 text-white">{latestRun.subject}</h3>
+              <h3 className="text-xl font-semibold mb-4 text-[#F5EFE0]">{latestRun.subject}</h3>
             )}
 
-            <div className="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-6 sm:p-8">
+            <div className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-6 sm:p-8">
               <div
-                className="research-content prose prose-invert max-w-none text-slate-300 leading-relaxed"
+                className="research-content prose prose-invert max-w-none text-[#F5EFE0]/80 leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: markdownToHtml(latestRun.content) }}
               />
             </div>
@@ -356,7 +352,7 @@ export default function NewsletterDetailPage() {
           <div className="mb-8">
             <button
               onClick={() => setShowOlderRuns(!showOlderRuns)}
-              className="flex items-center gap-2 text-sm font-semibold text-slate-400 uppercase tracking-wider hover:text-white transition mb-3"
+              className="flex items-center gap-2 text-sm font-semibold text-[#F5EFE0]/45 uppercase tracking-wider hover:text-[#F5EFE0] transition mb-3 font-[var(--font-oswald)]"
             >
               Previous Issues ({olderRuns.length})
               <svg
@@ -370,20 +366,20 @@ export default function NewsletterDetailPage() {
             {showOlderRuns && (
               <div className="space-y-3">
                 {olderRuns.map((run) => (
-                  <div key={run.id} className="bg-slate-800/30 border border-slate-700/40 rounded-2xl overflow-hidden">
+                  <div key={run.id} className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
                     <button
                       onClick={() => setExpandedRunId(expandedRunId === run.id ? null : run.id)}
-                      className="w-full flex items-center justify-between p-4 hover:bg-slate-800/50 transition text-left"
+                      className="w-full flex items-center justify-between p-4 hover:bg-[#1c1a17] transition text-left"
                     >
-                      <span className="text-sm text-slate-300 font-medium truncate">
+                      <span className="text-sm text-[#F5EFE0]/80 font-medium truncate">
                         {run.subject || 'Untitled issue'}
                       </span>
                       <div className="flex items-center gap-3 shrink-0 ml-3">
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-[#F5EFE0]/45">
                           {new Date(run.generated_at).toLocaleDateString()}
                         </span>
                         <svg
-                          className={`w-4 h-4 text-slate-500 transition-transform ${expandedRunId === run.id ? 'rotate-180' : ''}`}
+                          className={`w-4 h-4 text-[#F5EFE0]/45 transition-transform ${expandedRunId === run.id ? 'rotate-180' : ''}`}
                           fill="none" viewBox="0 0 24 24" stroke="currentColor"
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -391,9 +387,9 @@ export default function NewsletterDetailPage() {
                       </div>
                     </button>
                     {expandedRunId === run.id && (
-                      <div className="border-t border-slate-700/30 p-6">
+                      <div className="border-t border-[rgba(176,141,87,0.18)] p-6">
                         <div
-                          className="research-content prose prose-invert prose-sm max-w-none text-slate-300 leading-relaxed"
+                          className="research-content prose prose-invert prose-sm max-w-none text-[#F5EFE0]/80 leading-relaxed"
                           dangerouslySetInnerHTML={{ __html: markdownToHtml(run.content) }}
                         />
                       </div>
@@ -409,15 +405,15 @@ export default function NewsletterDetailPage() {
       {showSubscribeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowSubscribeModal(false)} />
-          <div className="relative bg-slate-900 border border-slate-700/60 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5">
+          <div className="relative bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 max-w-md w-full shadow-2xl space-y-5">
             <div>
-              <h2 className="text-lg font-bold text-white">Subscribe to {newsletter?.name}</h2>
-              <p className="text-sm text-slate-400 mt-1">2 credits per delivery</p>
+              <h2 className="text-lg font-bold text-[#F5EFE0] font-[var(--font-oswald)] uppercase tracking-wide">Subscribe to {newsletter?.name}</h2>
+              <p className="text-sm text-[#F5EFE0]/60 mt-1">2 credits per delivery</p>
             </div>
 
             {/* Delivery channel */}
             <div>
-              <label className="block text-xs text-slate-400 font-medium mb-2">Deliver via</label>
+              <label className="block text-xs text-[#F5EFE0]/60 font-medium mb-2">Deliver via</label>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { key: 'email', label: 'Email' },
@@ -426,10 +422,10 @@ export default function NewsletterDetailPage() {
                   <button
                     key={opt.key}
                     onClick={() => setSubDeliveryChannel(opt.key as 'email' | 'telegram')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                    className={`px-3 py-2 rounded-sm text-sm font-medium transition ${
                       subDeliveryChannel === opt.key
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
+                        ? 'bg-[#B08D57] text-[#080604]'
+                        : 'bg-[#1c1a17] text-[#F5EFE0]/60 hover:bg-[#1c1a17]/80'
                     }`}
                   >
                     {opt.label}
@@ -438,43 +434,43 @@ export default function NewsletterDetailPage() {
               </div>
             </div>
 
-            {/* Email field — shown when email channel is selected */}
+            {/* Email field */}
             {subDeliveryChannel === 'email' && (
               <div>
-                <label className="block text-xs text-slate-400 font-medium mb-2">Delivery email</label>
+                <label className="block text-xs text-[#F5EFE0]/60 font-medium mb-2">Delivery email</label>
                 <input
                   type="email"
                   value={subEmail}
                   onChange={(e) => setSubEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full px-3 py-2.5 bg-slate-800/60 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
                 />
               </div>
             )}
 
-            {/* Telegram status — shown when telegram channel is selected */}
+            {/* Telegram status */}
             {subDeliveryChannel === 'telegram' && (
               <div>
-                <label className="block text-xs text-slate-400 font-medium mb-2">Telegram</label>
+                <label className="block text-xs text-[#F5EFE0]/60 font-medium mb-2">Telegram</label>
                 {tgLinked ? (
-                  <div className="px-3 py-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-sm text-emerald-300">
+                  <div className="px-3 py-2.5 bg-[#3ecf6a]/10 border border-[#3ecf6a]/30 rounded text-sm text-[#3ecf6a]">
                     ✓ Connected — newsletters will arrive as DMs
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <Link
                       href="/settings"
-                      className="block w-full px-3 py-2.5 bg-slate-800/60 border border-slate-700 hover:border-blue-500 rounded-xl text-sm text-white transition text-center"
+                      className="block w-full px-3 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] hover:border-[#B08D57] rounded text-sm text-[#F5EFE0] transition text-center"
                     >
                       Link Telegram in Settings →
                     </Link>
                     <div className="flex items-center justify-between">
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-[#F5EFE0]/45">
                         One-time setup. Applies to all your newsletters.
                       </p>
                       <button
                         onClick={refreshTelegramStatus}
-                        className="text-xs text-slate-500 hover:text-blue-300 transition"
+                        className="text-xs text-[#F5EFE0]/45 hover:text-[#B08D57] transition"
                       >
                         Already linked? Refresh
                       </button>
@@ -486,7 +482,7 @@ export default function NewsletterDetailPage() {
 
             {/* Send windows */}
             <div>
-              <label className="block text-xs text-slate-400 font-medium mb-2">Send times (Pacific)</label>
+              <label className="block text-xs text-[#F5EFE0]/60 font-medium mb-2">Send times (Pacific)</label>
               <div className="flex gap-2 flex-wrap">
                 {[
                   { key: 'morning', label: '6 AM' },
@@ -499,10 +495,10 @@ export default function NewsletterDetailPage() {
                     onClick={() => setSubWindows(prev =>
                       prev.includes(w.key) ? prev.filter(x => x !== w.key) : [...prev, w.key]
                     )}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                    className={`px-3 py-1.5 rounded-sm text-sm font-medium transition ${
                       subWindows.includes(w.key)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
+                        ? 'bg-[#B08D57] text-[#080604]'
+                        : 'bg-[#1c1a17] text-[#F5EFE0]/60 hover:bg-[#1c1a17]/80'
                     }`}
                   >
                     {w.label}
@@ -513,7 +509,7 @@ export default function NewsletterDetailPage() {
 
             {/* Days */}
             <div>
-              <label className="block text-xs text-slate-400 font-medium mb-2">Days</label>
+              <label className="block text-xs text-[#F5EFE0]/60 font-medium mb-2">Days</label>
               <div className="flex gap-1.5">
                 {[
                   { key: 'mon', label: 'M' },
@@ -529,10 +525,10 @@ export default function NewsletterDetailPage() {
                     onClick={() => setSubDays(prev =>
                       prev.includes(d.key) ? prev.filter(x => x !== d.key) : [...prev, d.key]
                     )}
-                    className={`w-9 h-9 rounded-lg text-sm font-medium transition ${
+                    className={`w-9 h-9 rounded-sm text-sm font-medium transition ${
                       subDays.includes(d.key)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
+                        ? 'bg-[#B08D57] text-[#080604]'
+                        : 'bg-[#1c1a17] text-[#F5EFE0]/60 hover:bg-[#1c1a17]/80'
                     }`}
                   >
                     {d.label}
@@ -544,7 +540,7 @@ export default function NewsletterDetailPage() {
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setShowSubscribeModal(false)}
-                className="flex-1 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl text-sm font-medium transition"
+                className="flex-1 px-4 py-2.5 bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/80 rounded text-sm font-medium transition"
               >
                 Cancel
               </button>
@@ -557,7 +553,7 @@ export default function NewsletterDetailPage() {
                   (subDeliveryChannel === 'email' && !subEmail) ||
                   (subDeliveryChannel === 'telegram' && !tgLinked)
                 }
-                className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition"
+                className="flex-1 px-4 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 text-[#080604] rounded text-sm font-medium transition font-[var(--font-oswald)] uppercase tracking-wide"
               >
                 {subscribing ? 'Subscribing...' : 'Subscribe'}
               </button>

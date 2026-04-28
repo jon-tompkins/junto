@@ -1,20 +1,21 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white flex flex-col">
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0] flex flex-col">
       <TopNav />
 
       {/* Main */}
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="max-w-sm w-full">
           <div className="text-center mb-10">
-            <h1 className="text-3xl font-bold mb-3">Welcome back</h1>
-            <p className="text-slate-400">
+            <h1 className="text-3xl font-bold mb-3 font-[var(--font-oswald)] uppercase tracking-wide">
+              Welcome Back
+            </h1>
+            <p className="text-[#F5EFE0]/60">
               Sign in to subscribe to newsletters, create your own, and earn from your audience.
             </p>
           </div>
@@ -22,7 +23,7 @@ export default function LoginPage() {
           <div className="space-y-3">
             <button
               onClick={() => signIn('twitter', { callbackUrl: '/dashboard' })}
-              className="w-full flex items-center justify-center gap-3 bg-white text-black hover:bg-slate-100 px-6 py-3.5 rounded-xl font-medium transition shadow-lg shadow-white/5"
+              className="w-full flex items-center justify-center gap-3 bg-white text-black hover:bg-slate-100 px-6 py-3.5 rounded font-medium transition"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -32,7 +33,7 @@ export default function LoginPage() {
 
             <button
               onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
-              className="w-full flex items-center justify-center gap-3 bg-slate-800 text-white hover:bg-slate-700 border border-slate-700 px-6 py-3.5 rounded-xl font-medium transition"
+              className="w-full flex items-center justify-center gap-3 bg-[#141210] text-[#F5EFE0] hover:bg-[#1c1a17] border border-[rgba(176,141,87,0.28)] px-6 py-3.5 rounded font-medium transition"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
@@ -44,7 +45,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <p className="text-xs text-slate-500 text-center mt-8">
+          <p className="text-xs text-[#F5EFE0]/30 text-center mt-8">
             By signing in you agree to our terms of service.
           </p>
         </div>

@@ -93,20 +93,20 @@ export default function OnboardingPage() {
 
   if (status === 'loading') {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white flex items-center justify-center">
-        <div className="animate-pulse text-slate-500">Loading...</div>
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0] flex items-center justify-center">
+        <div className="animate-pulse text-[#F5EFE0]/45">Loading...</div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <div className="container mx-auto px-4 py-16 max-w-lg">
         {/* Logo */}
         <div className="text-center mb-12">
-          <Link href="/" className="text-3xl font-bold tracking-tight">
-            <span className="text-white">my</span>
-            <span className="text-blue-400">junto</span>
+          <Link href="/" className="text-3xl font-bold tracking-tight font-[var(--font-oswald)] uppercase">
+            <span className="text-[#F5EFE0]">my</span>
+            <span className="text-[#B08D57]">junto</span>
           </Link>
         </div>
 
@@ -115,8 +115,8 @@ export default function OnboardingPage() {
           {[1, 2].map((s) => (
             <div
               key={s}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                s <= step ? 'bg-blue-500 w-12' : 'bg-slate-700 w-8'
+              className={`h-1.5 rounded-sm transition-all duration-300 ${
+                s <= step ? 'bg-[#B08D57] w-12' : 'bg-[#1c1a17] w-8'
               }`}
             />
           ))}
@@ -126,19 +126,19 @@ export default function OnboardingPage() {
         {step === 1 && (
           <div className="space-y-6">
             <div className="text-center">
-              <h1 className="text-2xl font-bold mb-2">Welcome to Junto</h1>
-              <p className="text-slate-400">
-                You have <span className="text-emerald-400 font-semibold">1,000 free credits</span> to get started.
+              <h1 className="text-2xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Welcome to Junto</h1>
+              <p className="text-[#F5EFE0]/60">
+                You have <span className="text-[#3ecf6a] font-semibold">1,000 free credits</span> to get started.
                 {' '}Let&apos;s set up your account.
               </p>
             </div>
 
-            <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-6 space-y-5">
+            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-2">
                   Delivery email
                 </label>
-                <p className="text-xs text-slate-500 mb-3">
+                <p className="text-xs text-[#F5EFE0]/45 mb-3">
                   Newsletters will be delivered here. You can change this later.
                 </p>
                 <input
@@ -146,13 +146,13 @@ export default function OnboardingPage() {
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setError(''); }}
                   placeholder="you@example.com"
-                  className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 focus:outline-none transition text-sm placeholder-slate-600"
+                  className="w-full px-4 py-3 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 focus:outline-none transition text-sm placeholder-[#F5EFE0]/30 text-[#F5EFE0]"
                   autoFocus
                 />
               </div>
 
               {error && (
-                <p className="text-red-400 text-sm">{error}</p>
+                <p className="text-[#e8453c] text-sm">{error}</p>
               )}
 
               <button
@@ -165,7 +165,7 @@ export default function OnboardingPage() {
                   setStep(2);
                 }}
                 disabled={!email.trim()}
-                className="w-full px-5 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-xl font-medium transition"
+                className="w-full px-5 py-3 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:bg-[#1c1a17] disabled:text-[#F5EFE0]/30 text-[#080604] rounded font-semibold uppercase tracking-wide font-[var(--font-oswald)] transition"
               >
                 Continue
               </button>
@@ -177,21 +177,21 @@ export default function OnboardingPage() {
         {step === 2 && (
           <div className="space-y-6">
             <div className="text-center">
-              <h1 className="text-2xl font-bold mb-2">Your timezone</h1>
-              <p className="text-slate-400">
+              <h1 className="text-2xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Your Timezone</h1>
+              <p className="text-[#F5EFE0]/60">
                 Send times will be shown in your local time.
               </p>
             </div>
 
-            <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-6 space-y-5">
+            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-2">
                   Timezone
                 </label>
                 <select
                   value={timezone}
                   onChange={(e) => setTimezone(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 focus:outline-none transition text-sm"
+                  className="w-full px-4 py-3 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 focus:outline-none transition text-sm text-[#F5EFE0]"
                 >
                   {TIMEZONES.map((tz) => (
                     <option key={tz.value} value={tz.value}>
@@ -202,38 +202,38 @@ export default function OnboardingPage() {
               </div>
 
               {/* Summary */}
-              <div className="bg-slate-900/40 rounded-xl p-4 space-y-2">
+              <div className="bg-[#080604] rounded p-4 space-y-2 border border-[rgba(176,141,87,0.18)]">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Email</span>
-                  <span className="text-slate-200">{email}</span>
+                  <span className="text-[#F5EFE0]/60">Email</span>
+                  <span className="text-[#F5EFE0]/80">{email}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Timezone</span>
-                  <span className="text-slate-200">{TIMEZONES.find(t => t.value === timezone)?.label || timezone}</span>
+                  <span className="text-[#F5EFE0]/60">Timezone</span>
+                  <span className="text-[#F5EFE0]/80">{TIMEZONES.find(t => t.value === timezone)?.label || timezone}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Credits</span>
-                  <span className="text-emerald-400 font-semibold">1,000</span>
+                  <span className="text-[#F5EFE0]/60">Credits</span>
+                  <span className="text-[#3ecf6a] font-semibold">1,000</span>
                 </div>
               </div>
 
               {error && (
-                <p className="text-red-400 text-sm">{error}</p>
+                <p className="text-[#e8453c] text-sm">{error}</p>
               )}
 
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep(1)}
-                  className="px-5 py-3 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl font-medium transition"
+                  className="px-5 py-3 bg-[#1c1a17] hover:bg-[#141210] text-[#F5EFE0]/60 rounded font-medium transition"
                 >
                   Back
                 </button>
                 <button
                   onClick={handleComplete}
                   disabled={saving}
-                  className="flex-1 px-5 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-xl font-medium transition"
+                  className="flex-1 px-5 py-3 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:bg-[#1c1a17] disabled:text-[#F5EFE0]/30 text-[#080604] rounded font-semibold uppercase tracking-wide font-[var(--font-oswald)] transition"
                 >
-                  {saving ? 'Setting up...' : 'Start exploring'}
+                  {saving ? 'Setting up...' : 'Start Exploring'}
                 </button>
               </div>
             </div>
@@ -244,7 +244,7 @@ export default function OnboardingPage() {
         <div className="text-center mt-6">
           <button
             onClick={() => router.push('/explore')}
-            className="text-slate-600 hover:text-slate-400 text-sm transition"
+            className="text-[#F5EFE0]/30 hover:text-[#F5EFE0]/60 text-sm transition"
           >
             Skip for now (you won&apos;t be able to subscribe)
           </button>

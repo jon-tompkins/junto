@@ -32,17 +32,17 @@ interface SourceProfile {
 }
 
 const STANCE_BAR_COLOR: Record<string, string> = {
-  bullish: 'bg-emerald-500',
-  bearish: 'bg-red-500',
+  bullish: 'bg-[#3ecf6a]',
+  bearish: 'bg-[#e8453c]',
   cautious: 'bg-amber-400',
-  neutral: 'bg-slate-500',
+  neutral: 'bg-[#F5EFE0]/30',
 };
 
 const STANCE_BADGE: Record<string, string> = {
-  bullish: 'bg-emerald-900/40 text-emerald-400 border border-emerald-700/40',
-  bearish: 'bg-red-900/40 text-red-400 border border-red-700/40',
+  bullish: 'bg-[#3ecf6a]/15 text-[#3ecf6a] border border-[#3ecf6a]/40',
+  bearish: 'bg-[#e8453c]/15 text-[#e8453c] border border-[#e8453c]/40',
   cautious: 'bg-amber-900/40 text-amber-400 border border-amber-700/40',
-  neutral: 'bg-slate-700/40 text-slate-400 border border-slate-600/40',
+  neutral: 'bg-[#1c1a17] text-[#F5EFE0]/45 border border-[rgba(176,141,87,0.18)]',
 };
 
 const STANCE_LABELS: Record<string, string> = {
@@ -92,19 +92,19 @@ export default function SourceProfilePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
         <TopNav />
         <div className="container mx-auto px-4 py-16 max-w-3xl">
           <div className="animate-pulse space-y-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-slate-700" />
+              <div className="w-16 h-16 rounded bg-[#141210]" />
               <div>
-                <div className="h-6 bg-slate-700 rounded w-40 mb-2" />
-                <div className="h-4 bg-slate-700/60 rounded w-24" />
+                <div className="h-6 bg-[#141210] rounded w-40 mb-2" />
+                <div className="h-4 bg-[#141210]/60 rounded w-24" />
               </div>
             </div>
-            <div className="h-4 bg-slate-700/60 rounded w-full" />
-            <div className="h-4 bg-slate-700/60 rounded w-2/3" />
+            <div className="h-4 bg-[#141210]/60 rounded w-full" />
+            <div className="h-4 bg-[#141210]/60 rounded w-2/3" />
           </div>
         </div>
       </main>
@@ -113,11 +113,11 @@ export default function SourceProfilePage() {
 
   if (notFound || !profile) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
         <TopNav />
         <div className="container mx-auto px-4 py-16 max-w-3xl text-center">
-          <p className="text-slate-400 mb-4">Profile not found for @{handle}</p>
-          <Link href="/sources" className="text-blue-400 hover:text-blue-300 text-sm">
+          <p className="text-[#F5EFE0]/60 mb-4">Profile not found for @{handle}</p>
+          <Link href="/sources" className="text-[#B08D57] hover:text-[#B08D57]/80 text-sm">
             ← Back to Analyst Profiles
           </Link>
         </div>
@@ -127,7 +127,6 @@ export default function SourceProfilePage() {
 
   const displayHandle = profile.source.handle_or_url;
 
-  // Sort positions oldest-first so longest-held stances appear at top
   const positions = Object.entries(profile.positions).sort(
     ([, a], [, b]) => new Date(a.since).getTime() - new Date(b.since).getTime(),
   );
@@ -135,11 +134,11 @@ export default function SourceProfilePage() {
   const maxDays = positions.reduce((m, [, p]) => Math.max(m, daysHeld(p.since)), 1);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-3xl">
-        <Link href="/sources" className="text-slate-500 hover:text-slate-300 text-sm transition mb-6 inline-block">
+        <Link href="/sources" className="text-[#F5EFE0]/45 hover:text-[#F5EFE0]/80 text-sm transition mb-6 inline-block">
           ← Analyst Profiles
         </Link>
 
@@ -149,22 +148,22 @@ export default function SourceProfilePage() {
             <img
               src={profile.source.avatar_url}
               alt={displayHandle}
-              className="w-16 h-16 rounded-full bg-slate-700 object-cover shrink-0"
+              className="w-16 h-16 rounded bg-[#1c1a17] object-cover shrink-0"
             />
           ) : (
-            <div className="w-16 h-16 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 text-xl font-bold shrink-0">
+            <div className="w-16 h-16 rounded bg-[#1c1a17] flex items-center justify-center text-[#F5EFE0]/80 text-xl font-bold shrink-0">
               {displayHandle[0]?.toUpperCase()}
             </div>
           )}
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold mb-1">
+            <h1 className="text-2xl font-bold mb-1 font-[var(--font-oswald)] uppercase tracking-wide">
               {profile.source.display_name || `@${displayHandle}`}
             </h1>
             <a
               href={`https://twitter.com/${displayHandle}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-slate-500 hover:text-blue-400 text-sm transition"
+              className="text-[#F5EFE0]/45 hover:text-[#B08D57] text-sm transition"
             >
               @{displayHandle} ↗
             </a>
@@ -173,21 +172,21 @@ export default function SourceProfilePage() {
 
         {/* Summary */}
         {profile.summary && (
-          <div className="bg-slate-800/30 border border-slate-700/40 rounded-xl p-5 mb-8">
-            <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Analyst Summary</h2>
-            <p className="text-slate-200 leading-relaxed">{profile.summary}</p>
+          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-8">
+            <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-2 font-[var(--font-oswald)]">Analyst Summary</h2>
+            <p className="text-[#F5EFE0]/80 leading-relaxed">{profile.summary}</p>
           </div>
         )}
 
         {/* Stance duration chart */}
         <div className="mb-8">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
+          <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
             Tracked Stances
-            <span className="ml-2 font-normal normal-case text-slate-600">— bar width = days held</span>
+            <span className="ml-2 font-normal normal-case text-[#F5EFE0]/30">— bar width = days held</span>
           </h2>
 
           {positions.length === 0 ? (
-            <p className="text-slate-500 text-sm">No positions tracked yet — will populate on next content pull.</p>
+            <p className="text-[#F5EFE0]/45 text-sm">No positions tracked yet — will populate on next content pull.</p>
           ) : (
             <div className="space-y-3">
               {positions.map(([ticker, pos]) => {
@@ -199,11 +198,11 @@ export default function SourceProfilePage() {
                     ? ((pos.target_price - quote.price) / quote.price) * 100
                     : null;
                 return (
-                  <div key={ticker} className="bg-slate-800/20 border border-slate-700/30 rounded-xl p-4">
+                  <div key={ticker} className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4">
                     {/* Top row: ticker + badge */}
                     <div className="flex items-center justify-between gap-3 mb-3">
-                      <span className="font-mono font-bold text-white text-lg">{ticker}</span>
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium shrink-0 ${STANCE_BADGE[pos.stance]}`}>
+                      <span className="font-mono font-bold text-[#F5EFE0] text-lg">{ticker}</span>
+                      <span className={`text-xs px-2.5 py-1 rounded-sm font-medium shrink-0 ${STANCE_BADGE[pos.stance]}`}>
                         {STANCE_LABELS[pos.stance]}
                       </span>
                     </div>
@@ -211,17 +210,17 @@ export default function SourceProfilePage() {
                     {/* Price row */}
                     {quote?.price != null && (
                       <div className="flex items-baseline gap-3 mb-3 flex-wrap">
-                        <span className="text-white font-semibold">${quote.price.toFixed(2)}</span>
+                        <span className="text-[#F5EFE0] font-semibold">${quote.price.toFixed(2)}</span>
                         {quote.changePercent != null && (
-                          <span className={`text-xs font-medium ${quote.changePercent >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          <span className={`text-xs font-medium ${quote.changePercent >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
                             {quote.changePercent >= 0 ? '+' : ''}{quote.changePercent.toFixed(2)}% today
                           </span>
                         )}
                         {pos.target_price != null && (
-                          <span className="text-xs text-slate-500">
-                            target <span className="text-slate-300">${pos.target_price.toFixed(2)}</span>
+                          <span className="text-xs text-[#F5EFE0]/45">
+                            target <span className="text-[#F5EFE0]/80">${pos.target_price.toFixed(2)}</span>
                             {upside != null && (
-                              <span className={`ml-1.5 font-medium ${upside >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                              <span className={`ml-1.5 font-medium ${upside >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
                                 ({upside >= 0 ? '+' : ''}{upside.toFixed(1)}%)
                               </span>
                             )}
@@ -230,28 +229,28 @@ export default function SourceProfilePage() {
                       </div>
                     )}
                     {quote?.price == null && pos.target_price != null && (
-                      <div className="mb-3 text-xs text-slate-500">
-                        target <span className="text-slate-300">${pos.target_price.toFixed(2)}</span>
+                      <div className="mb-3 text-xs text-[#F5EFE0]/45">
+                        target <span className="text-[#F5EFE0]/80">${pos.target_price.toFixed(2)}</span>
                       </div>
                     )}
 
                     {/* Duration bar */}
-                    <div className="w-full h-2 bg-slate-700/40 rounded-full overflow-hidden mb-2">
+                    <div className="w-full h-2 bg-[#080604] rounded overflow-hidden mb-2">
                       <div
-                        className={`h-full rounded-full ${STANCE_BAR_COLOR[pos.stance]} transition-all duration-500`}
+                        className={`h-full rounded ${STANCE_BAR_COLOR[pos.stance]} transition-all duration-500`}
                         style={{ width: `${pct}%` }}
                       />
                     </div>
 
                     {/* Since + days */}
-                    <div className="flex items-center justify-between text-xs text-slate-600">
+                    <div className="flex items-center justify-between text-xs text-[#F5EFE0]/30">
                       <span>since {new Date(pos.since).toLocaleDateString()}</span>
                       <span>{days}d</span>
                     </div>
 
                     {/* Note */}
                     {pos.note && (
-                      <p className="text-sm text-slate-400 mt-2 leading-snug">{pos.note}</p>
+                      <p className="text-sm text-[#F5EFE0]/60 mt-2 leading-snug">{pos.note}</p>
                     )}
                   </div>
                 );
@@ -260,7 +259,7 @@ export default function SourceProfilePage() {
           )}
         </div>
 
-        <p className="text-xs text-slate-600">
+        <p className="text-xs text-[#F5EFE0]/30">
           Updated {new Date(profile.last_updated).toLocaleString()} · Tracking since {new Date(profile.created_at).toLocaleDateString()}
         </p>
       </div>

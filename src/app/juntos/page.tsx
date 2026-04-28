@@ -40,21 +40,21 @@ export default function JuntosPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header */}
         <div className="flex items-start justify-between mb-10 flex-wrap gap-4">
           <div>
-            <h1 className="text-4xl font-bold mb-2">
+            <h1 className="text-4xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">
               Juntos
             </h1>
-            <p className="text-slate-400 text-lg">Curated source lists — browse or build your own.</p>
+            <p className="text-[#F5EFE0]/60 text-lg">Curated source lists — browse or build your own.</p>
           </div>
           <Link
             href="/junto/new"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-5 py-2.5 font-medium transition shrink-0"
+            className="bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] rounded px-5 py-2.5 font-[var(--font-oswald)] uppercase tracking-wide transition shrink-0"
           >
             + New Junto
           </Link>
@@ -63,13 +63,13 @@ export default function JuntosPage() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="animate-pulse bg-slate-800/30 border border-slate-700/40 rounded-xl p-5 h-36" />
+              <div key={i} className="animate-pulse bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-5 h-36" />
             ))}
           </div>
         ) : juntos.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-slate-400 mb-4">No juntos yet.</p>
-            <Link href="/junto/new" className="text-emerald-400 hover:text-emerald-300 font-medium">
+            <p className="text-[#F5EFE0]/60 mb-4">No juntos yet.</p>
+            <Link href="/junto/new" className="text-[#B08D57] hover:text-[#B08D57]/80 font-medium">
               Create the first one →
             </Link>
           </div>
@@ -79,21 +79,21 @@ export default function JuntosPage() {
               <Link
                 key={junto.id}
                 href={`/junto/${junto.id}`}
-                className="bg-slate-800/30 border border-slate-700/40 hover:border-slate-600 rounded-xl p-5 transition group flex flex-col gap-3"
+                className="bg-[#141210] border border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.5)] rounded p-5 transition group flex flex-col gap-3"
               >
                 {/* Name + badges */}
                 <div className="flex items-start justify-between gap-2">
-                  <h2 className="font-semibold text-lg group-hover:text-emerald-400 transition leading-tight">
+                  <h2 className="font-semibold text-lg group-hover:text-[#B08D57] transition leading-tight">
                     {junto.name}
                   </h2>
                   <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
                     {junto.is_own && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-400 border border-blue-700/40 font-medium">
+                      <span className="text-[10px] px-2 py-0.5 rounded-sm bg-[#B08D57]/15 text-[#B08D57] border border-[rgba(176,141,87,0.28)] font-medium">
                         Yours
                       </span>
                     )}
                     {!junto.is_public && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-400 border border-slate-600/40 font-medium">
+                      <span className="text-[10px] px-2 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45 border border-[rgba(176,141,87,0.18)] font-medium">
                         Private
                       </span>
                     )}
@@ -101,11 +101,11 @@ export default function JuntosPage() {
                 </div>
 
                 {junto.description && (
-                  <p className="text-sm text-slate-400 line-clamp-2">{junto.description}</p>
+                  <p className="text-sm text-[#F5EFE0]/60 line-clamp-2">{junto.description}</p>
                 )}
 
                 {/* Meta row */}
-                <div className="flex items-center gap-4 text-xs text-slate-500 mt-auto">
+                <div className="flex items-center gap-4 text-xs text-[#F5EFE0]/45 mt-auto">
                   <span>{junto.source_count} {junto.source_count === 1 ? 'source' : 'sources'}</span>
                   {junto.dispatches.length > 0 && (
                     <span>{junto.dispatches.length} {junto.dispatches.length === 1 ? 'dispatch' : 'dispatches'}</span>
@@ -118,13 +118,13 @@ export default function JuntosPage() {
                     {junto.dispatches.slice(0, 3).map((d) => (
                       <span
                         key={d.id}
-                        className="text-[11px] px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-300 border border-slate-600/40"
+                        className="text-[11px] px-2 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/80 border border-[rgba(176,141,87,0.18)]"
                       >
                         {d.name} · {CADENCE_LABELS[d.schedule_cadence] ?? d.schedule_cadence}
                       </span>
                     ))}
                     {junto.dispatches.length > 3 && (
-                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-700/30 text-slate-500">
+                      <span className="text-[11px] px-2 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45">
                         +{junto.dispatches.length - 3} more
                       </span>
                     )}

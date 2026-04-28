@@ -183,51 +183,51 @@ export default function SettingsPage() {
 
   const creditColor =
     creditBalance !== null && creditBalance <= 50
-      ? 'text-red-400'
+      ? 'text-[#e8453c]'
       : creditBalance !== null && creditBalance <= 100
         ? 'text-amber-400'
-        : 'text-emerald-400';
+        : 'text-[#3ecf6a]';
 
   const hasChanges = accountEmail !== savedEmail || timezone !== savedTimezone;
 
   if (status === 'loading' || loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
         <TopNav />
         <div className="flex items-center justify-center h-64">
-          <div className="animate-pulse text-slate-500">Loading...</div>
+          <div className="animate-pulse text-[#F5EFE0]/45">Loading...</div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <h1 className="text-2xl font-bold mb-2">Settings</h1>
-        <p className="text-slate-400 text-sm mb-8">Manage your account preferences.</p>
+        <h1 className="text-2xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Settings</h1>
+        <p className="text-[#F5EFE0]/60 text-sm mb-8">Manage your account preferences.</p>
 
         {error && (
-          <div className="mb-6 p-3 bg-red-900/20 border border-red-700/40 rounded-xl text-red-300 text-sm">
+          <div className="mb-6 p-3 bg-[#e8453c]/10 border border-[#e8453c]/40 rounded text-[#e8453c] text-sm">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="mb-6 p-3 bg-emerald-900/20 border border-emerald-700/40 rounded-xl text-emerald-300 text-sm">
+          <div className="mb-6 p-3 bg-[#3ecf6a]/10 border border-[#3ecf6a]/40 rounded text-[#3ecf6a] text-sm">
             {success}
           </div>
         )}
 
         {/* Account Section */}
-        <div className="mb-8 p-6 bg-slate-800/30 rounded-2xl border border-slate-700/40 space-y-6">
-          <h2 className="text-lg font-semibold">Account</h2>
+        <div className="mb-8 p-6 bg-[#141210] rounded border border-[rgba(176,141,87,0.28)] space-y-6">
+          <h2 className="text-lg font-semibold font-[var(--font-oswald)] uppercase tracking-wide">Account</h2>
 
           {/* Credit Balance */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-400">Credit Balance</span>
+            <span className="text-sm text-[#F5EFE0]/60">Credit Balance</span>
             <span className={`text-lg font-bold ${creditColor}`}>
               {creditBalance !== null ? creditBalance.toLocaleString() : '—'} credits
             </span>
@@ -235,29 +235,29 @@ export default function SettingsPage() {
 
           {/* Account Email */}
           <div>
-            <label className="block text-sm text-slate-400 mb-2">
+            <label className="block text-sm text-[#F5EFE0]/60 mb-2">
               Default Email
-              <span className="text-slate-600 ml-1">(newsletter delivery fallback)</span>
+              <span className="text-[#F5EFE0]/30 ml-1">(newsletter delivery fallback)</span>
             </label>
             <input
               type="email"
               value={accountEmail}
               onChange={(e) => setAccountEmail(e.target.value)}
               placeholder="your@email.com"
-              className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 focus:outline-none transition text-sm placeholder-slate-600"
+              className="w-full px-4 py-3 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 focus:outline-none transition text-sm placeholder-[#F5EFE0]/30 text-[#F5EFE0]"
             />
           </div>
 
           {/* Timezone */}
           <div>
-            <label className="block text-sm text-slate-400 mb-2">
+            <label className="block text-sm text-[#F5EFE0]/60 mb-2">
               Timezone
-              <span className="text-slate-600 ml-1">(send times shown in your local time)</span>
+              <span className="text-[#F5EFE0]/30 ml-1">(send times shown in your local time)</span>
             </label>
             <select
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 focus:outline-none transition text-sm"
+              className="w-full px-4 py-3 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 focus:outline-none transition text-sm text-[#F5EFE0]"
             >
               {COMMON_TIMEZONES.map((tz) => (
                 <option key={tz.value} value={tz.value}>
@@ -271,45 +271,45 @@ export default function SettingsPage() {
           <button
             onClick={saveSettings}
             disabled={saving || !hasChanges}
-            className="w-full px-5 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-xl text-sm font-medium transition"
+            className="w-full px-5 py-3 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:bg-[#1c1a17] disabled:text-[#F5EFE0]/30 text-[#080604] rounded text-sm font-semibold uppercase tracking-wide font-[var(--font-oswald)] transition"
           >
             {saving ? 'Saving...' : 'Save Settings'}
           </button>
         </div>
 
         {/* Telegram Section */}
-        <div className="mb-8 p-6 bg-slate-800/30 rounded-2xl border border-slate-700/40 space-y-4">
+        <div className="mb-8 p-6 bg-[#141210] rounded border border-[rgba(176,141,87,0.28)] space-y-4">
           <div>
-            <h2 className="text-lg font-semibold">Telegram</h2>
-            <p className="text-sm text-slate-400 mt-1">
+            <h2 className="text-lg font-semibold font-[var(--font-oswald)] uppercase tracking-wide">Telegram</h2>
+            <p className="text-sm text-[#F5EFE0]/60 mt-1">
               Link your Telegram to receive newsletters as DMs instead of email.
             </p>
           </div>
 
           {tgLinked === null ? (
-            <div className="text-sm text-slate-500">Loading…</div>
+            <div className="text-sm text-[#F5EFE0]/45">Loading…</div>
           ) : tgLinked ? (
-            <div className="flex items-center justify-between gap-3 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
-              <div className="text-sm text-emerald-300">
+            <div className="flex items-center justify-between gap-3 p-3 bg-[#3ecf6a]/10 border border-[#3ecf6a]/30 rounded">
+              <div className="text-sm text-[#3ecf6a]">
                 ✓ Connected — newsletters set to Telegram delivery will arrive as DMs.
               </div>
               <button
                 onClick={unlinkTelegram}
                 disabled={tgUnlinking}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-lg transition whitespace-nowrap disabled:opacity-50"
+                className="px-3 py-1.5 bg-[#1c1a17] hover:bg-[#141210] text-[#F5EFE0]/60 text-xs font-medium rounded transition whitespace-nowrap disabled:opacity-50"
               >
                 {tgUnlinking ? 'Unlinking…' : 'Unlink'}
               </button>
             </div>
           ) : tgCode && tgBotUsername ? (
             <div className="space-y-3">
-              <div className="text-sm text-slate-300 leading-relaxed">
+              <div className="text-sm text-[#F5EFE0]/80 leading-relaxed">
                 In Telegram, open a chat with{' '}
                 <a
                   href={`https://t.me/${tgBotUsername}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-300 font-mono"
+                  className="text-[#B08D57] hover:text-[#B08D57]/80 font-mono"
                 >
                   @{tgBotUsername}
                 </a>{' '}
@@ -318,25 +318,25 @@ export default function SettingsPage() {
 
               <button
                 onClick={copyTelegramCommand}
-                className="w-full px-4 py-3 bg-slate-950 border border-slate-700 hover:border-blue-500 rounded-xl text-left transition group"
+                className="w-full px-4 py-3 bg-[#080604] border border-[rgba(176,141,87,0.28)] hover:border-[#B08D57] rounded text-left transition group"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <code className="text-sm text-blue-300 font-mono">/start {tgCode}</code>
-                  <span className={`text-xs ${tgCopied ? 'text-emerald-400' : 'text-slate-500 group-hover:text-slate-300'} transition`}>
+                  <code className="text-sm text-[#B08D57] font-mono">/start {tgCode}</code>
+                  <span className={`text-xs ${tgCopied ? 'text-[#3ecf6a]' : 'text-[#F5EFE0]/30 group-hover:text-[#F5EFE0]/60'} transition`}>
                     {tgCopied ? '✓ copied' : 'tap to copy'}
                   </span>
                 </div>
               </button>
 
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              <div className="flex items-center gap-2 text-xs text-[#F5EFE0]/45">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#B08D57] animate-pulse" />
                 {tgPolling ? 'Waiting for you to send the message…' : 'Checking link status…'}
               </div>
             </div>
           ) : (
             <button
               onClick={startTelegramLink}
-              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-medium transition"
+              className="px-4 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] rounded text-sm font-semibold uppercase tracking-wide font-[var(--font-oswald)] transition"
             >
               Link Telegram
             </button>
@@ -344,10 +344,10 @@ export default function SettingsPage() {
         </div>
 
         {/* Provider Info */}
-        <div className="p-4 bg-slate-800/20 rounded-2xl border border-slate-700/30 text-sm text-slate-500">
+        <div className="p-4 bg-[#141210] rounded border border-[rgba(176,141,87,0.18)] text-sm text-[#F5EFE0]/45">
           <p>
             Signed in via{' '}
-            <span className="text-slate-300">
+            <span className="text-[#F5EFE0]/80">
               {(session?.user as any)?.twitterHandle
                 ? `Twitter (@${(session?.user as any)?.twitterHandle})`
                 : (session?.user as any)?.email

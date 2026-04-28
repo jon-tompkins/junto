@@ -31,10 +31,10 @@ interface JuntoOption {
 }
 
 const STANCE_COLORS: Record<string, string> = {
-  bullish: 'bg-emerald-900/40 text-emerald-400 border border-emerald-700/40',
-  bearish: 'bg-red-900/40 text-red-400 border border-red-700/40',
+  bullish: 'bg-[#3ecf6a]/15 text-[#3ecf6a] border border-[#3ecf6a]/40',
+  bearish: 'bg-[#e8453c]/15 text-[#e8453c] border border-[#e8453c]/40',
   cautious: 'bg-amber-900/40 text-amber-400 border border-amber-700/40',
-  neutral: 'bg-slate-700/40 text-slate-400 border border-slate-600/40',
+  neutral: 'bg-[#1c1a17] text-[#F5EFE0]/45 border border-[rgba(176,141,87,0.18)]',
 };
 
 const STANCE_ICONS: Record<string, string> = {
@@ -52,7 +52,7 @@ function AnalystRow({ p }: { p: SourceProfile }) {
   return (
     <>
       <tr
-        className="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors cursor-pointer"
+        className="border-b border-[rgba(176,141,87,0.18)] hover:bg-[#141210] transition-colors cursor-pointer"
         onClick={() => setExpanded((e) => !e)}
       >
         {/* Handle */}
@@ -62,23 +62,23 @@ function AnalystRow({ p }: { p: SourceProfile }) {
               <img
                 src={p.source.avatar_url}
                 alt={handle}
-                className="w-8 h-8 rounded-full bg-slate-700 object-cover shrink-0"
+                className="w-8 h-8 rounded bg-[#1c1a17] object-cover shrink-0"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-400 text-xs font-medium shrink-0">
+              <div className="w-8 h-8 rounded bg-[#1c1a17] flex items-center justify-center text-[#F5EFE0]/60 text-xs font-medium shrink-0">
                 {handle[0]?.toUpperCase()}
               </div>
             )}
             <div>
               <Link
                 href={`/sources/${handle}`}
-                className="font-medium text-white hover:text-blue-400 transition text-sm"
+                className="font-medium text-[#F5EFE0] hover:text-[#B08D57] transition text-sm"
                 onClick={(e) => e.stopPropagation()}
               >
                 @{handle}
               </Link>
               {p.source.display_name && (
-                <div className="text-xs text-slate-500">{p.source.display_name}</div>
+                <div className="text-xs text-[#F5EFE0]/45">{p.source.display_name}</div>
               )}
             </div>
           </div>
@@ -86,12 +86,12 @@ function AnalystRow({ p }: { p: SourceProfile }) {
 
         {/* Summary snippet */}
         <td className="px-4 py-3 max-w-sm">
-          <p className="text-sm text-slate-400 line-clamp-1">
-            {p.summary || <span className="text-slate-600 italic">No analysis yet</span>}
+          <p className="text-sm text-[#F5EFE0]/60 line-clamp-1">
+            {p.summary || <span className="text-[#F5EFE0]/30 italic">No analysis yet</span>}
           </p>
         </td>
 
-        {/* Positions — clickable, link to /positions/[ticker] */}
+        {/* Positions */}
         <td className="px-4 py-3">
           <div className="flex gap-1.5 flex-wrap">
             {positionEntries.slice(0, 5).map(([ticker, pos]) => (
@@ -99,38 +99,38 @@ function AnalystRow({ p }: { p: SourceProfile }) {
                 key={ticker}
                 href={`/positions/${encodeURIComponent(ticker)}`}
                 onClick={(e) => e.stopPropagation()}
-                className={`text-xs px-2 py-0.5 rounded-full font-medium font-mono hover:opacity-80 transition ${STANCE_COLORS[pos.stance]}`}
+                className={`text-xs px-2 py-0.5 rounded-sm font-medium font-mono hover:opacity-80 transition ${STANCE_COLORS[pos.stance]}`}
               >
                 {STANCE_ICONS[pos.stance]} {ticker}
               </Link>
             ))}
             {positionEntries.length > 5 && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700/40 text-slate-500">
+              <span className="text-xs px-2 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45">
                 +{positionEntries.length - 5}
               </span>
             )}
             {positionEntries.length === 0 && (
-              <span className="text-xs text-slate-600">—</span>
+              <span className="text-xs text-[#F5EFE0]/30">—</span>
             )}
           </div>
         </td>
 
         {/* Updated */}
-        <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-600 text-right">
+        <td className="px-4 py-3 whitespace-nowrap text-xs text-[#F5EFE0]/30 text-right">
           <div className="flex items-center justify-end gap-2">
             <span>{new Date(p.last_updated).toLocaleDateString()}</span>
-            <span className="text-slate-700">{expanded ? '▲' : '▼'}</span>
+            <span className="text-[#F5EFE0]/20">{expanded ? '▲' : '▼'}</span>
           </div>
         </td>
       </tr>
 
       {/* Expanded row */}
       {expanded && (
-        <tr className="border-b border-slate-800/60 bg-slate-900/40">
+        <tr className="border-b border-[rgba(176,141,87,0.18)] bg-[#080604]">
           <td colSpan={4} className="px-4 py-4">
             <div className="pl-11 space-y-4">
               {p.summary && (
-                <p className="text-sm text-slate-300 leading-relaxed max-w-2xl">{p.summary}</p>
+                <p className="text-sm text-[#F5EFE0]/80 leading-relaxed max-w-2xl">{p.summary}</p>
               )}
 
               {positionEntries.length > 0 && (
@@ -140,7 +140,7 @@ function AnalystRow({ p }: { p: SourceProfile }) {
                       key={ticker}
                       href={`/positions/${encodeURIComponent(ticker)}`}
                       onClick={(e) => e.stopPropagation()}
-                      className={`text-xs px-3 py-1.5 rounded-lg font-mono border flex flex-col gap-0.5 hover:opacity-80 transition ${STANCE_COLORS[pos.stance]}`}
+                      className={`text-xs px-3 py-1.5 rounded font-mono border flex flex-col gap-0.5 hover:opacity-80 transition ${STANCE_COLORS[pos.stance]}`}
                     >
                       <div className="font-semibold">
                         {STANCE_ICONS[pos.stance]} {ticker}
@@ -159,7 +159,7 @@ function AnalystRow({ p }: { p: SourceProfile }) {
 
               <Link
                 href={`/sources/${handle}`}
-                className="inline-block text-xs text-blue-400 hover:text-blue-300 transition"
+                className="inline-block text-xs text-[#B08D57] hover:text-[#B08D57]/80 transition"
                 onClick={(e) => e.stopPropagation()}
               >
                 Full profile →
@@ -196,7 +196,6 @@ export default function SourcesPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Build set of source_ids allowed by selected juntos
   const juntoSourceIds = juntoFilter.size === 0
     ? null
     : new Set(
@@ -236,15 +235,15 @@ export default function SourcesPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">
-            Analyst <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Profiles</span>
+          <h1 className="text-4xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">
+            Analyst <span className="text-[#B08D57]">Profiles</span>
           </h1>
-          <p className="text-slate-400">Live positions tracked across all sources. Click any position to see aggregate sentiment.</p>
+          <p className="text-[#F5EFE0]/60">Live positions tracked across all sources. Click any position to see aggregate sentiment.</p>
         </div>
 
         {/* Filters */}
@@ -255,22 +254,22 @@ export default function SourcesPage() {
               placeholder="Search analysts..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition text-sm w-48"
+              className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition text-sm w-48"
             />
             <input
               type="text"
               placeholder="Filter ticker (BTC...)"
               value={tickerFilter}
               onChange={(e) => setTickerFilter(e.target.value)}
-              className="bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition text-sm w-44"
+              className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition text-sm w-44"
             />
             <div className="flex gap-2">
               {(['bullish', 'bearish', 'cautious', 'neutral'] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setStanceFilter(stanceFilter === s ? null : s)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition capitalize ${
-                    stanceFilter === s ? STANCE_COLORS[s] : 'bg-slate-800/40 text-slate-400 hover:text-white border border-slate-700/50'
+                  className={`px-3 py-1.5 rounded text-xs font-medium transition capitalize ${
+                    stanceFilter === s ? STANCE_COLORS[s] : 'bg-[#141210] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
                   }`}
                 >
                   {STANCE_ICONS[s]} {s}
@@ -286,10 +285,10 @@ export default function SourcesPage() {
                 <button
                   key={ticker}
                   onClick={() => setTickerFilter(tickerFilter.toUpperCase() === ticker ? '' : ticker)}
-                  className={`text-xs px-2.5 py-1 rounded-full transition font-mono font-medium ${
+                  className={`text-xs px-2.5 py-1 rounded-sm transition font-mono font-medium ${
                     tickerFilter.toUpperCase() === ticker
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-800/60 text-slate-400 hover:bg-slate-700 border border-slate-700/50'
+                      ? 'bg-[#B08D57] text-[#080604]'
+                      : 'bg-[#141210] text-[#F5EFE0]/60 hover:bg-[#1c1a17] border border-[rgba(176,141,87,0.18)]'
                   }`}
                 >
                   {ticker}
@@ -301,15 +300,15 @@ export default function SourcesPage() {
           {/* Junto multi-select */}
           {juntos.length > 0 && (
             <div className="flex gap-2 flex-wrap items-center">
-              <span className="text-xs text-slate-500 font-medium">Junto:</span>
+              <span className="text-xs text-[#F5EFE0]/45 font-medium">Junto:</span>
               {juntos.map((j) => (
                 <button
                   key={j.id}
                   onClick={() => toggleJunto(j.id)}
-                  className={`text-xs px-2.5 py-1 rounded-full transition font-medium ${
+                  className={`text-xs px-2.5 py-1 rounded-sm transition font-medium ${
                     juntoFilter.has(j.id)
-                      ? 'bg-purple-700/60 text-purple-200 border border-purple-600/50'
-                      : 'bg-slate-800/60 text-slate-400 hover:bg-slate-700 border border-slate-700/50'
+                      ? 'bg-[#B08D57]/20 text-[#B08D57] border border-[rgba(176,141,87,0.5)]'
+                      : 'bg-[#141210] text-[#F5EFE0]/60 hover:bg-[#1c1a17] border border-[rgba(176,141,87,0.18)]'
                   }`}
                 >
                   {j.name}
@@ -318,7 +317,7 @@ export default function SourcesPage() {
               {juntoFilter.size > 0 && (
                 <button
                   onClick={() => setJuntoFilter(new Set())}
-                  className="text-xs text-slate-500 hover:text-slate-300 transition px-1"
+                  className="text-xs text-[#F5EFE0]/45 hover:text-[#F5EFE0]/80 transition px-1"
                 >
                   clear
                 </button>
@@ -331,29 +330,29 @@ export default function SourcesPage() {
         {loading ? (
           <div className="space-y-2">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="animate-pulse bg-slate-800/30 border border-slate-700/40 rounded-xl h-14" />
+              <div key={i} className="animate-pulse bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded h-14" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-slate-700/40 rounded-2xl">
-            <p className="text-slate-400 font-medium mb-2">
+          <div className="text-center py-20 border border-dashed border-[rgba(176,141,87,0.28)] rounded">
+            <p className="text-[#F5EFE0]/60 font-medium mb-2">
               {profiles.length === 0 ? 'No profiles yet' : 'No matches'}
             </p>
-            <p className="text-slate-500 text-sm">
+            <p className="text-[#F5EFE0]/45 text-sm">
               {profiles.length === 0
                 ? 'Profiles populate automatically as content is pulled from sources.'
                 : 'Try adjusting your filters.'}
             </p>
           </div>
         ) : (
-          <div className="rounded-xl border border-slate-700/40 overflow-hidden">
+          <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="bg-slate-800/60 border-b border-slate-700/60">
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide w-48">Analyst</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">Analysis</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide w-72">Positions</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-slate-400 uppercase tracking-wide w-28">Updated</th>
+                <tr className="bg-[#141210] border-b border-[rgba(176,141,87,0.28)]">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide w-48 font-[var(--font-oswald)]">Analyst</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Analysis</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide w-72 font-[var(--font-oswald)]">Positions</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide w-28 font-[var(--font-oswald)]">Updated</th>
                 </tr>
               </thead>
               <tbody>
@@ -366,7 +365,7 @@ export default function SourcesPage() {
         )}
 
         {!loading && filtered.length > 0 && (
-          <p className="text-xs text-slate-600 mt-4 text-right">
+          <p className="text-xs text-[#F5EFE0]/30 mt-4 text-right">
             {filtered.length} analyst{filtered.length !== 1 ? 's' : ''}
             {filtered.length !== profiles.length ? ` of ${profiles.length}` : ''}
           </p>

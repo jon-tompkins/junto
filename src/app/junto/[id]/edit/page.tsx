@@ -188,10 +188,10 @@ export default function EditJuntoPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
         <TopNav />
         <div className="container mx-auto px-4 py-16 max-w-2xl">
-          <div className="animate-pulse h-8 bg-slate-700 rounded w-1/3" />
+          <div className="animate-pulse h-8 bg-[#141210] rounded w-1/3" />
         </div>
       </main>
     );
@@ -199,57 +199,57 @@ export default function EditJuntoPage() {
 
   if (!junto) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
         <TopNav />
         <div className="container mx-auto px-4 py-16 max-w-2xl text-center">
-          <p className="text-slate-400 mb-4">Junto not found</p>
-          <Link href="/dashboard" className="text-blue-400 hover:text-blue-300 text-sm">← Dashboard</Link>
+          <p className="text-[#F5EFE0]/60 mb-4">Junto not found</p>
+          <Link href="/dashboard" className="text-[#B08D57] hover:text-[#B08D57]/80 text-sm">← Dashboard</Link>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Link href={`/junto/${id}`} className="text-slate-500 hover:text-slate-300 text-sm transition mb-6 inline-block">
+        <Link href={`/junto/${id}`} className="text-[#F5EFE0]/45 hover:text-[#F5EFE0]/80 text-sm transition mb-6 inline-block">
           ← Back to junto
         </Link>
 
-        <h1 className="text-3xl font-bold mb-8">Edit Junto</h1>
+        <h1 className="text-3xl font-bold mb-8 font-[var(--font-oswald)] uppercase tracking-wide">Edit Junto</h1>
 
-        <div className="bg-slate-800/30 border border-slate-700/40 rounded-xl p-5 mb-5">
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Name</label>
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-5">
+          <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-1.5">Name</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition mb-4"
+            className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition mb-4"
           />
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Description</label>
+          <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-1.5">Description</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            className="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition resize-none mb-4"
+            className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition resize-none mb-4"
           />
           <div className="flex items-center gap-3">
             <button
               onClick={saveMeta}
               disabled={savingMeta || !name.trim()}
-              className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg px-4 py-2 text-sm font-medium transition"
+              className="bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 text-[#080604] rounded px-4 py-2 text-sm font-medium transition font-[var(--font-oswald)] uppercase tracking-wide"
             >
               {savingMeta ? 'Saving...' : 'Save Changes'}
             </button>
             {savedAt && Date.now() - savedAt < 3000 && (
-              <span className="text-xs text-emerald-400">Saved</span>
+              <span className="text-xs text-[#3ecf6a]">Saved</span>
             )}
           </div>
         </div>
 
-        <div className="bg-slate-800/30 border border-slate-700/40 rounded-xl p-5 mb-5">
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Add Sources</label>
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-5">
+          <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-1.5">Add Sources</label>
           <div className="relative">
             <input
               type="text"
@@ -257,10 +257,10 @@ export default function EditJuntoPage() {
               onChange={(e) => setQuery(e.target.value)}
               onFocus={() => results.length > 0 && setShowDropdown(true)}
               placeholder="Search by handle or name..."
-              className="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition"
+              className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition"
             />
             {showDropdown && (
-              <div className="absolute z-20 mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+              <div className="absolute z-20 mt-1 w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded shadow-xl max-h-64 overflow-y-auto">
                 {results.map((r) => {
                   const alreadyAdded = junto.junto_sources.some((js) => js.source_id === r.id);
                   return (
@@ -270,21 +270,21 @@ export default function EditJuntoPage() {
                       disabled={alreadyAdded}
                       onClick={() => addSource(r)}
                       className={`w-full text-left flex items-center gap-3 px-3 py-2 transition ${
-                        alreadyAdded ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-700/50'
+                        alreadyAdded ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#1c1a17]'
                       }`}
                     >
                       {r.avatar_url ? (
-                        <img src={r.avatar_url} alt={r.handle_or_url} className="w-8 h-8 rounded-full bg-slate-700 object-cover" />
+                        <img src={r.avatar_url} alt={r.handle_or_url} className="w-8 h-8 rounded bg-[#1c1a17] object-cover" />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-300">
+                        <div className="w-8 h-8 rounded bg-[#1c1a17] flex items-center justify-center text-xs font-bold text-[#F5EFE0]/80">
                           {r.handle_or_url[0]?.toUpperCase()}
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium truncate">@{r.handle_or_url}</div>
-                        {r.display_name && <div className="text-xs text-slate-400 truncate">{r.display_name}</div>}
+                        {r.display_name && <div className="text-xs text-[#F5EFE0]/60 truncate">{r.display_name}</div>}
                       </div>
-                      {alreadyAdded && <span className="text-xs text-emerald-400">added</span>}
+                      {alreadyAdded && <span className="text-xs text-[#3ecf6a]">added</span>}
                     </button>
                   );
                 })}
@@ -293,14 +293,14 @@ export default function EditJuntoPage() {
                     type="button"
                     disabled={adding}
                     onClick={() => addNewHandle(query)}
-                    className="w-full text-left flex items-center gap-3 px-3 py-2.5 border-t border-slate-700/50 hover:bg-emerald-900/20 transition"
+                    className="w-full text-left flex items-center gap-3 px-3 py-2.5 border-t border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17] transition"
                   >
-                    <div className="w-8 h-8 rounded-full bg-emerald-900/40 flex items-center justify-center text-emerald-400 text-sm font-bold">+</div>
+                    <div className="w-8 h-8 rounded bg-[#B08D57]/20 flex items-center justify-center text-[#B08D57] text-sm font-bold">+</div>
                     <div>
-                      <div className="text-sm font-medium text-emerald-400">
+                      <div className="text-sm font-medium text-[#B08D57]">
                         {adding ? 'Adding...' : `Add @${query.trim().replace('@', '')}`}
                       </div>
-                      <div className="text-xs text-slate-500">New source — will start pulling tweets</div>
+                      <div className="text-xs text-[#F5EFE0]/45">New source — will start pulling tweets</div>
                     </div>
                   </button>
                 )}
@@ -309,32 +309,32 @@ export default function EditJuntoPage() {
           </div>
 
           <div className="mt-4">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+            <h3 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-2 font-[var(--font-oswald)]">
               Current Members ({junto.junto_sources.length})
             </h3>
             {junto.junto_sources.length === 0 ? (
-              <p className="text-sm text-slate-500">No sources yet.</p>
+              <p className="text-sm text-[#F5EFE0]/45">No sources yet.</p>
             ) : (
               <div className="space-y-2">
                 {junto.junto_sources.map((js) => {
                   const s = js.source;
                   if (!s) return null;
                   return (
-                    <div key={js.id} className="flex items-center gap-3 bg-slate-800/40 border border-slate-700/40 rounded-lg px-3 py-2">
+                    <div key={js.id} className="flex items-center gap-3 bg-[#080604] border border-[rgba(176,141,87,0.18)] rounded px-3 py-2">
                       {s.avatar_url ? (
-                        <img src={s.avatar_url} alt={s.handle_or_url} className="w-8 h-8 rounded-full bg-slate-700 object-cover" />
+                        <img src={s.avatar_url} alt={s.handle_or_url} className="w-8 h-8 rounded bg-[#1c1a17] object-cover" />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-300">
+                        <div className="w-8 h-8 rounded bg-[#1c1a17] flex items-center justify-center text-xs font-bold text-[#F5EFE0]/80">
                           {s.handle_or_url[0]?.toUpperCase()}
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium truncate">@{s.handle_or_url}</div>
-                        {s.display_name && <div className="text-xs text-slate-400 truncate">{s.display_name}</div>}
+                        {s.display_name && <div className="text-xs text-[#F5EFE0]/60 truncate">{s.display_name}</div>}
                       </div>
                       <button
                         onClick={() => removeSource(js.source_id)}
-                        className="text-slate-500 hover:text-red-400 transition text-lg leading-none px-2"
+                        className="text-[#F5EFE0]/45 hover:text-[#e8453c] transition text-lg leading-none px-2"
                         aria-label="Remove"
                       >
                         ×
@@ -348,19 +348,19 @@ export default function EditJuntoPage() {
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-600/10 border border-red-600/30 rounded-lg text-sm text-red-400">{error}</div>
+          <div className="mb-4 p-3 bg-[#e8453c]/10 border border-[#e8453c]/30 rounded text-sm text-[#e8453c]">{error}</div>
         )}
 
-        <div className="flex justify-between items-center pt-4 border-t border-slate-800">
+        <div className="flex justify-between items-center pt-4 border-t border-[rgba(176,141,87,0.18)]">
           <button
             onClick={handleDelete}
-            className="text-sm text-red-400 hover:text-red-300 transition"
+            className="text-sm text-[#e8453c] hover:text-[#e8453c]/80 transition"
           >
             Delete junto
           </button>
           <Link
             href={`/junto/${id}`}
-            className="text-slate-400 hover:text-white text-sm"
+            className="text-[#F5EFE0]/60 hover:text-[#F5EFE0] text-sm"
           >
             Done
           </Link>
