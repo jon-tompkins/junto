@@ -5,17 +5,43 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 
+type SourceType = 'twitter' | 'youtube' | 'newsletter';
+
 interface SearchResult {
   id: string;
   handle_or_url: string;
   display_name: string | null;
   avatar_url: string | null;
+  type?: SourceType | string;
+}
+
+const TYPE_LABELS: Record<SourceType, string> = {
+  twitter: 'TW',
+  youtube: 'YT',
+  newsletter: 'NL',
+};
+
+const TYPE_PULL_TEXT: Record<SourceType, string> = {
+  twitter: 'will start pulling tweets',
+  youtube: 'will start pulling videos',
+  newsletter: 'will start pulling articles',
+};
+
+function TypeBadge({ type }: { type: SourceType | string | undefined }) {
+  const t = (type || 'twitter') as SourceType;
+  const label = TYPE_LABELS[t] || (t as string).slice(0, 2).toUpperCase();
+  return (
+    <span className="text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#B08D57]/20 text-[#B08D57] border border-[#B08D57]/30">
+      {label}
+    </span>
+  );
 }
 
 export default function NewJuntoPage() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [sourceType, setSourceType] = useState<SourceType>('twitter');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [added, setAdded] = useState<SearchResult[]>([]);
@@ -27,13 +53,18 @@ export default function NewJuntoPage() {
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (sourceType !== 'twitter') {
+      setResults([]);
+      setShowDropdown(false);
+      return;
+    }
     if (!query.trim()) {
       setResults([]);
       setShowDropdown(false);
       return;
     }
     debounceRef.current = setTimeout(() => {
-      fetch(`/api/sources/search?q=${encodeURIComponent(query.trim())}`)
+      fetch(`/api/sources/search?q=${encodeURIComponent(query.trim())}&type=twitter`)
         .then((r) => r.json())
         .then((data) => {
           if (Array.isArray(data)) {
@@ -46,7 +77,7 @@ export default function NewJuntoPage() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query]);
+  }, [query, sourceType]);
 
   function addSource(s: SearchResult) {
     if (added.some((a) => a.id === s.id)) return;
@@ -59,7 +90,7 @@ export default function NewJuntoPage() {
   async function addNewHandle(handle: string) {
     const clean = handle.toLowerCase().replace('@', '').trim();
     if (!clean) return;
-    if (added.some((a) => a.handle_or_url === clean)) {
+    if (added.some((a) => a.handle_or_url === clean && (a.type || 'twitter') === 'twitter')) {
       setQuery(''); setShowDropdown(false); return;
     }
     setAdding(true);
@@ -77,6 +108,30 @@ export default function NewJuntoPage() {
       setShowDropdown(false);
     } catch {
       setError(`Failed to add @${clean}`);
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function addNewUrl(rawUrl: string) {
+    const cleanUrl = rawUrl.trim();
+    if (!cleanUrl) return;
+    if (added.some((a) => a.handle_or_url === cleanUrl && a.type === sourceType)) {
+      setQuery(''); return;
+    }
+    setAdding(true);
+    try {
+      const res = await fetch('/api/sources', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: cleanUrl, type: sourceType }),
+      });
+      if (!res.ok) throw new Error('Failed to add source');
+      const source = await res.json();
+      setAdded((prev) => [...prev, source]);
+      setQuery('');
+    } catch {
+      setError(`Failed to add ${cleanUrl}`);
     } finally {
       setAdding(false);
     }
@@ -116,6 +171,9 @@ export default function NewJuntoPage() {
     }
   }
 
+  const isUrlType = sourceType !== 'twitter';
+  const inputPlaceholder = sourceType === 'twitter' ? 'Search by handle or name...' : 'https://...';
+
   return (
     <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
@@ -125,7 +183,7 @@ export default function NewJuntoPage() {
         </Link>
 
         <h1 className="text-3xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">New Junto</h1>
-        <p className="text-[#F5EFE0]/60 mb-8">A curated collection of Twitter sources you can use across dispatches.</p>
+        <p className="text-[#F5EFE0]/60 mb-8">A curated collection of sources you can use across dispatches.</p>
 
         <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-5">
           <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-1.5">Name</label>
@@ -148,16 +206,53 @@ export default function NewJuntoPage() {
 
         <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-5">
           <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-1.5">Add Sources</label>
+
+          {/* Source type selector */}
+          <div className="flex gap-2 mb-3">
+            {(['twitter', 'youtube', 'newsletter'] as SourceType[]).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => { setSourceType(t); setQuery(''); setResults([]); setShowDropdown(false); }}
+                className={`px-3.5 py-1.5 rounded text-xs font-medium transition font-[var(--font-oswald)] uppercase tracking-wide ${
+                  sourceType === t
+                    ? 'bg-[#B08D57] text-[#080604]'
+                    : 'bg-[#080604] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
+                }`}
+              >
+                {t === 'twitter' ? 'Twitter' : t === 'youtube' ? 'YouTube' : 'Newsletter'}
+              </button>
+            ))}
+          </div>
+
           <div className="relative">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={() => results.length > 0 && setShowDropdown(true)}
-              placeholder="Search by handle or name..."
-              className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition"
-            />
-            {showDropdown && (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => sourceType === 'twitter' && results.length > 0 && setShowDropdown(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && isUrlType && query.trim()) {
+                    e.preventDefault();
+                    addNewUrl(query);
+                  }
+                }}
+                placeholder={inputPlaceholder}
+                className="flex-1 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition"
+              />
+              {isUrlType && (
+                <button
+                  type="button"
+                  onClick={() => addNewUrl(query)}
+                  disabled={adding || !query.trim()}
+                  className="px-5 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 disabled:cursor-not-allowed rounded text-sm font-medium transition text-[#080604]"
+                >
+                  {adding ? 'Adding...' : 'Add'}
+                </button>
+              )}
+            </div>
+            {sourceType === 'twitter' && showDropdown && (
               <div className="absolute z-20 mt-1 w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded shadow-xl max-h-64 overflow-y-auto">
                 {results.map((r) => {
                   const alreadyAdded = added.some((a) => a.id === r.id);
@@ -187,7 +282,7 @@ export default function NewJuntoPage() {
                   );
                 })}
                 {/* Always show "Add new handle" option */}
-                {query.trim() && !added.some((a) => a.handle_or_url === query.trim().toLowerCase().replace('@', '')) && (
+                {query.trim() && !added.some((a) => a.handle_or_url === query.trim().toLowerCase().replace('@', '') && (a.type || 'twitter') === 'twitter') && (
                   <button
                     type="button"
                     disabled={adding}
@@ -199,38 +294,52 @@ export default function NewJuntoPage() {
                       <div className="text-sm font-medium text-[#B08D57]">
                         {adding ? 'Adding...' : `Add @${query.trim().replace('@', '')}`}
                       </div>
-                      <div className="text-xs text-[#F5EFE0]/45">New source — will start pulling tweets</div>
+                      <div className="text-xs text-[#F5EFE0]/45">New source — {TYPE_PULL_TEXT.twitter}</div>
                     </div>
                   </button>
                 )}
               </div>
             )}
           </div>
+          {isUrlType && (
+            <p className="text-xs text-[#F5EFE0]/45 mt-2">
+              New source — {TYPE_PULL_TEXT[sourceType]}
+            </p>
+          )}
 
           {added.length > 0 && (
             <div className="mt-4 space-y-2">
-              {added.map((s) => (
-                <div key={s.id} className="flex items-center gap-3 bg-[#080604] border border-[rgba(176,141,87,0.18)] rounded px-3 py-2">
-                  {s.avatar_url ? (
-                    <img src={s.avatar_url} alt={s.handle_or_url} className="w-8 h-8 rounded bg-[#1c1a17] object-cover" />
-                  ) : (
-                    <div className="w-8 h-8 rounded bg-[#1c1a17] flex items-center justify-center text-xs font-bold text-[#F5EFE0]/80">
-                      {s.handle_or_url[0]?.toUpperCase()}
+              {added.map((s) => {
+                const t = (s.type || 'twitter') as SourceType;
+                const isTwitter = t === 'twitter';
+                return (
+                  <div key={s.id} className="flex items-center gap-3 bg-[#080604] border border-[rgba(176,141,87,0.18)] rounded px-3 py-2">
+                    {s.avatar_url ? (
+                      <img src={s.avatar_url} alt={s.handle_or_url} className="w-8 h-8 rounded bg-[#1c1a17] object-cover" />
+                    ) : (
+                      <div className="w-8 h-8 rounded bg-[#1c1a17] flex items-center justify-center text-xs font-bold text-[#F5EFE0]/80">
+                        {s.handle_or_url[0]?.toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <TypeBadge type={t} />
+                        <span className="text-sm font-medium truncate">
+                          {isTwitter ? `@${s.handle_or_url}` : s.handle_or_url}
+                        </span>
+                      </div>
+                      {s.display_name && <div className="text-xs text-[#F5EFE0]/60 truncate mt-0.5">{s.display_name}</div>}
                     </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium truncate">@{s.handle_or_url}</div>
-                    {s.display_name && <div className="text-xs text-[#F5EFE0]/60 truncate">{s.display_name}</div>}
+                    <button
+                      onClick={() => removeSource(s.id)}
+                      className="text-[#F5EFE0]/45 hover:text-[#e8453c] transition text-lg leading-none px-2"
+                      aria-label="Remove"
+                    >
+                      ×
+                    </button>
                   </div>
-                  <button
-                    onClick={() => removeSource(s.id)}
-                    className="text-[#F5EFE0]/45 hover:text-[#e8453c] transition text-lg leading-none px-2"
-                    aria-label="Remove"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

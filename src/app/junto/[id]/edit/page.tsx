@@ -5,11 +5,14 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 
+type SourceType = 'twitter' | 'youtube' | 'newsletter';
+
 interface SearchResult {
   id: string;
   handle_or_url: string;
   display_name: string | null;
   avatar_url: string | null;
+  type?: SourceType | string;
 }
 
 interface JuntoSourceItem {
@@ -20,6 +23,7 @@ interface JuntoSourceItem {
     handle_or_url: string;
     display_name: string | null;
     avatar_url: string | null;
+    type?: SourceType | string;
   } | null;
 }
 
@@ -29,6 +33,28 @@ interface JuntoData {
   description: string | null;
   is_public: boolean;
   junto_sources: JuntoSourceItem[];
+}
+
+const TYPE_LABELS: Record<SourceType, string> = {
+  twitter: 'TW',
+  youtube: 'YT',
+  newsletter: 'NL',
+};
+
+const TYPE_PULL_TEXT: Record<SourceType, string> = {
+  twitter: 'will start pulling tweets',
+  youtube: 'will start pulling videos',
+  newsletter: 'will start pulling articles',
+};
+
+function TypeBadge({ type }: { type: SourceType | string | undefined }) {
+  const t = (type || 'twitter') as SourceType;
+  const label = TYPE_LABELS[t] || (t as string).slice(0, 2).toUpperCase();
+  return (
+    <span className="text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#B08D57]/20 text-[#B08D57] border border-[#B08D57]/30">
+      {label}
+    </span>
+  );
 }
 
 export default function EditJuntoPage() {
@@ -41,6 +67,7 @@ export default function EditJuntoPage() {
   const [description, setDescription] = useState('');
   const [savingMeta, setSavingMeta] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [sourceType, setSourceType] = useState<SourceType>('twitter');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -67,13 +94,18 @@ export default function EditJuntoPage() {
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (sourceType !== 'twitter') {
+      setResults([]);
+      setShowDropdown(false);
+      return;
+    }
     if (!query.trim()) {
       setResults([]);
       setShowDropdown(false);
       return;
     }
     debounceRef.current = setTimeout(() => {
-      fetch(`/api/sources/search?q=${encodeURIComponent(query.trim())}`)
+      fetch(`/api/sources/search?q=${encodeURIComponent(query.trim())}&type=twitter`)
         .then((r) => r.json())
         .then((data) => {
           if (Array.isArray(data)) {
@@ -86,12 +118,12 @@ export default function EditJuntoPage() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query]);
+  }, [query, sourceType]);
 
   async function addNewHandle(handle: string) {
     const clean = handle.toLowerCase().replace('@', '').trim();
     if (!clean) return;
-    if (junto?.junto_sources.some((js) => js.source?.handle_or_url === clean)) {
+    if (junto?.junto_sources.some((js) => js.source?.handle_or_url === clean && (js.source?.type || 'twitter') === 'twitter')) {
       setQuery(''); setShowDropdown(false); return;
     }
     setAdding(true);
@@ -107,6 +139,30 @@ export default function EditJuntoPage() {
       await addSource(source);
     } catch {
       setError(`Failed to add @${clean}`);
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function addNewUrl(rawUrl: string) {
+    const cleanUrl = rawUrl.trim();
+    if (!cleanUrl) return;
+    if (junto?.junto_sources.some((js) => js.source?.handle_or_url === cleanUrl && js.source?.type === sourceType)) {
+      setQuery(''); return;
+    }
+    setAdding(true);
+    setError('');
+    try {
+      const createRes = await fetch('/api/sources', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: cleanUrl, type: sourceType }),
+      });
+      if (!createRes.ok) throw new Error('Failed to create source');
+      const source = await createRes.json();
+      await addSource(source);
+    } catch {
+      setError(`Failed to add ${cleanUrl}`);
     } finally {
       setAdding(false);
     }
@@ -209,6 +265,9 @@ export default function EditJuntoPage() {
     );
   }
 
+  const isUrlType = sourceType !== 'twitter';
+  const inputPlaceholder = sourceType === 'twitter' ? 'Search by handle or name...' : 'https://...';
+
   return (
     <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
@@ -250,16 +309,53 @@ export default function EditJuntoPage() {
 
         <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-5">
           <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-1.5">Add Sources</label>
+
+          {/* Source type selector */}
+          <div className="flex gap-2 mb-3">
+            {(['twitter', 'youtube', 'newsletter'] as SourceType[]).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => { setSourceType(t); setQuery(''); setResults([]); setShowDropdown(false); }}
+                className={`px-3.5 py-1.5 rounded text-xs font-medium transition font-[var(--font-oswald)] uppercase tracking-wide ${
+                  sourceType === t
+                    ? 'bg-[#B08D57] text-[#080604]'
+                    : 'bg-[#080604] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
+                }`}
+              >
+                {t === 'twitter' ? 'Twitter' : t === 'youtube' ? 'YouTube' : 'Newsletter'}
+              </button>
+            ))}
+          </div>
+
           <div className="relative">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={() => results.length > 0 && setShowDropdown(true)}
-              placeholder="Search by handle or name..."
-              className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition"
-            />
-            {showDropdown && (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => sourceType === 'twitter' && results.length > 0 && setShowDropdown(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && isUrlType && query.trim()) {
+                    e.preventDefault();
+                    addNewUrl(query);
+                  }
+                }}
+                placeholder={inputPlaceholder}
+                className="flex-1 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition"
+              />
+              {isUrlType && (
+                <button
+                  type="button"
+                  onClick={() => addNewUrl(query)}
+                  disabled={adding || !query.trim()}
+                  className="px-5 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 disabled:cursor-not-allowed rounded text-sm font-medium transition text-[#080604]"
+                >
+                  {adding ? 'Adding...' : 'Add'}
+                </button>
+              )}
+            </div>
+            {sourceType === 'twitter' && showDropdown && (
               <div className="absolute z-20 mt-1 w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded shadow-xl max-h-64 overflow-y-auto">
                 {results.map((r) => {
                   const alreadyAdded = junto.junto_sources.some((js) => js.source_id === r.id);
@@ -288,7 +384,7 @@ export default function EditJuntoPage() {
                     </button>
                   );
                 })}
-                {query.trim() && !junto.junto_sources.some((js) => js.source?.handle_or_url === query.trim().toLowerCase().replace('@', '')) && (
+                {query.trim() && !junto.junto_sources.some((js) => js.source?.handle_or_url === query.trim().toLowerCase().replace('@', '') && (js.source?.type || 'twitter') === 'twitter') && (
                   <button
                     type="button"
                     disabled={adding}
@@ -300,13 +396,18 @@ export default function EditJuntoPage() {
                       <div className="text-sm font-medium text-[#B08D57]">
                         {adding ? 'Adding...' : `Add @${query.trim().replace('@', '')}`}
                       </div>
-                      <div className="text-xs text-[#F5EFE0]/45">New source — will start pulling tweets</div>
+                      <div className="text-xs text-[#F5EFE0]/45">New source — {TYPE_PULL_TEXT.twitter}</div>
                     </div>
                   </button>
                 )}
               </div>
             )}
           </div>
+          {isUrlType && (
+            <p className="text-xs text-[#F5EFE0]/45 mt-2">
+              New source — {TYPE_PULL_TEXT[sourceType]}
+            </p>
+          )}
 
           <div className="mt-4">
             <h3 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-2 font-[var(--font-oswald)]">
@@ -319,6 +420,8 @@ export default function EditJuntoPage() {
                 {junto.junto_sources.map((js) => {
                   const s = js.source;
                   if (!s) return null;
+                  const t = (s.type || 'twitter') as SourceType;
+                  const isTwitter = t === 'twitter';
                   return (
                     <div key={js.id} className="flex items-center gap-3 bg-[#080604] border border-[rgba(176,141,87,0.18)] rounded px-3 py-2">
                       {s.avatar_url ? (
@@ -329,8 +432,13 @@ export default function EditJuntoPage() {
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium truncate">@{s.handle_or_url}</div>
-                        {s.display_name && <div className="text-xs text-[#F5EFE0]/60 truncate">{s.display_name}</div>}
+                        <div className="flex items-center gap-2">
+                          <TypeBadge type={t} />
+                          <span className="text-sm font-medium truncate">
+                            {isTwitter ? `@${s.handle_or_url}` : s.handle_or_url}
+                          </span>
+                        </div>
+                        {s.display_name && <div className="text-xs text-[#F5EFE0]/60 truncate mt-0.5">{s.display_name}</div>}
                       </div>
                       <button
                         onClick={() => removeSource(js.source_id)}

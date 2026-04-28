@@ -144,6 +144,8 @@ function CreateNewsletterPageInner() {
   const [cadence, setCadence] = useState('daily');
   const [isPublic, setIsPublic] = useState(true);
   const [sendDays, setSendDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
+  const [saveAsJunto, setSaveAsJunto] = useState(false);
+  const [juntoSaveName, setJuntoSaveName] = useState('');
 
   useEffect(() => {
     if (!juntoIdParam) return;
@@ -267,7 +269,47 @@ function CreateNewsletterPageInner() {
     setCreating(true);
     setError('');
 
+    let resolvedJuntoId = juntoId;
     try {
+      const validSources = sources.filter((s) => s.status !== 'invalid');
+
+      // Optionally create a Junto from the sources before creating the dispatch
+      if (saveAsJunto && !juntoId && juntoSaveName.trim() && validSources.length > 0) {
+        const sourceIds: string[] = [];
+        for (const src of validSources) {
+          const body =
+            src.type === 'twitter'
+              ? { handle: src.handle }
+              : { url: src.handle, type: src.type };
+          const sRes = await fetch('/api/sources', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          if (!sRes.ok) throw new Error('Failed to create source for junto');
+          const sData = await sRes.json();
+          if (sData?.id) sourceIds.push(sData.id);
+        }
+        const jRes = await fetch('/api/juntos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: juntoSaveName.trim(),
+            source_ids: sourceIds,
+          }),
+        });
+        if (!jRes.ok) {
+          const jErr = await jRes.json().catch(() => ({}));
+          throw new Error(jErr.error || 'Failed to create junto');
+        }
+        const jData = await jRes.json();
+        if (jData?.junto?.id) {
+          resolvedJuntoId = jData.junto.id;
+          setJuntoId(jData.junto.id);
+          setJuntoName(jData.junto.name);
+        }
+      }
+
       const res = await fetch('/api/v2/newsletters', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -278,13 +320,11 @@ function CreateNewsletterPageInner() {
           prompt_template_id: promptTemplateId || undefined,
           secondary_prompt: secondaryPrompt || undefined,
           labels,
-          sources: sources
-            .filter((s) => s.status !== 'invalid')
-            .map((s) => ({ type: s.type, handle_or_url: s.handle })),
+          sources: validSources.map((s) => ({ type: s.type, handle_or_url: s.handle })),
           schedule_cadence: cadence,
           send_days: sendDays,
           is_public: isPublic,
-          junto_id: juntoId || undefined,
+          junto_id: resolvedJuntoId || undefined,
         }),
       });
 
@@ -638,13 +678,45 @@ function CreateNewsletterPageInner() {
                 ))}
               </div>
             )}
+            {sources.length > 0 && !juntoId && (
+              <div className="mt-6 p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210]">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={saveAsJunto}
+                    onChange={(e) => setSaveAsJunto(e.target.checked)}
+                    className="mt-1 accent-[#B08D57]"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-[#F5EFE0]">Save these sources as a Junto</div>
+                    <div className="text-xs text-[#F5EFE0]/60 mt-0.5">
+                      A Junto is a reusable source group you can attach to other dispatches.
+                    </div>
+                  </div>
+                </label>
+                {saveAsJunto && (
+                  <div className="mt-3 pl-7">
+                    <label className="block text-xs font-medium text-[#F5EFE0]/80 mb-1.5">Junto name</label>
+                    <input
+                      type="text"
+                      value={juntoSaveName}
+                      onChange={(e) => setJuntoSaveName(e.target.value)}
+                      placeholder="e.g., Crypto Voices"
+                      className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex justify-between mt-8">
               <button onClick={() => setStep('details')} className="text-[#F5EFE0]/60 hover:text-[#F5EFE0] text-sm transition">
                 &larr; Back
               </button>
               <button
                 onClick={() => setStep('schedule')}
-                className="bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] px-6 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition"
+                disabled={saveAsJunto && !juntoSaveName.trim()}
+                className="bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 disabled:cursor-not-allowed text-[#080604] px-6 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition"
               >
                 Next: Schedule
               </button>
@@ -760,7 +832,7 @@ function CreateNewsletterPageInner() {
               </button>
               <button
                 onClick={handleCreate}
-                disabled={creating || !name || (!prompt && !promptTemplateId)}
+                disabled={creating || !name || (!prompt && !promptTemplateId) || (saveAsJunto && !juntoSaveName.trim())}
                 className="bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 disabled:cursor-not-allowed text-[#080604] px-8 py-3 rounded font-semibold transition font-[var(--font-oswald)] uppercase tracking-wide"
               >
                 {creating ? 'Creating...' : 'Create Dispatch'}

@@ -12,10 +12,41 @@ export async function GET() {
   }
 }
 
-// POST /api/sources — upsert a Twitter source by handle, return the row
+// POST /api/sources — upsert a source by handle (twitter) or url (youtube/newsletter)
 export async function POST(req: NextRequest) {
   try {
-    const { handle } = await req.json();
+    const body = await req.json();
+    const { handle, url, type } = body as { handle?: string; url?: string; type?: string };
+
+    const supabase = getSupabase();
+
+    // URL-based sources: youtube or newsletter
+    if (type === 'youtube' || type === 'newsletter') {
+      if (!url || typeof url !== 'string' || !url.trim()) {
+        return NextResponse.json({ error: 'url is required' }, { status: 400 });
+      }
+      const cleanUrl = url.trim();
+
+      const { data: existing } = await supabase
+        .from('sources')
+        .select('id, handle_or_url, display_name, avatar_url, type')
+        .eq('handle_or_url', cleanUrl)
+        .eq('type', type)
+        .single();
+
+      if (existing) return NextResponse.json(existing);
+
+      const { data, error } = await supabase
+        .from('sources')
+        .insert({ handle_or_url: cleanUrl, type, is_active: true })
+        .select('id, handle_or_url, display_name, avatar_url, type')
+        .single();
+
+      if (error) throw error;
+      return NextResponse.json(data);
+    }
+
+    // Default: Twitter source by handle
     if (!handle || typeof handle !== 'string') {
       return NextResponse.json({ error: 'handle is required' }, { status: 400 });
     }
@@ -23,9 +54,6 @@ export async function POST(req: NextRequest) {
     const clean = handle.toLowerCase().replace('@', '').trim();
     if (!clean) return NextResponse.json({ error: 'Invalid handle' }, { status: 400 });
 
-    const supabase = getSupabase();
-
-    // Return existing source if already in DB
     const { data: existing } = await supabase
       .from('sources')
       .select('id, handle_or_url, display_name, avatar_url, type')
@@ -35,7 +63,6 @@ export async function POST(req: NextRequest) {
 
     if (existing) return NextResponse.json(existing);
 
-    // Create new source — display_name and avatar_url will be populated on first content pull
     const { data, error } = await supabase
       .from('sources')
       .insert({ handle_or_url: clean, type: 'twitter', is_active: true })
