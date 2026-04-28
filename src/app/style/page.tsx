@@ -228,8 +228,6 @@ export default function StylePage() {
                     color: BRASS,
                     fontFamily: 'var(--font-oswald), sans-serif',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = BRASS)}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = `${BRASS}55`)}
                 >
                   Browse Juntos
                 </button>
