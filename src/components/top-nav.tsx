@@ -24,48 +24,43 @@ export function TopNav() {
 
   const creditColor =
     creditBalance !== null && creditBalance <= 50
-      ? 'text-red-400'
+      ? '#e8453c'
       : creditBalance !== null && creditBalance <= 100
-        ? 'text-amber-400'
-        : 'text-emerald-400';
+        ? '#B08D57'
+        : '#3ecf6a';
 
   const isActive = (path: string) =>
     pathname === path || pathname?.startsWith(path + '/');
 
-  const navLinkClass = (path: string) =>
-    `text-sm transition ${
-      isActive(path)
-        ? 'text-white font-medium'
-        : 'text-slate-400 hover:text-white'
-    }`;
-
   return (
     <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
       {/* Logo */}
-      <Link href="/" className="text-2xl font-bold tracking-tight">
-        <span className="text-white">my</span>
-        <span className="text-blue-400">junto</span>
+      <Link href="/" className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-oswald)' }}>
+        <span style={{ color: '#F5EFE0' }}>my</span>
+        <span style={{ color: '#B08D57' }}>junto</span>
       </Link>
 
       {/* Center nav links */}
       <div className="hidden md:flex items-center gap-6">
-        <Link href="/explore" className={navLinkClass('/explore')}>
-          Dispatches
-        </Link>
-        <Link href="/juntos" className={navLinkClass('/juntos')}>
-          Juntos
-        </Link>
-        <Link href="/sources" className={navLinkClass('/sources')}>
-          Analysts
-        </Link>
-        <Link href="/docs" className={navLinkClass('/docs')}>
-          Docs
-        </Link>
-        {session?.user && (
-          <Link href="/dashboard" className={navLinkClass('/dashboard')}>
-            Dashboard
+        {[
+          { href: '/explore', label: 'Dispatches' },
+          { href: '/juntos', label: 'Juntos' },
+          { href: '/sources', label: 'Analysts' },
+          { href: '/docs', label: 'Docs' },
+          ...(session?.user ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
+        ].map(({ href, label }) => (
+          <Link
+            key={href}
+            href={href}
+            className="text-sm transition"
+            style={{
+              color: isActive(href) ? '#F5EFE0' : 'rgba(245,239,224,0.5)',
+              fontWeight: isActive(href) ? 500 : undefined,
+            }}
+          >
+            {label}
           </Link>
-        )}
+        ))}
       </div>
 
       {/* Right side: account */}
@@ -73,7 +68,11 @@ export function TopNav() {
         {session?.user ? (
           <>
             {creditBalance !== null && (
-              <Link href="/credits" className={`text-xs font-medium ${creditColor} hover:opacity-80 transition`}>
+              <Link
+                href="/credits"
+                className="text-xs font-medium transition hover:opacity-80"
+                style={{ color: creditColor, fontFamily: 'var(--font-mono)' }}
+              >
                 {creditBalance.toLocaleString()} credits
               </Link>
             )}
@@ -81,70 +80,50 @@ export function TopNav() {
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-sm text-slate-300 hover:bg-slate-600 transition"
+                className="w-8 h-8 rounded-sm flex items-center justify-center text-sm transition"
+                style={{ background: '#1c1a17', color: 'rgba(245,239,224,0.7)', border: '1px solid rgba(176,141,87,0.28)' }}
               >
                 {session.user.name?.[0]?.toUpperCase() || session.user.email?.[0]?.toUpperCase() || '?'}
               </button>
               {menuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 py-1">
-                    <div className="px-3 py-2 border-b border-slate-700">
-                      <p className="text-sm text-white font-medium truncate">
+                  <div className="absolute right-0 mt-2 w-48 rounded-sm shadow-xl z-50 py-1" style={{ background: '#141210', border: '1px solid rgba(176,141,87,0.28)' }}>
+                    <div className="px-3 py-2" style={{ borderBottom: '1px solid rgba(176,141,87,0.18)' }}>
+                      <p className="text-sm font-medium truncate" style={{ color: '#F5EFE0' }}>
                         {session.user.name || session.user.email}
                       </p>
                       {creditBalance !== null && (
-                        <p className={`text-xs ${creditColor}`}>
+                        <p className="text-xs" style={{ color: creditColor, fontFamily: 'var(--font-mono)' }}>
                           {creditBalance.toLocaleString()} credits
                         </p>
                       )}
                     </div>
-                    <Link
-                      href="/credits"
-                      onClick={() => setMenuOpen(false)}
-                      className="block px-3 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-slate-700/50 transition"
-                    >
-                      Buy Credits
-                    </Link>
-                    <Link
-                      href="/settings"
-                      onClick={() => setMenuOpen(false)}
-                      className="block px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition"
-                    >
-                      Settings
-                    </Link>
-                    <Link
-                      href="/dashboard"
-                      onClick={() => setMenuOpen(false)}
-                      className="block px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition"
-                    >
-                      Dashboard
-                    </Link>
-                    <Link
-                      href="/history"
-                      onClick={() => setMenuOpen(false)}
-                      className="block px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition"
-                    >
-                      History
-                    </Link>
-                    <Link
-                      href="/junto/new"
-                      onClick={() => setMenuOpen(false)}
-                      className="block px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition"
-                    >
-                      My Juntos
-                    </Link>
-                    <Link
-                      href="/create"
-                      onClick={() => setMenuOpen(false)}
-                      className="block px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition"
-                    >
-                      Create Dispatch
-                    </Link>
-                    <div className="border-t border-slate-700 mt-1 pt-1">
+                    {[
+                      { href: '/credits', label: 'Buy Credits', brass: true },
+                      { href: '/settings', label: 'Settings', brass: false },
+                      { href: '/dashboard', label: 'Dashboard', brass: false },
+                      { href: '/history', label: 'History', brass: false },
+                      { href: '/junto/new', label: 'My Juntos', brass: false },
+                      { href: '/create', label: 'Create Dispatch', brass: false },
+                    ].map(({ href, label, brass }) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-3 py-2 text-sm transition hover:opacity-80"
+                        style={{ color: brass ? '#B08D57' : 'rgba(245,239,224,0.7)' }}
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                    <div className="mt-1 pt-1" style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}>
                       <button
                         onClick={() => signOut({ callbackUrl: '/' })}
-                        className="block w-full text-left px-3 py-2 text-sm text-slate-500 hover:text-red-400 hover:bg-slate-700/50 transition"
+                        className="block w-full text-left px-3 py-2 text-sm transition"
+                        style={{ color: 'rgba(245,239,224,0.35)' }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#e8453c'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(245,239,224,0.35)'; }}
                       >
                         Sign Out
                       </button>
@@ -156,12 +135,13 @@ export function TopNav() {
           </>
         ) : (
           <div className="flex items-center gap-3">
-            <Link href="/login" className="text-slate-400 hover:text-white transition text-sm">
+            <Link href="/login" className="text-sm transition" style={{ color: 'rgba(245,239,224,0.5)' }}>
               Sign In
             </Link>
             <Link
               href="/create"
-              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-lg shadow-blue-600/20"
+              className="px-4 py-2 rounded-sm text-sm font-semibold transition uppercase tracking-wide"
+              style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}
             >
               Get Started
             </Link>
@@ -171,7 +151,8 @@ export function TopNav() {
         {/* Mobile menu toggle */}
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="md:hidden text-slate-400 hover:text-white"
+          className="md:hidden transition"
+          style={{ color: 'rgba(245,239,224,0.5)' }}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />

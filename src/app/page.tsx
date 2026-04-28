@@ -168,35 +168,37 @@ export default function LandingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#080808] text-white">
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
 
       {/* Hero — left-aligned, editorial */}
       <section className="container mx-auto px-4 pt-28 pb-24 relative grain">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_20%_60%,rgba(245,158,11,0.06),transparent)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_20%_60%,rgba(176,141,87,0.07),transparent)] pointer-events-none" />
         <div className="max-w-5xl mx-auto relative">
           <div className="max-w-3xl">
-            <p className="text-amber-500/80 text-sm font-medium tracking-widest uppercase mb-8">
+            <p className="text-xs font-semibold tracking-widest uppercase mb-8" style={{ color: 'rgba(176,141,87,0.8)', fontFamily: 'var(--font-mono)' }}>
               myjunto
             </p>
             <h1 className="text-6xl md:text-8xl font-bold leading-[0.95] mb-8 tracking-tight">
               The signal,<br />
-              <span className="text-amber-400">not the noise.</span>
+              <span style={{ color: '#B08D57' }}>not the noise.</span>
             </h1>
-            <p className="text-lg text-slate-400 mb-10 max-w-xl leading-relaxed">
+            <p className="text-lg mb-10 max-w-xl leading-relaxed" style={{ color: 'rgba(245,239,224,0.55)' }}>
               Build curated intelligence dispatches from the voices you actually trust —
               Twitter, newsletters, YouTube — synthesized by AI into briefs worth reading.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 href="/create"
-                className="inline-flex items-center justify-center bg-amber-400 hover:bg-amber-300 text-black px-7 py-3.5 rounded-lg font-semibold transition text-base"
+                className="inline-flex items-center justify-center px-7 py-3.5 rounded font-semibold transition text-base uppercase tracking-wide"
+                style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}
               >
                 Create a Dispatch
               </Link>
               <Link
                 href="/juntos"
-                className="inline-flex items-center justify-center border border-white/10 hover:border-white/25 text-slate-300 hover:text-white px-7 py-3.5 rounded-lg font-medium transition text-base"
+                className="inline-flex items-center justify-center px-7 py-3.5 rounded font-medium transition text-base"
+                style={{ border: '1px solid rgba(176,141,87,0.28)', color: 'rgba(245,239,224,0.7)' }}
               >
                 Browse Juntos →
               </Link>
@@ -206,31 +208,31 @@ export default function LandingPage() {
       </section>
 
       {/* Divider */}
-      <div className="border-t border-white/5" />
+      <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
 
       {/* How It Works — horizontal steps, no cards */}
       <section className="container mx-auto px-4 py-20">
         <div className="max-w-5xl mx-auto">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-12">How it works</p>
-          <div className="grid md:grid-cols-3 gap-0 md:divide-x divide-white/5">
-            <div className="md:pr-10 pb-10 md:pb-0">
-              <div className="text-amber-400/60 text-xs font-mono mb-4">01</div>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-12" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>How it works</p>
+          <div className="grid md:grid-cols-3 gap-0" style={{ borderRight: 'none' }}>
+            <div className="md:pr-10 pb-10 md:pb-0" style={{ borderRight: '1px solid rgba(176,141,87,0.18)' }}>
+              <div className="text-xs font-medium mb-4" style={{ color: 'rgba(176,141,87,0.6)', fontFamily: 'var(--font-mono)' }}>01</div>
               <h3 className="text-xl font-semibold mb-3">Choose your sources</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">
+              <p className="text-sm leading-relaxed" style={{ color: 'rgba(245,239,224,0.45)' }}>
                 Twitter accounts, newsletters, YouTube channels. Pick the voices with the actual edge — not the loudest ones.
               </p>
             </div>
-            <div className="md:px-10 pb-10 md:pb-0">
-              <div className="text-amber-400/60 text-xs font-mono mb-4">02</div>
+            <div className="md:px-10 pb-10 md:pb-0" style={{ borderRight: '1px solid rgba(176,141,87,0.18)' }}>
+              <div className="text-xs font-medium mb-4" style={{ color: 'rgba(176,141,87,0.6)', fontFamily: 'var(--font-mono)' }}>02</div>
               <h3 className="text-xl font-semibold mb-3">Define your lens</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">
+              <p className="text-sm leading-relaxed" style={{ color: 'rgba(245,239,224,0.45)' }}>
                 Write a prompt or pick a template. Set the perspective — macro bear, DeFi bull, skeptic. Your frame, your dispatch.
               </p>
             </div>
             <div className="md:pl-10">
-              <div className="text-amber-400/60 text-xs font-mono mb-4">03</div>
+              <div className="text-xs font-medium mb-4" style={{ color: 'rgba(176,141,87,0.6)', fontFamily: 'var(--font-mono)' }}>03</div>
               <h3 className="text-xl font-semibold mb-3">Get intelligence</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">
+              <p className="text-sm leading-relaxed" style={{ color: 'rgba(245,239,224,0.45)' }}>
                 AI synthesizes everything into a brief that moves. Daily, twice daily, or weekly — delivered to email or Telegram.
               </p>
             </div>
@@ -239,56 +241,57 @@ export default function LandingPage() {
       </section>
 
       {/* Divider */}
-      <div className="border-t border-white/5" />
+      <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
 
       {/* Juntos Feature — asymmetric layout */}
       <section className="container mx-auto px-4 py-20">
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-start">
             <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-5">Juntos</p>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-5" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>Juntos</p>
               <h2 className="text-4xl font-bold mb-5 leading-tight">
                 Curated collections.<br />
-                <span className="text-slate-400">One subscription.</span>
+                <span style={{ color: 'rgba(245,239,224,0.45)' }}>One subscription.</span>
               </h2>
-              <p className="text-slate-500 leading-relaxed mb-8">
+              <p className="leading-relaxed mb-8" style={{ color: 'rgba(245,239,224,0.45)' }}>
                 A junto is a themed collection of dispatches — crypto, macro, AI — curated by someone
                 who lives in that space. Subscribe to a junto and get the whole picture in one place.
               </p>
               <Link
                 href="/juntos"
-                className="inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 text-sm font-medium transition"
+                className="inline-flex items-center gap-2 text-sm font-medium transition"
+                style={{ color: '#B08D57' }}
               >
                 Browse all Juntos
                 <span>→</span>
               </Link>
             </div>
             <div className="space-y-px">
-              <div className="flex items-start gap-4 p-5 border border-white/5 hover:border-white/10 rounded-t-xl transition">
-                <div className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-amber-400 text-xs font-bold">J</span>
+              <div className="flex items-start gap-4 p-5 transition rounded-sm" style={{ border: '1px solid rgba(176,141,87,0.18)' }}>
+                <div className="w-8 h-8 rounded-sm flex items-center justify-center shrink-0 mt-0.5" style={{ background: 'rgba(176,141,87,0.1)' }}>
+                  <span className="text-xs font-bold" style={{ color: '#B08D57', fontFamily: 'var(--font-oswald)' }}>J</span>
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Themed collections</h3>
-                  <p className="text-sm text-slate-500">Group dispatches by topic — crypto, macro, AI. Curated by people who actually know the space.</p>
+                  <p className="text-sm" style={{ color: 'rgba(245,239,224,0.45)' }}>Group dispatches by topic — crypto, macro, AI. Curated by people who actually know the space.</p>
                 </div>
               </div>
-              <div className="flex items-start gap-4 p-5 border border-white/5 hover:border-white/10 transition">
-                <div className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-amber-400 text-xs font-bold">A</span>
+              <div className="flex items-start gap-4 p-5 transition" style={{ border: '1px solid rgba(176,141,87,0.18)' }}>
+                <div className="w-8 h-8 rounded-sm flex items-center justify-center shrink-0 mt-0.5" style={{ background: 'rgba(176,141,87,0.1)' }}>
+                  <span className="text-xs font-bold" style={{ color: '#B08D57', fontFamily: 'var(--font-oswald)' }}>A</span>
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Analyst profiles</h3>
-                  <p className="text-sm text-slate-500">Every source gets a profile tracking positions, sentiment, and conviction over time.</p>
+                  <p className="text-sm" style={{ color: 'rgba(245,239,224,0.45)' }}>Every source gets a profile tracking positions, sentiment, and conviction over time.</p>
                 </div>
               </div>
-              <div className="flex items-start gap-4 p-5 border border-white/5 hover:border-white/10 rounded-b-xl transition">
-                <div className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-amber-400 text-xs font-bold">M</span>
+              <div className="flex items-start gap-4 p-5 transition rounded-sm" style={{ border: '1px solid rgba(176,141,87,0.18)' }}>
+                <div className="w-8 h-8 rounded-sm flex items-center justify-center shrink-0 mt-0.5" style={{ background: 'rgba(176,141,87,0.1)' }}>
+                  <span className="text-xs font-bold" style={{ color: '#B08D57', fontFamily: 'var(--font-oswald)' }}>M</span>
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Multi-source synthesis</h3>
-                  <p className="text-sm text-slate-500">Twitter, newsletters, and YouTube in one dispatch. Signal from wherever it lives.</p>
+                  <p className="text-sm" style={{ color: 'rgba(245,239,224,0.45)' }}>Twitter, newsletters, and YouTube in one dispatch. Signal from wherever it lives.</p>
                 </div>
               </div>
             </div>
@@ -297,17 +300,17 @@ export default function LandingPage() {
       </section>
 
       {/* Divider */}
-      <div className="border-t border-white/5" />
+      <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
 
       {/* Newsletter Grid */}
       <section className="container mx-auto px-4 py-20">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-end justify-between mb-10">
             <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Dispatches</p>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>Dispatches</p>
               <h2 className="text-3xl font-bold">Popular right now</h2>
             </div>
-            <Link href="/explore" className="text-amber-400 hover:text-amber-300 text-sm font-medium transition hidden md:block">
+            <Link href="/explore" className="text-sm font-medium transition hidden md:block" style={{ color: '#B08D57' }}>
               View all →
             </Link>
           </div>
@@ -316,37 +319,40 @@ export default function LandingPage() {
               <button
                 key={nl.id}
                 onClick={() => handleCardClick(nl)}
-                className="group border border-white/5 hover:border-amber-400/20 hover:bg-white/[0.02] rounded-xl p-5 transition-all duration-200 text-left cursor-pointer"
+                className="group rounded-sm p-5 transition-all duration-200 text-left cursor-pointer"
+                style={{ border: '1px solid rgba(176,141,87,0.18)' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(176,141,87,0.4)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(176,141,87,0.04)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(176,141,87,0.18)'; (e.currentTarget as HTMLButtonElement).style.background = ''; }}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-semibold group-hover:text-amber-400 transition leading-tight">
+                  <h3 className="font-semibold leading-tight transition" style={{ color: '#F5EFE0' }}>
                     {nl.name}
                   </h3>
-                  <span className="text-[11px] px-2 py-0.5 rounded-md bg-white/5 text-slate-500 shrink-0 ml-3 font-medium">
+                  <span className="text-[11px] px-2 py-0.5 rounded-sm shrink-0 ml-3 font-medium" style={{ background: 'rgba(176,141,87,0.08)', color: 'rgba(245,239,224,0.45)', fontFamily: 'var(--font-mono)' }}>
                     {CADENCE_LABELS[nl.schedule_cadence]}
                   </span>
                 </div>
-                <p className="text-sm text-slate-500 leading-relaxed mb-4">
+                <p className="text-sm leading-relaxed mb-4" style={{ color: 'rgba(245,239,224,0.45)' }}>
                   {nl.description}
                 </p>
                 <div className="flex items-center justify-between">
                   <div className="flex gap-1.5 flex-wrap">
                     {nl.labels.slice(0, 3).map((label) => (
-                      <span key={label} className="text-[11px] px-2 py-0.5 rounded-md bg-white/5 text-slate-500">
+                      <span key={label} className="text-[11px] px-2 py-0.5 rounded-sm" style={{ background: 'rgba(176,141,87,0.08)', color: 'rgba(245,239,224,0.45)' }}>
                         {label}
                       </span>
                     ))}
                   </div>
-                  <span className="text-xs text-slate-600">{nl.source_count} sources</span>
+                  <span className="text-xs" style={{ color: 'rgba(245,239,224,0.3)', fontFamily: 'var(--font-mono)' }}>{nl.source_count} sources</span>
                 </div>
                 {nl.curator && (
-                  <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-white/5">
+                  <div className="flex items-center gap-1.5 mt-3 pt-3" style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}>
                     {nl.curator.avatar_url ? (
-                      <img src={nl.curator.avatar_url} alt="" className="w-4 h-4 rounded-full" />
+                      <img src={nl.curator.avatar_url} alt="" className="w-4 h-4 rounded-sm" />
                     ) : (
-                      <div className="w-4 h-4 rounded-full bg-slate-800" />
+                      <div className="w-4 h-4 rounded-sm" style={{ background: '#1c1a17' }} />
                     )}
-                    <span className="text-xs text-slate-600">
+                    <span className="text-xs" style={{ color: 'rgba(245,239,224,0.3)' }}>
                       {nl.curator.twitter_handle ? `@${nl.curator.twitter_handle}` : nl.curator.name || 'Anonymous'}
                     </span>
                   </div>
@@ -355,7 +361,7 @@ export default function LandingPage() {
             ))}
           </div>
           <div className="text-center mt-6 md:hidden">
-            <Link href="/explore" className="text-amber-400 hover:text-amber-300 text-sm font-medium transition">
+            <Link href="/explore" className="text-sm font-medium transition" style={{ color: '#B08D57' }}>
               View all dispatches →
             </Link>
           </div>
@@ -363,58 +369,60 @@ export default function LandingPage() {
       </section>
 
       {/* Divider */}
-      <div className="border-t border-white/5" />
+      <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
 
       {/* Pricing — clean stat row */}
       <section className="container mx-auto px-4 py-20">
         <div className="max-w-5xl mx-auto">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-12">Pricing</p>
-          <div className="grid md:grid-cols-3 gap-0 md:divide-x divide-white/5">
-            <div className="md:pr-10 pb-10 md:pb-0">
+          <p className="text-xs font-semibold uppercase tracking-widest mb-12" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>Pricing</p>
+          <div className="grid md:grid-cols-3 gap-0">
+            <div className="md:pr-10 pb-10 md:pb-0" style={{ borderRight: '1px solid rgba(176,141,87,0.18)' }}>
               <div className="text-4xl font-bold mb-2">{NEW_USER_BONUS_CREDITS.toLocaleString()}</div>
-              <div className="text-slate-400 mb-1">free credits on signup</div>
-              <div className="text-sm text-slate-600">{creditsToDollars(NEW_USER_BONUS_CREDITS)} value, no card required</div>
+              <div className="mb-1" style={{ color: 'rgba(245,239,224,0.6)' }}>free credits on signup</div>
+              <div className="text-sm" style={{ color: 'rgba(245,239,224,0.3)' }}>{creditsToDollars(NEW_USER_BONUS_CREDITS)} value, no card required</div>
             </div>
-            <div className="md:px-10 pb-10 md:pb-0">
+            <div className="md:px-10 pb-10 md:pb-0" style={{ borderRight: '1px solid rgba(176,141,87,0.18)' }}>
               <div className="text-4xl font-bold mb-2">{CREDITS_PER_DOLLAR}</div>
-              <div className="text-slate-400 mb-1">credits per $1</div>
-              <div className="text-sm text-slate-600">top up anytime, use what you need</div>
+              <div className="mb-1" style={{ color: 'rgba(245,239,224,0.6)' }}>credits per $1</div>
+              <div className="text-sm" style={{ color: 'rgba(245,239,224,0.3)' }}>top up anytime, use what you need</div>
             </div>
             <div className="md:pl-10">
               <div className="text-4xl font-bold mb-2">50%</div>
-              <div className="text-slate-400 mb-1">creator revenue share</div>
-              <div className="text-sm text-slate-600">earn from every subscriber to your dispatches</div>
+              <div className="mb-1" style={{ color: 'rgba(245,239,224,0.6)' }}>creator revenue share</div>
+              <div className="text-sm" style={{ color: 'rgba(245,239,224,0.3)' }}>earn from every subscriber to your dispatches</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Divider */}
-      <div className="border-t border-white/5" />
+      <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
 
       {/* Creator CTA — full-width, minimal */}
       <section className="container mx-auto px-4 py-24 grain">
         <div className="max-w-5xl mx-auto relative">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_80%_at_80%_50%,rgba(245,158,11,0.05),transparent)] pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_80%_at_80%_50%,rgba(176,141,87,0.06),transparent)] pointer-events-none" />
           <div className="relative max-w-2xl">
             <h2 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
               Build your<br />
-              <span className="text-amber-400">junto.</span>
+              <span style={{ color: '#B08D57' }}>junto.</span>
             </h2>
-            <p className="text-slate-400 mb-10 text-lg leading-relaxed">
+            <p className="mb-10 text-lg leading-relaxed" style={{ color: 'rgba(245,239,224,0.55)' }}>
               Create public dispatches, bundle them into a junto, and earn 50% of every subscriber&apos;s credits.
               Your sources + your lens = your intelligence business.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 href="/create"
-                className="inline-flex items-center justify-center bg-amber-400 hover:bg-amber-300 text-black px-7 py-3.5 rounded-lg font-semibold transition text-base"
+                className="inline-flex items-center justify-center px-7 py-3.5 rounded font-semibold transition text-base uppercase tracking-wide"
+                style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}
               >
                 Start creating
               </Link>
               <Link
                 href="/juntos"
-                className="inline-flex items-center justify-center border border-white/10 hover:border-white/25 text-slate-300 hover:text-white px-7 py-3.5 rounded-lg font-medium transition text-base"
+                className="inline-flex items-center justify-center px-7 py-3.5 rounded font-medium transition text-base"
+                style={{ border: '1px solid rgba(176,141,87,0.28)', color: 'rgba(245,239,224,0.7)' }}
               >
                 See examples
               </Link>
@@ -424,20 +432,20 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/5">
+      <footer style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}>
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="text-sm text-slate-600">
-              <span className="font-semibold text-slate-500">myjunto</span> — intelligence from signal, not noise
+            <div className="text-sm" style={{ color: 'rgba(245,239,224,0.35)' }}>
+              <span className="font-semibold" style={{ color: 'rgba(245,239,224,0.55)' }}>myjunto</span> — intelligence from signal, not noise
             </div>
-            <div className="flex gap-6 text-sm text-slate-600">
-              <Link href="/juntos" className="hover:text-slate-400 transition">Juntos</Link>
-              <Link href="/explore" className="hover:text-slate-400 transition">Explore</Link>
-              <Link href="/create" className="hover:text-slate-400 transition">Create</Link>
+            <div className="flex gap-6 text-sm" style={{ color: 'rgba(245,239,224,0.35)' }}>
+              <Link href="/juntos" className="transition hover:opacity-80">Juntos</Link>
+              <Link href="/explore" className="transition hover:opacity-80">Explore</Link>
+              <Link href="/create" className="transition hover:opacity-80">Create</Link>
               {session?.user ? (
-                <Link href="/dashboard" className="hover:text-slate-400 transition">Dashboard</Link>
+                <Link href="/dashboard" className="transition hover:opacity-80">Dashboard</Link>
               ) : (
-                <Link href="/login" className="hover:text-slate-400 transition">Sign In</Link>
+                <Link href="/login" className="transition hover:opacity-80">Sign In</Link>
               )}
             </div>
           </div>
@@ -493,11 +501,12 @@ function NewsletterModal({
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-[#111] border border-white/10 rounded-xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="relative rounded-sm max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto" style={{ background: '#141210', border: '1px solid rgba(176,141,87,0.28)' }}>
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-500 hover:text-white transition z-10"
+          className="absolute top-4 right-4 transition z-10"
+          style={{ color: 'rgba(245,239,224,0.4)' }}
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -507,7 +516,7 @@ function NewsletterModal({
         {/* Header */}
         <div className="p-6 pb-4">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-xl shrink-0">
+            <div className="w-12 h-12 rounded-sm flex items-center justify-center text-xl shrink-0" style={{ background: '#1c1a17' }}>
               {ICON_MAP[newsletter.name] || '📬'}
             </div>
             <div className="flex-1 min-w-0 pr-6">
@@ -515,30 +524,31 @@ function NewsletterModal({
               {newsletter.curator && (
                 <div className="flex items-center gap-2 mt-1.5">
                   {newsletter.curator.avatar_url ? (
-                    <img src={newsletter.curator.avatar_url} alt="" className="w-5 h-5 rounded-full" />
+                    <img src={newsletter.curator.avatar_url} alt="" className="w-5 h-5 rounded-sm" />
                   ) : (
-                    <div className="w-5 h-5 rounded-full bg-slate-700" />
+                    <div className="w-5 h-5 rounded-sm" style={{ background: '#1c1a17' }} />
                   )}
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs" style={{ color: 'rgba(245,239,224,0.45)' }}>
                     Curated by{' '}
                     {newsletter.curator.twitter_handle ? (
                       <a
                         href={`https://x.com/${newsletter.curator.twitter_handle}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-amber-400 hover:text-amber-300 transition"
+                        className="transition"
+                        style={{ color: '#B08D57' }}
                         onClick={(e) => e.stopPropagation()}
                       >
                         @{newsletter.curator.twitter_handle}
                       </a>
                     ) : (
-                      <span className="text-slate-300">{newsletter.curator.name || 'Anonymous'}</span>
+                      <span style={{ color: 'rgba(245,239,224,0.7)' }}>{newsletter.curator.name || 'Anonymous'}</span>
                     )}
                   </span>
                 </div>
               )}
               {newsletter.description && (
-                <p className="text-sm text-slate-400 mt-1.5 leading-relaxed">{newsletter.description}</p>
+                <p className="text-sm mt-1.5 leading-relaxed" style={{ color: 'rgba(245,239,224,0.55)' }}>{newsletter.description}</p>
               )}
             </div>
           </div>
@@ -547,7 +557,7 @@ function NewsletterModal({
           {newsletter.labels.length > 0 && (
             <div className="flex gap-2 flex-wrap mt-4">
               {newsletter.labels.map((label) => (
-                <span key={label} className="text-xs px-2.5 py-1 rounded-md bg-white/5 text-slate-400 font-medium">
+                <span key={label} className="text-xs px-2.5 py-1 rounded-sm font-medium" style={{ background: 'rgba(176,141,87,0.08)', color: 'rgba(245,239,224,0.55)' }}>
                   {label}
                 </span>
               ))}
@@ -557,7 +567,7 @@ function NewsletterModal({
 
         {/* Sources */}
         <div className="px-6 pb-4">
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>
             Sources ({newsletter.source_count})
           </h3>
           <div className="flex gap-2 flex-wrap">
@@ -565,38 +575,39 @@ function NewsletterModal({
               newsletter.sources.map((source) => (
                 <span
                   key={source.id}
-                  className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700/40 text-slate-300"
+                  className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-sm"
+                  style={{ background: 'rgba(176,141,87,0.06)', border: '1px solid rgba(176,141,87,0.18)', color: 'rgba(245,239,224,0.7)' }}
                 >
-                  <svg className="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="currentColor">
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'rgba(245,239,224,0.35)' }}>
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                   </svg>
                   @{source.handle}
                 </span>
               ))
             ) : (
-              <span className="text-xs text-slate-500">{newsletter.source_count} curated sources</span>
+              <span className="text-xs" style={{ color: 'rgba(245,239,224,0.35)' }}>{newsletter.source_count} curated sources</span>
             )}
           </div>
         </div>
 
         {/* Divider */}
-        <div className="border-t border-white/5 mx-6" />
+        <div className="mx-6" style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
 
         {/* Subscribe / Cadence Options */}
         <div className="p-6">
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>
             Subscribe
           </h3>
 
           {subscribeSuccess ? (
             <div className="text-center py-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-600/15 flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-12 h-12 rounded-sm flex items-center justify-center mx-auto mb-3" style={{ background: 'rgba(62,207,106,0.12)' }}>
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: '#3ecf6a' }}>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <p className="font-semibold text-emerald-400">Subscribed!</p>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="font-semibold" style={{ color: '#3ecf6a' }}>Subscribed!</p>
+              <p className="text-sm mt-1" style={{ color: 'rgba(245,239,224,0.55)' }}>
                 You&apos;ll receive {CADENCE_LABELS[subscribeSuccess]?.toLowerCase()} updates.
               </p>
             </div>
@@ -610,19 +621,22 @@ function NewsletterModal({
                     key={option.value}
                     onClick={() => onSubscribe(newsletter.id, option.value)}
                     disabled={subscribing}
-                    className="w-full flex items-center justify-between p-4 rounded-lg border border-white/5 hover:border-amber-400/30 hover:bg-white/[0.02] transition-all group disabled:opacity-50 cursor-pointer"
+                    className="w-full flex items-center justify-between p-4 rounded-sm transition-all group disabled:opacity-50 cursor-pointer"
+                    style={{ border: '1px solid rgba(176,141,87,0.18)' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(176,141,87,0.4)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(176,141,87,0.04)'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(176,141,87,0.18)'; (e.currentTarget as HTMLButtonElement).style.background = ''; }}
                   >
                     <div className="text-left">
-                      <div className="font-medium group-hover:text-amber-400 transition">
+                      <div className="font-medium transition" style={{ color: '#F5EFE0' }}>
                         {option.label}
                       </div>
-                      <div className="text-xs text-slate-500 mt-0.5">{option.description}</div>
+                      <div className="text-xs mt-0.5" style={{ color: 'rgba(245,239,224,0.4)' }}>{option.description}</div>
                     </div>
                     <div className="text-right shrink-0 ml-4">
-                      <div className="text-sm font-semibold text-slate-300">
-                        {creditCost} cr<span className="text-slate-500">/send</span>
+                      <div className="text-sm font-semibold" style={{ color: 'rgba(245,239,224,0.7)', fontFamily: 'var(--font-mono)' }}>
+                        {creditCost} cr<span style={{ color: 'rgba(245,239,224,0.35)' }}>/send</span>
                       </div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-mono)' }}>
                         ~{period.perWeek} cr/wk ({creditsToDollars(period.perWeek)})
                       </div>
                     </div>
@@ -633,7 +647,7 @@ function NewsletterModal({
           )}
 
           {!isAuthenticated && !subscribeSuccess && (
-            <p className="text-xs text-slate-500 text-center mt-4">
+            <p className="text-xs text-center mt-4" style={{ color: 'rgba(245,239,224,0.35)' }}>
               Sign in required to subscribe &bull; New users get {NEW_USER_BONUS_CREDITS.toLocaleString()} free credits
             </p>
           )}

@@ -17,10 +17,13 @@ export function AuthModal({ isOpen, onClose, message }: AuthModalProps) {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-slate-900 border border-slate-700 rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl">
+      <div className="relative rounded-sm p-8 max-w-sm w-full mx-4 shadow-2xl" style={{ background: '#141210', border: '1px solid rgba(176,141,87,0.28)' }}>
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-500 hover:text-white transition"
+          className="absolute top-4 right-4 transition"
+          style={{ color: 'rgba(245,239,224,0.4)' }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#F5EFE0'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(245,239,224,0.4)'; }}
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -28,11 +31,11 @@ export function AuthModal({ isOpen, onClose, message }: AuthModalProps) {
         </button>
 
         <div className="text-center mb-6">
-          <div className="text-2xl font-bold mb-1">
-            <span className="text-white">my</span>
-            <span className="text-blue-400">junto</span>
+          <div className="text-2xl font-bold mb-1" style={{ fontFamily: 'var(--font-oswald)' }}>
+            <span style={{ color: '#F5EFE0' }}>my</span>
+            <span style={{ color: '#B08D57' }}>junto</span>
           </div>
-          <p className="text-sm text-slate-400 mt-3">
+          <p className="text-sm mt-3" style={{ color: 'rgba(245,239,224,0.5)' }}>
             {message || 'Sign in to subscribe to newsletters and create your own.'}
           </p>
         </div>
@@ -40,7 +43,8 @@ export function AuthModal({ isOpen, onClose, message }: AuthModalProps) {
         <div className="space-y-3">
           <button
             onClick={() => signIn('twitter', { callbackUrl: window.location.pathname })}
-            className="w-full flex items-center justify-center gap-3 bg-white text-black hover:bg-slate-100 px-6 py-3 rounded-xl font-medium transition"
+            className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-sm font-semibold transition uppercase tracking-wide"
+            style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -50,7 +54,8 @@ export function AuthModal({ isOpen, onClose, message }: AuthModalProps) {
 
           <button
             onClick={() => signIn('google', { callbackUrl: window.location.pathname })}
-            className="w-full flex items-center justify-center gap-3 bg-slate-800 text-white hover:bg-slate-700 border border-slate-600 px-6 py-3 rounded-xl font-medium transition"
+            className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-sm font-medium transition"
+            style={{ background: '#1c1a17', color: 'rgba(245,239,224,0.8)', border: '1px solid rgba(176,141,87,0.28)' }}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
@@ -62,7 +67,7 @@ export function AuthModal({ isOpen, onClose, message }: AuthModalProps) {
           </button>
         </div>
 
-        <p className="text-xs text-slate-500 text-center mt-5">
+        <p className="text-xs text-center mt-5" style={{ color: 'rgba(245,239,224,0.3)' }}>
           By signing in you agree to our terms of service.
         </p>
       </div>
