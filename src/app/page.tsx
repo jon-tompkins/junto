@@ -168,216 +168,278 @@ export default function LandingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
+    <main className="min-h-screen bg-[#080808] text-white">
       <TopNav />
 
-      {/* Hero */}
-      <section className="container mx-auto px-4 pt-24 pb-20 text-center relative">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="max-w-4xl mx-auto relative">
-          <div className="inline-block mb-6 px-4 py-1.5 rounded-full bg-blue-600/10 border border-blue-500/20 text-blue-400 text-sm font-medium">
-            AI-powered newsletter platform
-          </div>
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
-              Stop Scrolling,
-            </span>
-            <br />
-            <span className="text-white">Start Acting</span>
-          </h1>
-          <p className="text-lg md:text-xl text-slate-400 mb-4 max-w-2xl mx-auto leading-relaxed">
-            Create your own junto to distill actionable intelligence
-            from the modern information tsunami.
-          </p>
-          <p className="text-sm text-slate-500 mb-10 max-w-xl mx-auto">
-            Pick your sources. Define your lens. Get synthesis — not noise.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/create"
-              className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3.5 rounded-xl font-semibold transition shadow-lg shadow-blue-600/25 text-lg"
-            >
-              Create a Newsletter
-            </Link>
-            <Link
-              href="/explore"
-              className="border border-slate-600 hover:border-slate-400 text-slate-300 hover:text-white px-8 py-3.5 rounded-xl font-semibold transition text-lg"
-            >
-              Explore Newsletters
-            </Link>
+      {/* Hero — left-aligned, editorial */}
+      <section className="container mx-auto px-4 pt-28 pb-24 relative grain">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_20%_60%,rgba(245,158,11,0.06),transparent)] pointer-events-none" />
+        <div className="max-w-5xl mx-auto relative">
+          <div className="max-w-3xl">
+            <p className="text-amber-500/80 text-sm font-medium tracking-widest uppercase mb-8">
+              myjunto
+            </p>
+            <h1 className="text-6xl md:text-8xl font-bold leading-[0.95] mb-8 tracking-tight">
+              The signal,<br />
+              <span className="text-amber-400">not the noise.</span>
+            </h1>
+            <p className="text-lg text-slate-400 mb-10 max-w-xl leading-relaxed">
+              Build curated intelligence dispatches from the voices you actually trust —
+              Twitter, newsletters, YouTube — synthesized by AI into briefs worth reading.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/create"
+                className="inline-flex items-center justify-center bg-amber-400 hover:bg-amber-300 text-black px-7 py-3.5 rounded-lg font-semibold transition text-base"
+              >
+                Create a Dispatch
+              </Link>
+              <Link
+                href="/juntos"
+                className="inline-flex items-center justify-center border border-white/10 hover:border-white/25 text-slate-300 hover:text-white px-7 py-3.5 rounded-lg font-medium transition text-base"
+              >
+                Browse Juntos →
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* Divider */}
+      <div className="border-t border-white/5" />
+
+      {/* How It Works — horizontal steps, no cards */}
       <section className="container mx-auto px-4 py-20">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-3">How it works</h2>
-            <p className="text-2xl font-bold">Three steps to intelligence</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-7 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-blue-600/15 text-blue-400 flex items-center justify-center mx-auto mb-5 text-xl font-bold">
-                1
-              </div>
-              <h3 className="font-semibold mb-2 text-lg">Choose Sources</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Twitter accounts, newsletters, RSS feeds — pick the voices you trust.
+        <div className="max-w-5xl mx-auto">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-12">How it works</p>
+          <div className="grid md:grid-cols-3 gap-0 md:divide-x divide-white/5">
+            <div className="md:pr-10 pb-10 md:pb-0">
+              <div className="text-amber-400/60 text-xs font-mono mb-4">01</div>
+              <h3 className="text-xl font-semibold mb-3">Choose your sources</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Twitter accounts, newsletters, YouTube channels. Pick the voices with the actual edge — not the loudest ones.
               </p>
             </div>
-            <div className="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-7 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-purple-600/15 text-purple-400 flex items-center justify-center mx-auto mb-5 text-xl font-bold">
-                2
-              </div>
-              <h3 className="font-semibold mb-2 text-lg">Define Your Lens</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Write a prompt — or pick a template. Your newsletter, your perspective.
+            <div className="md:px-10 pb-10 md:pb-0">
+              <div className="text-amber-400/60 text-xs font-mono mb-4">02</div>
+              <h3 className="text-xl font-semibold mb-3">Define your lens</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Write a prompt or pick a template. Set the perspective — macro bear, DeFi bull, skeptic. Your frame, your dispatch.
               </p>
             </div>
-            <div className="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-7 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-600/15 text-emerald-400 flex items-center justify-center mx-auto mb-5 text-xl font-bold">
-                3
-              </div>
-              <h3 className="font-semibold mb-2 text-lg">Get Intelligence</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                AI synthesizes everything into a brief you can act on. Daily, 2x daily, or weekly.
+            <div className="md:pl-10">
+              <div className="text-amber-400/60 text-xs font-mono mb-4">03</div>
+              <h3 className="text-xl font-semibold mb-3">Get intelligence</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                AI synthesizes everything into a brief that moves. Daily, twice daily, or weekly — delivered to email or Telegram.
               </p>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Divider */}
+      <div className="border-t border-white/5" />
+
+      {/* Juntos Feature — asymmetric layout */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-12 items-start">
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-5">Juntos</p>
+              <h2 className="text-4xl font-bold mb-5 leading-tight">
+                Curated collections.<br />
+                <span className="text-slate-400">One subscription.</span>
+              </h2>
+              <p className="text-slate-500 leading-relaxed mb-8">
+                A junto is a themed collection of dispatches — crypto, macro, AI — curated by someone
+                who lives in that space. Subscribe to a junto and get the whole picture in one place.
+              </p>
+              <Link
+                href="/juntos"
+                className="inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 text-sm font-medium transition"
+              >
+                Browse all Juntos
+                <span>→</span>
+              </Link>
+            </div>
+            <div className="space-y-px">
+              <div className="flex items-start gap-4 p-5 border border-white/5 hover:border-white/10 rounded-t-xl transition">
+                <div className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-amber-400 text-xs font-bold">J</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Themed collections</h3>
+                  <p className="text-sm text-slate-500">Group dispatches by topic — crypto, macro, AI. Curated by people who actually know the space.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4 p-5 border border-white/5 hover:border-white/10 transition">
+                <div className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-amber-400 text-xs font-bold">A</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Analyst profiles</h3>
+                  <p className="text-sm text-slate-500">Every source gets a profile tracking positions, sentiment, and conviction over time.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4 p-5 border border-white/5 hover:border-white/10 rounded-b-xl transition">
+                <div className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-amber-400 text-xs font-bold">M</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Multi-source synthesis</h3>
+                  <p className="text-sm text-slate-500">Twitter, newsletters, and YouTube in one dispatch. Signal from wherever it lives.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Divider */}
+      <div className="border-t border-white/5" />
 
       {/* Newsletter Grid */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-3">Popular Dispatches</h2>
-          <p className="text-slate-400">
-            Click any dispatch to preview details and subscribe.
-          </p>
-        </div>
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-5">
-          {newsletters.slice(0, 8).map((nl) => (
-            <button
-              key={nl.id}
-              onClick={() => handleCardClick(nl)}
-              className="group bg-slate-800/30 hover:bg-slate-800/60 border border-slate-700/40 hover:border-slate-600/60 rounded-2xl p-6 transition-all duration-200 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5 text-left cursor-pointer"
-            >
-              <div className="flex items-start gap-4 mb-3">
-                <div className="w-11 h-11 rounded-xl bg-slate-700/50 flex items-center justify-center text-lg shrink-0">
-                  {ICON_MAP[nl.name] || '📬'}
+      <section className="container mx-auto px-4 py-20">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-end justify-between mb-10">
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Dispatches</p>
+              <h2 className="text-3xl font-bold">Popular right now</h2>
+            </div>
+            <Link href="/explore" className="text-amber-400 hover:text-amber-300 text-sm font-medium transition hidden md:block">
+              View all →
+            </Link>
+          </div>
+          <div className="grid md:grid-cols-2 gap-3">
+            {newsletters.slice(0, 8).map((nl) => (
+              <button
+                key={nl.id}
+                onClick={() => handleCardClick(nl)}
+                className="group border border-white/5 hover:border-amber-400/20 hover:bg-white/[0.02] rounded-xl p-5 transition-all duration-200 text-left cursor-pointer"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="font-semibold group-hover:text-amber-400 transition leading-tight">
+                    {nl.name}
+                  </h3>
+                  <span className="text-[11px] px-2 py-0.5 rounded-md bg-white/5 text-slate-500 shrink-0 ml-3 font-medium">
+                    {CADENCE_LABELS[nl.schedule_cadence]}
+                  </span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between">
-                    <h3 className="text-lg font-semibold group-hover:text-blue-400 transition">
-                      {nl.name}
-                    </h3>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-600/15 text-blue-400 shrink-0 ml-2 font-medium">
-                      {CADENCE_LABELS[nl.schedule_cadence]}
+                <p className="text-sm text-slate-500 leading-relaxed mb-4">
+                  {nl.description}
+                </p>
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-1.5 flex-wrap">
+                    {nl.labels.slice(0, 3).map((label) => (
+                      <span key={label} className="text-[11px] px-2 py-0.5 rounded-md bg-white/5 text-slate-500">
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                  <span className="text-xs text-slate-600">{nl.source_count} sources</span>
+                </div>
+                {nl.curator && (
+                  <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-white/5">
+                    {nl.curator.avatar_url ? (
+                      <img src={nl.curator.avatar_url} alt="" className="w-4 h-4 rounded-full" />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full bg-slate-800" />
+                    )}
+                    <span className="text-xs text-slate-600">
+                      {nl.curator.twitter_handle ? `@${nl.curator.twitter_handle}` : nl.curator.name || 'Anonymous'}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-400 mt-1.5 leading-relaxed">
-                    {nl.description}
-                  </p>
-                  {nl.curator && (
-                    <div className="flex items-center gap-1.5 mt-2">
-                      {nl.curator.avatar_url ? (
-                        <img src={nl.curator.avatar_url} alt="" className="w-4 h-4 rounded-full" />
-                      ) : (
-                        <div className="w-4 h-4 rounded-full bg-slate-700" />
-                      )}
-                      <span className="text-xs text-slate-500">
-                        {nl.curator.twitter_handle ? `@${nl.curator.twitter_handle}` : nl.curator.name || 'Anonymous'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center justify-between pt-3 border-t border-slate-700/30 ml-15">
-                <div className="flex gap-1.5 flex-wrap">
-                  {nl.labels.map((label) => (
-                    <span key={label} className="text-xs px-2 py-0.5 rounded-full bg-slate-700/40 text-slate-400">
-                      {label}
-                    </span>
-                  ))}
-                </div>
-                <div className="flex items-center gap-3 text-xs text-slate-500">
-                  <span>{nl.source_count} sources</span>
-                  {nl.subscriber_count > 0 && (
-                    <span>{nl.subscriber_count} subs</span>
-                  )}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-        <div className="text-center mt-8">
-          <Link href="/explore" className="text-blue-400 hover:text-blue-300 text-sm font-medium transition">
-            View all newsletters →
-          </Link>
+                )}
+              </button>
+            ))}
+          </div>
+          <div className="text-center mt-6 md:hidden">
+            <Link href="/explore" className="text-amber-400 hover:text-amber-300 text-sm font-medium transition">
+              View all dispatches →
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Pricing / Credits */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-3">Simple pricing</h2>
-          <p className="text-2xl font-bold mb-10">Pay only for what you read</p>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-7">
-              <div className="text-3xl font-bold mb-1">{NEW_USER_BONUS_CREDITS.toLocaleString()}</div>
-              <div className="text-sm text-slate-400 mb-3">free credits on signup</div>
-              <div className="text-xs text-slate-500">{creditsToDollars(NEW_USER_BONUS_CREDITS)} value</div>
+      {/* Divider */}
+      <div className="border-t border-white/5" />
+
+      {/* Pricing — clean stat row */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-12">Pricing</p>
+          <div className="grid md:grid-cols-3 gap-0 md:divide-x divide-white/5">
+            <div className="md:pr-10 pb-10 md:pb-0">
+              <div className="text-4xl font-bold mb-2">{NEW_USER_BONUS_CREDITS.toLocaleString()}</div>
+              <div className="text-slate-400 mb-1">free credits on signup</div>
+              <div className="text-sm text-slate-600">{creditsToDollars(NEW_USER_BONUS_CREDITS)} value, no card required</div>
             </div>
-            <div className="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-7">
-              <div className="text-3xl font-bold mb-1">{CREDITS_PER_DOLLAR}</div>
-              <div className="text-sm text-slate-400 mb-3">credits per $1</div>
-              <div className="text-xs text-slate-500">top up anytime</div>
+            <div className="md:px-10 pb-10 md:pb-0">
+              <div className="text-4xl font-bold mb-2">{CREDITS_PER_DOLLAR}</div>
+              <div className="text-slate-400 mb-1">credits per $1</div>
+              <div className="text-sm text-slate-600">top up anytime, use what you need</div>
             </div>
-            <div className="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-7">
-              <div className="text-3xl font-bold mb-1">50%</div>
-              <div className="text-sm text-slate-400 mb-3">creator revenue share</div>
-              <div className="text-xs text-slate-500">earn from every subscriber</div>
+            <div className="md:pl-10">
+              <div className="text-4xl font-bold mb-2">50%</div>
+              <div className="text-slate-400 mb-1">creator revenue share</div>
+              <div className="text-sm text-slate-600">earn from every subscriber to your dispatches</div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Creator CTA */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="max-w-3xl mx-auto bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-blue-600/5 border border-slate-700/40 rounded-3xl p-12 text-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative">
-            <h2 className="text-3xl font-bold mb-4">Build Your Audience</h2>
-            <p className="text-slate-400 mb-8 max-w-lg mx-auto text-lg leading-relaxed">
-              Create a public newsletter and earn 50% of every subscriber&apos;s credits.
-              Your sources + your prompt = your newsletter business.
+      {/* Divider */}
+      <div className="border-t border-white/5" />
+
+      {/* Creator CTA — full-width, minimal */}
+      <section className="container mx-auto px-4 py-24 grain">
+        <div className="max-w-5xl mx-auto relative">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_80%_at_80%_50%,rgba(245,158,11,0.05),transparent)] pointer-events-none" />
+          <div className="relative max-w-2xl">
+            <h2 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
+              Build your<br />
+              <span className="text-amber-400">junto.</span>
+            </h2>
+            <p className="text-slate-400 mb-10 text-lg leading-relaxed">
+              Create public dispatches, bundle them into a junto, and earn 50% of every subscriber&apos;s credits.
+              Your sources + your lens = your intelligence business.
             </p>
-            <Link
-              href="/create"
-              className="inline-block bg-white text-slate-900 px-8 py-3.5 rounded-xl font-semibold hover:bg-slate-100 transition shadow-lg"
-            >
-              Start Creating
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/create"
+                className="inline-flex items-center justify-center bg-amber-400 hover:bg-amber-300 text-black px-7 py-3.5 rounded-lg font-semibold transition text-base"
+              >
+                Start creating
+              </Link>
+              <Link
+                href="/juntos"
+                className="inline-flex items-center justify-center border border-white/10 hover:border-white/25 text-slate-300 hover:text-white px-7 py-3.5 rounded-lg font-medium transition text-base"
+              >
+                See examples
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="container mx-auto px-4 py-10 border-t border-slate-800/60">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-sm text-slate-500">
-            <span className="font-semibold text-slate-400">myjunto</span> — intelligence from the information tsunami
-          </div>
-          <div className="flex gap-6 text-sm text-slate-500">
-            <Link href="/explore" className="hover:text-slate-300 transition">Explore</Link>
-            <Link href="/research" className="hover:text-slate-300 transition">Research</Link>
-            <Link href="/create" className="hover:text-slate-300 transition">Create</Link>
-            {session?.user ? (
-              <Link href="/dashboard" className="hover:text-slate-300 transition">Dashboard</Link>
-            ) : (
-              <Link href="/login" className="hover:text-slate-300 transition">Sign In</Link>
-            )}
+      <footer className="border-t border-white/5">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-slate-600">
+              <span className="font-semibold text-slate-500">myjunto</span> — intelligence from signal, not noise
+            </div>
+            <div className="flex gap-6 text-sm text-slate-600">
+              <Link href="/juntos" className="hover:text-slate-400 transition">Juntos</Link>
+              <Link href="/explore" className="hover:text-slate-400 transition">Explore</Link>
+              <Link href="/create" className="hover:text-slate-400 transition">Create</Link>
+              {session?.user ? (
+                <Link href="/dashboard" className="hover:text-slate-400 transition">Dashboard</Link>
+              ) : (
+                <Link href="/login" className="hover:text-slate-400 transition">Sign In</Link>
+              )}
+            </div>
           </div>
         </div>
       </footer>
@@ -431,7 +493,7 @@ function NewsletterModal({
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-slate-900 border border-slate-700/60 rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-[#111] border border-white/10 rounded-xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Close */}
         <button
           onClick={onClose}
@@ -464,7 +526,7 @@ function NewsletterModal({
                         href={`https://x.com/${newsletter.curator.twitter_handle}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 transition"
+                        className="text-amber-400 hover:text-amber-300 transition"
                         onClick={(e) => e.stopPropagation()}
                       >
                         @{newsletter.curator.twitter_handle}
@@ -485,7 +547,7 @@ function NewsletterModal({
           {newsletter.labels.length > 0 && (
             <div className="flex gap-2 flex-wrap mt-4">
               {newsletter.labels.map((label) => (
-                <span key={label} className="text-xs px-2.5 py-1 rounded-full bg-blue-600/15 text-blue-400 font-medium">
+                <span key={label} className="text-xs px-2.5 py-1 rounded-md bg-white/5 text-slate-400 font-medium">
                   {label}
                 </span>
               ))}
@@ -518,7 +580,7 @@ function NewsletterModal({
         </div>
 
         {/* Divider */}
-        <div className="border-t border-slate-700/40 mx-6" />
+        <div className="border-t border-white/5 mx-6" />
 
         {/* Subscribe / Cadence Options */}
         <div className="p-6">
@@ -548,10 +610,10 @@ function NewsletterModal({
                     key={option.value}
                     onClick={() => onSubscribe(newsletter.id, option.value)}
                     disabled={subscribing}
-                    className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-700/40 hover:border-blue-500/50 hover:bg-slate-800/40 transition-all group disabled:opacity-50 cursor-pointer"
+                    className="w-full flex items-center justify-between p-4 rounded-lg border border-white/5 hover:border-amber-400/30 hover:bg-white/[0.02] transition-all group disabled:opacity-50 cursor-pointer"
                   >
                     <div className="text-left">
-                      <div className="font-medium group-hover:text-blue-400 transition">
+                      <div className="font-medium group-hover:text-amber-400 transition">
                         {option.label}
                       </div>
                       <div className="text-xs text-slate-500 mt-0.5">{option.description}</div>

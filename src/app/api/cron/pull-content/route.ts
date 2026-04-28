@@ -9,15 +9,15 @@ import { getSupabase } from '@/lib/db/client';
 
 export const maxDuration = 300; // 5 minutes
 
-// Skip sources pulled within this window (prevents redundant Apify calls)
-const FRESHNESS_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
+// Cron fires every 6 hours — skip sources pulled within this window
+const FRESHNESS_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
 // If any source was updated in the last OVERLAP_WINDOW, assume a prior cron is
 // running or just finished — bail to prevent duplicate runs.
 const OVERLAP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
-// How far back to look on each pull — covers the full freshness window plus a
-// safety buffer so tweets posted right at the edge of the last window aren't
-// missed. Duplicates are safe: storeTwitterContent deduplicates by twitter_id.
-const PULL_LOOKBACK_MS = FRESHNESS_WINDOW_MS + 10 * 60 * 1000; // 40 minutes
+// Look back the full cron interval plus a 15-min buffer so tweets at the edge
+// of the previous window aren't missed. Duplicates are safe: storeTwitterContent
+// deduplicates by twitter_id.
+const PULL_LOOKBACK_MS = FRESHNESS_WINDOW_MS + 15 * 60 * 1000; // 6h15m
 // First-time pull lookback when a source has never been fetched.
 const FIRST_PULL_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
