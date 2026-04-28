@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getNewsletterWithSources, createNewsletter, setNewsletterLabels, setNewsletterSources } from '@/lib/db/newsletters-v2';
+import { getNewsletterWithSources, createNewsletter, setNewsletterLabels } from '@/lib/db/newsletters-v2';
 import { getSupabase } from '@/lib/db/client';
 
 async function resolveUserId(session: any): Promise<string | null> {
@@ -39,26 +39,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Newsletter not found' }, { status: 404 });
     }
 
-    // Create the fork
+    // Create the fork — inherit junto so sources are shared
     const forked = await createNewsletter({
       name: `${original.name} (fork)`,
       description: original.description || undefined,
       prompt: original.prompt,
       secondary_prompt: original.secondary_prompt || undefined,
       admin_user_id: userId,
-      is_public: false, // forks start private
+      is_public: false,
       schedule_cadence: original.schedule_cadence,
       credit_cost: original.credit_cost,
+      junto_id: original.junto_id ?? null,
     });
 
-    // Copy labels
     if (original.labels?.length) {
       await setNewsletterLabels(forked.id, original.labels);
-    }
-
-    // Copy sources
-    if (original.sources?.length) {
-      await setNewsletterSources(forked.id, original.sources.map(s => s.id));
     }
 
     return NextResponse.json({ newsletter: forked, forked_from: id });

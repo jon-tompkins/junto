@@ -6,9 +6,7 @@ import {
   getUserNewsletters,
   createNewsletter,
   setNewsletterLabels,
-  setNewsletterSources,
 } from '@/lib/db/newsletters-v2';
-import { getOrCreateSource } from '@/lib/db/sources';
 import { getSupabase } from '@/lib/db/client';
 
 async function resolveUserId(session: any): Promise<string | null> {
@@ -65,13 +63,16 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, description, prompt, secondary_prompt, is_public, schedule_cadence, credit_cost, labels, sources, send_days, prompt_template_id, junto_id } = body;
+    const { name, description, prompt, secondary_prompt, is_public, schedule_cadence, credit_cost, labels, send_days, prompt_template_id, junto_id } = body;
 
     if (!name || (!prompt && !prompt_template_id)) {
       return NextResponse.json({ error: 'name and either prompt or prompt_template_id are required' }, { status: 400 });
     }
 
-    // Create the newsletter
+    if (!junto_id) {
+      return NextResponse.json({ error: 'junto_id is required' }, { status: 400 });
+    }
+
     const newsletter = await createNewsletter({
       name,
       description,
@@ -83,26 +84,11 @@ export async function POST(req: NextRequest) {
       credit_cost,
       send_days: send_days || ['mon', 'tue', 'wed', 'thu', 'fri'],
       prompt_template_id: prompt_template_id || null,
-      junto_id: junto_id || null,
+      junto_id,
     });
 
-    // Set labels if provided
     if (labels && Array.isArray(labels) && labels.length > 0) {
       await setNewsletterLabels(newsletter.id, labels);
-    }
-
-    // Set sources if provided (array of { type, handle_or_url } objects)
-    if (sources && Array.isArray(sources) && sources.length > 0) {
-      const sourceIds: string[] = [];
-      for (const src of sources) {
-        const source = await getOrCreateSource({
-          type: src.type || 'twitter',
-          handle_or_url: src.handle_or_url || src.handle,
-          display_name: src.display_name,
-        });
-        sourceIds.push(source.id);
-      }
-      await setNewsletterSources(newsletter.id, sourceIds);
     }
 
     return NextResponse.json({ newsletter }, { status: 201 });

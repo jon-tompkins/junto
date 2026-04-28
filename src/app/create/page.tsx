@@ -106,6 +106,12 @@ STYLE: Institutional quality. Reference data points and historical context. Cite
   },
 ];
 
+interface JuntoOption {
+  id: string;
+  name: string;
+  junto_sources?: { source: { handle_or_url: string; type: string; display_name?: string } | null }[];
+}
+
 type WizardStep = 'template' | 'details' | 'sources' | 'schedule';
 
 function CreateNewsletterPageInner() {
@@ -118,8 +124,6 @@ function CreateNewsletterPageInner() {
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const juntoIdParam = searchParams?.get('junto_id') || null;
-  const [juntoId, setJuntoId] = useState<string | null>(juntoIdParam);
-  const [juntoName, setJuntoName] = useState<string | null>(null);
 
   const [promptTemplates, setPromptTemplates] = useState<PromptTemplateOption[]>([]);
   const [promptTemplateId, setPromptTemplateId] = useState<string | null>(null);
@@ -138,65 +142,70 @@ function CreateNewsletterPageInner() {
   const [secondaryPrompt, setSecondaryPrompt] = useState('');
   const [labels, setLabels] = useState<string[]>([]);
   const [labelInput, setLabelInput] = useState('');
-  const [sources, setSources] = useState<SourceEntry[]>([]);
-  const [sourceInput, setSourceInput] = useState('');
-  const [sourceType, setSourceType] = useState<SourceType>('twitter');
   const [cadence, setCadence] = useState('daily');
   const [isPublic, setIsPublic] = useState(true);
   const [sendDays, setSendDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
-  const [saveAsJunto, setSaveAsJunto] = useState(false);
-  const [juntoSaveName, setJuntoSaveName] = useState('');
+
+  // Junto selection state
+  const [juntos, setJuntos] = useState<JuntoOption[]>([]);
+  const [juntosLoading, setJuntosLoading] = useState(false);
+  const [selectedJuntoId, setSelectedJuntoId] = useState<string | null>(juntoIdParam);
+  const [selectedJunto, setSelectedJunto] = useState<JuntoOption | null>(null);
+  const [isCreatingNewJunto, setIsCreatingNewJunto] = useState(false);
+  const [newJuntoName, setNewJuntoName] = useState('');
+  const [newJuntoSources, setNewJuntoSources] = useState<SourceEntry[]>([]);
+  const [newJuntoSourceInput, setNewJuntoSourceInput] = useState('');
+  const [newJuntoSourceType, setNewJuntoSourceType] = useState<SourceType>('twitter');
 
   useEffect(() => {
-    if (!juntoIdParam) return;
-    fetch(`/api/juntos/${juntoIdParam}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!data?.junto) return;
-        setJuntoName(data.junto.name);
-        const fromJunto: SourceEntry[] = (data.junto.junto_sources || [])
-          .map((js: any) => js.source)
-          .filter((s: any) => !!s)
-          .map((s: any) => ({
-            handle: s.handle_or_url,
-            type: (s.type as SourceType) || 'twitter',
-            status: 'valid' as const,
-            name: s.display_name || s.handle_or_url,
-          }));
-        setSources((prev) => {
-          const handles = new Set(prev.map((p) => p.handle));
-          return [...prev, ...fromJunto.filter((s) => !handles.has(s.handle))];
-        });
+    if (step !== 'sources') return;
+    setJuntosLoading(true);
+    fetch('/api/juntos')
+      .then(r => r.ok ? r.json() : { juntos: [] })
+      .then(data => {
+        const list: JuntoOption[] = data.juntos || [];
+        setJuntos(list);
+        if (juntoIdParam) {
+          const match = list.find(j => j.id === juntoIdParam);
+          if (match) setSelectedJunto(match);
+        }
       })
-      .catch(() => {});
-  }, [juntoIdParam]);
+      .catch(() => {})
+      .finally(() => setJuntosLoading(false));
+  }, [step, juntoIdParam]);
 
-  const validateSource = useCallback(async (handle: string, type: SourceType = 'twitter') => {
-    setSources((prev) =>
+  useEffect(() => {
+    if (!selectedJuntoId || isCreatingNewJunto) return;
+    const match = juntos.find(j => j.id === selectedJuntoId);
+    if (match) {
+      setSelectedJunto(match);
+    } else if (selectedJuntoId) {
+      fetch(`/api/juntos/${selectedJuntoId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data?.junto) setSelectedJunto(data.junto); })
+        .catch(() => {});
+    }
+  }, [selectedJuntoId, juntos, isCreatingNewJunto]);
+
+  const validateNewJuntoSource = useCallback(async (handle: string, type: SourceType = 'twitter') => {
+    setNewJuntoSources((prev) =>
       prev.map((s) => (s.handle === handle ? { ...s, status: 'validating' as const } : s))
     );
-
     try {
       const res = await fetch(`/api/v2/sources/validate?handle=${encodeURIComponent(handle)}&type=${type}`);
       const data = await res.json();
-
-      setSources((prev) =>
+      setNewJuntoSources((prev) =>
         prev.map((s) => {
           if (s.handle !== handle) return s;
           if (data.valid) {
-            return {
-              ...s,
-              status: 'valid' as const,
-              name: data.profile?.name || handle,
-              followers: data.profile?.followers,
-            };
+            return { ...s, status: 'valid' as const, name: data.profile?.name || handle, followers: data.profile?.followers };
           } else {
             return { ...s, status: 'invalid' as const, error: data.error || (type === 'youtube' ? 'Invalid YouTube URL' : 'Handle not found') };
           }
         })
       );
     } catch {
-      setSources((prev) =>
+      setNewJuntoSources((prev) =>
         prev.map((s) => (s.handle === handle ? { ...s, status: 'valid' as const } : s))
       );
     }
@@ -210,22 +219,12 @@ function CreateNewsletterPageInner() {
         setDescription(t.description);
         setPrompt(t.prompt);
         setLabels([...t.labels]);
-        const newSources: SourceEntry[] = t.suggested_sources.map((h) => ({
-          handle: h,
-          type: 'twitter' as SourceType,
-          status: 'pending' as const,
-        }));
-        setSources(newSources);
-        newSources.forEach((s) => {
-          setTimeout(() => validateSource(s.handle), 0);
-        });
       }
     } else {
       setName('');
       setDescription('');
       setPrompt('');
       setLabels([]);
-      setSources([]);
     }
     setSelectedTemplate(templateId);
     setStep('details');
@@ -239,21 +238,51 @@ function CreateNewsletterPageInner() {
     setLabelInput('');
   }
 
-  function addSource() {
+  function addNewJuntoSource() {
     let s: string;
-    if (sourceType === 'twitter') {
-      s = sourceInput.trim().replace('@', '').toLowerCase();
+    if (newJuntoSourceType === 'twitter') {
+      s = newJuntoSourceInput.trim().replace('@', '').toLowerCase();
     } else {
-      s = sourceInput.trim();
+      s = newJuntoSourceInput.trim();
     }
-    if (s && !sources.some((src) => src.handle === s)) {
-      const entry: SourceEntry = { handle: s, type: sourceType, status: 'pending' };
-      setSources((prev) => [...prev, entry]);
-      setSourceInput('');
-      validateSource(s, sourceType);
+    if (s && !newJuntoSources.some((src) => src.handle === s)) {
+      const entry: SourceEntry = { handle: s, type: newJuntoSourceType, status: 'pending' };
+      setNewJuntoSources((prev) => [...prev, entry]);
+      setNewJuntoSourceInput('');
+      validateNewJuntoSource(s, newJuntoSourceType);
     } else {
-      setSourceInput('');
+      setNewJuntoSourceInput('');
     }
+  }
+
+  async function createJuntoAndProceed(): Promise<string | null> {
+    const validSources = newJuntoSources.filter((s) => s.status !== 'invalid');
+    const sourceIds: string[] = [];
+    for (const src of validSources) {
+      const body =
+        src.type === 'twitter'
+          ? { handle: src.handle }
+          : { url: src.handle, type: src.type };
+      const sRes = await fetch('/api/sources', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!sRes.ok) throw new Error('Failed to create source');
+      const sData = await sRes.json();
+      if (sData?.id) sourceIds.push(sData.id);
+    }
+    const jRes = await fetch('/api/juntos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newJuntoName.trim(), source_ids: sourceIds }),
+    });
+    if (!jRes.ok) {
+      const jErr = await jRes.json().catch(() => ({}));
+      throw new Error(jErr.error || 'Failed to create junto');
+    }
+    const jData = await jRes.json();
+    return jData?.junto?.id || null;
   }
 
   async function handleCreate() {
@@ -265,51 +294,15 @@ function CreateNewsletterPageInner() {
       setError('Name and either a template or custom prompt are required');
       return;
     }
+    if (!selectedJuntoId) {
+      setError('A junto is required');
+      return;
+    }
 
     setCreating(true);
     setError('');
 
-    let resolvedJuntoId = juntoId;
     try {
-      const validSources = sources.filter((s) => s.status !== 'invalid');
-
-      // Optionally create a Junto from the sources before creating the dispatch
-      if (saveAsJunto && !juntoId && juntoSaveName.trim() && validSources.length > 0) {
-        const sourceIds: string[] = [];
-        for (const src of validSources) {
-          const body =
-            src.type === 'twitter'
-              ? { handle: src.handle }
-              : { url: src.handle, type: src.type };
-          const sRes = await fetch('/api/sources', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-          });
-          if (!sRes.ok) throw new Error('Failed to create source for junto');
-          const sData = await sRes.json();
-          if (sData?.id) sourceIds.push(sData.id);
-        }
-        const jRes = await fetch('/api/juntos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: juntoSaveName.trim(),
-            source_ids: sourceIds,
-          }),
-        });
-        if (!jRes.ok) {
-          const jErr = await jRes.json().catch(() => ({}));
-          throw new Error(jErr.error || 'Failed to create junto');
-        }
-        const jData = await jRes.json();
-        if (jData?.junto?.id) {
-          resolvedJuntoId = jData.junto.id;
-          setJuntoId(jData.junto.id);
-          setJuntoName(jData.junto.name);
-        }
-      }
-
       const res = await fetch('/api/v2/newsletters', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -320,11 +313,10 @@ function CreateNewsletterPageInner() {
           prompt_template_id: promptTemplateId || undefined,
           secondary_prompt: secondaryPrompt || undefined,
           labels,
-          sources: validSources.map((s) => ({ type: s.type, handle_or_url: s.handle })),
           schedule_cadence: cadence,
           send_days: sendDays,
           is_public: isPublic,
-          junto_id: resolvedJuntoId || undefined,
+          junto_id: selectedJuntoId,
         }),
       });
 
@@ -373,7 +365,7 @@ function CreateNewsletterPageInner() {
                       : 'bg-[#141210] text-[#F5EFE0]/45 hover:text-[#F5EFE0]/80'
                   }`}
                 >
-                  {i + 1}. {s.charAt(0).toUpperCase() + s.slice(1)}
+                  {i + 1}. {s === 'sources' ? 'Junto' : s.charAt(0).toUpperCase() + s.slice(1)}
                 </button>
               </div>
             );
@@ -534,178 +526,202 @@ function CreateNewsletterPageInner() {
                 disabled={!name || (!prompt && !promptTemplateId)}
                 className="bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 disabled:cursor-not-allowed text-[#080604] px-6 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition"
               >
-                Next: Sources
+                Next: Junto
               </button>
             </div>
           </div>
         )}
 
-        {/* Step 3: Sources */}
+        {/* Step 3: Select Junto */}
         {step === 'sources' && (
           <div>
-            <h2 className="text-2xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Select Sources</h2>
+            <h2 className="text-2xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Select Junto</h2>
             <p className="text-[#F5EFE0]/60 mb-6 text-sm">
-              Add Twitter/X handles or YouTube channels to pull from. Each source is validated in real-time.
+              Every dispatch pulls from a junto — a saved collection of sources.
             </p>
-            {juntoId && juntoName && (
-              <div className="mb-4 flex items-center justify-between gap-3 bg-[#B08D57]/10 border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5">
-                <span className="text-sm text-[#B08D57]">
-                  Sources from: <span className="font-semibold">{juntoName}</span>
-                </span>
+
+            {juntosLoading ? (
+              <div className="text-center py-8 text-[#F5EFE0]/45 text-sm">Loading juntos...</div>
+            ) : (
+              <div className="space-y-2 mb-4">
+                {juntos.map((j) => (
+                  <button
+                    key={j.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedJuntoId(j.id);
+                      setIsCreatingNewJunto(false);
+                    }}
+                    className={`w-full text-left px-4 py-3 rounded border transition ${
+                      selectedJuntoId === j.id && !isCreatingNewJunto
+                        ? 'border-[#B08D57]/60 bg-[#B08D57]/10'
+                        : 'border-[rgba(176,141,87,0.18)] bg-[#141210] hover:border-[rgba(176,141,87,0.28)]'
+                    }`}
+                  >
+                    <div className="text-sm font-medium text-[#F5EFE0]">{j.name}</div>
+                    {j.junto_sources && j.junto_sources.length > 0 && (
+                      <div className="text-xs text-[#F5EFE0]/50 mt-0.5">
+                        {j.junto_sources.filter(js => js.source).length} sources
+                      </div>
+                    )}
+                  </button>
+                ))}
                 <button
                   type="button"
-                  onClick={() => { setJuntoId(null); setJuntoName(null); }}
-                  className="text-xs text-[#B08D57] hover:text-[#B08D57]/80 transition"
+                  onClick={() => {
+                    setIsCreatingNewJunto(true);
+                    setSelectedJuntoId(null);
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded border transition ${
+                    isCreatingNewJunto
+                      ? 'border-[#B08D57]/60 bg-[#B08D57]/10'
+                      : 'border-dashed border-[rgba(176,141,87,0.28)] bg-[#141210] hover:border-[rgba(176,141,87,0.5)] text-[#F5EFE0]/60 hover:text-[#F5EFE0]'
+                  }`}
                 >
-                  Unlink
+                  <div className="text-sm font-medium">+ Create new junto</div>
                 </button>
               </div>
             )}
-            {/* Source type toggle */}
-            <div className="flex gap-2 mb-3">
-              <button
-                onClick={() => { setSourceType('twitter'); setSourceInput(''); }}
-                className={`px-4 py-1.5 rounded text-sm font-medium transition ${
-                  sourceType === 'twitter'
-                    ? 'bg-[#B08D57] text-[#080604]'
-                    : 'bg-[#141210] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
-                }`}
-              >
-                Twitter
-              </button>
-              <button
-                onClick={() => { setSourceType('youtube'); setSourceInput(''); }}
-                className={`px-4 py-1.5 rounded text-sm font-medium transition ${
-                  sourceType === 'youtube'
-                    ? 'bg-[#e8453c] text-[#F5EFE0]'
-                    : 'bg-[#141210] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
-                }`}
-              >
-                YouTube
-              </button>
-            </div>
-            <div className="flex gap-2 mb-4">
-              <div className="relative flex-1">
-                {sourceType === 'twitter' && (
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#F5EFE0]/45 text-sm">@</span>
-                )}
-                <input
-                  type="text"
-                  value={sourceInput}
-                  onChange={(e) => sourceType === 'twitter' ? setSourceInput(e.target.value.replace('@', '')) : setSourceInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSource())}
-                  placeholder={sourceType === 'twitter' ? 'twitter_handle' : 'https://www.youtube.com/@ChannelName'}
-                  className={`w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded ${sourceType === 'twitter' ? 'pl-8' : 'pl-4'} pr-4 py-2.5 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition`}
-                />
-              </div>
-              <button
-                onClick={addSource}
-                disabled={!sourceInput.trim()}
-                className="px-5 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:bg-[#141210] disabled:text-[#F5EFE0]/30 rounded text-sm font-medium transition text-[#080604]"
-              >
-                Add
-              </button>
-            </div>
-            {sources.length === 0 ? (
-              <div className="text-center py-10 border border-dashed border-[rgba(176,141,87,0.28)] rounded">
-                <p className="text-sm text-[#F5EFE0]/45">No sources added yet.</p>
-                <p className="text-xs text-[#F5EFE0]/30 mt-1">Add Twitter handles or YouTube channels above to get started.</p>
-              </div>
-            ) : (
-              <div className="space-y-2 mb-6">
-                {sources.map((source) => (
-                  <div
-                    key={source.handle}
-                    className={`flex items-center justify-between px-4 py-3 rounded border transition ${
-                      source.status === 'valid'
-                        ? 'bg-[#3ecf6a]/5 border-[#3ecf6a]/30'
-                        : source.status === 'invalid'
-                        ? 'bg-[#e8453c]/5 border-[#e8453c]/30'
-                        : 'bg-[#141210] border-[rgba(176,141,87,0.18)]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="shrink-0">
-                        {source.status === 'validating' && (
-                          <div className="w-5 h-5 border-2 border-[#B08D57]/30 border-t-[#B08D57] rounded animate-spin" />
-                        )}
-                        {source.status === 'valid' && (
-                          <svg className="w-5 h-5 text-[#3ecf6a]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        )}
-                        {source.status === 'invalid' && (
-                          <svg className="w-5 h-5 text-[#e8453c]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        )}
-                        {source.status === 'pending' && (
-                          <div className="w-5 h-5 rounded bg-[#1c1a17]" />
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs" title={source.type === 'youtube' ? 'YouTube' : 'Twitter'}>
-                            {source.type === 'youtube' ? '▶️' : '🐦'}
-                          </span>
-                          <span className="text-sm font-medium truncate">
-                            {source.type === 'youtube' ? source.handle : `@${source.handle}`}
-                          </span>
-                          {source.name && source.name !== source.handle && (
-                            <span className="text-xs text-[#F5EFE0]/60 truncate">{source.name}</span>
+
+            {selectedJuntoId && !isCreatingNewJunto && selectedJunto && (
+              <div className="mt-4 p-4 rounded border border-[rgba(176,141,87,0.18)] bg-[#141210]">
+                <div className="text-xs font-medium text-[#F5EFE0]/60 uppercase tracking-wide mb-2">Sources in {selectedJunto.name}</div>
+                {(selectedJunto.junto_sources || []).filter(js => js.source).length === 0 ? (
+                  <p className="text-xs text-[#F5EFE0]/40">No sources in this junto yet.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {(selectedJunto.junto_sources || []).filter(js => js.source).map((js, i) => {
+                      const src = js.source!;
+                      return (
+                        <div key={i} className="text-xs text-[#F5EFE0]/70 flex items-center gap-2">
+                          <span>{src.type === 'youtube' ? '▶' : '@'}</span>
+                          <span>{src.type === 'youtube' ? src.handle_or_url : src.handle_or_url}</span>
+                          {src.display_name && src.display_name !== src.handle_or_url && (
+                            <span className="text-[#F5EFE0]/40">{src.display_name}</span>
                           )}
                         </div>
-                        {source.status === 'valid' && source.followers !== undefined && (
-                          <span className="text-xs text-[#F5EFE0]/45">
-                            {source.followers.toLocaleString()} followers
-                          </span>
-                        )}
-                        {source.status === 'invalid' && (
-                          <span className="text-xs text-[#e8453c]">{source.error || 'Handle not found'}</span>
-                        )}
-                        {source.status === 'validating' && (
-                          <span className="text-xs text-[#F5EFE0]/45">Validating...</span>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setSources(sources.filter((s) => s.handle !== source.handle))}
-                      className="text-[#F5EFE0]/45 hover:text-[#e8453c] text-xs ml-3 shrink-0 transition"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            {sources.length > 0 && !juntoId && (
-              <div className="mt-6 p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210]">
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={saveAsJunto}
-                    onChange={(e) => setSaveAsJunto(e.target.checked)}
-                    className="mt-1 accent-[#B08D57]"
-                  />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-[#F5EFE0]">Save these sources as a Junto</div>
-                    <div className="text-xs text-[#F5EFE0]/60 mt-0.5">
-                      A Junto is a reusable source group you can attach to other dispatches.
-                    </div>
-                  </div>
-                </label>
-                {saveAsJunto && (
-                  <div className="mt-3 pl-7">
-                    <label className="block text-xs font-medium text-[#F5EFE0]/80 mb-1.5">Junto name</label>
-                    <input
-                      type="text"
-                      value={juntoSaveName}
-                      onChange={(e) => setJuntoSaveName(e.target.value)}
-                      placeholder="e.g., Crypto Voices"
-                      className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition"
-                    />
+                      );
+                    })}
                   </div>
                 )}
+              </div>
+            )}
+
+            {isCreatingNewJunto && (
+              <div className="mt-4 p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-[#F5EFE0]/80 mb-1.5">Junto name</label>
+                  <input
+                    type="text"
+                    value={newJuntoName}
+                    onChange={(e) => setNewJuntoName(e.target.value)}
+                    placeholder="e.g., Crypto Voices"
+                    className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#F5EFE0]/80 mb-2">Sources</label>
+                  <div className="flex gap-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => { setNewJuntoSourceType('twitter'); setNewJuntoSourceInput(''); }}
+                      className={`px-3 py-1 rounded text-xs font-medium transition ${
+                        newJuntoSourceType === 'twitter'
+                          ? 'bg-[#B08D57] text-[#080604]'
+                          : 'bg-[#080604] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
+                      }`}
+                    >
+                      Twitter
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setNewJuntoSourceType('youtube'); setNewJuntoSourceInput(''); }}
+                      className={`px-3 py-1 rounded text-xs font-medium transition ${
+                        newJuntoSourceType === 'youtube'
+                          ? 'bg-[#e8453c] text-[#F5EFE0]'
+                          : 'bg-[#080604] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
+                      }`}
+                    >
+                      YouTube
+                    </button>
+                  </div>
+                  <div className="flex gap-2 mb-3">
+                    <div className="relative flex-1">
+                      {newJuntoSourceType === 'twitter' && (
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#F5EFE0]/45 text-xs">@</span>
+                      )}
+                      <input
+                        type="text"
+                        value={newJuntoSourceInput}
+                        onChange={(e) => newJuntoSourceType === 'twitter' ? setNewJuntoSourceInput(e.target.value.replace('@', '')) : setNewJuntoSourceInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addNewJuntoSource())}
+                        placeholder={newJuntoSourceType === 'twitter' ? 'twitter_handle' : 'https://www.youtube.com/@ChannelName'}
+                        className={`w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded ${newJuntoSourceType === 'twitter' ? 'pl-7' : 'pl-3'} pr-3 py-2 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition`}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addNewJuntoSource}
+                      disabled={!newJuntoSourceInput.trim()}
+                      className="px-4 py-2 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:bg-[#1c1a17] disabled:text-[#F5EFE0]/30 rounded text-sm font-medium transition text-[#080604]"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {newJuntoSources.length > 0 && (
+                    <div className="space-y-1.5">
+                      {newJuntoSources.map((source) => (
+                        <div
+                          key={source.handle}
+                          className={`flex items-center justify-between px-3 py-2 rounded border text-xs transition ${
+                            source.status === 'valid'
+                              ? 'bg-[#3ecf6a]/5 border-[#3ecf6a]/30'
+                              : source.status === 'invalid'
+                              ? 'bg-[#e8453c]/5 border-[#e8453c]/30'
+                              : 'bg-[#080604] border-[rgba(176,141,87,0.18)]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="shrink-0">
+                              {source.status === 'validating' && (
+                                <div className="w-3.5 h-3.5 border border-[#B08D57]/30 border-t-[#B08D57] rounded animate-spin" />
+                              )}
+                              {source.status === 'valid' && (
+                                <svg className="w-3.5 h-3.5 text-[#3ecf6a]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              )}
+                              {source.status === 'invalid' && (
+                                <svg className="w-3.5 h-3.5 text-[#e8453c]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              )}
+                              {source.status === 'pending' && (
+                                <div className="w-3.5 h-3.5 rounded bg-[#1c1a17]" />
+                              )}
+                            </div>
+                            <span className="truncate font-medium">
+                              {source.type === 'youtube' ? source.handle : `@${source.handle}`}
+                            </span>
+                            {source.name && source.name !== source.handle && (
+                              <span className="text-[#F5EFE0]/50 truncate">{source.name}</span>
+                            )}
+                            {source.status === 'invalid' && (
+                              <span className="text-[#e8453c]">{source.error || 'Not found'}</span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setNewJuntoSources(newJuntoSources.filter((s) => s.handle !== source.handle))}
+                            className="text-[#F5EFE0]/40 hover:text-[#e8453c] ml-2 shrink-0 transition"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -714,11 +730,30 @@ function CreateNewsletterPageInner() {
                 &larr; Back
               </button>
               <button
-                onClick={() => setStep('schedule')}
-                disabled={saveAsJunto && !juntoSaveName.trim()}
+                onClick={async () => {
+                  if (isCreatingNewJunto) {
+                    if (!newJuntoName.trim()) return;
+                    setCreating(true);
+                    setError('');
+                    try {
+                      const id = await createJuntoAndProceed();
+                      if (!id) throw new Error('Failed to create junto');
+                      setSelectedJuntoId(id);
+                      setIsCreatingNewJunto(false);
+                      setStep('schedule');
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : 'Failed to create junto');
+                    } finally {
+                      setCreating(false);
+                    }
+                  } else {
+                    setStep('schedule');
+                  }
+                }}
+                disabled={creating || (!selectedJuntoId && !isCreatingNewJunto) || (isCreatingNewJunto && !newJuntoName.trim())}
                 className="bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 disabled:cursor-not-allowed text-[#080604] px-6 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition"
               >
-                Next: Schedule
+                {creating ? 'Creating...' : 'Next: Schedule'}
               </button>
             </div>
           </div>
@@ -817,7 +852,11 @@ function CreateNewsletterPageInner() {
               </div>
 
             <p className="text-xs text-[#F5EFE0]/60 mb-4 mt-6">
-              Owner cost: {calculateOwnerCreditCost(sources.filter(s => s.status !== 'invalid').length)} credits/send
+              Owner cost: {calculateOwnerCreditCost(
+                isCreatingNewJunto
+                  ? newJuntoSources.filter(s => s.status !== 'invalid').length
+                  : (selectedJunto?.junto_sources?.filter(js => js.source).length ?? 0)
+              )} credits/send
               {' '}• Subscriber cost: 2 credits/send
             </p>
             {error && (
@@ -832,7 +871,7 @@ function CreateNewsletterPageInner() {
               </button>
               <button
                 onClick={handleCreate}
-                disabled={creating || !name || (!prompt && !promptTemplateId) || (saveAsJunto && !juntoSaveName.trim())}
+                disabled={creating || !name || (!prompt && !promptTemplateId) || !selectedJuntoId}
                 className="bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 disabled:cursor-not-allowed text-[#080604] px-8 py-3 rounded font-semibold transition font-[var(--font-oswald)] uppercase tracking-wide"
               >
                 {creating ? 'Creating...' : 'Create Dispatch'}
