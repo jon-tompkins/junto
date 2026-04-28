@@ -7,7 +7,7 @@ const BRASS = '#B08D57';
 const PARCHMENT = '#F5EFE0';
 const NAVY = '#1B2951';
 const OXBLOOD = '#722F37';
-const INK = '#1A1814';
+const INK = '#0d0b09';
 
 export default function StylePage() {
   return (
@@ -84,9 +84,9 @@ export default function StylePage() {
               <div className="flex overflow-hidden" style={{ border: '1px solid rgba(176,141,87,0.15)' }}>
                 {[
                   { label: 'Ink / Page', bg: INK },
-                  { label: 'Surface', bg: '#222018' },
-                  { label: 'Raised', bg: '#2a2720' },
-                  { label: 'Hover', bg: '#312e27' },
+                  { label: 'Surface', bg: '#141210' },
+                  { label: 'Raised', bg: '#1c1a17' },
+                  { label: 'Hover', bg: '#232017' },
                   { label: 'Border', bg: 'rgba(176,141,87,0.12)' },
                 ].map((c, i) => (
                   <div
@@ -409,7 +409,7 @@ export default function StylePage() {
                 />
                 <select
                   className="w-full px-4 py-2.5 text-sm outline-none"
-                  style={{ background: '#222018', border: '1px solid rgba(176,141,87,0.2)', color: `${PARCHMENT}80` }}
+                  style={{ background: '#141210', border: '1px solid rgba(176,141,87,0.2)', color: `${PARCHMENT}80` }}
                 >
                   <option>Daily</option>
                   <option>Twice daily</option>
