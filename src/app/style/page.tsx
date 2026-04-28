@@ -1,3 +1,5 @@
+'use client';
+
 // Federalist palette — inspired by Benjamin Franklin's Junto (1727)
 // Navy #1B2951 · Parchment #F5EFE0 · Brass #B08D57 · Oxblood #722F37 · Ink #1A1814
 
