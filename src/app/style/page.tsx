@@ -9,6 +9,10 @@ const NAVY = '#1B2951';
 const OXBLOOD = '#722F37';
 const INK = '#0d0b09';
 
+// Signal colors — bright/saturated to pop against dark backgrounds
+const BULL = '#3ecf6a';   // bright green, high saturation
+const BEAR = '#e8453c';   // vivid red, distinct from oxblood
+
 export default function StylePage() {
   return (
     <main
@@ -112,8 +116,8 @@ export default function StylePage() {
                   { label: 'Disabled', color: `${PARCHMENT}30`, s: 'Market intelligence from signal.' },
                   { label: 'Brass', color: BRASS, s: 'Market intelligence from signal.' },
                   { label: 'Navy', color: '#6B82B5', s: 'Market intelligence from signal.' },
-                  { label: 'Bull', color: '#7DB87D', s: 'Market intelligence from signal.' },
-                  { label: 'Bear / Danger', color: OXBLOOD, s: 'Market intelligence from signal.' },
+                  { label: 'Bull', color: BULL, s: 'Market intelligence from signal.' },
+                  { label: 'Bear / Danger', color: BEAR, s: 'Market intelligence from signal.' },
                 ].map((t, i, arr) => (
                   <div
                     key={t.label}
@@ -267,8 +271,8 @@ export default function StylePage() {
               <button
                 className="px-7 py-3 font-bold text-sm uppercase tracking-wide transition"
                 style={{
-                  border: `2px solid ${OXBLOOD}60`,
-                  color: OXBLOOD,
+                  border: `2px solid ${BEAR}60`,
+                  color: BEAR,
                   fontFamily: 'var(--font-oswald), sans-serif',
                 }}
               >
@@ -377,9 +381,9 @@ export default function StylePage() {
               <div className="space-y-2">
                 {[
                   { type: 'WARN', color: BRASS, bg: `${BRASS}0a`, text: 'Credits running low. Top up to keep dispatches running.' },
-                  { type: 'OK', color: '#7DB87D', bg: '#7DB87D0a', text: 'Subscribed. First dispatch arrives tomorrow.' },
+                  { type: 'OK', color: BULL, bg: `${BULL}1a`, text: 'Subscribed. First dispatch arrives tomorrow.' },
                   { type: 'INFO', color: `${PARCHMENT}40`, bg: `${PARCHMENT}05`, text: 'This dispatch runs on daily cadence — 7 sends per week.' },
-                  { type: 'ERR', color: OXBLOOD, bg: `${OXBLOOD}0f`, text: 'Last dispatch failed to generate. Will retry at next cycle.' },
+                  { type: 'ERR', color: BEAR, bg: `${BEAR}15`, text: 'Last dispatch failed to generate. Will retry at next cycle.' },
                 ].map((n) => (
                   <div key={n.type} className="flex gap-3 p-4" style={{ borderLeft: `3px solid ${n.color}`, background: n.bg }}>
                     <span className="text-[10px] font-mono uppercase tracking-widest shrink-0 pt-0.5 w-10" style={{ color: n.color, fontFamily: 'var(--font-mono)' }}>{n.type}</span>
@@ -477,7 +481,7 @@ export default function StylePage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 text-xs font-mono uppercase" style={{ border: '1px solid #7DB87D40', color: '#7DB87D' }}>Bullish</span>
+                    <span className="px-3 py-1 text-xs font-mono uppercase" style={{ border: `1px solid ${BULL}50`, color: BULL }}>Bullish</span>
                     <span className="px-3 py-1 text-xs font-mono uppercase" style={{ border: `1px solid rgba(176,141,87,0.2)`, color: `${PARCHMENT}50` }}>Macro</span>
                   </div>
                 </div>
@@ -520,7 +524,7 @@ export default function StylePage() {
                   { asset: 'GOLD', dir: 'LONG', conviction: 'MED' },
                 ].map((p) => {
                   const isLong = p.dir === 'LONG';
-                  const dirColor = isLong ? '#7DB87D' : OXBLOOD;
+                  const dirColor = isLong ? BULL : BEAR;
                   return (
                     <div
                       key={p.asset}
@@ -559,7 +563,7 @@ export default function StylePage() {
                   >
                     <span className="text-[10px] font-mono shrink-0 pt-0.5 w-28" style={{ color: `${PARCHMENT}30`, fontFamily: 'var(--font-mono)' }}>{t.date}</span>
                     <p className="text-sm leading-relaxed flex-1" style={{ color: `${PARCHMENT}75` }}>{t.text}</p>
-                    <span className="text-[10px] font-mono shrink-0 pt-0.5" style={{ color: t.sentiment === 'BULL' ? '#7DB87D' : `${PARCHMENT}35`, fontFamily: 'var(--font-mono)' }}>
+                    <span className="text-[10px] font-mono shrink-0 pt-0.5" style={{ color: t.sentiment === 'BULL' ? BULL : `${PARCHMENT}35`, fontFamily: 'var(--font-mono)' }}>
                       {t.sentiment}
                     </span>
                   </div>
