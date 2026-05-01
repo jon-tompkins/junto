@@ -238,13 +238,17 @@ export default function PositionsPage() {
                   title={`${item.ticker} · ${STANCE_LABEL[item.stance] ?? item.stance} · ${item.count} analyst${item.count !== 1 ? 's' : ''}`}
                 >
                   <span
-                    className="font-bold font-mono leading-tight text-center px-2 w-full"
+                    className="font-bold font-mono text-center px-2 w-full"
                     style={{
-                      fontSize: `${Math.round(13 + ratio * 14)}px`,
+                      // Cap font so 3 rows fit within ~55% of tile height (rest = stance + avatars)
+                      fontSize: `${Math.min(Math.round(13 + ratio * 14), Math.floor(size * 0.55 / (3 * 1.25)))}px`,
                       color: '#F5EFE0',
+                      lineHeight: 1.25,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
                       wordBreak: 'break-word',
-                      overflowWrap: 'break-word',
-                      whiteSpace: 'normal',
                     }}
                   >
                     {item.ticker}
