@@ -288,7 +288,12 @@ export default function JuntoViewPage() {
             <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4 space-y-2">
               {heatmap.map((row) => (
                 <div key={row.ticker} className="flex items-center gap-3">
-                  <span className="font-mono font-bold text-[#F5EFE0] text-sm w-20 shrink-0">{row.ticker}</span>
+                  <Link
+                    href={`/positions/${encodeURIComponent(row.ticker)}`}
+                    className="font-mono font-bold text-[#F5EFE0] hover:text-[#B08D57] transition text-sm w-20 shrink-0"
+                  >
+                    {row.ticker}
+                  </Link>
                   <div className="flex-1 flex h-6 rounded overflow-hidden bg-[#080604]">
                     {(['bullish', 'neutral', 'cautious', 'bearish'] as const).map((stance) => {
                       const count = row[stance];

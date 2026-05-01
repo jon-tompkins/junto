@@ -78,10 +78,11 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: '◉' },
+    { href: '/explore', label: 'Explore', icon: '◎' },
+    { href: '/juntos', label: 'Juntos', icon: '◆' },
     { href: '/settings', label: 'Settings', icon: '⚙' },
     { href: '/prompt', label: 'Prompt', icon: '✎' },
-    { href: '/newsletters', label: 'Newsletters', icon: '◫' },
-    { href: '/research', label: 'Research', icon: '◈' },
+    { href: '/newsletters', label: 'History', icon: '◫' },
   ];
 
   const NavContent = () => (

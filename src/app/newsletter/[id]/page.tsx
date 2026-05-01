@@ -304,18 +304,16 @@ export default function NewsletterDetailPage() {
           ) : (
             <div className="flex flex-wrap gap-2">
               {newsletter.sources.map((src) => (
-                <a
+                <Link
                   key={src.id}
-                  href={`https://x.com/${src.handle_or_url}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={`/sources/${src.handle_or_url}`}
                   className="flex items-center gap-2 bg-[#141210] hover:bg-[#1c1a17] px-3 py-2 rounded text-sm border border-[rgba(176,141,87,0.18)] hover:border-[rgba(176,141,87,0.28)] transition"
                 >
                   <div className="w-6 h-6 rounded bg-[#1c1a17] flex items-center justify-center text-xs text-[#F5EFE0]/60 font-bold shrink-0">
                     {(src.display_name || src.handle_or_url).charAt(0).toUpperCase()}
                   </div>
                   <span className="text-[#F5EFE0]/80">@{src.handle_or_url}</span>
-                </a>
+                </Link>
               ))}
             </div>
           )}

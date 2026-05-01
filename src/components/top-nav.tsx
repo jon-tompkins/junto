@@ -10,6 +10,7 @@ export function TopNav() {
   const pathname = usePathname();
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
@@ -104,7 +105,7 @@ export function TopNav() {
                       { href: '/settings', label: 'Settings', brass: false },
                       { href: '/dashboard', label: 'Dashboard', brass: false },
                       { href: '/history', label: 'History', brass: false },
-                      { href: '/junto/new', label: 'My Juntos', brass: false },
+                      { href: '/juntos', label: 'My Juntos', brass: false },
                       { href: '/create', label: 'Create Dispatch', brass: false },
                     ].map(({ href, label, brass }) => (
                       <Link
@@ -150,15 +151,91 @@ export function TopNav() {
 
         {/* Mobile menu toggle */}
         <button
-          onClick={() => setMenuOpen(!menuOpen)}
+          onClick={() => setMobileOpen(!mobileOpen)}
           className="md:hidden transition"
           style={{ color: 'rgba(245,239,224,0.5)' }}
+          aria-label="Toggle navigation"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
+          {mobileOpen ? (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          )}
         </button>
       </div>
+
+      {/* Mobile nav sheet */}
+      {mobileOpen && (
+        <>
+          <div className="fixed inset-0 z-40" style={{ background: 'rgba(8,6,4,0.6)' }} onClick={() => setMobileOpen(false)} />
+          <div
+            className="fixed top-0 right-0 bottom-0 w-64 z-50 flex flex-col py-6 px-5 gap-1 md:hidden"
+            style={{ background: '#0e0c09', borderLeft: '1px solid rgba(176,141,87,0.2)' }}
+          >
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="self-end mb-4 transition"
+              style={{ color: 'rgba(245,239,224,0.4)' }}
+              aria-label="Close"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {[
+              { href: '/explore', label: 'Dispatches' },
+              { href: '/juntos', label: 'Juntos' },
+              { href: '/sources', label: 'Analysts' },
+              { href: '/docs', label: 'Docs' },
+              ...(session?.user ? [
+                { href: '/dashboard', label: 'Dashboard' },
+                { href: '/create', label: 'Create Dispatch' },
+              ] : []),
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMobileOpen(false)}
+                className="px-3 py-3 rounded-sm text-sm transition"
+                style={{
+                  color: isActive(href) ? '#F5EFE0' : 'rgba(245,239,224,0.6)',
+                  background: isActive(href) ? 'rgba(176,141,87,0.1)' : undefined,
+                  borderLeft: isActive(href) ? '2px solid #B08D57' : '2px solid transparent',
+                }}
+              >
+                {label}
+              </Link>
+            ))}
+
+            {session?.user && (
+              <div className="mt-auto pt-4" style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}>
+                <Link
+                  href="/settings"
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-3 py-2 text-sm transition"
+                  style={{ color: 'rgba(245,239,224,0.5)' }}
+                >
+                  Settings
+                </Link>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="block w-full text-left px-3 py-2 text-sm transition"
+                  style={{ color: 'rgba(245,239,224,0.3)' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#e8453c'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(245,239,224,0.3)'; }}
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </nav>
   );
 }
