@@ -27,24 +27,12 @@ export async function deductCredits(
   description: string,
   relatedId?: string,
 ): Promise<boolean> {
-  // Atomic: check balance + deduct in one query
-  const { data: user, error: fetchErr } = await supabase()
-    .from('users')
-    .select('credit_balance')
-    .eq('id', userId)
-    .single();
+  // Atomic: single UPDATE with balance check in WHERE clause via RPC.
+  // Returns new balance, or -1 if insufficient funds.
+  const { data: newBalance, error: rpcErr } = await supabase()
+    .rpc('deduct_credits', { p_user_id: userId, p_amount: amount });
 
-  if (fetchErr || !user) return false;
-  if (user.credit_balance < amount) return false;
-
-  const newBalance = user.credit_balance - amount;
-
-  const { error: updateErr } = await supabase()
-    .from('users')
-    .update({ credit_balance: newBalance })
-    .eq('id', userId);
-
-  if (updateErr) return false;
+  if (rpcErr || newBalance === -1) return false;
 
   // Record the transaction
   await supabase().from('credit_transactions').insert({
