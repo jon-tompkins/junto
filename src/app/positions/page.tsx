@@ -4,10 +4,13 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 
+type PositionCategory = 'crypto' | 'equity' | 'theme';
+
 interface PositionGroup {
   ticker: string;
   stance: string;
   count: number;
+  category: PositionCategory;
   sources: Array<{ handle: string; display_name: string | null }>;
 }
 
@@ -35,6 +38,7 @@ export default function PositionsPage() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'heatmap' | 'table'>('heatmap');
   const [filter, setFilter] = useState<string>('all');
+  const [categories, setCategories] = useState<Set<PositionCategory>>(new Set(['crypto', 'equity', 'theme']));
   const [sortCol, setSortCol] = useState<SortCol>('count');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
@@ -57,7 +61,18 @@ export default function PositionsPage() {
 
   const maxCount = Math.max(...items.map((i) => i.count), 1);
 
-  const filtered = filter === 'all' ? items : items.filter((i) => i.stance === filter);
+  function toggleCategory(cat: PositionCategory) {
+    setCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat) && next.size > 1) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  }
+
+  const filtered = items
+    .filter((i) => filter === 'all' || i.stance === filter)
+    .filter((i) => categories.has(i.category));
 
   // For heatmap: always sort by count desc so big tiles come first
   const heatmapItems = [...filtered].sort((a, b) => b.count - a.count);
@@ -89,6 +104,33 @@ export default function PositionsPage() {
 
           {/* Controls */}
           <div className="flex items-center gap-3 flex-wrap">
+            {/* Category filter */}
+            <div className="flex gap-1">
+              {([
+                { cat: 'crypto' as PositionCategory, label: 'Crypto', color: '#B08D57' },
+                { cat: 'equity' as PositionCategory, label: 'Equities', color: '#60a5fa' },
+                { cat: 'theme' as PositionCategory, label: 'Themes', color: '#a78bfa' },
+              ]).map(({ cat, label, color }) => {
+                const active = categories.has(cat);
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => toggleCategory(cat)}
+                    className="px-3 py-1.5 rounded text-xs font-medium transition"
+                    style={{
+                      background: active ? `${color}22` : 'rgba(255,255,255,0.03)',
+                      color: active ? color : 'rgba(245,239,224,0.35)',
+                      border: `1px solid ${active ? color + '55' : 'rgba(176,141,87,0.15)'}`,
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="w-px h-5 bg-[rgba(176,141,87,0.2)]" />
+
             {/* Stance filter */}
             <div className="flex gap-1">
               {(['all', 'bullish', 'bearish', 'cautious', 'neutral'] as const).map((s) => (
@@ -206,6 +248,7 @@ export default function PositionsPage() {
                       </span>
                     </th>
                   ))}
+                  <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)]">Type</th>
                   <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)]">Profiles</th>
                 </tr>
               </thead>
@@ -244,6 +287,9 @@ export default function PositionsPage() {
                           </div>
                           <span className="text-[#F5EFE0]/70 tabular-nums">{item.count}</span>
                         </div>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className="text-xs capitalize text-[#F5EFE0]/35">{item.category}</span>
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex flex-wrap gap-1">
