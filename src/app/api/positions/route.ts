@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/db/client';
 
 export type PositionCategory = 'crypto' | 'equity' | 'theme';
@@ -33,18 +33,30 @@ function classify(ticker: string): PositionCategory {
   return 'theme';
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const supabase = getSupabase();
+  const juntoId = req.nextUrl.searchParams.get('junto_id');
+
+  // If filtering by junto, resolve which source_ids belong to it
+  let allowedSourceIds: Set<string> | null = null;
+  if (juntoId) {
+    const { data: jSources } = await supabase
+      .from('junto_sources')
+      .select('source_id')
+      .eq('junto_id', juntoId);
+    allowedSourceIds = new Set((jSources || []).map((r: any) => r.source_id));
+  }
 
   const { data: profiles, error } = await supabase
     .from('source_analyst_profiles')
-    .select('positions, source:sources(handle_or_url, display_name, avatar_url)');
+    .select('source_id, positions, source:sources(handle_or_url, display_name, avatar_url)');
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const groups: Record<string, PositionGroup> = {};
 
   for (const profile of profiles || []) {
+    if (allowedSourceIds && !allowedSourceIds.has(profile.source_id)) continue;
     const positions = (profile.positions as Record<string, any>) || {};
     const src = profile.source as any;
     const handle = src?.handle_or_url ?? '';

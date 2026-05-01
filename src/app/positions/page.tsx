@@ -33,6 +33,8 @@ const STANCE_ORDER: Record<string, number> = { bullish: 0, cautious: 1, neutral:
 type SortCol = 'ticker' | 'stance' | 'count';
 type SortDir = 'asc' | 'desc';
 
+interface JuntoOption { id: string; name: string; }
+
 export default function PositionsPage() {
   const [items, setItems] = useState<PositionGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,14 +43,25 @@ export default function PositionsPage() {
   const [categories, setCategories] = useState<Set<PositionCategory>>(new Set(['crypto', 'equity', 'theme']));
   const [sortCol, setSortCol] = useState<SortCol>('count');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [juntos, setJuntos] = useState<JuntoOption[]>([]);
+  const [juntoId, setJuntoId] = useState<string>('');
 
   useEffect(() => {
-    fetch('/api/positions')
+    fetch('/api/juntos/public')
+      .then((r) => r.json())
+      .then((d) => setJuntos(d.juntos || []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    const url = juntoId ? `/api/positions?junto_id=${juntoId}` : '/api/positions';
+    fetch(url)
       .then((r) => r.json())
       .then((d) => setItems(d.items || []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [juntoId]);
 
   function handleSort(col: SortCol) {
     if (sortCol === col) {
@@ -104,6 +117,27 @@ export default function PositionsPage() {
 
           {/* Controls */}
           <div className="flex items-center gap-3 flex-wrap">
+            {/* Junto filter */}
+            {juntos.length > 0 && (
+              <select
+                value={juntoId}
+                onChange={(e) => setJuntoId(e.target.value)}
+                className="text-xs rounded px-3 py-1.5 transition appearance-none cursor-pointer"
+                style={{
+                  background: juntoId ? 'rgba(176,141,87,0.12)' : 'rgba(255,255,255,0.04)',
+                  color: juntoId ? '#B08D57' : 'rgba(245,239,224,0.5)',
+                  border: `1px solid ${juntoId ? 'rgba(176,141,87,0.4)' : 'rgba(176,141,87,0.18)'}`,
+                }}
+              >
+                <option value="">All Juntos</option>
+                {juntos.map((j) => (
+                  <option key={j.id} value={j.id}>{j.name}</option>
+                ))}
+              </select>
+            )}
+
+            <div className="w-px h-5 bg-[rgba(176,141,87,0.2)]" />
+
             {/* Category filter */}
             <div className="flex gap-1">
               {([
