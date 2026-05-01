@@ -27,11 +27,16 @@ const STANCE_LABEL: Record<string, string> = {
 
 const STANCE_ORDER: Record<string, number> = { bullish: 0, cautious: 1, neutral: 2, bearish: 3 };
 
+type SortCol = 'ticker' | 'stance' | 'count';
+type SortDir = 'asc' | 'desc';
+
 export default function PositionsPage() {
   const [items, setItems] = useState<PositionGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'heatmap' | 'table'>('heatmap');
   const [filter, setFilter] = useState<string>('all');
+  const [sortCol, setSortCol] = useState<SortCol>('count');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   useEffect(() => {
     fetch('/api/positions')
@@ -41,19 +46,30 @@ export default function PositionsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  function handleSort(col: SortCol) {
+    if (sortCol === col) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortCol(col);
+      setSortDir(col === 'count' ? 'desc' : 'asc');
+    }
+  }
+
   const maxCount = Math.max(...items.map((i) => i.count), 1);
 
   const filtered = filter === 'all' ? items : items.filter((i) => i.stance === filter);
 
-  // For heatmap: sort by count desc so big tiles come first
+  // For heatmap: always sort by count desc so big tiles come first
   const heatmapItems = [...filtered].sort((a, b) => b.count - a.count);
 
-  // For table: sort by ticker then stance
-  const tableItems = [...filtered].sort(
-    (a, b) =>
-      a.ticker.localeCompare(b.ticker) ||
-      (STANCE_ORDER[a.stance] ?? 4) - (STANCE_ORDER[b.stance] ?? 4),
-  );
+  // For table: user-controlled sort
+  const tableItems = [...filtered].sort((a, b) => {
+    let cmp = 0;
+    if (sortCol === 'ticker') cmp = a.ticker.localeCompare(b.ticker);
+    else if (sortCol === 'stance') cmp = (STANCE_ORDER[a.stance] ?? 4) - (STANCE_ORDER[b.stance] ?? 4);
+    else if (sortCol === 'count') cmp = a.count - b.count;
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
 
   return (
     <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
@@ -173,9 +189,23 @@ export default function PositionsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[rgba(176,141,87,0.28)]">
-                  <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)]">Position</th>
-                  <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)]">Side</th>
-                  <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)]">Analysts</th>
+                  {([
+                    { col: 'ticker' as SortCol, label: 'Position' },
+                    { col: 'stance' as SortCol, label: 'Side' },
+                    { col: 'count' as SortCol, label: 'Analysts' },
+                  ]).map(({ col, label }) => (
+                    <th
+                      key={col}
+                      onClick={() => handleSort(col)}
+                      className="text-left px-5 py-3 text-xs uppercase tracking-wider font-[var(--font-oswald)] cursor-pointer select-none transition"
+                      style={{ color: sortCol === col ? '#B08D57' : 'rgba(245,239,224,0.4)' }}
+                    >
+                      {label}
+                      <span className="ml-1 opacity-60">
+                        {sortCol === col ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+                      </span>
+                    </th>
+                  ))}
                   <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)]">Profiles</th>
                 </tr>
               </thead>
