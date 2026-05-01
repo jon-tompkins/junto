@@ -92,9 +92,16 @@ export async function GET(req: NextRequest) {
               })),
             );
 
+            // Backfill avatar_url and display_name from tweet author data
+            const firstTweetWithAuthor = tweets.find((t) => (t.raw_data as any)?.author?.profilePicture);
+            const authorData = firstTweetWithAuthor ? (firstTweetWithAuthor.raw_data as any).author : null;
+            const profileUpdate: Record<string, string> = { updated_at: new Date().toISOString() };
+            if (authorData?.profilePicture) profileUpdate.avatar_url = authorData.profilePicture;
+            if (authorData?.name) profileUpdate.display_name = authorData.name;
+
             await supabase
               .from('sources')
-              .update({ updated_at: new Date().toISOString() })
+              .update(profileUpdate)
               .eq('id', sourceId);
 
             runStored += stored;
