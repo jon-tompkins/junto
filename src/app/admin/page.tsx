@@ -156,19 +156,17 @@ export default function AdminDashboard() {
         {summary.daily.length > 0 && (
           <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-8">
             <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">Daily Spend</h2>
-            <div className="flex items-end gap-1 h-32">
+            <div className="flex items-stretch gap-1 h-32">
               {summary.daily.map((d) => {
                 const total = Number(d.total) || 0;
                 const heightPct = (total / maxDailyTotal) * 100;
                 return (
-                  <div key={d.day as string} className="flex-1 flex flex-col items-center gap-1 group relative">
-                    <div className="w-full flex-1 flex items-end">
-                      <div
-                        className="w-full bg-[#B08D57] hover:bg-[#B08D57]/80 rounded-t transition"
-                        style={{ height: `${Math.max(heightPct, 2)}%` }}
-                      />
-                    </div>
-                    <div className="opacity-0 group-hover:opacity-100 transition absolute -top-8 text-xs bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-2 py-1 whitespace-nowrap z-10 text-[#F5EFE0]">
+                  <div key={d.day as string} className="flex-1 flex flex-col justify-end group relative">
+                    <div
+                      className="w-full bg-[#B08D57] hover:bg-[#B08D57]/80 rounded-t transition"
+                      style={{ height: `${Math.max(heightPct, 2)}%` }}
+                    />
+                    <div className="opacity-0 group-hover:opacity-100 transition absolute -top-8 left-1/2 -translate-x-1/2 text-xs bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-2 py-1 whitespace-nowrap z-10 text-[#F5EFE0]">
                       {d.day}: {fmtUsd(total)}
                     </div>
                   </div>
