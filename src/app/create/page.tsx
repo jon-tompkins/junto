@@ -153,6 +153,7 @@ function CreateNewsletterPageInner() {
   const [selectedJunto, setSelectedJunto] = useState<JuntoOption | null>(null);
   const [isCreatingNewJunto, setIsCreatingNewJunto] = useState(false);
   const [newJuntoName, setNewJuntoName] = useState('');
+  const [newJuntoDescription, setNewJuntoDescription] = useState('');
   const [newJuntoSources, setNewJuntoSources] = useState<SourceEntry[]>([]);
   const [newJuntoSourceInput, setNewJuntoSourceInput] = useState('');
   const [newJuntoSourceType, setNewJuntoSourceType] = useState<SourceType>('twitter');
@@ -275,7 +276,7 @@ function CreateNewsletterPageInner() {
     const jRes = await fetch('/api/juntos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newJuntoName.trim(), source_ids: sourceIds }),
+      body: JSON.stringify({ name: newJuntoName.trim(), description: newJuntoDescription.trim() || null, source_ids: sourceIds }),
     });
     if (!jRes.ok) {
       const jErr = await jRes.json().catch(() => ({}));
@@ -616,6 +617,16 @@ function CreateNewsletterPageInner() {
                     value={newJuntoName}
                     onChange={(e) => setNewJuntoName(e.target.value)}
                     placeholder="e.g., Crypto Voices"
+                    className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#F5EFE0]/80 mb-1.5">Description <span className="text-[#F5EFE0]/30 font-normal">(optional)</span></label>
+                  <input
+                    type="text"
+                    value={newJuntoDescription}
+                    onChange={(e) => setNewJuntoDescription(e.target.value)}
+                    placeholder="What does this junto cover?"
                     className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition"
                   />
                 </div>
