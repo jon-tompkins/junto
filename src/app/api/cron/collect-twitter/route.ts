@@ -7,7 +7,7 @@ import {
 } from '@/lib/db/apify-runs';
 import { storeTwitterContent, getRecentContentForSources } from '@/lib/db/content-twitter';
 import { updateSourceProfile } from '@/lib/synthesis/profile-updater';
-import { getSourcesMissingProfiles } from '@/lib/db/source-analyst-profiles';
+import { getSourcesMissingOrStaleProfiles } from '@/lib/db/source-analyst-profiles';
 import { getSupabase } from '@/lib/db/client';
 
 export const maxDuration = 300; // 5 minutes
@@ -144,9 +144,9 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Sweep for sources with tweets but no profile yet (capped at 3 per cycle)
+    // Sweep for sources with no profile or a stale one (>48h), capped at 3 per cycle
     try {
-      const missing = await getSourcesMissingProfiles();
+      const missing = await getSourcesMissingOrStaleProfiles();
       const toSeed = missing.slice(0, 3);
       for (const src of toSeed) {
         const recent = await getRecentContentForSources([src.id], 336);

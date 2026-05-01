@@ -260,7 +260,7 @@ export default function SourceProfilePage() {
         </div>
 
         <p className="text-xs text-[#F5EFE0]/30">
-          Updated {new Date(profile.last_updated).toLocaleString()} · Tracking since {new Date(profile.created_at).toLocaleDateString()}
+          Profile analyzed {new Date(profile.last_updated).toLocaleString()} · Tracking since {new Date(profile.created_at).toLocaleDateString()}
         </p>
       </div>
     </main>
