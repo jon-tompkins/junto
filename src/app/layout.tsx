@@ -25,20 +25,20 @@ const ibmPlexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "MyJunto — AI-Powered Newsletter Marketplace",
+    default: "MyJunto — Curate Your Sources. Get Your Dispatch.",
     template: "%s | MyJunto",
   },
   description:
-    "Create and subscribe to AI-powered newsletters built from curated Twitter sources. Get daily intelligence briefings synthesized from the voices you trust.",
+    "Build a junto of the voices you trust. Get a daily AI-synthesized dispatch — signal, not noise.",
   keywords: [
     "AI newsletter",
-    "newsletter marketplace",
-    "crypto newsletter",
+    "curated intelligence",
+    "crypto dispatch",
     "market intelligence",
     "AI briefing",
     "Twitter synthesis",
     "investment research",
-    "curated intelligence",
+    "junto",
   ],
   authors: [{ name: "MyJunto" }],
   creator: "MyJunto",
@@ -48,23 +48,23 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://www.myjunto.xyz",
     siteName: "MyJunto",
-    title: "MyJunto — AI-Powered Newsletter Marketplace",
+    title: "MyJunto — Curate Your Sources. Get Your Dispatch.",
     description:
-      "Create and subscribe to AI-powered newsletters built from curated Twitter sources. Daily intelligence briefings from the voices you trust.",
+      "Build a junto of the voices you trust. Get a daily AI-synthesized dispatch — signal, not noise.",
     images: [
       {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "MyJunto — Intelligence from the information tsunami",
+        alt: "MyJunto — Curate Your Sources. Get Your Dispatch.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "MyJunto — AI-Powered Newsletter Marketplace",
+    title: "MyJunto — Curate Your Sources. Get Your Dispatch.",
     description:
-      "AI-powered newsletters from curated Twitter sources. Daily intelligence briefings from the voices you trust.",
+      "Build a junto of the voices you trust. Get a daily AI-synthesized dispatch — signal, not noise.",
     images: ["/opengraph-image"],
     creator: "@myjunto",
   },

@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'MyJunto — Intelligence from the information tsunami';
+export const alt = 'MyJunto — Curate Your Sources. Get Your Dispatch.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -10,95 +10,100 @@ export default async function Image() {
     (
       <div
         style={{
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+          background: '#080604',
           width: '100%',
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
+          fontFamily: 'Georgia, serif',
           position: 'relative',
           overflow: 'hidden',
         }}
       >
-        {/* Background glow */}
+        {/* Brass border frame */}
         <div
           style={{
             position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '600px',
-            height: '400px',
-            background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%)',
-            borderRadius: '50%',
+            inset: '32px',
+            border: '1px solid rgba(176,141,87,0.35)',
+            borderRadius: '4px',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            inset: '40px',
+            border: '1px solid rgba(176,141,87,0.15)',
+            borderRadius: '2px',
           }}
         />
 
-        {/* Logo */}
+        {/* Wordmark */}
         <div
           style={{
             display: 'flex',
             alignItems: 'baseline',
+            marginBottom: '32px',
+          }}
+        >
+          <span style={{ fontSize: '52px', fontWeight: 400, color: 'rgba(245,239,224,0.45)', letterSpacing: '0.05em' }}>my</span>
+          <span style={{ fontSize: '52px', fontWeight: 700, color: '#F5EFE0', letterSpacing: '0.05em' }}>junto</span>
+        </div>
+
+        {/* Brass divider */}
+        <div
+          style={{
+            width: '80px',
+            height: '1px',
+            background: '#B08D57',
+            marginBottom: '32px',
+          }}
+        />
+
+        {/* Headline */}
+        <div
+          style={{
+            fontSize: '56px',
+            fontWeight: 700,
+            textAlign: 'center',
+            lineHeight: 1.15,
+            color: '#F5EFE0',
+            maxWidth: '800px',
             marginBottom: '24px',
           }}
         >
-          <span style={{ fontSize: '48px', fontWeight: 400, color: '#94a3b8' }}>my</span>
-          <span style={{ fontSize: '48px', fontWeight: 700, color: '#ffffff' }}>junto</span>
-        </div>
-
-        {/* Tagline */}
-        <div
-          style={{
-            fontSize: '64px',
-            fontWeight: 800,
-            textAlign: 'center',
-            lineHeight: 1.1,
-            marginBottom: '16px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          <span
-            style={{
-              background: 'linear-gradient(90deg, #60a5fa, #a78bfa, #60a5fa)',
-              backgroundClip: 'text',
-              color: 'transparent',
-            }}
-          >
-            Stop Scrolling,
-          </span>
-          <span style={{ color: '#ffffff' }}>Start Acting</span>
+          Curate Your Sources.
+          <br />
+          <span style={{ color: '#B08D57' }}>Get Your Dispatch.</span>
         </div>
 
         {/* Subtitle */}
         <div
           style={{
-            fontSize: '24px',
-            color: '#94a3b8',
+            fontSize: '22px',
+            color: 'rgba(245,239,224,0.5)',
             textAlign: 'center',
-            maxWidth: '700px',
+            maxWidth: '620px',
+            lineHeight: 1.5,
           }}
         >
-          AI-powered newsletters from curated sources. Intelligence — not noise.
+          Build a junto of the voices you trust.
+          Get a daily AI-synthesized dispatch — signal, not noise.
         </div>
 
-        {/* Bottom bar */}
+        {/* Bottom domain */}
         <div
           style={{
             position: 'absolute',
-            bottom: '32px',
-            display: 'flex',
-            gap: '32px',
-            fontSize: '18px',
-            color: '#64748b',
+            bottom: '52px',
+            fontSize: '16px',
+            color: 'rgba(176,141,87,0.6)',
+            letterSpacing: '0.12em',
           }}
         >
-          <span>myjunto.xyz</span>
-          <span>·</span>
-          <span>Curate. Synthesize. Act.</span>
+          MYJUNTO.XYZ
         </div>
       </div>
     ),
