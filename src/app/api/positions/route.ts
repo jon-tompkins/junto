@@ -23,9 +23,14 @@ const CRYPTO_TICKERS = new Set([
   'LUNC','LUNA','UST','DAI','USDC','USDT','FRAX','TUSD','BUSD',
 ]);
 
+// Exchange suffixes that indicate a listed equity
+const EXCHANGE_SUFFIX_RE = /^[A-Z0-9]+\.(AX|WA|HK|TO|L|PA|DE|MI|BR|SW|SG|KL|NZ|OL|ST|CO|HE|IS|LS|AS|MC|VX|BK|JK|TW|KS|NS|BO|SN|MX|SA|BA|CR|LN|VI|PR|AT|BU|RO|WA|IR)$/;
+
 function classify(ticker: string): PositionCategory {
   // Spaces or lowercase → descriptive theme
   if (/[\s]/.test(ticker) || /[a-z]/.test(ticker)) return 'theme';
+  // Exchange-suffixed tickers (DRO.AX, EOS.AX, VGO.WA) → equity
+  if (EXCHANGE_SUFFIX_RE.test(ticker)) return 'equity';
   // Known crypto list wins
   if (CRYPTO_TICKERS.has(ticker)) return 'crypto';
   // Short all-caps (1–5 chars) not in crypto → equity ticker

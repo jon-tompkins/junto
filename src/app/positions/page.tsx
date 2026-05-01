@@ -238,14 +238,17 @@ export default function PositionsPage() {
                   title={`${item.ticker} · ${STANCE_LABEL[item.stance] ?? item.stance} · ${item.count} analyst${item.count !== 1 ? 's' : ''}`}
                 >
                   <span
-                    className="font-bold font-mono leading-none"
-                    style={{ fontSize: `${Math.round(12 + ratio * 14)}px`, color: '#F5EFE0' }}
+                    className="font-bold font-mono leading-tight text-center px-1 break-words w-full"
+                    style={{
+                      fontSize: `${Math.min(Math.round(12 + ratio * 14), Math.floor(size * 0.75 / Math.max(item.ticker.length * 0.55, 4)))}px`,
+                      color: '#F5EFE0',
+                    }}
                   >
                     {item.ticker}
                   </span>
                   <span
                     className="font-medium uppercase tracking-wider leading-none"
-                    style={{ fontSize: `${Math.round(8 + ratio * 4)}px`, color: bg }}
+                    style={{ fontSize: `${Math.round(7 + ratio * 3)}px`, color: bg }}
                   >
                     {STANCE_LABEL[item.stance] ?? item.stance}
                   </span>

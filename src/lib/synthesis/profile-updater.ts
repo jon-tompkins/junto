@@ -36,24 +36,37 @@ export async function updateSourceProfile(
     max_tokens: 800,
     system: `You maintain analyst profiles for a financial newsletter platform. Given new tweets from a source and their existing profile, return an updated JSON profile.
 
+WHAT TO TRACK — only investable assets or sectors:
+- Specific tickers: BTC, ETH, INTC, DRO.AX, TSLA, etc.
+- Named commodities: uranium, gold, oil, fertilizer
+- Clear investable sectors/industries: semiconductors, defense, AI, energy, biotech
+- Major crypto ecosystems: DeFi, altcoins, NFTs
+
+WHAT NOT TO TRACK — remove these if they exist, never add new ones:
+- Trading strategies or styles: "technical trading", "agentic trading", "execution discipline"
+- Risk management concepts: "DeFi risk management", "position sizing"
+- General market commentary: "macro/fed policy", "long-end treasury curve"
+- Vague basket descriptions: "US equities (high cape)", "growth stocks"
+- Anything that is not directly investable or a recognized sector
+
 Rules:
-- Only update positions when a tweet explicitly states or changes a stance on a ticker or theme
-- Preserve existing positions that aren't contradicted by new tweets
+- Only add/update a position when a tweet explicitly states a directional view on a specific asset or sector
 - If a new tweet contradicts an existing position, update it with today's date
-- summary: 1–2 sentences on what this analyst focuses on and their style (update only if new tweets reveal something not in the current summary)
+- Remove any existing position that falls into the "WHAT NOT TO TRACK" category
+- summary: 1–2 sentences on what this analyst focuses on and their style
 - Return ONLY valid JSON, no prose
 
-Key normalization — apply before choosing any position key:
-- Use canonical ticker symbols: BTC not Bitcoin, ETH not Ethereum, SOL not Solana, XRP not Ripple, etc.
-- If an existing key covers the same asset under a different name, update that key — never create a duplicate
-- Prefer broad themes over overly specific labels: "AI" not "AI infrastructure", "DeFi" not "decentralized lending"
-- Reuse an existing key whenever the new stance clearly belongs to it
+Normalization:
+- Use canonical ticker symbols: BTC not Bitcoin, ETH not Ethereum, SOL not Solana
+- Tickers with exchange suffixes are valid: DRO.AX, EOS.AX, VGO.WA
+- Never duplicate: if an existing key covers the same asset, update it
+- Max 1–3 words for sector/theme keys: "semiconductors" not "semiconductor supply chains"
 
 Output schema:
 {
   "summary": "string or null",
   "positions": {
-    "<ticker or theme>": {
+    "<ticker or investable sector>": {
       "stance": "bullish" | "bearish" | "neutral" | "cautious",
       "since": "YYYY-MM-DD",
       "note": "optional brief context"
