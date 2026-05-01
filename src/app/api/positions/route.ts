@@ -8,7 +8,7 @@ export interface PositionGroup {
   stance: string;
   count: number;
   category: PositionCategory;
-  sources: Array<{ handle: string; display_name: string | null }>;
+  sources: Array<{ handle: string; display_name: string | null; avatar_url: string | null }>;
 }
 
 // Well-known crypto tickers — anything here beats the equity heuristic
@@ -38,7 +38,7 @@ export async function GET() {
 
   const { data: profiles, error } = await supabase
     .from('source_analyst_profiles')
-    .select('positions, source:sources(handle_or_url, display_name)');
+    .select('positions, source:sources(handle_or_url, display_name, avatar_url)');
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -49,6 +49,7 @@ export async function GET() {
     const src = profile.source as any;
     const handle = src?.handle_or_url ?? '';
     const display_name = src?.display_name ?? null;
+    const avatar_url = src?.avatar_url ?? null;
 
     for (const [ticker, pos] of Object.entries(positions)) {
       const stance = (pos as any).stance as string;
@@ -65,7 +66,7 @@ export async function GET() {
         };
       }
       groups[key].count += 1;
-      groups[key].sources.push({ handle, display_name });
+      groups[key].sources.push({ handle, display_name, avatar_url });
     }
   }
 

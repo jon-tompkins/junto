@@ -11,7 +11,7 @@ interface PositionGroup {
   stance: string;
   count: number;
   category: PositionCategory;
-  sources: Array<{ handle: string; display_name: string | null }>;
+  sources: Array<{ handle: string; display_name: string | null; avatar_url: string | null }>;
 }
 
 const STANCE_BG: Record<string, string> = {
@@ -215,12 +215,42 @@ export default function PositionsPage() {
                   >
                     {STANCE_LABEL[item.stance] ?? item.stance}
                   </span>
-                  <span
-                    className="leading-none"
-                    style={{ fontSize: `${Math.round(9 + ratio * 5)}px`, color: 'rgba(245,239,224,0.45)' }}
-                  >
-                    {item.count} {item.count === 1 ? 'analyst' : 'analysts'}
-                  </span>
+                  <div className="flex items-center" style={{ gap: size > 120 ? '-6px' : '-4px' }}>
+                    {item.sources.slice(0, size > 100 ? 4 : 2).map((s, i) => (
+                      <div
+                        key={s.handle}
+                        className="rounded-full border-2 overflow-hidden shrink-0"
+                        style={{
+                          width: `${Math.round(14 + ratio * 8)}px`,
+                          height: `${Math.round(14 + ratio * 8)}px`,
+                          borderColor: '#080604',
+                          marginLeft: i > 0 ? `${-Math.round(5 + ratio * 3)}px` : 0,
+                          background: '#1c1a17',
+                          zIndex: 10 - i,
+                          position: 'relative',
+                        }}
+                      >
+                        {s.avatar_url ? (
+                          <img src={s.avatar_url} alt={s.handle} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[#F5EFE0]/60" style={{ fontSize: '8px' }}>
+                            {s.handle[0]?.toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {item.count > (size > 100 ? 4 : 2) && (
+                      <span
+                        style={{
+                          fontSize: `${Math.round(8 + ratio * 3)}px`,
+                          color: 'rgba(245,239,224,0.4)',
+                          marginLeft: '3px',
+                        }}
+                      >
+                        +{item.count - (size > 100 ? 4 : 2)}
+                      </span>
+                    )}
+                  </div>
                 </Link>
               );
             })}
@@ -292,18 +322,27 @@ export default function PositionsPage() {
                         <span className="text-xs capitalize text-[#F5EFE0]/35">{item.category}</span>
                       </td>
                       <td className="px-5 py-3">
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-2">
                           {item.sources.slice(0, 5).map((s) => (
                             <Link
                               key={s.handle}
                               href={`/sources/${s.handle}`}
-                              className="text-xs text-[#F5EFE0]/50 hover:text-[#B08D57] transition"
+                              className="flex items-center gap-1.5 hover:opacity-80 transition"
                             >
-                              @{s.handle}
+                              <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-[#1c1a17] border border-[rgba(176,141,87,0.2)]">
+                                {s.avatar_url ? (
+                                  <img src={s.avatar_url} alt={s.handle} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-[8px] text-[#F5EFE0]/50">
+                                    {s.handle[0]?.toUpperCase()}
+                                  </div>
+                                )}
+                              </div>
+                              <span className="text-xs text-[#F5EFE0]/50 hover:text-[#B08D57]">@{s.handle}</span>
                             </Link>
                           ))}
                           {item.sources.length > 5 && (
-                            <span className="text-xs text-[#F5EFE0]/30">+{item.sources.length - 5} more</span>
+                            <span className="text-xs text-[#F5EFE0]/30 self-center">+{item.sources.length - 5} more</span>
                           )}
                         </div>
                       </td>
