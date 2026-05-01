@@ -75,11 +75,13 @@ Output schema:
 
   let parsed: { summary: string | null; positions: Record<string, PositionEntry> };
   try {
-    // Strip markdown code fences if present
-    const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
-    parsed = JSON.parse(cleaned);
+    // Strip markdown code fences, then extract the outermost JSON object
+    const stripped = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+    const match = stripped.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('no JSON object found');
+    parsed = JSON.parse(match[0]);
   } catch {
-    console.warn(`[profile-updater] Failed to parse JSON for @${handle}, skipping update`);
+    console.warn(`[profile-updater] Failed to parse JSON for @${handle}, raw response: ${raw.slice(0, 300)}`);
     return { summary: existing?.summary ?? null, positions: existing?.positions ?? {}, changed: false };
   }
 
