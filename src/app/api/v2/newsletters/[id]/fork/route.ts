@@ -41,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // Create the fork — inherit junto so sources are shared
     const forked = await createNewsletter({
-      name: `${original.name} (fork)`,
+      name: `${original.name} (Fork)`,
       description: original.description || undefined,
       prompt: original.prompt,
       secondary_prompt: original.secondary_prompt || undefined,

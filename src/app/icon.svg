@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="5" fill="#0D0B08"/>
+  <text
+    x="16"
+    y="23"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="17"
+    font-weight="bold"
+    fill="#B08D57"
+    text-anchor="middle"
+    letter-spacing="-0.5"
+  >mj</text>
+</svg>
