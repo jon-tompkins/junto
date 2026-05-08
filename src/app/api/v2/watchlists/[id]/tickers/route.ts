@@ -23,21 +23,22 @@ async function assertOwner(watchlistId: string, userId: string): Promise<boolean
 }
 
 // POST /api/v2/watchlists/[id]/tickers — add a ticker
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const userId = await resolveUserId(session);
     if (!userId) return NextResponse.json({ error: 'User not found' }, { status: 401 });
-    if (!await assertOwner(params.id, userId)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!await assertOwner(id, userId)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const body = await req.json();
     const { ticker } = body;
     if (!ticker) return NextResponse.json({ error: 'ticker is required' }, { status: 400 });
 
-    await addTicker(params.id, ticker);
-    const tickers = await getWatchlistTickers(params.id);
+    await addTicker(id, ticker);
+    const tickers = await getWatchlistTickers(id);
     return NextResponse.json({ tickers }, { status: 201 });
   } catch (error) {
     console.error('[POST /api/v2/watchlists/[id]/tickers]', error);
@@ -46,20 +47,21 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 }
 
 // DELETE /api/v2/watchlists/[id]/tickers — remove a ticker (?ticker=OXY)
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const userId = await resolveUserId(session);
     if (!userId) return NextResponse.json({ error: 'User not found' }, { status: 401 });
-    if (!await assertOwner(params.id, userId)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!await assertOwner(id, userId)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const ticker = req.nextUrl.searchParams.get('ticker');
     if (!ticker) return NextResponse.json({ error: 'ticker query param is required' }, { status: 400 });
 
-    await removeTicker(params.id, ticker);
-    const tickers = await getWatchlistTickers(params.id);
+    await removeTicker(id, ticker);
+    const tickers = await getWatchlistTickers(id);
     return NextResponse.json({ tickers });
   } catch (error) {
     console.error('[DELETE /api/v2/watchlists/[id]/tickers]', error);

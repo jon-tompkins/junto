@@ -18,15 +18,16 @@ async function resolveUserId(session: any): Promise<string | null> {
 }
 
 // GET /api/v2/watchlists/[id]
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const userId = await resolveUserId(session);
     if (!userId) return NextResponse.json({ error: 'User not found' }, { status: 401 });
 
-    const watchlist = await getWatchlistWithTickers(params.id);
+    const watchlist = await getWatchlistWithTickers(id);
     if (!watchlist) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     if (watchlist.user_id !== userId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
@@ -38,21 +39,22 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // PATCH /api/v2/watchlists/[id]
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const userId = await resolveUserId(session);
     if (!userId) return NextResponse.json({ error: 'User not found' }, { status: 401 });
 
-    const existing = await getWatchlistWithTickers(params.id);
+    const existing = await getWatchlistWithTickers(id);
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     if (existing.user_id !== userId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const body = await req.json();
     const { name, description } = body;
-    const watchlist = await updateWatchlist(params.id, { name, description });
+    const watchlist = await updateWatchlist(id, { name, description });
 
     return NextResponse.json({ watchlist: { ...watchlist, tickers: existing.tickers } });
   } catch (error) {
@@ -62,19 +64,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 // DELETE /api/v2/watchlists/[id]
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const userId = await resolveUserId(session);
     if (!userId) return NextResponse.json({ error: 'User not found' }, { status: 401 });
 
-    const existing = await getWatchlistWithTickers(params.id);
+    const existing = await getWatchlistWithTickers(id);
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     if (existing.user_id !== userId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    await deleteWatchlist(params.id);
+    await deleteWatchlist(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[DELETE /api/v2/watchlists/[id]]', error);
