@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { TopNav } from '@/components/top-nav';
 
 type PositionCategory = 'crypto' | 'equity' | 'theme';
@@ -36,8 +37,11 @@ type SortDir = 'asc' | 'desc';
 interface JuntoOption { id: string; name: string; }
 
 export default function PositionsPage() {
+  const { data: session } = useSession();
   const [items, setItems] = useState<PositionGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [starredTickers, setStarredTickers] = useState<Set<string>>(new Set());
+  const [starring, setStarring] = useState<string | null>(null);
   const [view, setView] = useState<'heatmap' | 'table'>('heatmap');
   const [filter, setFilter] = useState<string>('all');
   const [categories, setCategories] = useState<Set<PositionCategory>>(new Set(['crypto', 'equity', 'theme']));
@@ -45,6 +49,42 @@ export default function PositionsPage() {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [juntos, setJuntos] = useState<JuntoOption[]>([]);
   const [juntoId, setJuntoId] = useState<string>('');
+
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch('/api/v2/star')
+      .then((r) => r.json())
+      .then((d) => setStarredTickers(new Set((d.tickers || []).map((t: string) => t.toUpperCase()))))
+      .catch(() => {});
+  }, [session?.user]);
+
+  async function toggleStar(e: React.MouseEvent, ticker: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!session?.user || starring) return;
+    setStarring(ticker);
+    const isStarred = starredTickers.has(ticker);
+    setStarredTickers((prev) => {
+      const next = new Set(prev);
+      if (isStarred) next.delete(ticker); else next.add(ticker);
+      return next;
+    });
+    try {
+      await fetch('/api/v2/star', {
+        method: isStarred ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker }),
+      });
+    } catch {
+      setStarredTickers((prev) => {
+        const next = new Set(prev);
+        if (isStarred) next.add(ticker); else next.delete(ticker);
+        return next;
+      });
+    } finally {
+      setStarring(null);
+    }
+  }
 
   useEffect(() => {
     fetch('/api/juntos/public')
@@ -237,6 +277,16 @@ export default function PositionsPage() {
                   }}
                   title={`${item.ticker} · ${STANCE_LABEL[item.stance] ?? item.stance} · ${item.count} analyst${item.count !== 1 ? 's' : ''}`}
                 >
+                  {session?.user && (
+                    <button
+                      onClick={(e) => toggleStar(e, item.ticker)}
+                      className="absolute top-1 right-1.5 text-xs leading-none transition z-10"
+                      style={{ color: starredTickers.has(item.ticker) ? '#B08D57' : 'rgba(245,239,224,0.2)' }}
+                      title={starredTickers.has(item.ticker) ? 'Unstar' : 'Star'}
+                    >
+                      {starredTickers.has(item.ticker) ? '★' : '☆'}
+                    </button>
+                  )}
                   <span
                     className="font-bold font-mono text-center px-2 w-full"
                     style={{
@@ -324,6 +374,7 @@ export default function PositionsPage() {
                   ))}
                   <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)]">Type</th>
                   <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)]">Profiles</th>
+                  {session?.user && <th className="px-3 py-3 w-8" />}
                 </tr>
               </thead>
               <tbody>
@@ -390,6 +441,18 @@ export default function PositionsPage() {
                           )}
                         </div>
                       </td>
+                      {session?.user && (
+                        <td className="px-3 py-3 text-center">
+                          <button
+                            onClick={(e) => toggleStar(e, item.ticker)}
+                            className="text-base leading-none transition"
+                            style={{ color: starredTickers.has(item.ticker) ? '#B08D57' : 'rgba(245,239,224,0.2)' }}
+                            title={starredTickers.has(item.ticker) ? 'Unstar' : 'Star'}
+                          >
+                            {starredTickers.has(item.ticker) ? '★' : '☆'}
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}

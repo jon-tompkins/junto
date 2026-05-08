@@ -12,6 +12,7 @@ import { chargeOwner, chargeSubscriber } from '@/lib/db/credits';
 import { calculateOwnerCreditCost, calculateSubscriberCreditCost } from '@/lib/pricing';
 import { getPromptTemplateById } from '@/lib/db/prompt-templates';
 import { NEWSLETTER_SYSTEM_PROMPT } from '@/lib/synthesis/prompts';
+import { getWatchlistTickers } from '@/lib/db/watchlists';
 
 export const maxDuration = 300; // 5 minutes
 
@@ -115,6 +116,15 @@ export async function GET(req: NextRequest) {
           resolvedPrompt = newsletter.prompt;
         }
 
+        // Load watchlist tickers if this dispatch has one pinned
+        const watchlistTickers = newsletter.watchlist_id
+          ? await getWatchlistTickers(newsletter.watchlist_id)
+          : undefined;
+
+        if (watchlistTickers?.length) {
+          console.log(`[generate] ${newsletter.name}: watchlist tickers — ${watchlistTickers.join(', ')}`);
+        }
+
         const result = await generateNewsletterV2({
           prompt: resolvedPrompt,
           secondaryPrompt: newsletter.secondary_prompt,
@@ -125,6 +135,7 @@ export async function GET(req: NextRequest) {
           startDate,
           endDate,
           newsletterName: newsletter.name,
+          watchlistTickers,
         });
 
         // 5. Store the run (status updated after delivery)

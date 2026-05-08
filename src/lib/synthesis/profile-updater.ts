@@ -1,5 +1,6 @@
 import { getAnthropic, HAIKU_MODEL } from './client';
 import { getSourceProfile, upsertSourceProfile, SourceAnalystProfile, PositionEntry } from '../db/source-analyst-profiles';
+import { fetchCurrentPrice } from '../prices';
 
 interface TweetInput {
   content: string;
@@ -98,7 +99,21 @@ Output schema:
     return { summary: existing?.summary ?? null, positions: existing?.positions ?? {}, changed: false };
   }
 
-  await upsertSourceProfile(sourceId, parsed.summary, parsed.positions);
+  // For new positions, fetch entry price. For existing, preserve it.
+  const enriched: Record<string, PositionEntry> = {};
+  await Promise.all(
+    Object.entries(parsed.positions).map(async ([ticker, pos]) => {
+      const prev = existing?.positions?.[ticker];
+      if (prev?.entry_price != null) {
+        enriched[ticker] = { ...pos, entry_price: prev.entry_price };
+      } else {
+        const price = await fetchCurrentPrice(ticker);
+        enriched[ticker] = price != null ? { ...pos, entry_price: price } : pos;
+      }
+    }),
+  );
 
-  return { ...parsed, changed: true };
+  await upsertSourceProfile(sourceId, parsed.summary, enriched);
+
+  return { summary: parsed.summary, positions: enriched, changed: true };
 }

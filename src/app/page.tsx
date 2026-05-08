@@ -316,48 +316,62 @@ export default function LandingPage() {
           </div>
           <div className="grid md:grid-cols-2 gap-3">
             {newsletters.slice(0, 8).map((nl) => (
-              <button
+              <div
                 key={nl.id}
-                onClick={() => handleCardClick(nl)}
-                className="group rounded-sm p-5 transition-all duration-200 text-left cursor-pointer"
+                className="group rounded-sm transition-all duration-200"
                 style={{ border: '1px solid rgba(176,141,87,0.18)' }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(176,141,87,0.4)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(176,141,87,0.04)'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(176,141,87,0.18)'; (e.currentTarget as HTMLButtonElement).style.background = ''; }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(176,141,87,0.4)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(176,141,87,0.04)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(176,141,87,0.18)'; (e.currentTarget as HTMLDivElement).style.background = ''; }}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-semibold leading-tight transition" style={{ color: '#F5EFE0' }}>
-                    {nl.name}
-                  </h3>
-                  <span className="text-[11px] px-2 py-0.5 rounded-sm shrink-0 ml-3 font-medium" style={{ background: 'rgba(176,141,87,0.08)', color: 'rgba(245,239,224,0.45)', fontFamily: 'var(--font-mono)' }}>
-                    {CADENCE_LABELS[nl.schedule_cadence]}
-                  </span>
-                </div>
-                <p className="text-sm leading-relaxed mb-4" style={{ color: 'rgba(245,239,224,0.45)' }}>
-                  {nl.description}
-                </p>
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-1.5 flex-wrap">
-                    {nl.labels.slice(0, 3).map((label) => (
-                      <span key={label} className="text-[11px] px-2 py-0.5 rounded-sm" style={{ background: 'rgba(176,141,87,0.08)', color: 'rgba(245,239,224,0.45)' }}>
-                        {label}
-                      </span>
-                    ))}
-                  </div>
-                  <span className="text-xs" style={{ color: 'rgba(245,239,224,0.3)', fontFamily: 'var(--font-mono)' }}>{nl.source_count} sources</span>
-                </div>
-                {nl.curator && (
-                  <div className="flex items-center gap-1.5 mt-3 pt-3" style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}>
-                    {nl.curator.avatar_url ? (
-                      <img src={nl.curator.avatar_url} alt="" className="w-4 h-4 rounded-sm" />
-                    ) : (
-                      <div className="w-4 h-4 rounded-sm" style={{ background: '#1c1a17' }} />
-                    )}
-                    <span className="text-xs" style={{ color: 'rgba(245,239,224,0.3)' }}>
-                      {nl.curator.twitter_handle ? `@${nl.curator.twitter_handle}` : nl.curator.name || 'Anonymous'}
+                <div onClick={() => handleCardClick(nl)} className="p-5 cursor-pointer text-left">
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="font-semibold leading-tight transition" style={{ color: '#F5EFE0' }}>
+                      {nl.name}
+                    </h3>
+                    <span className="text-[11px] px-2 py-0.5 rounded-sm shrink-0 ml-3 font-medium" style={{ background: 'rgba(176,141,87,0.08)', color: 'rgba(245,239,224,0.45)', fontFamily: 'var(--font-mono)' }}>
+                      {CADENCE_LABELS[nl.schedule_cadence]}
                     </span>
                   </div>
+                  <p className="text-sm leading-relaxed mb-4" style={{ color: 'rgba(245,239,224,0.45)' }}>
+                    {nl.description}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-1.5 flex-wrap">
+                      {nl.labels.slice(0, 3).map((label) => (
+                        <span key={label} className="text-[11px] px-2 py-0.5 rounded-sm" style={{ background: 'rgba(176,141,87,0.08)', color: 'rgba(245,239,224,0.45)' }}>
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                    <span className="text-xs" style={{ color: 'rgba(245,239,224,0.3)', fontFamily: 'var(--font-mono)' }}>{nl.source_count} sources</span>
+                  </div>
+                  {nl.curator && (
+                    <div className="flex items-center gap-1.5 mt-3 pt-3" style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}>
+                      {nl.curator.avatar_url ? (
+                        <img src={nl.curator.avatar_url} alt="" className="w-4 h-4 rounded-sm" />
+                      ) : (
+                        <div className="w-4 h-4 rounded-sm" style={{ background: '#1c1a17' }} />
+                      )}
+                      <span className="text-xs" style={{ color: 'rgba(245,239,224,0.3)' }}>
+                        {nl.curator.twitter_handle ? `@${nl.curator.twitter_handle}` : nl.curator.name || 'Anonymous'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {!nl.id.startsWith('placeholder-') && (
+                  <div className="px-5 pb-3 flex justify-end" style={{ borderTop: '1px solid rgba(176,141,87,0.08)' }}>
+                    <Link
+                      href={`/create?template_dispatch=${nl.id}`}
+                      className="text-xs transition"
+                      style={{ color: 'rgba(176,141,87,0.5)' }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#B08D57'; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(176,141,87,0.5)'; }}
+                    >
+                      Use as starting point →
+                    </Link>
+                  </div>
                 )}
-              </button>
+              </div>
             ))}
           </div>
           <div className="text-center mt-6 md:hidden">

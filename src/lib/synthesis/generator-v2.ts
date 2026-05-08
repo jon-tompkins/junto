@@ -18,6 +18,7 @@ interface GenerateV2Params {
   startDate: string;
   endDate: string;
   newsletterName?: string;      // For subject line fallback
+  watchlistTickers?: string[];  // Tickers to uprank in synthesis
 }
 
 interface GenerateV2Result {
@@ -38,6 +39,7 @@ export async function generateNewsletterV2({
   startDate,
   endDate,
   newsletterName,
+  watchlistTickers,
 }: GenerateV2Params): Promise<GenerateV2Result> {
   const client = getAnthropic();
 
@@ -48,7 +50,8 @@ export async function generateNewsletterV2({
     secondaryPrompt,
     `${startDate} to ${endDate}`,
     recentNewsletterContent,
-    contextNewsletterContent
+    contextNewsletterContent,
+    watchlistTickers,
   );
 
   const response = await client.messages.create({
@@ -89,8 +92,15 @@ export async function generateNewsletterV2({
   };
 }
 
-function engagementScore(likes: number, retweets: number): number {
-  return (likes || 0) + (retweets || 0) * 1.5;
+function engagementScore(likes: number, retweets: number, content?: string, tickers?: string[]): number {
+  const base = (likes || 0) + (retweets || 0) * 1.5;
+  if (!tickers?.length || !content) return base;
+  // Uprank tweets that mention any watchlist ticker (e.g. $OXY or plain OXY)
+  const tickerPattern = new RegExp(
+    tickers.map(t => `\\$${t}\\b|\\b${t}\\b`).join('|'),
+    'i',
+  );
+  return tickerPattern.test(content) ? base * 2.5 : base;
 }
 
 function buildSourceContentPrompt(
@@ -99,7 +109,8 @@ function buildSourceContentPrompt(
   secondaryPrompt?: string | null,
   dateRange?: string,
   recentNewsletterContent?: Record<string, { subject: string | null; content: string; received_at: string }[]>,
-  contextNewsletterContent?: Record<string, { subject: string | null; content: string; received_at: string }[]>
+  contextNewsletterContent?: Record<string, { subject: string | null; content: string; received_at: string }[]>,
+  watchlistTickers?: string[],
 ): string {
   const sections: string[] = [];
 
@@ -109,19 +120,28 @@ function buildSourceContentPrompt(
 
   const handles = Object.keys(recentTweets);
 
+  // Inject watchlist tickers into the prompt so Claude knows what to focus on
+  if (watchlistTickers?.length) {
+    sections.push(`WATCHLIST: ${watchlistTickers.map(t => `$${t}`).join(', ')} — prioritize content relevant to these positions`);
+  }
+
   // Sort each handle's tweets by engagement in place — extractTweetReferences sees the same order
   for (const handle of handles) {
     if (recentTweets[handle]?.length) {
       recentTweets[handle].sort((a, b) =>
-        engagementScore(b.likes, b.retweets) - engagementScore(a.likes, a.retweets)
+        engagementScore(b.likes, b.retweets, b.content, watchlistTickers) -
+        engagementScore(a.likes, a.retweets, a.content, watchlistTickers)
       );
     }
   }
 
-  // Top signals — highest-conviction content across all sources
+  // Top signals — highest-conviction content across all sources (watchlist tickers upranked)
   const topSignals = handles
     .flatMap(h => (recentTweets[h] || []).map(t => ({ handle: h, ...t })))
-    .sort((a, b) => engagementScore(b.likes, b.retweets) - engagementScore(a.likes, a.retweets))
+    .sort((a, b) =>
+      engagementScore(b.likes, b.retweets, b.content, watchlistTickers) -
+      engagementScore(a.likes, a.retweets, a.content, watchlistTickers)
+    )
     .slice(0, 4);
 
   if (topSignals.length > 0) {

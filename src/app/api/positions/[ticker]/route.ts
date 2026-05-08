@@ -24,6 +24,7 @@ export async function GET(
     note?: string;
     since: string;
     target_price?: number;
+    entry_price?: number;
   }> = [];
 
   const breakdown = { bullish: 0, bearish: 0, cautious: 0, neutral: 0 };
@@ -47,6 +48,7 @@ export async function GET(
       note: pos.note,
       since: pos.since,
       target_price: pos.target_price,
+      entry_price: pos.entry_price,
     });
   }
 

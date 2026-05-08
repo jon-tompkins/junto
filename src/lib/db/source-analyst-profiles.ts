@@ -5,6 +5,7 @@ export interface PositionEntry {
   since: string;  // ISO date string
   note?: string;
   target_price?: number;
+  entry_price?: number;
 }
 
 export interface SourceAnalystProfile {

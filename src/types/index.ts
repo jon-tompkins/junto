@@ -161,6 +161,7 @@ export interface NewsletterV2 {
   send_days?: string[];
   keywords?: string[];
   junto_id?: string | null;
+  watchlist_id?: string | null;
 }
 
 export interface NewsletterLabel {

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { TopNav } from '@/components/top-nav';
 
 const STANCE_COLORS: Record<string, string> = {
@@ -28,6 +29,19 @@ const STANCE_BAR: Record<string, string> = {
 
 const STANCES = ['bullish', 'cautious', 'neutral', 'bearish'] as const;
 
+// Known crypto tickers → map to TradingView COINBASE symbols
+const CRYPTO_TICKERS = new Set([
+  'BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE', 'ADA', 'AVAX', 'DOT', 'LINK',
+  'UNI', 'AAVE', 'MATIC', 'POL', 'OP', 'ARB', 'SUI', 'APT', 'INJ', 'TIA',
+  'TON', 'NEAR', 'ATOM', 'FTM', 'LTC', 'BCH', 'ETC', 'XLM', 'ALGO',
+]);
+
+function getTVSymbol(ticker: string): string {
+  const t = ticker.toUpperCase();
+  if (CRYPTO_TICKERS.has(t)) return `COINBASE:${t}USD`;
+  return t;
+}
+
 interface Analyst {
   source_id: string;
   handle: string;
@@ -37,6 +51,7 @@ interface Analyst {
   note?: string;
   since: string;
   target_price?: number;
+  entry_price?: number;
 }
 
 interface PositionData {
@@ -46,11 +61,67 @@ interface PositionData {
   analysts: Analyst[];
 }
 
+function PnL({ entry, current }: { entry: number; current: number }) {
+  const pct = ((current - entry) / entry) * 100;
+  const pos = pct >= 0;
+  return (
+    <span className={`text-xs font-mono ${pos ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
+      {pos ? '+' : ''}{pct.toFixed(1)}%
+    </span>
+  );
+}
+
+function TradingViewChart({ ticker }: { ticker: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const symbol = getTVSymbol(ticker);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    container.innerHTML = '';
+
+    const widgetDiv = document.createElement('div');
+    widgetDiv.className = 'tradingview-widget-container__widget';
+    container.appendChild(widgetDiv);
+
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
+    script.type = 'text/javascript';
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      symbol,
+      width: '100%',
+      height: 220,
+      locale: 'en',
+      dateRange: '3M',
+      colorTheme: 'dark',
+      isTransparent: true,
+      autosize: true,
+      largeChartUrl: `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}`,
+    });
+    container.appendChild(script);
+  }, [symbol]);
+
+  return (
+    <div className="mb-8 rounded border border-[rgba(176,141,87,0.18)] overflow-hidden">
+      <div
+        ref={containerRef}
+        className="tradingview-widget-container"
+        style={{ height: 220 }}
+      />
+    </div>
+  );
+}
+
 export default function PositionPage() {
   const params = useParams();
   const ticker = decodeURIComponent(params.ticker as string).toUpperCase();
+  const { data: session } = useSession();
   const [data, setData] = useState<PositionData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [starred, setStarred] = useState(false);
+  const [starring, setStarring] = useState(false);
 
   useEffect(() => {
     fetch(`/api/positions/${encodeURIComponent(ticker)}`)
@@ -58,7 +129,38 @@ export default function PositionPage() {
       .then(setData)
       .catch(() => setData(null))
       .finally(() => setLoading(false));
+
+    fetch(`/api/prices/${encodeURIComponent(ticker)}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => setCurrentPrice(d?.price ?? null))
+      .catch(() => null);
   }, [ticker]);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch(`/api/v2/star?ticker=${encodeURIComponent(ticker)}`)
+      .then((r) => r.json())
+      .then((d) => setStarred(d.starred ?? false))
+      .catch(() => {});
+  }, [ticker, session?.user]);
+
+  async function toggleStar() {
+    if (!session?.user || starring) return;
+    setStarring(true);
+    const next = !starred;
+    setStarred(next);
+    try {
+      await fetch('/api/v2/star', {
+        method: next ? 'POST' : 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker }),
+      });
+    } catch {
+      setStarred(!next);
+    } finally {
+      setStarring(false);
+    }
+  }
 
   const breakdown = data?.breakdown ?? {};
   const total = data?.total ?? 0;
@@ -83,114 +185,141 @@ export default function PositionPage() {
         {loading ? (
           <div className="animate-pulse space-y-4">
             <div className="h-12 bg-[#141210] rounded w-48" />
+            <div className="h-[220px] bg-[#141210] rounded" />
             <div className="h-32 bg-[#141210] rounded" />
             <div className="h-96 bg-[#141210] rounded" />
-          </div>
-        ) : !data || total === 0 ? (
-          <div className="text-center py-20 border border-dashed border-[rgba(176,141,87,0.28)] rounded">
-            <p className="text-[#F5EFE0]/60 font-medium mb-1">No positions tracked for {ticker}</p>
-            <p className="text-[#F5EFE0]/45 text-sm">Analysts may not have an explicit stance on this asset yet.</p>
           </div>
         ) : (
           <>
             {/* Header */}
-            <div className="mb-8">
+            <div className="mb-6">
               <div className="flex items-center gap-3 mb-2 flex-wrap">
                 <h1 className="text-4xl font-bold font-mono">
-                  <span className="text-[#B08D57]">
-                    {ticker}
-                  </span>
+                  <span className="text-[#B08D57]">{ticker}</span>
                 </h1>
                 {topStance && (
                   <span className={`text-sm px-3 py-1 rounded-sm font-medium capitalize ${STANCE_COLORS[topStance]}`}>
                     {STANCE_ICONS[topStance]} {topStance} consensus
                   </span>
                 )}
+                {session?.user && (
+                  <button
+                    onClick={toggleStar}
+                    disabled={starring}
+                    title={starred ? 'Remove from starred' : 'Add to starred'}
+                    className="ml-auto text-xl transition-transform active:scale-90"
+                    style={{ color: starred ? '#B08D57' : 'rgba(245,239,224,0.2)', lineHeight: 1 }}
+                    onMouseEnter={(e) => { if (!starred) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(176,141,87,0.6)'; }}
+                    onMouseLeave={(e) => { if (!starred) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(245,239,224,0.2)'; }}
+                  >
+                    {starred ? '★' : '☆'}
+                  </button>
+                )}
               </div>
-              <p className="text-[#F5EFE0]/60 text-sm">
-                {total} analyst{total !== 1 ? 's' : ''} tracking this position
-              </p>
+              {total > 0 && (
+                <p className="text-[#F5EFE0]/60 text-sm">
+                  {total} analyst{total !== 1 ? 's' : ''} tracking this position
+                </p>
+              )}
             </div>
 
-            {/* Aggregate breakdown */}
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-8">
-              <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide mb-4 font-[var(--font-oswald)]">
-                Sentiment Breakdown
-              </h2>
-              <div className="space-y-3">
-                {STANCES.filter((s) => (breakdown[s] ?? 0) > 0).map((s) => (
-                  <div key={s} className="flex items-center gap-3">
-                    <div className="w-16 text-right">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-sm capitalize ${STANCE_COLORS[s]}`}>
-                        {s}
-                      </span>
-                    </div>
-                    <div className="flex-1 bg-[#080604] rounded h-2 overflow-hidden">
-                      <div
-                        className={`h-full rounded ${STANCE_BAR[s]} transition-all duration-500`}
-                        style={{ width: `${Math.round(((breakdown[s] ?? 0) / total) * 100)}%` }}
-                      />
-                    </div>
-                    <div className="w-16 flex items-center gap-1 text-xs text-[#F5EFE0]/60">
-                      <span className="font-mono">{breakdown[s]}</span>
-                      <span className="text-[#F5EFE0]/30">
-                        ({Math.round(((breakdown[s] ?? 0) / total) * 100)}%)
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* TradingView chart */}
+            <TradingViewChart ticker={ticker} />
 
-            {/* Analysts */}
-            <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide mb-3 font-[var(--font-oswald)]">
-              Analysts
-            </h2>
-            <div className="space-y-2">
-              {analysts.map((a) => (
-                <Link
-                  key={a.source_id}
-                  href={`/sources/${a.handle}`}
-                  className="flex items-start gap-3 p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] hover:bg-[#1c1a17] transition group"
-                >
-                  {a.avatar_url ? (
-                    <img
-                      src={a.avatar_url}
-                      alt={a.handle}
-                      className="w-9 h-9 rounded bg-[#1c1a17] object-cover shrink-0 mt-0.5"
-                    />
-                  ) : (
-                    <div className="w-9 h-9 rounded bg-[#1c1a17] flex items-center justify-center text-[#F5EFE0]/60 text-xs font-medium shrink-0 mt-0.5">
-                      {a.handle[0]?.toUpperCase()}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="font-medium text-[#F5EFE0] group-hover:text-[#B08D57] transition text-sm">
-                        @{a.handle}
-                      </span>
-                      {a.display_name && (
-                        <span className="text-xs text-[#F5EFE0]/45">{a.display_name}</span>
-                      )}
-                      <span
-                        className={`ml-auto text-xs px-2 py-0.5 rounded-sm font-medium capitalize ${STANCE_COLORS[a.stance]}`}
-                      >
-                        {STANCE_ICONS[a.stance]} {a.stance}
-                      </span>
-                    </div>
-                    {a.note && (
-                      <p className="text-xs text-[#F5EFE0]/60 line-clamp-2 mb-1">{a.note}</p>
-                    )}
-                    <div className="flex gap-3 text-xs text-[#F5EFE0]/30">
-                      <span>since {new Date(a.since).toLocaleDateString()}</span>
-                      {a.target_price && (
-                        <span>target ${a.target_price.toLocaleString()}</span>
-                      )}
-                    </div>
+            {!data || total === 0 ? (
+              <div className="text-center py-20 border border-dashed border-[rgba(176,141,87,0.28)] rounded">
+                <p className="text-[#F5EFE0]/60 font-medium mb-1">No positions tracked for {ticker}</p>
+                <p className="text-[#F5EFE0]/45 text-sm">Analysts may not have an explicit stance on this asset yet.</p>
+              </div>
+            ) : (
+              <>
+                {/* Aggregate breakdown */}
+                <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-8">
+                  <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide mb-4 font-[var(--font-oswald)]">
+                    Sentiment Breakdown
+                  </h2>
+                  <div className="space-y-3">
+                    {STANCES.filter((s) => (breakdown[s] ?? 0) > 0).map((s) => (
+                      <div key={s} className="flex items-center gap-3">
+                        <div className="w-16 text-right">
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-sm capitalize ${STANCE_COLORS[s]}`}>
+                            {s}
+                          </span>
+                        </div>
+                        <div className="flex-1 bg-[#080604] rounded h-2 overflow-hidden">
+                          <div
+                            className={`h-full rounded ${STANCE_BAR[s]} transition-all duration-500`}
+                            style={{ width: `${Math.round(((breakdown[s] ?? 0) / total) * 100)}%` }}
+                          />
+                        </div>
+                        <div className="w-16 flex items-center gap-1 text-xs text-[#F5EFE0]/60">
+                          <span className="font-mono">{breakdown[s]}</span>
+                          <span className="text-[#F5EFE0]/30">
+                            ({Math.round(((breakdown[s] ?? 0) / total) * 100)}%)
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </Link>
-              ))}
-            </div>
+                </div>
+
+                {/* Analysts */}
+                <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide mb-3 font-[var(--font-oswald)]">
+                  Analysts
+                </h2>
+                <div className="space-y-2">
+                  {analysts.map((a) => (
+                    <Link
+                      key={a.source_id}
+                      href={`/sources/${a.handle}`}
+                      className="flex items-start gap-3 p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] hover:bg-[#1c1a17] transition group"
+                    >
+                      {a.avatar_url ? (
+                        <img
+                          src={a.avatar_url}
+                          alt={a.handle}
+                          className="w-9 h-9 rounded bg-[#1c1a17] object-cover shrink-0 mt-0.5"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded bg-[#1c1a17] flex items-center justify-center text-[#F5EFE0]/60 text-xs font-medium shrink-0 mt-0.5">
+                          {a.handle[0]?.toUpperCase()}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="font-medium text-[#F5EFE0] group-hover:text-[#B08D57] transition text-sm">
+                            @{a.handle}
+                          </span>
+                          {a.display_name && (
+                            <span className="text-xs text-[#F5EFE0]/45">{a.display_name}</span>
+                          )}
+                          <span
+                            className={`ml-auto text-xs px-2 py-0.5 rounded-sm font-medium capitalize ${STANCE_COLORS[a.stance]}`}
+                          >
+                            {STANCE_ICONS[a.stance]} {a.stance}
+                          </span>
+                        </div>
+                        {a.note && (
+                          <p className="text-xs text-[#F5EFE0]/60 line-clamp-2 mb-1">{a.note}</p>
+                        )}
+                        <div className="flex gap-3 text-xs text-[#F5EFE0]/30 flex-wrap">
+                          <span>since {new Date(a.since).toLocaleDateString()}</span>
+                          {a.entry_price != null && (
+                            <span>entry ${a.entry_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          )}
+                          {a.entry_price != null && currentPrice != null && (
+                            <PnL entry={a.entry_price} current={currentPrice} />
+                          )}
+                          {a.target_price && (
+                            <span>target ${a.target_price.toLocaleString()}</span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
       </div>

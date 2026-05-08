@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>myjunto — Data Pipeline</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #080604;
+    color: #F5EFE0;
+    font-family: 'Georgia', serif;
+    padding: 48px 32px;
+    min-height: 100vh;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #B08D57;
+    margin-bottom: 8px;
+  }
+  .subtitle { color: rgba(245,239,224,0.4); font-size: 13px; margin-bottom: 48px; }
+
+  .pipeline {
+    display: grid;
+    grid-template-columns: 200px 1fr 1fr 1fr;
+    gap: 0;
+    max-width: 1100px;
+  }
+
+  /* Column headers */
+  .col-header {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(245,239,224,0.3);
+    padding: 0 0 16px 0;
+    font-family: monospace;
+  }
+
+  /* Cron labels */
+  .cron-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding-right: 24px;
+    border-right: 1px solid rgba(176,141,87,0.15);
+  }
+  .cron-block {
+    background: rgba(176,141,87,0.07);
+    border: 1px solid rgba(176,141,87,0.25);
+    border-radius: 4px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  .cron-block .label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #B08D57;
+    font-family: monospace;
+    margin-bottom: 3px;
+  }
+  .cron-block .schedule {
+    font-size: 10px;
+    color: rgba(245,239,224,0.35);
+    font-family: monospace;
+  }
+
+  /* Flow columns */
+  .flow-col {
+    padding: 0 20px;
+    border-right: 1px solid rgba(176,141,87,0.08);
+  }
+  .flow-col:last-child { border-right: none; }
+
+  /* Nodes */
+  .node {
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    position: relative;
+  }
+  .node-cron   { background: rgba(176,141,87,0.1);  border: 1px solid rgba(176,141,87,0.4); }
+  .node-api    { background: rgba(96,165,250,0.08); border: 1px solid rgba(96,165,250,0.3); }
+  .node-db     { background: rgba(74,222,128,0.07); border: 1px solid rgba(74,222,128,0.3); }
+  .node-ai     { background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.4); }
+  .node-output { background: rgba(232,69,60,0.08);  border: 1px solid rgba(232,69,60,0.25); }
+  .node-read   { background: rgba(245,239,224,0.04); border: 1px dashed rgba(245,239,224,0.2); }
+
+  .node .node-title {
+    font-weight: 700;
+    font-family: monospace;
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+  .node .node-title.ai    { color: #a78bfa; }
+  .node .node-title.api   { color: #60a5fa; }
+  .node .node-title.db    { color: #4ade80; }
+  .node .node-title.cron  { color: #B08D57; }
+  .node .node-title.out   { color: #e8453c; }
+  .node .node-title.read  { color: rgba(245,239,224,0.5); }
+  .node .node-desc { font-size: 11px; color: rgba(245,239,224,0.55); }
+
+  .arrow {
+    text-align: center;
+    color: rgba(245,239,224,0.2);
+    font-size: 16px;
+    margin: 2px 0 6px;
+    line-height: 1;
+  }
+  .arrow-right {
+    display: inline-block;
+    color: rgba(245,239,224,0.2);
+    font-size: 13px;
+    margin: 0 4px;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(176,141,87,0.15);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: rgba(245,239,224,0.5);
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* Full-width diagram */
+  .diagram {
+    max-width: 1100px;
+    margin-top: 0;
+  }
+
+  .row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    margin-bottom: 4px;
+  }
+
+  .stage {
+    flex-shrink: 0;
+  }
+
+  .connector {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    color: rgba(245,239,224,0.25);
+    font-size: 14px;
+    margin-top: 14px;
+  }
+  .connector-down {
+    text-align: center;
+    color: rgba(245,239,224,0.2);
+    font-size: 14px;
+    padding: 2px 0;
+  }
+
+  /* Section labels */
+  .section {
+    margin-bottom: 36px;
+  }
+  .section-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: rgba(245,239,224,0.25);
+    margin-bottom: 14px;
+    font-family: monospace;
+    padding-left: 2px;
+  }
+
+  /* Timeline */
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    max-width: 960px;
+  }
+  .tl-row {
+    display: grid;
+    grid-template-columns: 180px 24px 1fr;
+    align-items: start;
+    gap: 0;
+  }
+  .tl-trigger {
+    background: rgba(176,141,87,0.1);
+    border: 1px solid rgba(176,141,87,0.35);
+    border-radius: 4px;
+    padding: 8px 12px;
+  }
+  .tl-trigger .t-name { font-size: 12px; font-weight: 700; color: #B08D57; font-family: monospace; }
+  .tl-trigger .t-sched { font-size: 10px; color: rgba(245,239,224,0.35); font-family: monospace; margin-top: 2px; }
+  .tl-arrow {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 14px;
+    justify-content: center;
+    color: rgba(245,239,224,0.25);
+    font-size: 14px;
+  }
+  .tl-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .step {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .step-num {
+    font-size: 9px;
+    font-family: monospace;
+    color: rgba(245,239,224,0.2);
+    flex-shrink: 0;
+    width: 16px;
+    text-align: right;
+  }
+  .step-node {
+    border-radius: 3px;
+    padding: 6px 10px;
+    font-size: 11px;
+    flex: 1;
+  }
+  .step-node .sn-title { font-weight: 700; font-family: monospace; font-size: 11px; }
+  .step-node .sn-desc  { font-size: 10px; color: rgba(245,239,224,0.5); margin-top: 2px; }
+
+  .indent { margin-left: 32px; }
+  .sub-step {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .sub-step .step-num { color: rgba(245,239,224,0.12); }
+
+  .divider {
+    height: 1px;
+    background: rgba(176,141,87,0.1);
+    margin: 8px 0;
+  }
+
+  .ai-pill {
+    display: inline-block;
+    background: rgba(167,139,250,0.15);
+    border: 1px solid rgba(167,139,250,0.4);
+    color: #a78bfa;
+    font-size: 9px;
+    font-family: monospace;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 1px 5px;
+    border-radius: 2px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<h1>myjunto — Data Pipeline</h1>
+<p class="subtitle">How content flows from sources to dispatches and analyst profiles</p>
+
+<div class="timeline">
+
+  <!-- PULL CONTENT -->
+  <div class="tl-row">
+    <div class="tl-trigger">
+      <div class="t-name">pull-content</div>
+      <div class="t-sched">Every 6h · :45 past 0,6,12,18 UTC</div>
+    </div>
+    <div class="tl-arrow">→</div>
+    <div class="tl-steps">
+
+      <div class="step">
+        <span class="step-num">1</span>
+        <div class="step-node node-read">
+          <div class="sn-title read">Load Active Sources</div>
+          <div class="sn-desc">Sources linked to any junto or active newsletter (Twitter, YouTube, Newsletter types)</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">2a</span>
+        <div class="step-node node-api">
+          <div class="sn-title api">Apify — Twitter Batch</div>
+          <div class="sn-desc">Start async scrape for all stale Twitter handles (last updated &gt;6h). Returns run_id immediately — doesn't wait.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num"></span>
+        <div class="step-node node-db">
+          <div class="sn-title db">apify_pending_runs</div>
+          <div class="sn-desc">Saves run_id + handle→source_id map so collect-twitter can ingest results later</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">2b</span>
+        <div class="step-node node-api">
+          <div class="sn-title api">Supadata — YouTube</div>
+          <div class="sn-desc">Fetches latest video transcripts per channel. Stores directly as synthetic tweets.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">2c</span>
+        <div class="step-node node-db">
+          <div class="sn-title db">newsletter_content → content_twitter</div>
+          <div class="sn-desc">Newsletter issues received via email (Agentmail) are read and stored as content</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- COLLECT TWITTER -->
+  <div class="tl-row">
+    <div class="tl-trigger">
+      <div class="t-name">collect-twitter</div>
+      <div class="t-sched">Every 5 min · polls for completed Apify runs</div>
+    </div>
+    <div class="tl-arrow">→</div>
+    <div class="tl-steps">
+
+      <div class="step">
+        <span class="step-num">1</span>
+        <div class="step-node node-read">
+          <div class="sn-title read">Poll Apify</div>
+          <div class="sn-desc">Check all pending runs. Most return "still running" — function exits in &lt;1s. When SUCCEEDED, proceeds.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">2</span>
+        <div class="step-node node-db">
+          <div class="sn-title db">content_twitter</div>
+          <div class="sn-desc">Tweets stored per source. Deduplicates by twitter_id — safe to re-run. Returns count of truly new tweets.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">3</span>
+        <div class="step-node node-db">
+          <div class="sn-title db">sources</div>
+          <div class="sn-desc">Backfills avatar_url + display_name from Apify author data. Updates updated_at.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">4</span>
+        <div class="step-node node-ai">
+          <div class="sn-title ai">Profile Updater <span class="ai-pill">Claude Haiku</span></div>
+          <div class="sn-desc">
+            <strong style="color:rgba(245,239,224,0.7)">Triggered when:</strong> stored &gt; 0 (new tweets ingested for this source)<br>
+            Input: new tweets + existing profile<br>
+            Output: updated summary + positions JSON (stances on tickers/sectors)<br>
+            Writes to: source_analyst_profiles
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">5</span>
+        <div class="step-node node-ai" style="opacity:0.75">
+          <div class="sn-title ai">Stale Profile Sweep <span class="ai-pill">Claude Haiku</span></div>
+          <div class="sn-desc">
+            <strong style="color:rgba(245,239,224,0.7)">Triggered when:</strong> profile missing OR last_updated &gt;48h<br>
+            Uses stored tweets from DB (not live Apify data)<br>
+            Cap: 3 profiles per cycle to stay under Vercel timeout
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GENERATE NEWSLETTERS -->
+  <div class="tl-row">
+    <div class="tl-trigger">
+      <div class="t-name">generate-newsletters</div>
+      <div class="t-sched">Every 5–10 min · after collect windows</div>
+    </div>
+    <div class="tl-arrow">→</div>
+    <div class="tl-steps">
+
+      <div class="step">
+        <span class="step-num">1</span>
+        <div class="step-node node-read">
+          <div class="sn-title read">Load Pending Dispatches</div>
+          <div class="sn-desc">Finds newsletters due for a run based on cadence (daily / 2× daily / weekly)</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">2</span>
+        <div class="step-node node-db">
+          <div class="sn-title db">content_twitter</div>
+          <div class="sn-desc">Reads recent tweets from all sources in the dispatch's junto (last 6–24h window)</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">3</span>
+        <div class="step-node node-ai">
+          <div class="sn-title ai">Synthesis <span class="ai-pill">Claude Haiku</span></div>
+          <div class="sn-desc">
+            Input: raw tweets + custom prompt template<br>
+            Output: formatted dispatch (markdown/HTML)<br>
+            Applies user's labels, watchlist tickers, and synthesis instructions
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <span class="step-num">4</span>
+        <div class="step-node node-output">
+          <div class="sn-title out">Delivery</div>
+          <div class="sn-desc">
+            Email → Resend API (per subscriber)<br>
+            Telegram → Bot API (per subscriber)<br>
+            Records run + delivery in newsletter_runs / newsletter_deliveries
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- POSITIONS PAGE -->
+  <div class="tl-row">
+    <div class="tl-trigger" style="background:rgba(245,239,224,0.03); border-color: rgba(245,239,224,0.15);">
+      <div class="t-name" style="color:rgba(245,239,224,0.5)">/positions page</div>
+      <div class="t-sched">Read-only · on demand</div>
+    </div>
+    <div class="tl-arrow">→</div>
+    <div class="tl-steps">
+      <div class="step">
+        <span class="step-num">1</span>
+        <div class="step-node node-read">
+          <div class="sn-title read">source_analyst_profiles</div>
+          <div class="sn-desc">Reads all profiles, extracts positions, classifies by Crypto / Equity / Theme, groups by ticker+stance, counts sources. No AI call — pure aggregation.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-dot" style="background:rgba(176,141,87,0.4);border:1px solid rgba(176,141,87,0.6)"></div>
+    Cron trigger
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:rgba(96,165,250,0.3);border:1px solid rgba(96,165,250,0.5)"></div>
+    External API (Apify, Supadata, Resend)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:rgba(74,222,128,0.3);border:1px solid rgba(74,222,128,0.5)"></div>
+    Database read/write (Supabase)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:rgba(167,139,250,0.3);border:1px solid rgba(167,139,250,0.5)"></div>
+    AI call (Claude Haiku)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:rgba(232,69,60,0.25);border:1px solid rgba(232,69,60,0.4)"></div>
+    User-facing output
+  </div>
+</div>
+
+<p style="margin-top:32px; font-size:11px; color:rgba(245,239,224,0.2); font-family:monospace;">
+  AI calls: Profile updater fires per source when new tweets arrive, or on 48h stale sweep (3/cycle cap).<br>
+  Synthesis fires per dispatch on its schedule. Both use Claude Haiku (~$0.25/mo per junto at daily cadence).
+</p>
+
+</body>
+</html>
