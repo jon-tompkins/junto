@@ -115,7 +115,16 @@ export function QuickDispatch() {
     );
   }
 
-  if (sources.length === 0) return null;
+  if (sources.length === 0) {
+    return (
+      <section className="container mx-auto px-4 py-20">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>Quick Dispatch</p>
+          <p className="text-sm" style={{ color: 'rgba(245,239,224,0.4)' }}>Featured analysts coming soon.</p>
+        </div>
+      </section>
+    );
+  }
 
   const isAuthed = !!session?.user;
   const buttonDisabled = running || (isAuthed && (selected.size === 0 || usedToday));
