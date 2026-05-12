@@ -48,6 +48,7 @@ export function TopNav() {
           { href: '/juntos', label: 'Juntos' },
           { href: '/sources', label: 'Analysts' },
           { href: '/positions', label: 'Positions' },
+          ...(session?.user ? [{ href: '/theses', label: 'Theses' }] : []),
           { href: '/docs', label: 'Docs' },
           ...(session?.user ? [{ href: '/dashboard', label: 'Dashboard' }, { href: '/create', label: 'Create' }] : []),
         ].map(({ href, label }) => (
@@ -193,6 +194,7 @@ export function TopNav() {
               { href: '/juntos', label: 'Juntos' },
               { href: '/sources', label: 'Analysts' },
               { href: '/positions', label: 'Positions' },
+              ...(session?.user ? [{ href: '/theses', label: 'Theses' }] : []),
               { href: '/docs', label: 'Docs' },
               ...(session?.user ? [
                 { href: '/dashboard', label: 'Dashboard' },
