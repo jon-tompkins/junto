@@ -151,7 +151,7 @@ async function fetchFeaturedSources(): Promise<{ junto_id: string | null; source
   const { data: junto } = await supabase
     .from('juntos')
     .select('id')
-    .eq('slug', 'featured')
+    .ilike('name', 'featured')
     .maybeSingle();
 
   if (!junto?.id) return { junto_id: null, sources: [] };
