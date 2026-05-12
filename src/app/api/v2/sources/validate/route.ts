@@ -71,6 +71,36 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ valid: true, handle, type });
   }
 
+  // Check if we already track this handle — skip Apify entirely
+  try {
+    const supabase = getSupabase();
+    const { data: existing } = await supabase
+      .from('sources')
+      .select('id, handle_or_url, display_name, avatar_url, metadata')
+      .eq('type', 'twitter')
+      .ilike('handle_or_url', handle)
+      .maybeSingle();
+
+    if (existing) {
+      const meta = existing.metadata as Record<string, number> | null;
+      return NextResponse.json({
+        valid: true,
+        handle: existing.handle_or_url,
+        type,
+        validated: true,
+        alreadyTracked: true,
+        profile: {
+          name: existing.display_name || existing.handle_or_url,
+          username: existing.handle_or_url,
+          followers: meta?.followers ?? 0,
+          avatar: existing.avatar_url ?? null,
+        },
+      });
+    }
+  } catch (_) {
+    // Fall through to Apify validation
+  }
+
   try {
     const token = process.env.APIFY_API_KEY;
     if (!token) {

@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { TopNav } from '@/components/top-nav';
 import { AuthModal } from '@/components/auth-modal';
+import { QuickDispatch } from '@/components/quick-dispatch';
 import {
   CADENCE_OPTIONS,
   CADENCE_LABELS,
@@ -206,6 +207,12 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Divider */}
+      <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
+
+      {/* Quick Dispatch — featured analysts, one-tap synthesis */}
+      <QuickDispatch />
 
       {/* Divider */}
       <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
