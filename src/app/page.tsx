@@ -172,38 +172,36 @@ export default function LandingPage() {
     <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
 
-      {/* Hero — left-aligned, editorial */}
-      <section className="container mx-auto px-4 pt-28 pb-24 relative grain">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_20%_60%,rgba(176,141,87,0.07),transparent)] pointer-events-none" />
-        <div className="max-w-5xl mx-auto relative">
-          <div className="max-w-3xl">
-            <p className="text-xs font-semibold tracking-widest uppercase mb-8" style={{ color: 'rgba(176,141,87,0.8)', fontFamily: 'var(--font-mono)' }}>
+      {/* Hero — compact, Quick Dispatch is the feature */}
+      <section className="container mx-auto px-4 pt-16 pb-10 relative">
+        <div className="max-w-5xl mx-auto flex items-end justify-between gap-8 flex-wrap">
+          <div>
+            <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'rgba(176,141,87,0.8)', fontFamily: 'var(--font-mono)' }}>
               myjunto
             </p>
-            <h1 className="text-6xl md:text-8xl font-bold leading-[0.95] mb-8 tracking-tight">
-              The signal,<br />
+            <h1 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight">
+              The signal,{' '}
               <span style={{ color: '#B08D57' }}>not the noise.</span>
             </h1>
-            <p className="text-lg mb-10 max-w-xl leading-relaxed" style={{ color: 'rgba(245,239,224,0.55)' }}>
-              Build curated intelligence dispatches from the voices you actually trust —
-              Twitter, newsletters, YouTube — synthesized by AI into briefs worth reading.
+            <p className="text-sm mt-3 max-w-lg" style={{ color: 'rgba(245,239,224,0.45)' }}>
+              AI-synthesized briefs from the Twitter voices you actually trust.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link
-                href="/create"
-                className="inline-flex items-center justify-center px-7 py-3.5 rounded font-semibold transition text-base uppercase tracking-wide"
-                style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}
-              >
-                Create a Dispatch
-              </Link>
-              <Link
-                href="/juntos"
-                className="inline-flex items-center justify-center px-7 py-3.5 rounded font-medium transition text-base"
-                style={{ border: '1px solid rgba(176,141,87,0.28)', color: 'rgba(245,239,224,0.7)' }}
-              >
-                Browse Juntos →
-              </Link>
-            </div>
+          </div>
+          <div className="flex gap-3 pb-1">
+            <Link
+              href="/create"
+              className="inline-flex items-center justify-center px-5 py-2.5 rounded font-semibold transition text-sm uppercase tracking-wide"
+              style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}
+            >
+              Create a Dispatch
+            </Link>
+            <Link
+              href="/juntos"
+              className="inline-flex items-center justify-center px-5 py-2.5 rounded font-medium transition text-sm"
+              style={{ border: '1px solid rgba(176,141,87,0.28)', color: 'rgba(245,239,224,0.7)' }}
+            >
+              Browse →
+            </Link>
           </div>
         </div>
       </section>

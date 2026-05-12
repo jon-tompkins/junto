@@ -35,6 +35,9 @@ export function QuickDispatch() {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<QuickDispatchResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [emailing, setEmailing] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,6 +73,29 @@ export function QuickDispatch() {
     });
   }
 
+  async function emailResult() {
+    if (!result || emailing || emailSent) return;
+    setEmailing(true);
+    setEmailError(null);
+    try {
+      const res = await fetch('/api/quick-dispatch/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject: result.subject, content: result.content }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEmailError(data.error || 'Failed to send email');
+      } else {
+        setEmailSent(true);
+      }
+    } catch {
+      setEmailError('Network error — please try again.');
+    } finally {
+      setEmailing(false);
+    }
+  }
+
   async function run() {
     if (!session?.user) {
       signIn('twitter');
@@ -97,6 +123,8 @@ export function QuickDispatch() {
 
       setResult(data as QuickDispatchResult);
       setUsedToday(true);
+      setEmailSent(false);
+      setEmailError(null);
     } catch {
       setError('Network error — please try again.');
     } finally {
@@ -284,6 +312,20 @@ export function QuickDispatch() {
                 No recent tweets from: {result.sourcesUsed.filter((s) => !s.used).map((s) => `@${s.handle}`).join(', ')}
               </p>
             )}
+
+            <div className="mt-6 flex items-center gap-3">
+              <button
+                onClick={emailResult}
+                disabled={emailing || emailSent}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ border: '1px solid rgba(176,141,87,0.35)', color: emailSent ? '#3ecf6a' : 'rgba(245,239,224,0.7)' }}
+              >
+                {emailSent ? '✓ Sent to your email' : emailing ? 'Sending…' : '↗ Email this to me'}
+              </button>
+              {emailError && (
+                <span className="text-xs" style={{ color: '#ff8888' }}>{emailError}</span>
+              )}
+            </div>
           </div>
         )}
       </div>
