@@ -90,6 +90,19 @@ export async function getUserNewsletters(userId: string): Promise<NewsletterV2[]
   return data || [];
 }
 
+export async function getPublicNewslettersByTwitterHandle(twitterHandle: string): Promise<NewsletterV2[]> {
+  const handle = twitterHandle.toLowerCase().replace('@', '');
+  const { data, error } = await supabase()
+    .from('newsletters_v2')
+    .select('*, users!admin_user_id(twitter_handle)')
+    .eq('is_public', true)
+    .eq('users.twitter_handle', handle)
+    .order('subscriber_count', { ascending: false });
+
+  if (error) throw error;
+  return (data || []).filter((n: any) => n.users?.twitter_handle === handle);
+}
+
 export async function updateNewsletter(id: string, updates: Partial<Pick<NewsletterV2, 'name' | 'description' | 'prompt' | 'secondary_prompt' | 'is_public' | 'schedule_cadence' | 'credit_cost'>> & { send_days?: string[]; prompt_template_id?: string | null }): Promise<NewsletterV2> {
   const { data, error } = await supabase()
     .from('newsletters_v2')
