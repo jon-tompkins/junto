@@ -94,6 +94,15 @@ async function importFile(filePath: string, userId: string, personalSourceId: st
   const createdAt = fm.created ? new Date(fm.created as any).toISOString() : new Date().toISOString();
   const updatedAt = fm.updated ? new Date(fm.updated as any).toISOString() : createdAt;
 
+  // Coerce unknown statuses (e.g. needs_review) to 'active' — DB CHECK only
+  // allows active/validated/invalidated/dormant/exited.
+  const ALLOWED_STATUSES = new Set(['active', 'validated', 'invalidated', 'dormant', 'exited']);
+  const rawStatus = (fm.status as string) || 'active';
+  const status = ALLOWED_STATUSES.has(rawStatus) ? rawStatus : 'active';
+  if (status !== rawStatus) {
+    console.log(`   ↳ coerced status "${rawStatus}" → "active"`);
+  }
+
   // 1. theses row
   const { data: thesisRow, error: thesisErr } = await supabase
     .from('theses')
@@ -105,7 +114,7 @@ async function importFile(filePath: string, userId: string, personalSourceId: st
       mechanism_md: fm.mechanism || null,
       body_md: parsed.body || null,
       conviction: fm.conviction,
-      status: fm.status || 'active',
+      status,
       horizon: fm.horizon || null,
       tags: fm.tags || [],
       visibility: fm.visibility === 'public' ? 'public' : 'private',
