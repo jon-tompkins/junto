@@ -172,37 +172,45 @@ export default function LandingPage() {
     <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
 
-      {/* Hero — compact, Quick Dispatch is the feature */}
+      {/* Hero */}
       <section className="container mx-auto px-4 pt-16 pb-10 relative">
-        <div className="max-w-5xl mx-auto flex items-end justify-between gap-8 flex-wrap">
-          <div>
-            <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'rgba(176,141,87,0.8)', fontFamily: 'var(--font-mono)' }}>
-              myjunto
-            </p>
-            <h1 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight">
-              The signal,{' '}
-              <span style={{ color: '#B08D57' }}>not the noise.</span>
-            </h1>
-            <p className="text-sm mt-3 max-w-lg" style={{ color: 'rgba(245,239,224,0.45)' }}>
-              AI-synthesized briefs from the Twitter voices you actually trust.
-            </p>
-          </div>
-          <div className="flex gap-3 pb-1">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'rgba(176,141,87,0.8)', fontFamily: 'var(--font-mono)' }}>
+            myjunto
+          </p>
+          <h1 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight">
+            The signal,{' '}
+            <span style={{ color: '#B08D57' }}>not the noise.</span>
+          </h1>
+          <p className="text-sm mt-3 max-w-lg" style={{ color: 'rgba(245,239,224,0.45)' }}>
+            AI-synthesized briefs from the Twitter voices you actually trust.
+          </p>
+
+          {/* Dual CTA — curator / consumer */}
+          <div className="flex flex-col sm:flex-row gap-3 mt-8">
             <Link
               href="/create"
-              className="inline-flex items-center justify-center px-5 py-2.5 rounded font-semibold transition text-sm uppercase tracking-wide"
+              className="inline-flex items-center justify-center px-7 py-3.5 rounded font-semibold transition text-base uppercase tracking-wide"
               style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}
             >
-              Create a Dispatch
+              Curate a Junto &amp; create a dispatch
             </Link>
             <Link
               href="/juntos"
-              className="inline-flex items-center justify-center px-5 py-2.5 rounded font-medium transition text-sm"
+              className="inline-flex items-center justify-center px-7 py-3.5 rounded font-medium transition text-base"
               style={{ border: '1px solid rgba(176,141,87,0.28)', color: 'rgba(245,239,224,0.7)' }}
             >
-              Browse →
+              Subscribe to a dispatch →
             </Link>
           </div>
+
+          {/* Analyst callout */}
+          <p className="mt-5 text-sm" style={{ color: 'rgba(245,239,224,0.35)' }}>
+            Or{' '}
+            <Link href="/sources" className="transition underline underline-offset-4 decoration-[rgba(176,141,87,0.4)] hover:text-[#B08D57]">
+              browse analyst profiles &amp; tracked positions
+            </Link>
+          </p>
         </div>
       </section>
 
