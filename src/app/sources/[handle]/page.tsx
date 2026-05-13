@@ -208,7 +208,7 @@ export default function SourceProfilePage() {
                     ? ((pos.target_price - quote.price) / quote.price) * 100
                     : null;
                 return (
-                  <div key={ticker} className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4">
+                  <Link key={ticker} href={`/positions/${ticker}`} className="block bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 hover:border-[rgba(176,141,87,0.4)] transition">
                     {/* Top row: ticker + badge */}
                     <div className="flex items-center justify-between gap-3 mb-3">
                       <span className="font-mono font-bold text-[#F5EFE0] text-lg">{ticker}</span>
@@ -262,7 +262,7 @@ export default function SourceProfilePage() {
                     {pos.note && (
                       <p className="text-sm text-[#F5EFE0]/60 mt-2 leading-snug">{pos.note}</p>
                     )}
-                  </div>
+                  </Link>
                 );
               })}
             </div>
