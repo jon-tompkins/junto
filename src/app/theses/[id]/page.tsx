@@ -72,19 +72,19 @@ interface Detail {
   sources: Source[];
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  active: 'bg-blue-600/15 text-blue-400 border-blue-500/30',
-  validated: 'bg-emerald-600/15 text-emerald-400 border-emerald-500/30',
-  invalidated: 'bg-red-600/15 text-red-400 border-red-500/30',
-  dormant: 'bg-slate-600/15 text-slate-400 border-slate-500/30',
-  exited: 'bg-amber-600/15 text-amber-400 border-amber-500/30',
+const STATUS_COLOR: Record<string, string> = {
+  active: '#B08D57',
+  validated: '#3ecf6a',
+  invalidated: '#e8453c',
+  dormant: 'rgba(245,239,224,0.5)',
+  exited: '#d97706',
 };
 
-const CRITERION_STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-slate-700/40 text-slate-400',
-  triggered: 'bg-emerald-600/20 text-emerald-400',
-  partial: 'bg-amber-600/20 text-amber-400',
-  not_triggered: 'bg-slate-700/40 text-slate-500',
+const CRITERION_STATUS: Record<string, { color: string; bg: string }> = {
+  pending: { color: 'rgba(245,239,224,0.45)', bg: 'rgba(245,239,224,0.06)' },
+  triggered: { color: '#3ecf6a', bg: 'rgba(62,207,106,0.12)' },
+  partial: { color: '#d97706', bg: 'rgba(217,119,6,0.12)' },
+  not_triggered: { color: 'rgba(245,239,224,0.3)', bg: 'rgba(245,239,224,0.03)' },
 };
 
 export default function ThesisDetailPage() {
@@ -152,9 +152,7 @@ export default function ThesisDetailPage() {
         prev
           ? {
               ...prev,
-              criteria: prev.criteria.map((c) =>
-                c.id === criterionId ? { ...c, status: newStatus } : c,
-              ),
+              criteria: prev.criteria.map((c) => (c.id === criterionId ? { ...c, status: newStatus } : c)),
             }
           : prev,
       );
@@ -170,10 +168,7 @@ export default function ThesisDetailPage() {
     if (res.ok) {
       setDetail((prev) =>
         prev
-          ? {
-              ...prev,
-              trades: prev.trades.map((t) => (t.id === tradeId ? { ...t, status: newStatus } : t)),
-            }
+          ? { ...prev, trades: prev.trades.map((t) => (t.id === tradeId ? { ...t, status: newStatus } : t)) }
           : prev,
       );
     }
@@ -181,20 +176,22 @@ export default function ThesisDetailPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-950 text-white">
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
         <TopNav />
-        <div className="max-w-5xl mx-auto px-6 py-12 text-slate-500">Loading…</div>
+        <div className="max-w-5xl mx-auto px-6 py-16 text-[#F5EFE0]/45 text-sm font-mono">Loading…</div>
       </main>
     );
   }
 
   if (!detail) {
     return (
-      <main className="min-h-screen bg-slate-950 text-white">
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
         <TopNav />
-        <div className="max-w-5xl mx-auto px-6 py-12">
-          <p className="text-slate-400">Thesis not found.</p>
-          <Link href="/theses" className="text-blue-400 hover:underline">← All theses</Link>
+        <div className="max-w-5xl mx-auto px-6 py-16">
+          <p className="text-[#F5EFE0]/60 text-sm mb-4">Thesis not found.</p>
+          <Link href="/theses" className="text-[#B08D57] hover:opacity-80 text-sm font-[var(--font-oswald)] uppercase tracking-wide">
+            ← all theses
+          </Link>
         </div>
       </main>
     );
@@ -203,27 +200,38 @@ export default function ThesisDetailPage() {
   const { thesis, criteria, trades, sources } = detail;
   const validations = criteria.filter((c) => c.kind === 'validation');
   const invalidations = criteria.filter((c) => c.kind === 'invalidation');
+  const statusColor = STATUS_COLOR[thesis.status] || '#B08D57';
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
       <div className="max-w-5xl mx-auto px-6 py-10">
-        <Link href="/theses" className="text-sm text-slate-500 hover:text-white mb-6 inline-block">
-          ← Theses
+        <Link
+          href="/theses"
+          className="text-xs uppercase tracking-wider mb-6 inline-block transition hover:opacity-70"
+          style={{ color: 'rgba(176,141,87,0.7)', fontFamily: 'var(--font-mono), monospace' }}
+        >
+          ← back to theses
         </Link>
 
         {/* Header */}
-        <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-6 mb-6">
-          <div className="flex items-start justify-between gap-4 mb-4">
+        <div style={{ borderLeft: `4px solid ${statusColor}`, paddingLeft: '1.25rem' }} className="mb-10">
+          <div className="flex items-start justify-between gap-4 mb-3">
             <div className="flex-1">
-              <h1 className="text-2xl font-bold mb-2">{thesis.title}</h1>
-              <div className="flex items-center gap-3 flex-wrap">
+              <p className="text-xs uppercase tracking-[0.2em] mb-2" style={{ fontFamily: 'var(--font-mono), monospace', color: 'rgba(176,141,87,0.7)' }}>
+                myjunto / thesis / {thesis.slug}
+              </p>
+              <h1 className="text-4xl font-bold uppercase tracking-tight leading-tight mb-4" style={{ fontFamily: 'var(--font-oswald), sans-serif' }}>
+                {thesis.title}
+              </h1>
+              <div className="flex items-center gap-3 flex-wrap text-xs font-mono">
                 {editMode ? (
                   <>
                     <select
                       value={editStatus}
                       onChange={(e) => setEditStatus(e.target.value)}
-                      className="bg-slate-800/60 border border-slate-700 rounded-lg px-2 py-1 text-xs"
+                      className="bg-[#141210] px-2 py-1 text-xs uppercase tracking-wider"
+                      style={{ border: '1px solid rgba(176,141,87,0.28)', color: '#F5EFE0' }}
                     >
                       <option value="active">Active</option>
                       <option value="validated">Validated</option>
@@ -237,34 +245,54 @@ export default function ThesisDetailPage() {
                       max={5}
                       value={editConviction}
                       onChange={(e) => setEditConviction(parseInt(e.target.value) || 1)}
-                      className="w-20 bg-slate-800/60 border border-slate-700 rounded-lg px-2 py-1 text-xs"
+                      className="w-16 bg-[#141210] px-2 py-1 text-xs"
+                      style={{ border: '1px solid rgba(176,141,87,0.28)', color: '#F5EFE0' }}
                     />
                     <input
                       value={editHorizon}
                       onChange={(e) => setEditHorizon(e.target.value)}
                       placeholder="horizon"
-                      className="bg-slate-800/60 border border-slate-700 rounded-lg px-2 py-1 text-xs w-32"
+                      className="bg-[#141210] px-2 py-1 text-xs w-32"
+                      style={{ border: '1px solid rgba(176,141,87,0.28)', color: '#F5EFE0' }}
                     />
                   </>
                 ) : (
                   <>
-                    <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${STATUS_COLORS[thesis.status]}`}>
-                      {thesis.status.toUpperCase()}
+                    <span
+                      className="px-2.5 py-1 uppercase tracking-wider text-[10px] font-bold"
+                      style={{ color: statusColor, border: `1px solid ${statusColor}55` }}
+                    >
+                      {thesis.status}
                     </span>
-                    <span className="text-xs px-2.5 py-1 rounded-full border border-slate-700 bg-slate-800/40 text-slate-300 font-medium">
-                      Conviction {thesis.conviction}/5
+                    <span className="text-[#F5EFE0]/70">
+                      Conviction <span className="font-bold text-[#B08D57]">{thesis.conviction}</span>
+                      <span className="text-[#F5EFE0]/40">/5</span>
                     </span>
-                    {thesis.horizon && <span className="text-xs text-slate-400">{thesis.horizon}</span>}
-                    <span className="text-xs text-slate-500">
-                      Updated {new Date(thesis.updated_at).toLocaleDateString()}
+                    {thesis.horizon && (
+                      <>
+                        <span className="text-[#F5EFE0]/30">·</span>
+                        <span className="text-[#F5EFE0]/70">{thesis.horizon}</span>
+                      </>
+                    )}
+                    <span className="text-[#F5EFE0]/30">·</span>
+                    <span className="text-[#F5EFE0]/50">
+                      updated {new Date(thesis.updated_at).toLocaleDateString()}
                     </span>
                   </>
                 )}
               </div>
-              {thesis.tags?.length > 0 && (
+              {thesis.tags?.length > 0 && !editMode && (
                 <div className="flex gap-1.5 flex-wrap mt-3">
                   {thesis.tags.map((tag) => (
-                    <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-slate-700/40 text-slate-400">
+                    <span
+                      key={tag}
+                      className="text-[10px] uppercase tracking-wider px-2 py-0.5"
+                      style={{
+                        color: 'rgba(176,141,87,0.85)',
+                        border: '1px solid rgba(176,141,87,0.28)',
+                        fontFamily: 'var(--font-mono), monospace',
+                      }}
+                    >
                       {tag}
                     </span>
                   ))}
@@ -276,14 +304,16 @@ export default function ThesisDetailPage() {
                 <>
                   <button
                     onClick={() => setEditMode(false)}
-                    className="text-sm text-slate-400 hover:text-white px-3 py-1.5"
+                    className="text-xs uppercase tracking-wide px-3 py-1.5 transition hover:opacity-70"
+                    style={{ color: 'rgba(245,239,224,0.55)', fontFamily: 'var(--font-oswald), sans-serif' }}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-1.5 rounded-lg disabled:opacity-50"
+                    className="px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition disabled:opacity-30"
+                    style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald), sans-serif' }}
                   >
                     {saving ? 'Saving…' : 'Save'}
                   </button>
@@ -291,7 +321,12 @@ export default function ThesisDetailPage() {
               ) : (
                 <button
                   onClick={() => setEditMode(true)}
-                  className="border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white text-sm px-3 py-1.5 rounded-lg"
+                  className="px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition"
+                  style={{
+                    border: '2px solid rgba(176,141,87,0.35)',
+                    color: '#B08D57',
+                    fontFamily: 'var(--font-oswald), sans-serif',
+                  }}
                 >
                   Edit
                 </button>
@@ -300,30 +335,29 @@ export default function ThesisDetailPage() {
           </div>
         </div>
 
-        {/* Thesis */}
         <Section title="Thesis">
           <div
-            className="research-content prose prose-invert prose-sm max-w-none text-slate-300"
+            className="research-content prose prose-invert prose-sm max-w-none leading-relaxed"
+            style={{ color: 'rgba(245,239,224,0.85)' }}
             dangerouslySetInnerHTML={{ __html: markdownToHtml(thesis.thesis_md) }}
           />
         </Section>
 
-        {/* Mechanism */}
         {thesis.mechanism_md && (
           <Section title="Mechanism">
             <div
-              className="research-content prose prose-invert prose-sm max-w-none text-slate-300"
+              className="research-content prose prose-invert prose-sm max-w-none leading-relaxed"
+              style={{ color: 'rgba(245,239,224,0.85)' }}
               dangerouslySetInnerHTML={{ __html: markdownToHtml(thesis.mechanism_md) }}
             />
           </Section>
         )}
 
-        {/* Validation criteria */}
-        <Section title={`Validation criteria (${validations.length})`} accent="emerald">
+        <Section title={`Validation criteria (${validations.length})`} accent="#3ecf6a">
           {validations.length === 0 ? (
-            <p className="text-sm text-slate-500">No validation criteria.</p>
+            <Empty>No validation criteria.</Empty>
           ) : (
-            <ul className="space-y-3">
+            <ul className="divide-y" style={{ borderColor: 'rgba(176,141,87,0.18)' }}>
               {validations.map((c) => (
                 <CriterionRow key={c.id} c={c} onUpdate={(s) => updateCriterion(c.id, s)} />
               ))}
@@ -331,12 +365,11 @@ export default function ThesisDetailPage() {
           )}
         </Section>
 
-        {/* Invalidation criteria */}
-        <Section title={`Invalidation criteria (${invalidations.length})`} accent="red">
+        <Section title={`Invalidation criteria (${invalidations.length})`} accent="#e8453c">
           {invalidations.length === 0 ? (
-            <p className="text-sm text-slate-500">No invalidation criteria.</p>
+            <Empty>No invalidation criteria.</Empty>
           ) : (
-            <ul className="space-y-3">
+            <ul className="divide-y" style={{ borderColor: 'rgba(176,141,87,0.18)' }}>
               {invalidations.map((c) => (
                 <CriterionRow key={c.id} c={c} onUpdate={(s) => updateCriterion(c.id, s)} />
               ))}
@@ -344,62 +377,76 @@ export default function ThesisDetailPage() {
           )}
         </Section>
 
-        {/* Trades */}
-        <Section title={`Trades (${trades.length})`} accent="blue">
+        <Section title={`Trades (${trades.length})`} accent="#B08D57">
           {trades.length === 0 ? (
-            <p className="text-sm text-slate-500">No trades.</p>
+            <Empty>No trades.</Empty>
           ) : (
-            <div className="space-y-3">
+            <ul className="divide-y" style={{ borderColor: 'rgba(176,141,87,0.18)' }}>
               {trades.map((t) => (
                 <TradeRow key={t.id} t={t} onUpdate={(s) => updateTrade(t.id, s)} />
               ))}
-            </div>
+            </ul>
           )}
         </Section>
 
-        {/* Sources */}
         <Section title={`Sources (${sources.length})`}>
           {sources.length === 0 ? (
-            <p className="text-sm text-slate-500">No sources.</p>
+            <Empty>No sources.</Empty>
           ) : (
-            <ul className="space-y-2">
+            <ul className="divide-y" style={{ borderColor: 'rgba(176,141,87,0.18)' }}>
               {sources.map((s) => (
-                <li key={s.id} className="text-sm text-slate-300 border-l-2 border-slate-700 pl-3">
-                  <span className="text-xs uppercase tracking-wider text-slate-500 mr-2">{s.ref_type}</span>
-                  {s.ref}
-                  {s.ref_date && <span className="text-xs text-slate-500 ml-2">({s.ref_date})</span>}
+                <li key={s.id} className="px-4 py-3 text-sm">
+                  <div className="flex items-baseline gap-3 flex-wrap">
+                    <span
+                      className="text-[10px] uppercase tracking-wider font-mono px-1.5 py-0.5"
+                      style={{ color: 'rgba(176,141,87,0.85)', border: '1px solid rgba(176,141,87,0.25)' }}
+                    >
+                      {s.ref_type}
+                    </span>
+                    <span className="text-[#F5EFE0]/85 flex-1 min-w-[200px]">{s.ref}</span>
+                    {s.ref_date && (
+                      <span className="text-[10px] text-[#F5EFE0]/40 font-mono">{s.ref_date}</span>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
           )}
         </Section>
 
-        {/* Body */}
         {thesis.body_md && (
           <Section title="Discussion">
-            <div
-              className="research-content prose prose-invert prose-sm max-w-none text-slate-300"
-              dangerouslySetInnerHTML={{ __html: markdownToHtml(thesis.body_md) }}
-            />
+            <div className="px-4 py-3">
+              <div
+                className="research-content prose prose-invert prose-sm max-w-none leading-relaxed"
+                style={{ color: 'rgba(245,239,224,0.8)' }}
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(thesis.body_md) }}
+              />
+            </div>
           </Section>
         )}
 
-        {/* Notes */}
         <Section title="Notes">
           {editMode ? (
-            <textarea
-              value={editNotes}
-              onChange={(e) => setEditNotes(e.target.value)}
-              rows={6}
-              className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm font-mono"
-            />
+            <div className="p-4">
+              <textarea
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                rows={6}
+                className="w-full bg-[#080604] px-3 py-2 text-sm font-mono leading-relaxed focus:outline-none"
+                style={{ border: '1px solid rgba(176,141,87,0.28)', color: '#F5EFE0' }}
+              />
+            </div>
           ) : thesis.notes_md ? (
-            <div
-              className="research-content prose prose-invert prose-sm max-w-none text-slate-300"
-              dangerouslySetInnerHTML={{ __html: markdownToHtml(thesis.notes_md) }}
-            />
+            <div className="px-4 py-3">
+              <div
+                className="research-content prose prose-invert prose-sm max-w-none leading-relaxed"
+                style={{ color: 'rgba(245,239,224,0.8)' }}
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(thesis.notes_md) }}
+              />
+            </div>
           ) : (
-            <p className="text-sm text-slate-500">No notes. Click Edit to add.</p>
+            <Empty>No notes. Click Edit to add.</Empty>
           )}
         </Section>
       </div>
@@ -409,65 +456,82 @@ export default function ThesisDetailPage() {
 
 function Section({
   title,
-  accent,
+  accent = 'rgba(176,141,87,0.85)',
   children,
 }: {
   title: string;
-  accent?: 'emerald' | 'red' | 'blue';
+  accent?: string;
   children: React.ReactNode;
 }) {
-  const accentColor =
-    accent === 'emerald'
-      ? 'text-emerald-400'
-      : accent === 'red'
-        ? 'text-red-400'
-        : accent === 'blue'
-          ? 'text-blue-400'
-          : 'text-slate-400';
-
   return (
-    <section className="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-6 mb-4">
-      <h2 className={`text-xs uppercase tracking-wider font-semibold mb-4 ${accentColor}`}>{title}</h2>
-      {children}
+    <section className="mb-5" style={{ border: '1px solid rgba(176,141,87,0.28)' }}>
+      <div
+        className="px-4 py-2 text-[10px] uppercase tracking-[0.2em]"
+        style={{
+          fontFamily: 'var(--font-mono), monospace',
+          color: accent,
+          borderBottom: '1px solid rgba(176,141,87,0.18)',
+          background: 'rgba(176,141,87,0.04)',
+        }}
+      >
+        {title}
+      </div>
+      <div style={{ background: '#141210' }}>{children}</div>
     </section>
   );
+}
+
+function Empty({ children }: { children: React.ReactNode }) {
+  return <p className="px-4 py-3 text-xs text-[#F5EFE0]/40 font-mono">{children}</p>;
 }
 
 function CriterionRow({
   c,
   onUpdate,
 }: {
-  c: { id: string; criterion_id: string; description: string; type: string; weight: string | null; timeframe: string | null; threshold: string | null; status: 'pending' | 'triggered' | 'partial' | 'not_triggered' };
-  onUpdate: (s: 'pending' | 'triggered' | 'partial' | 'not_triggered') => void;
+  c: Criterion;
+  onUpdate: (s: Criterion['status']) => void;
 }) {
+  const cs = CRITERION_STATUS[c.status];
   return (
-    <li className="border border-slate-700/40 rounded-xl p-3 bg-slate-900/30">
+    <li className="px-4 py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-mono text-slate-500">{c.criterion_id}</span>
-            <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded ${CRITERION_STATUS_COLORS[c.status]}`}>
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <span className="text-[10px] font-mono text-[#F5EFE0]/45">{c.criterion_id}</span>
+            <span
+              className="text-[9px] uppercase tracking-wider px-1.5 py-0.5"
+              style={{ color: cs.color, background: cs.bg, border: `1px solid ${cs.color}33` }}
+            >
               {c.status.replace('_', ' ')}
             </span>
-            {c.weight && <span className="text-[10px] uppercase text-slate-500">[{c.weight}]</span>}
-            <span className="text-[10px] text-slate-500">{c.type}</span>
+            {c.weight && (
+              <span
+                className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 font-mono"
+                style={{ color: 'rgba(176,141,87,0.7)', border: '1px solid rgba(176,141,87,0.2)' }}
+              >
+                {c.weight}
+              </span>
+            )}
+            <span className="text-[9px] uppercase tracking-wider text-[#F5EFE0]/40 font-mono">{c.type}</span>
           </div>
-          <p className="text-sm text-slate-200 mb-1">{c.description}</p>
+          <p className="text-sm text-[#F5EFE0]/85 mb-1">{c.description}</p>
           {c.threshold && (
-            <p className="text-xs text-slate-500">
-              <span className="text-slate-600">Threshold:</span> {c.threshold}
+            <p className="text-[11px] text-[#F5EFE0]/50 font-mono">
+              <span className="text-[#F5EFE0]/35">threshold:</span> {c.threshold}
             </p>
           )}
           {c.timeframe && (
-            <p className="text-xs text-slate-500">
-              <span className="text-slate-600">Timeframe:</span> {c.timeframe}
+            <p className="text-[11px] text-[#F5EFE0]/50 font-mono">
+              <span className="text-[#F5EFE0]/35">timeframe:</span> {c.timeframe}
             </p>
           )}
         </div>
         <select
           value={c.status}
-          onChange={(e) => onUpdate(e.target.value as any)}
-          className="bg-slate-800/80 border border-slate-700 rounded-md px-2 py-1 text-xs shrink-0"
+          onChange={(e) => onUpdate(e.target.value as Criterion['status'])}
+          className="bg-[#080604] px-2 py-1 text-[10px] uppercase tracking-wider shrink-0 font-mono"
+          style={{ border: '1px solid rgba(176,141,87,0.28)', color: '#F5EFE0' }}
         >
           <option value="pending">Pending</option>
           <option value="triggered">Triggered</option>
@@ -479,29 +543,33 @@ function CriterionRow({
   );
 }
 
-function TradeRow({
-  t,
-  onUpdate,
-}: {
-  t: Trade;
-  onUpdate: (s: Trade['status']) => void;
-}) {
+function TradeRow({ t, onUpdate }: { t: Trade; onUpdate: (s: Trade['status']) => void }) {
   return (
-    <div className="border border-slate-700/40 rounded-xl p-4 bg-slate-900/30">
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-mono font-bold text-base">${t.symbol}</span>
-            {t.venue && <span className="text-xs text-slate-500">{t.venue}</span>}
-            {t.role && <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-300">{t.role}</span>}
-            {t.type && <span className="text-xs text-slate-500">[{t.type}]</span>}
+    <li className="px-4 py-3">
+      <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="font-mono font-bold text-base text-[#F5EFE0]">${t.symbol}</span>
+            {t.venue && <span className="text-[10px] text-[#F5EFE0]/40 font-mono">{t.venue}</span>}
+            {t.role && (
+              <span
+                className="text-[9px] uppercase tracking-wider px-1.5 py-0.5"
+                style={{ color: '#B08D57', border: '1px solid rgba(176,141,87,0.3)', fontFamily: 'var(--font-mono), monospace' }}
+              >
+                {t.role}
+              </span>
+            )}
+            {t.type && (
+              <span className="text-[9px] uppercase tracking-wider text-[#F5EFE0]/40 font-mono">{t.type}</span>
+            )}
           </div>
-          {t.name && <p className="text-xs text-slate-400">{t.name}</p>}
+          {t.name && <p className="text-xs text-[#F5EFE0]/55">{t.name}</p>}
         </div>
         <select
           value={t.status}
-          onChange={(e) => onUpdate(e.target.value as any)}
-          className="bg-slate-800/80 border border-slate-700 rounded-md px-2 py-1 text-xs"
+          onChange={(e) => onUpdate(e.target.value as Trade['status'])}
+          className="bg-[#080604] px-2 py-1 text-[10px] uppercase tracking-wider font-mono shrink-0"
+          style={{ border: '1px solid rgba(176,141,87,0.28)', color: '#F5EFE0' }}
         >
           <option value="open">Open</option>
           <option value="target_hit">Target hit</option>
@@ -510,25 +578,25 @@ function TradeRow({
           <option value="closed">Closed</option>
         </select>
       </div>
-      <div className="grid grid-cols-3 gap-3 mt-2 text-xs">
-        <div>
-          <div className="text-slate-500 uppercase tracking-wider mb-0.5">Entry</div>
-          <div className="text-slate-300">
+      <div className="grid grid-cols-3 gap-0 mt-2 text-[10px]" style={{ border: '1px solid rgba(176,141,87,0.15)' }}>
+        <div className="px-3 py-2" style={{ borderRight: '1px solid rgba(176,141,87,0.12)' }}>
+          <div className="text-[#F5EFE0]/40 uppercase tracking-wider mb-0.5 font-mono">Entry</div>
+          <div className="text-[#F5EFE0]/85 font-mono">
             {t.entry_zone_low || '—'}
             {t.entry_zone_high && ` → ${t.entry_zone_high}`}
           </div>
         </div>
-        <div>
-          <div className="text-slate-500 uppercase tracking-wider mb-0.5">Target</div>
-          <div className="text-emerald-300">{t.exit_target || '—'}</div>
+        <div className="px-3 py-2" style={{ borderRight: '1px solid rgba(176,141,87,0.12)' }}>
+          <div className="text-[#F5EFE0]/40 uppercase tracking-wider mb-0.5 font-mono">Target</div>
+          <div className="font-mono" style={{ color: '#3ecf6a' }}>{t.exit_target || '—'}</div>
         </div>
-        <div>
-          <div className="text-slate-500 uppercase tracking-wider mb-0.5">Stop</div>
-          <div className="text-red-300">{t.exit_stop || '—'}</div>
+        <div className="px-3 py-2">
+          <div className="text-[#F5EFE0]/40 uppercase tracking-wider mb-0.5 font-mono">Stop</div>
+          <div className="font-mono" style={{ color: '#e8453c' }}>{t.exit_stop || '—'}</div>
         </div>
       </div>
-      {t.sizing && <p className="text-xs text-slate-500 mt-2">Sizing: {t.sizing}</p>}
-      {t.rationale_md && <p className="text-xs text-slate-400 mt-2 italic">{t.rationale_md}</p>}
-    </div>
+      {t.sizing && <p className="text-[11px] text-[#F5EFE0]/50 mt-2 font-mono"><span className="text-[#F5EFE0]/35">sizing:</span> {t.sizing}</p>}
+      {t.rationale_md && <p className="text-xs text-[#F5EFE0]/60 mt-2 italic leading-relaxed">{t.rationale_md}</p>}
+    </li>
   );
 }

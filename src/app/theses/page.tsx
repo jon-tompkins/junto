@@ -27,12 +27,13 @@ const STATUS_TABS: { key: string; label: string }[] = [
   { key: 'exited', label: 'Exited' },
 ];
 
-function convictionColor(c: number) {
-  if (c >= 5) return 'bg-emerald-600/20 text-emerald-400 border-emerald-500/30';
-  if (c === 4) return 'bg-blue-600/20 text-blue-400 border-blue-500/30';
-  if (c === 3) return 'bg-slate-600/20 text-slate-300 border-slate-500/30';
-  return 'bg-amber-600/20 text-amber-400 border-amber-500/30';
-}
+const CONV_COLOR: Record<number, string> = {
+  5: '#3ecf6a',
+  4: '#B08D57',
+  3: '#F5EFE0',
+  2: '#d97706',
+  1: '#F5EFE0',
+};
 
 export default function ThesesDashboard() {
   const { status: authStatus } = useSession();
@@ -52,115 +53,180 @@ export default function ThesesDashboard() {
 
   if (authStatus === 'loading') {
     return (
-      <main className="min-h-screen bg-slate-950 text-white">
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
         <TopNav />
-        <div className="max-w-6xl mx-auto px-6 py-12 text-slate-500">Loading…</div>
+        <div className="max-w-6xl mx-auto px-6 py-16 text-[#F5EFE0]/45 text-sm font-mono">Loading…</div>
       </main>
     );
   }
 
   if (authStatus !== 'authenticated') {
     return (
-      <main className="min-h-screen bg-slate-950 text-white">
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
         <TopNav />
-        <div className="max-w-6xl mx-auto px-6 py-12">
-          <p className="text-slate-400 mb-4">Sign in to track theses.</p>
-          <Link href="/login" className="text-blue-400 hover:underline">Sign in</Link>
+        <div className="max-w-6xl mx-auto px-6 py-16">
+          <p className="text-[#F5EFE0]/60 mb-4 text-sm">Sign in to track theses.</p>
+          <Link href="/login" className="text-[#B08D57] hover:opacity-80 text-sm font-[var(--font-oswald)] uppercase tracking-wide">
+            Sign in →
+          </Link>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white">
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        <div className="flex items-start justify-between mb-8">
+      <div className="max-w-6xl mx-auto px-6 py-12">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-10" style={{ borderLeft: '4px solid #B08D57', paddingLeft: '1.25rem' }}>
           <div>
-            <h1 className="text-3xl font-bold mb-1">Theses</h1>
-            <p className="text-sm text-slate-500">
+            <p
+              className="text-xs uppercase tracking-[0.2em] mb-2"
+              style={{ fontFamily: 'var(--font-mono), monospace', color: 'rgba(176,141,87,0.7)' }}
+            >
+              myjunto / theses
+            </p>
+            <h1
+              className="text-5xl font-bold uppercase tracking-tight leading-none mb-3"
+              style={{ fontFamily: 'var(--font-oswald), sans-serif' }}
+            >
+              Theses
+            </h1>
+            <p className="text-sm max-w-md text-[#F5EFE0]/65">
               Trackable investment theses with validation logic and linked trades.
             </p>
           </div>
           <Link
             href="/theses/new"
-            className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-medium transition shadow-lg shadow-blue-600/20 text-sm"
+            className="px-6 py-3 font-bold text-sm uppercase tracking-wide transition hover:opacity-90"
+            style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald), sans-serif' }}
           >
             + New Thesis
           </Link>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 border-b border-slate-800">
-          {STATUS_TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setActiveTab(t.key)}
-              className={`px-3 py-2 text-sm font-medium transition border-b-2 -mb-px ${
-                activeTab === t.key
-                  ? 'border-blue-500 text-white'
-                  : 'border-transparent text-slate-500 hover:text-white'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="flex gap-0 mb-8" style={{ borderBottom: '1px solid rgba(176,141,87,0.28)' }}>
+          {STATUS_TABS.map((t) => {
+            const active = activeTab === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                className="px-4 py-3 text-xs font-medium uppercase tracking-wider transition"
+                style={{
+                  fontFamily: 'var(--font-oswald), sans-serif',
+                  color: active ? '#F5EFE0' : 'rgba(245,239,224,0.45)',
+                  borderBottom: active ? '2px solid #B08D57' : '2px solid transparent',
+                  marginBottom: '-1px',
+                }}
+              >
+                {t.label}
+              </button>
+            );
+          })}
         </div>
 
         {loading ? (
-          <div className="text-slate-500 text-sm">Loading…</div>
+          <div className="grid md:grid-cols-2 gap-0" style={{ border: '1px solid rgba(176,141,87,0.28)' }}>
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="p-6 animate-pulse"
+                style={{
+                  background: '#141210',
+                  borderRight: i % 2 === 1 ? '1px solid rgba(176,141,87,0.18)' : undefined,
+                  borderBottom: i <= 2 ? '1px solid rgba(176,141,87,0.18)' : undefined,
+                  minHeight: '160px',
+                }}
+              />
+            ))}
+          </div>
         ) : theses.length === 0 ? (
-          <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-12 text-center">
-            <div className="text-slate-400 mb-2">No theses yet</div>
-            <p className="text-sm text-slate-500 mb-6">
+          <div
+            className="text-center py-16 px-6"
+            style={{ background: '#141210', border: '1px solid rgba(176,141,87,0.28)' }}
+          >
+            <p className="text-[#F5EFE0]/65 text-base mb-2 font-[var(--font-oswald)] uppercase tracking-wide">No theses yet</p>
+            <p className="text-sm text-[#F5EFE0]/50 mb-8 max-w-md mx-auto">
               Drop a research note, article, or rough idea and we&apos;ll structure it into a trackable thesis.
             </p>
             <Link
               href="/theses/new"
-              className="inline-block bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-medium transition text-sm"
+              className="inline-block px-6 py-3 font-bold text-sm uppercase tracking-wide transition hover:opacity-90"
+              style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald), sans-serif' }}
             >
               + Create your first thesis
             </Link>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 gap-4">
-            {theses.map((t) => (
-              <Link
-                key={t.id}
-                href={`/theses/${t.id}`}
-                className="group bg-slate-800/30 hover:bg-slate-800/60 border border-slate-700/40 hover:border-slate-600/60 rounded-2xl p-5 transition"
-              >
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <h3 className="text-base font-semibold group-hover:text-blue-400 transition">
-                    {t.title}
-                  </h3>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium shrink-0 ${convictionColor(t.conviction)}`}>
-                    {t.conviction}/5
-                  </span>
-                </div>
-                {t.horizon && (
-                  <div className="text-xs text-slate-500 mb-3">{t.horizon}</div>
-                )}
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {(t.tags || []).slice(0, 4).map((tag) => (
-                    <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-slate-700/40 text-slate-400">
-                      {tag}
+          <div className="grid md:grid-cols-2 gap-0" style={{ border: '1px solid rgba(176,141,87,0.28)' }}>
+            {theses.map((t, idx) => {
+              const isRight = idx % 2 === 1;
+              const lastTwo = idx >= theses.length - (theses.length % 2 || 2);
+              return (
+                <Link
+                  key={t.id}
+                  href={`/theses/${t.id}`}
+                  className="group p-5 transition relative"
+                  style={{
+                    background: '#141210',
+                    borderRight: !isRight ? '1px solid rgba(176,141,87,0.18)' : undefined,
+                    borderBottom: !lastTwo ? '1px solid rgba(176,141,87,0.18)' : undefined,
+                  }}
+                >
+                  <div className="absolute left-0 top-0 bottom-0 w-1 transition" style={{ background: 'transparent' }} />
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <h3
+                      className="text-base font-semibold uppercase tracking-wide leading-snug group-hover:text-[#B08D57] transition"
+                      style={{ fontFamily: 'var(--font-oswald), sans-serif' }}
+                    >
+                      {t.title}
+                    </h3>
+                    <div
+                      className="shrink-0 flex items-baseline gap-1 font-mono text-xs"
+                      style={{ color: CONV_COLOR[t.conviction] || '#F5EFE0' }}
+                    >
+                      <span className="font-bold text-base leading-none">{t.conviction}</span>
+                      <span className="text-[10px] opacity-60">/5</span>
+                    </div>
+                  </div>
+                  {t.horizon && (
+                    <p className="text-xs text-[#F5EFE0]/55 font-mono mb-3">{t.horizon}</p>
+                  )}
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {(t.tags || []).slice(0, 4).map((tag) => (
+                      <span
+                        key={tag}
+                        className="text-[10px] uppercase tracking-wider px-2 py-0.5"
+                        style={{
+                          color: 'rgba(176,141,87,0.85)',
+                          border: '1px solid rgba(176,141,87,0.28)',
+                          fontFamily: 'var(--font-mono), monospace',
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <div
+                    className="flex items-center gap-5 text-[10px] uppercase tracking-wider font-mono pt-3"
+                    style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}
+                  >
+                    <span className="text-[#F5EFE0]/50">
+                      <span className="text-[#3ecf6a]">{t.validation_count}</span> validations
                     </span>
-                  ))}
-                </div>
-                <div className="flex items-center gap-4 text-xs text-slate-500 pt-3 border-t border-slate-700/30">
-                  <span>
-                    ✓ <span className="text-emerald-400">{t.validation_count}</span> validations
-                  </span>
-                  <span>
-                    ✗ <span className="text-red-400">{t.invalidation_count}</span> invalidations
-                  </span>
-                  <span>
-                    💼 {t.trade_count} {t.trade_count === 1 ? 'trade' : 'trades'}
-                  </span>
-                </div>
-              </Link>
-            ))}
+                    <span className="text-[#F5EFE0]/50">
+                      <span className="text-[#e8453c]">{t.invalidation_count}</span> invalidations
+                    </span>
+                    <span className="text-[#F5EFE0]/50">
+                      <span className="text-[#F5EFE0]">{t.trade_count}</span> {t.trade_count === 1 ? 'trade' : 'trades'}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
