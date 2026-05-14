@@ -18,9 +18,18 @@ interface SourceEntry {
   error?: string;
 }
 
+interface JuntoSource {
+  id: string;
+  handle_or_url: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  type: string;
+}
+
 interface JuntoOption {
   id: string;
   name: string;
+  sources?: JuntoSource[];
   junto_sources?: { source: { handle_or_url: string; type: string; display_name?: string } | null }[];
 }
 
@@ -101,6 +110,7 @@ function CreatePageInner() {
   const [selectedJuntoId, setSelectedJuntoId] = useState<string | null>(juntoIdParam);
   const [selectedJunto, setSelectedJunto] = useState<JuntoOption | null>(null);
   const [expandedJuntoId, setExpandedJuntoId] = useState<string | null>(null);
+  const [juntoFilter, setJuntoFilter] = useState('');
   const [adHocMode, setAdHocMode] = useState(false);
   const [adHocSources, setAdHocSources] = useState<SourceEntry[]>([]);
   const [sourceInput, setSourceInput] = useState('');
@@ -298,7 +308,7 @@ function CreatePageInner() {
 
   const sourceCount = adHocMode
     ? adHocSources.filter(s => s.status !== 'invalid').length
-    : (selectedJunto?.junto_sources?.filter(js => js.source).length ?? 0);
+    : (selectedJunto?.sources?.length ?? selectedJunto?.junto_sources?.filter(js => js.source).length ?? 0);
 
   const canCreate = !!name.trim() &&
     (!!prompt.trim() || !!promptTemplateId) &&
@@ -377,61 +387,158 @@ function CreatePageInner() {
               ) : juntos.length === 0 ? (
                 <div className="text-center py-6" style={{ border: '1px dashed rgba(176,141,87,0.2)', borderRadius: '4px' }}>
                   <p className="text-sm text-[#F5EFE0]/40 mb-2">No juntos yet.</p>
-                  <button
-                    onClick={() => setAdHocMode(true)}
-                    className="text-xs text-[#B08D57] hover:opacity-80 transition"
-                  >
+                  <button onClick={() => setAdHocMode(true)} className="text-xs text-[#B08D57] hover:opacity-80 transition">
                     Add sources directly →
                   </button>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {juntos.map(j => {
-                    const sources = (j.junto_sources || []).filter(js => js.source);
-                    const isSelected = selectedJuntoId === j.id;
-                    const isExpanded = expandedJuntoId === j.id;
+                <>
+                  {/* Profile filter */}
+                  <div className="mb-3">
+                    <input
+                      type="text"
+                      value={juntoFilter}
+                      onChange={e => setJuntoFilter(e.target.value)}
+                      placeholder="Filter by profile — type a handle or name"
+                      className="w-full px-3 py-2 text-xs focus:outline-none transition"
+                      style={{ background: '#0d0b09', border: '1px solid rgba(176,141,87,0.2)', color: '#F5EFE0' }}
+                    />
+                  </div>
+
+                  {(() => {
+                    const filterTerms = juntoFilter.trim().toLowerCase().split(/[\s,]+/).filter(Boolean);
+                    const visibleJuntos = filterTerms.length === 0
+                      ? juntos
+                      : juntos.filter(j =>
+                          filterTerms.every(term =>
+                            (j.sources || []).some(s => {
+                              const handle = (s.handle_or_url || '').toLowerCase().replace('@', '');
+                              const name = (s.display_name || '').toLowerCase();
+                              return handle.includes(term) || name.includes(term);
+                            })
+                          )
+                        );
+
+                    if (visibleJuntos.length === 0) {
+                      return (
+                        <p className="text-xs py-3 text-center" style={{ color: 'rgba(245,239,224,0.4)' }}>
+                          No juntos contain those profiles.
+                        </p>
+                      );
+                    }
+
                     return (
-                      <div key={j.id} style={{ border: `1px solid ${isSelected ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`, background: isSelected ? 'rgba(176,141,87,0.06)' : '#141210' }}>
-                        <div className="flex items-center gap-3 px-4 py-3">
-                          <button
-                            onClick={() => { setSelectedJuntoId(j.id); setSelectedJunto(j); }}
-                            className="flex-1 text-left flex items-center gap-3"
-                          >
-                            <div
-                              className="w-3.5 h-3.5 rounded-full border flex-shrink-0 transition"
-                              style={{
-                                borderColor: isSelected ? '#B08D57' : 'rgba(245,239,224,0.25)',
-                                background: isSelected ? '#B08D57' : 'transparent',
-                              }}
-                            />
-                            <span className="text-sm font-medium text-[#F5EFE0]">{j.name}</span>
-                            <span className="text-xs text-[#F5EFE0]/40">{sources.length} source{sources.length !== 1 ? 's' : ''}</span>
-                          </button>
-                          {sources.length > 0 && (
-                            <button
-                              onClick={() => setExpandedJuntoId(isExpanded ? null : j.id)}
-                              className="text-[10px] uppercase tracking-wider text-[#B08D57]/60 hover:text-[#B08D57] transition font-mono"
-                            >
-                              {isExpanded ? 'hide' : 'see who'}
-                            </button>
-                          )}
-                        </div>
-                        {isExpanded && sources.length > 0 && (
-                          <div className="px-4 pb-3 pt-1 flex flex-wrap gap-2" style={{ borderTop: '1px solid rgba(176,141,87,0.12)' }}>
-                            {sources.map((js, i) => {
-                              const src = js.source!;
-                              return (
-                                <span key={i} className="text-xs px-2 py-1 font-mono" style={{ background: 'rgba(176,141,87,0.08)', border: '1px solid rgba(176,141,87,0.18)', color: 'rgba(245,239,224,0.7)' }}>
-                                  {src.type === 'youtube' ? '▶ ' : '@'}{src.display_name || src.handle_or_url}
-                                </span>
-                              );
-                            })}
-                          </div>
-                        )}
+                      <div className="space-y-2">
+                        {visibleJuntos.map(j => {
+                          const sources = j.sources || [];
+                          const isSelected = selectedJuntoId === j.id;
+                          const isExpanded = expandedJuntoId === j.id;
+                          const filterTermsLower = juntoFilter.trim().toLowerCase().split(/[\s,]+/).filter(Boolean);
+                          return (
+                            <div key={j.id} style={{ border: `1px solid ${isSelected ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`, background: isSelected ? 'rgba(176,141,87,0.06)' : '#141210' }}>
+                              <div className="flex items-center gap-3 px-4 py-3">
+                                <button
+                                  onClick={() => { setSelectedJuntoId(j.id); setSelectedJunto(j); }}
+                                  className="flex-1 text-left flex items-center gap-3 min-w-0"
+                                >
+                                  <div
+                                    className="w-3.5 h-3.5 rounded-full border flex-shrink-0 transition"
+                                    style={{
+                                      borderColor: isSelected ? '#B08D57' : 'rgba(245,239,224,0.25)',
+                                      background: isSelected ? '#B08D57' : 'transparent',
+                                    }}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-sm font-medium text-[#F5EFE0]">{j.name}</span>
+                                      <span className="text-xs text-[#F5EFE0]/40">{sources.length} source{sources.length !== 1 ? 's' : ''}</span>
+                                    </div>
+                                    {/* Avatar stack — always visible */}
+                                    {sources.length > 0 && !isExpanded && (
+                                      <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                                        {sources.slice(0, 7).map(s => {
+                                          const label = (s.display_name || s.handle_or_url || '?').replace('@', '');
+                                          const initials = label.slice(0, 2).toUpperCase();
+                                          const isMatch = filterTermsLower.length > 0 && filterTermsLower.some(t =>
+                                            label.toLowerCase().includes(t) || (s.handle_or_url || '').toLowerCase().replace('@', '').includes(t)
+                                          );
+                                          return s.avatar_url ? (
+                                            <img
+                                              key={s.id}
+                                              src={s.avatar_url}
+                                              alt={label}
+                                              title={label}
+                                              style={{
+                                                width: 20, height: 20, borderRadius: '2px', objectFit: 'cover', flexShrink: 0,
+                                                border: isMatch ? '1px solid #B08D57' : '1px solid rgba(176,141,87,0.15)',
+                                                boxShadow: isMatch ? '0 0 0 1px rgba(176,141,87,0.4)' : 'none',
+                                              }}
+                                            />
+                                          ) : (
+                                            <div
+                                              key={s.id}
+                                              title={label}
+                                              style={{
+                                                width: 20, height: 20, borderRadius: '2px', flexShrink: 0,
+                                                background: isMatch ? 'rgba(176,141,87,0.2)' : 'rgba(176,141,87,0.08)',
+                                                border: isMatch ? '1px solid #B08D57' : '1px solid rgba(176,141,87,0.18)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontSize: 7, color: isMatch ? '#B08D57' : 'rgba(176,141,87,0.6)',
+                                                fontFamily: 'var(--font-oswald, sans-serif)',
+                                              }}
+                                            >
+                                              {initials}
+                                            </div>
+                                          );
+                                        })}
+                                        {sources.length > 7 && (
+                                          <span style={{ fontSize: 9, color: 'rgba(245,239,224,0.35)' }}>+{sources.length - 7}</span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </button>
+                                {sources.length > 0 && (
+                                  <button
+                                    onClick={() => setExpandedJuntoId(isExpanded ? null : j.id)}
+                                    className="text-[10px] uppercase tracking-wider transition font-mono flex-shrink-0"
+                                    style={{ color: isExpanded ? '#B08D57' : 'rgba(176,141,87,0.5)' }}
+                                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#B08D57')}
+                                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = isExpanded ? '#B08D57' : 'rgba(176,141,87,0.5)')}
+                                  >
+                                    {isExpanded ? 'hide' : 'see who'}
+                                  </button>
+                                )}
+                              </div>
+                              {isExpanded && sources.length > 0 && (
+                                <div className="px-4 pb-3 pt-2 space-y-2" style={{ borderTop: '1px solid rgba(176,141,87,0.12)' }}>
+                                  {sources.map(s => {
+                                    const label = s.display_name || s.handle_or_url;
+                                    const handle = s.type === 'twitter' ? `@${s.handle_or_url}` : s.handle_or_url;
+                                    const initials = (label || '?').replace('@', '').slice(0, 2).toUpperCase();
+                                    return (
+                                      <div key={s.id} className="flex items-center gap-2.5">
+                                        {s.avatar_url ? (
+                                          <img src={s.avatar_url} alt={label || ''} style={{ width: 24, height: 24, borderRadius: '2px', objectFit: 'cover', border: '1px solid rgba(176,141,87,0.18)', flexShrink: 0 }} />
+                                        ) : (
+                                          <div style={{ width: 24, height: 24, borderRadius: '2px', background: 'rgba(176,141,87,0.1)', border: '1px solid rgba(176,141,87,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: '#B08D57', fontFamily: 'var(--font-oswald, sans-serif)', flexShrink: 0 }}>{initials}</div>
+                                        )}
+                                        <div className="min-w-0">
+                                          <div className="text-xs font-medium text-[#F5EFE0] truncate">{label}</div>
+                                          {s.display_name && <div className="text-[10px] font-mono truncate" style={{ color: 'rgba(245,239,224,0.4)' }}>{handle}</div>}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     );
-                  })}
-                </div>
+                  })()}
+                </>
               )}
             </div>
           )}
