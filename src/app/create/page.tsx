@@ -40,26 +40,6 @@ interface PromptTemplate {
   category: string | null;
 }
 
-const STYLE_PRESETS = [
-  {
-    id: 'crypto-brief',
-    name: 'Crypto Brief',
-    prompt: `You are a crypto intelligence analyst creating a daily briefing for active traders and investors.\n\nFOCUS: Bitcoin, Ethereum, DeFi protocols, macro catalysts affecting crypto, regulatory developments.\n\nSTRUCTURE:\n1. **Market Pulse** — Current sentiment and key price levels\n2. **Actionable Intelligence** — Specific calls, entry/exit levels, catalyst timelines\n3. **Narrative Shifts** — What themes are gaining/losing momentum\n4. **What to Watch** — 3+ items with reasoning for next 24-48 hours\n\nSTYLE: Direct, actionable, no fluff. Use in-text citations [1], [2]. Prioritize contrarian signals over consensus.`,
-    labels: ['crypto', 'defi', 'bitcoin'],
-  },
-  {
-    id: 'tech-roundup',
-    name: 'Tech Roundup',
-    prompt: `You are a technology analyst summarizing the week's most important developments.\n\nFOCUS: AI, semiconductors, software platforms, enterprise tech, consumer tech.\n\nSTRUCTURE:\n1. **Signal vs. Noise** — What actually matters this week\n2. **Company Moves** — Notable announcements, product launches, competitive shifts\n3. **Investor Angle** — Valuation implications, sector rotation signals\n4. **Watch List** — Emerging stories worth tracking\n\nSTYLE: Analytical, precise, minimal hype. Cite sources [1], [2].`,
-    labels: ['tech', 'ai', 'software'],
-  },
-  {
-    id: 'macro-weekly',
-    name: 'Macro Weekly',
-    prompt: `You are a macro research analyst synthesizing the week's macro developments.\n\nFOCUS: Central bank policy, rates, FX, commodities, geopolitics, cross-asset implications.\n\nSTRUCTURE:\n1. **The Macro Picture** — Key regime and narrative\n2. **Policy Pulse** — What central banks and governments signaled\n3. **Market Implications** — Cross-asset takeaways\n4. **Key Risks** — What could break the current narrative\n5. **Week Ahead** — Data and events to watch\n\nSTYLE: Institutional quality. Historical context. Second-order effects. Cite sources [1], [2].`,
-    labels: ['macro', 'rates', 'fx'],
-  },
-];
 
 function SectionHeader({ number, title, subtitle }: { number: string; title: string; subtitle?: string }) {
   return (
@@ -98,7 +78,7 @@ function CreatePageInner() {
   const [name, setName] = useState('');
   const [prompt, setPrompt] = useState('');
   const [promptTemplateId, setPromptTemplateId] = useState<string | null>(null);
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [customStyle, setCustomStyle] = useState(false);
   const [cadence, setCadence] = useState('daily');
   const [isPublic, setIsPublic] = useState(true);
   const [sendDays, setSendDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
@@ -165,8 +145,8 @@ function CreatePageInner() {
         if (!data?.newsletter) return;
         const nl = data.newsletter;
         setName(nl.name || '');
-        if (nl.prompt_template_id) setPromptTemplateId(nl.prompt_template_id);
-        else setPrompt(nl.prompt || '');
+        if (nl.prompt_template_id) { setPromptTemplateId(nl.prompt_template_id); setCustomStyle(false); }
+        else { setPrompt(nl.prompt || ''); setCustomStyle(true); }
         setLabels(nl.labels || []);
         setCadence(nl.schedule_cadence || 'daily');
         if (nl.junto_id) {
@@ -223,15 +203,6 @@ function CreatePageInner() {
     } else {
       setSourceInput('');
     }
-  }
-
-  function applyPreset(presetId: string) {
-    const p = STYLE_PRESETS.find(p => p.id === presetId);
-    if (!p) return;
-    setSelectedPreset(presetId);
-    setPrompt(p.prompt);
-    setPromptTemplateId(null);
-    if (!labels.length) setLabels([...p.labels]);
   }
 
   async function handleCreate() {
@@ -629,58 +600,70 @@ function CreatePageInner() {
         <Section>
           <SectionHeader number="03" title="Synthesis Style" subtitle="How should the AI frame the output?" />
 
-          {/* Style presets */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            {STYLE_PRESETS.map(p => (
-              <button
-                key={p.id}
-                onClick={() => applyPreset(p.id)}
-                className="text-left px-3 py-3 text-xs transition"
-                style={{
-                  border: `1px solid ${selectedPreset === p.id ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`,
-                  background: selectedPreset === p.id ? 'rgba(176,141,87,0.08)' : '#141210',
-                  color: selectedPreset === p.id ? '#B08D57' : 'rgba(245,239,224,0.6)',
-                  fontFamily: 'var(--font-oswald, sans-serif)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                }}
-              >
-                {p.name}
-              </button>
-            ))}
-            {promptTemplates.map(t => (
-              <button
-                key={t.id}
-                onClick={() => { setPromptTemplateId(t.id); setPrompt(''); setSelectedPreset(null); }}
-                className="text-left px-3 py-3 text-xs transition"
-                style={{
-                  border: `1px solid ${promptTemplateId === t.id ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`,
-                  background: promptTemplateId === t.id ? 'rgba(176,141,87,0.08)' : '#141210',
-                  color: promptTemplateId === t.id ? '#B08D57' : 'rgba(245,239,224,0.6)',
-                  fontFamily: 'var(--font-oswald, sans-serif)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                }}
-              >
-                {t.name}
-              </button>
-            ))}
+          {/* Template buttons (3 presets + Custom) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+            {promptTemplates.map(t => {
+              const isSelected = !customStyle && promptTemplateId === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => { setPromptTemplateId(t.id); setPrompt(''); setCustomStyle(false); }}
+                  className="text-left px-3 py-3 text-xs transition"
+                  style={{
+                    border: `1px solid ${isSelected ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`,
+                    background: isSelected ? 'rgba(176,141,87,0.08)' : '#141210',
+                    color: isSelected ? '#B08D57' : 'rgba(245,239,224,0.6)',
+                    fontFamily: 'var(--font-oswald, sans-serif)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                  }}
+                >
+                  {t.name}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => { setCustomStyle(true); setPromptTemplateId(null); }}
+              className="text-left px-3 py-3 text-xs transition"
+              style={{
+                border: `1px solid ${customStyle ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`,
+                background: customStyle ? 'rgba(176,141,87,0.08)' : '#141210',
+                color: customStyle ? '#B08D57' : 'rgba(245,239,224,0.6)',
+                fontFamily: 'var(--font-oswald, sans-serif)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+              }}
+            >
+              Custom
+            </button>
           </div>
 
-          {/* Custom prompt */}
-          <div>
-            <label className="block text-[10px] uppercase tracking-[0.15em] text-[#F5EFE0]/40 mb-2 font-mono">
-              {selectedPreset || promptTemplateId ? 'Custom prompt (overrides preset above)' : 'Or write your own prompt'}
-            </label>
-            <textarea
-              value={prompt}
-              onChange={e => { setPrompt(e.target.value); if (e.target.value) { setPromptTemplateId(null); } }}
-              placeholder="Describe what the AI should synthesize and how it should be structured..."
-              rows={selectedPreset && !prompt ? 2 : 8}
-              className="w-full bg-[#141210] px-4 py-3 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/25 focus:outline-none resize-y font-mono leading-relaxed transition"
-              style={{ border: '1px solid rgba(176,141,87,0.28)' }}
-            />
-          </div>
+          {/* Selected template description OR custom textarea */}
+          {!customStyle && promptTemplateId && (() => {
+            const t = promptTemplates.find(t => t.id === promptTemplateId);
+            if (!t) return null;
+            return (
+              <div className="px-4 py-3 text-xs" style={{ background: '#0d0b09', border: '1px solid rgba(176,141,87,0.18)', color: 'rgba(245,239,224,0.6)' }}>
+                {t.description || 'Using the default prompt for this style.'}
+              </div>
+            );
+          })()}
+
+          {customStyle && (
+            <div>
+              <label className="block text-[10px] uppercase tracking-[0.15em] text-[#F5EFE0]/40 mb-2 font-mono">
+                Custom prompt
+              </label>
+              <textarea
+                value={prompt}
+                onChange={e => setPrompt(e.target.value)}
+                placeholder="Describe what the AI should synthesize and how it should be structured..."
+                rows={8}
+                className="w-full bg-[#141210] px-4 py-3 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/25 focus:outline-none resize-y font-mono leading-relaxed transition"
+                style={{ border: '1px solid rgba(176,141,87,0.28)' }}
+              />
+            </div>
+          )}
         </Section>
 
         {/* ─── 04 SCHEDULE ─────────────────────────────── */}
