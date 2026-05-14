@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getSupabase } from '@/lib/db/client';
-import { getXAI, DEFAULT_MODEL } from '@/lib/synthesis/client';
+import { getAnthropic } from '@/lib/synthesis/client';
 import { THESIS_SYSTEM_PROMPT } from '@/lib/theses/system-prompt';
 import { parseThesisFile } from '@/lib/theses/parser';
-import { recordCost, grokCostCents } from '@/lib/costs';
+import { recordCost, anthropicHaikuCostCents } from '@/lib/costs';
 import { authLimiter } from '@/lib/rate-limit';
+
+const CLAUDE_MODEL = 'claude-sonnet-4-6';
 
 export const maxDuration = 60;
 
@@ -59,30 +61,28 @@ ${sourceRef ? `Source: ${sourceRef} (${sourceType || 'chat'})` : ''}
 
 ${input}`;
 
-    const xai = getXAI();
-    const response = await xai.chat.completions.create({
-      model: DEFAULT_MODEL,
-      messages: [
-        { role: 'system', content: THESIS_SYSTEM_PROMPT },
-        { role: 'user', content: userMessage },
-      ],
+    const anthropic = getAnthropic();
+    const response = await anthropic.messages.create({
+      model: CLAUDE_MODEL,
+      system: THESIS_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userMessage }],
       max_tokens: 4000,
     });
 
-    const rawOutput = response.choices[0]?.message?.content || '';
-    const inputTokens = response.usage?.prompt_tokens || 0;
-    const outputTokens = response.usage?.completion_tokens || 0;
+    const rawOutput = response.content[0]?.type === 'text' ? response.content[0].text : '';
+    const inputTokens = response.usage?.input_tokens || 0;
+    const outputTokens = response.usage?.output_tokens || 0;
 
     recordCost({
-      supplier: 'grok',
+      supplier: 'anthropic',
       operation: 'thesis_ingest',
-      cost_cents: grokCostCents(inputTokens, outputTokens),
+      cost_cents: anthropicHaikuCostCents(inputTokens, outputTokens),
       usage_amount: inputTokens + outputTokens,
       usage_unit: 'tokens',
       input_tokens: inputTokens,
       output_tokens: outputTokens,
       user_id: userId,
-      metadata: { model: DEFAULT_MODEL },
+      metadata: { model: CLAUDE_MODEL },
     });
 
     let parsed;

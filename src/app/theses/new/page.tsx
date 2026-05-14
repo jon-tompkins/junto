@@ -65,8 +65,10 @@ export default function NewThesisPage() {
         body: JSON.stringify({ input, sourceType, sourceRef: sourceRef || undefined }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to generate');
+        const text = await res.text();
+        let msg = 'Failed to generate';
+        try { msg = JSON.parse(text).error || msg; } catch { /* plain text error */ }
+        throw new Error(msg);
       }
       const data = await res.json();
       setDraft(data.draft);
