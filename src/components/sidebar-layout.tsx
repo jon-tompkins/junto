@@ -82,7 +82,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
     { href: '/juntos', label: 'Juntos', icon: '◆' },
     { href: '/settings', label: 'Settings', icon: '⚙' },
     { href: '/prompt', label: 'Prompt', icon: '✎' },
-    { href: '/newsletters', label: 'History', icon: '◫' },
+    { href: '/history', label: 'History', icon: '◫' },
   ];
 
   const NavContent = () => (
