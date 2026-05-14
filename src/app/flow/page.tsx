@@ -339,7 +339,7 @@ export default function FlowPage() {
               <FeatureRow route="/" purpose="Homepage — Quick Dispatch widget + newsletter grid + creator CTA" reads="newsletters_v2, sources (featured junto)" />
               <FeatureRow route="/explore" purpose="Browse all public dispatches" reads="newsletters_v2" note="↔ overlaps with /newsletters" />
               <FeatureRow route="/newsletters" purpose="Same as /explore — list public dispatches" reads="newsletters_v2" note="⚠ redundant with /explore" />
-              <FeatureRow route="/create" purpose="3-step dispatch creation wizard" reads="juntos, sources, prompt_templates" writes="newsletters_v2, junto_sources, sources" />
+              <FeatureRow route="/create" purpose="Single-page dispatch creation: name → sources → style → schedule → visibility" reads="juntos, sources, prompt_templates" writes="newsletters_v2, junto_sources, sources" />
               <FeatureRow route="/dashboard" purpose="Authenticated hub: subscriptions, my dispatches, history" reads="subscriptions, newsletters_v2, newsletter_runs" />
               <FeatureRow route="/newsletter/[id]" purpose="Dispatch detail — latest run, subscribe, fork" reads="newsletters_v2, newsletter_runs, subscriptions" writes="newsletter_subscriptions" />
               <FeatureRow route="/juntos" purpose="Browse public juntos (source groups)" reads="juntos" />

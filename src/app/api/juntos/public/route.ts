@@ -52,6 +52,17 @@ export async function GET() {
       });
     }
 
+    // Fetch source details for avatar icons
+    const allSourceIds = [...new Set(Object.values(sourceIdsMap).flat())];
+    const sourceDetailsMap: Record<string, { id: string; handle_or_url: string; display_name: string | null; avatar_url: string | null; type: string }> = {};
+    if (allSourceIds.length > 0) {
+      const { data: sourceDeets } = await supabase
+        .from('sources')
+        .select('id, handle_or_url, display_name, avatar_url, type')
+        .in('id', allSourceIds);
+      (sourceDeets || []).forEach((s: any) => { sourceDetailsMap[s.id] = s; });
+    }
+
     const juntos = (data || []).map((j: any) => ({
       id: j.id,
       name: j.name,
@@ -61,7 +72,7 @@ export async function GET() {
       created_at: j.created_at,
       is_own: j.owner_id === userId,
       source_count: sourceCountMap[j.id] ?? 0,
-      source_ids: sourceIdsMap[j.id] ?? [],
+      sources: (sourceIdsMap[j.id] ?? []).map((sid: string) => sourceDetailsMap[sid]).filter(Boolean),
       dispatches: [],
     }));
 
