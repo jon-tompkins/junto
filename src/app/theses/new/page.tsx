@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
@@ -29,45 +29,79 @@ interface Draft {
   summary: string;
 }
 
-const SOURCE_TYPES = [
-  { value: 'chat', label: 'Idea / Chat' },
-  { value: 'research', label: 'Research Note' },
-  { value: 'news', label: 'News' },
-  { value: 'tweet', label: 'Tweet / X' },
-  { value: 'filing', label: 'SEC Filing' },
-  { value: 'data', label: 'Data / Chart' },
-];
+type InputMode = 'link' | 'file' | 'text';
+
+const ACCEPTED_FILE_TYPES = '.pdf,image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp';
 
 export default function NewThesisPage() {
   const router = useRouter();
   const { status: authStatus } = useSession();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<'input' | 'review'>('input');
-  const [input, setInput] = useState('');
-  const [sourceType, setSourceType] = useState('chat');
+  const [mode, setMode] = useState<InputMode>('text');
+
+  // Text mode
+  const [textInput, setTextInput] = useState('');
+
+  // Link mode
+  const [linkUrl, setLinkUrl] = useState('');
+
+  // File mode
+  const [file, setFile] = useState<File | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  // Context (all modes)
+  const [context, setContext] = useState('');
   const [sourceRef, setSourceRef] = useState('');
+
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
 
+  function canGenerate() {
+    if (mode === 'text') return textInput.trim().length >= 20;
+    if (mode === 'link') return linkUrl.trim().length > 0 && context.trim().length >= 10;
+    if (mode === 'file') return file !== null && context.trim().length >= 10;
+    return false;
+  }
+
   async function handleGenerate() {
-    if (input.trim().length < 20) {
-      setError('Add at least a paragraph of raw material.');
-      return;
-    }
     setGenerating(true);
     setError(null);
     try {
-      const res = await fetch('/api/theses/ingest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input, sourceType, sourceRef: sourceRef || undefined }),
-      });
+      let res: Response;
+
+      if (mode === 'file' && file) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('context', context);
+        if (sourceRef) fd.append('sourceRef', sourceRef);
+        res = await fetch('/api/theses/ingest', { method: 'POST', body: fd });
+      } else {
+        const payload: Record<string, string> = {};
+        if (mode === 'text') {
+          payload.input = textInput;
+          payload.context = context;
+          payload.sourceType = 'chat';
+        } else {
+          // link mode
+          payload.input = context;
+          payload.sourceRef = linkUrl;
+          payload.sourceType = 'link';
+        }
+        res = await fetch('/api/theses/ingest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }
+
       if (!res.ok) {
         const text = await res.text();
         let msg = 'Failed to generate';
-        try { msg = JSON.parse(text).error || msg; } catch { /* plain text error */ }
+        try { msg = JSON.parse(text).error || msg; } catch { /* plain text */ }
         throw new Error(msg);
       }
       const data = await res.json();
@@ -91,7 +125,7 @@ export default function NewThesisPage() {
         body: JSON.stringify({
           frontmatter: draft.frontmatter,
           body: draft.body,
-          sourceRefForInput: sourceRef || undefined,
+          sourceRefForInput: mode === 'link' ? linkUrl : undefined,
         }),
       });
       if (!res.ok) {
@@ -109,6 +143,13 @@ export default function NewThesisPage() {
   function updateFm<K extends keyof DraftFrontmatter>(key: K, value: DraftFrontmatter[K]) {
     if (!draft) return;
     setDraft({ ...draft, frontmatter: { ...draft.frontmatter, [key]: value } });
+  }
+
+  function handleFileDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped) setFile(dropped);
   }
 
   if (authStatus !== 'authenticated') {
@@ -135,6 +176,7 @@ export default function NewThesisPage() {
           ← back to theses
         </Link>
 
+        {/* ── INPUT STEP ───────────────────────────────────────────── */}
         {step === 'input' && (
           <>
             <div style={{ borderLeft: '4px solid #B08D57', paddingLeft: '1.25rem' }} className="mb-10">
@@ -145,62 +187,138 @@ export default function NewThesisPage() {
                 New Thesis
               </h1>
               <p className="text-sm max-w-md text-[#F5EFE0]/65">
-                Drop in raw material. We&apos;ll structure it into a thesis with validation criteria and trades.
+                Drop in your raw material. We&apos;ll structure it into a thesis with validation criteria and trades.
               </p>
             </div>
 
             <div className="space-y-6">
+
+              {/* Mode selector */}
               <div>
-                <Label>Source type</Label>
-                <div className="flex flex-wrap gap-0" style={{ border: '1px solid rgba(176,141,87,0.28)' }}>
-                  {SOURCE_TYPES.map((s, i) => {
-                    const active = sourceType === s.value;
-                    return (
-                      <button
-                        key={s.value}
-                        onClick={() => setSourceType(s.value)}
-                        className="px-4 py-2 text-xs uppercase tracking-wider transition"
-                        style={{
-                          fontFamily: 'var(--font-oswald), sans-serif',
-                          background: active ? '#B08D57' : 'transparent',
-                          color: active ? '#080604' : 'rgba(245,239,224,0.55)',
-                          borderRight: i < SOURCE_TYPES.length - 1 ? '1px solid rgba(176,141,87,0.18)' : 'none',
-                          flex: '1 1 auto',
-                        }}
-                      >
-                        {s.label}
-                      </button>
-                    );
-                  })}
+                <Label>Source</Label>
+                <div className="flex" style={{ border: '1px solid rgba(176,141,87,0.28)' }}>
+                  {([
+                    { value: 'text', label: 'Text' },
+                    { value: 'link', label: 'Link' },
+                    { value: 'file', label: 'File' },
+                  ] as { value: InputMode; label: string }[]).map((m, i) => (
+                    <button
+                      key={m.value}
+                      onClick={() => setMode(m.value)}
+                      className="flex-1 py-2.5 text-xs uppercase tracking-wider transition"
+                      style={{
+                        fontFamily: 'var(--font-oswald), sans-serif',
+                        background: mode === m.value ? '#B08D57' : 'transparent',
+                        color: mode === m.value ? '#080604' : 'rgba(245,239,224,0.55)',
+                        borderRight: i < 2 ? '1px solid rgba(176,141,87,0.18)' : 'none',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
+              {/* Text mode */}
+              {mode === 'text' && (
+                <div>
+                  <Label>Raw material</Label>
+                  <textarea
+                    value={textInput}
+                    onChange={e => setTextInput(e.target.value)}
+                    rows={14}
+                    placeholder={`Paste the research note, article excerpt, tweet thread, or describe the idea in your own words.\n\nThe more specific you are about what you believe and why, the better the output.`}
+                    className="w-full bg-[#141210] px-4 py-3 text-sm focus:outline-none transition resize-y font-mono leading-relaxed"
+                    style={{ border: '1px solid rgba(176,141,87,0.28)', color: '#F5EFE0' }}
+                  />
+                  <div className="text-[10px] mt-1.5 font-mono uppercase tracking-wider" style={{ color: 'rgba(176,141,87,0.5)' }}>
+                    {textInput.length} chars · min 20
+                  </div>
+                </div>
+              )}
+
+              {/* Link mode */}
+              {mode === 'link' && (
+                <div>
+                  <Label>URL</Label>
+                  <input
+                    value={linkUrl}
+                    onChange={e => setLinkUrl(e.target.value)}
+                    placeholder="https://x.com/... or https://substack.com/..."
+                    className="w-full bg-[#141210] px-4 py-3 text-sm focus:outline-none transition font-mono"
+                    style={{ border: '1px solid rgba(176,141,87,0.28)', color: '#F5EFE0' }}
+                  />
+                  <p className="text-[10px] mt-1.5 font-mono uppercase tracking-wider" style={{ color: 'rgba(176,141,87,0.4)' }}>
+                    Tweet, article, research note, filing — any URL
+                  </p>
+                </div>
+              )}
+
+              {/* File mode */}
+              {mode === 'file' && (
+                <div>
+                  <Label>File <span className="normal-case tracking-normal text-[#F5EFE0]/40">— PDF, JPEG, PNG</span></Label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={ACCEPTED_FILE_TYPES}
+                    className="hidden"
+                    onChange={e => setFile(e.target.files?.[0] || null)}
+                  />
+                  {!file ? (
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                      onDragLeave={() => setDragOver(false)}
+                      onDrop={handleFileDrop}
+                      className="cursor-pointer flex flex-col items-center justify-center py-12 transition"
+                      style={{
+                        border: `1px dashed ${dragOver ? 'rgba(176,141,87,0.6)' : 'rgba(176,141,87,0.28)'}`,
+                        background: dragOver ? 'rgba(176,141,87,0.04)' : '#141210',
+                      }}
+                    >
+                      <div className="text-2xl mb-2 opacity-40">↑</div>
+                      <p className="text-sm text-[#F5EFE0]/50 mb-1">Drop file here or click to browse</p>
+                      <p className="text-[10px] font-mono uppercase tracking-wider" style={{ color: 'rgba(176,141,87,0.4)' }}>
+                        PDF · JPEG · PNG · GIF · WebP
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between px-4 py-3" style={{ border: '1px solid rgba(62,207,106,0.3)', background: 'rgba(62,207,106,0.04)' }}>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[#3ecf6a] text-sm">✓</span>
+                        <span className="text-sm text-[#F5EFE0]/80 font-mono truncate">{file.name}</span>
+                        <span className="text-xs text-[#F5EFE0]/40">({(file.size / 1024).toFixed(0)} KB)</span>
+                      </div>
+                      <button
+                        onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                        className="text-xs text-[#F5EFE0]/40 hover:text-[#e8453c] transition ml-3"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Context — shown for link and file modes (required), optional hint for text */}
               <div>
                 <Label>
-                  Source reference <span className="text-[#F5EFE0]/40 normal-case tracking-normal">— optional, URL or note</span>
+                  {mode === 'text' ? (
+                    <>Your context <span className="normal-case tracking-normal text-[#F5EFE0]/40">— optional, but adds conviction</span></>
+                  ) : (
+                    <>Your context <span className="normal-case tracking-normal text-[#F5EFE0]/40">— required</span></>
+                  )}
                 </Label>
-                <input
-                  value={sourceRef}
-                  onChange={(e) => setSourceRef(e.target.value)}
-                  placeholder="https://...  or  Citrini research note 2026-05-12"
-                  className="w-full bg-[#141210] px-4 py-3 text-sm focus:outline-none transition"
-                  style={{ border: '1px solid rgba(176,141,87,0.28)', color: '#F5EFE0' }}
-                />
-              </div>
-
-              <div>
-                <Label>Raw material</Label>
                 <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  rows={16}
-                  placeholder={`Paste the research note, article excerpt, tweet thread, or describe the idea.\n\nProvide your own context — what you believe and why, what timeframe you're thinking, any specific tickers, what would change your mind.`}
-                  className="w-full bg-[#141210] px-4 py-3 text-sm focus:outline-none transition resize-y font-mono"
+                  value={context}
+                  onChange={e => setContext(e.target.value)}
+                  rows={5}
+                  placeholder="What do you believe and why? What timeframe? Any specific tickers? What would change your mind?"
+                  className="w-full bg-[#141210] px-4 py-3 text-sm focus:outline-none transition resize-y"
                   style={{ border: '1px solid rgba(176,141,87,0.28)', color: '#F5EFE0' }}
                 />
-                <div className="text-[10px] mt-1.5 font-mono uppercase tracking-wider" style={{ color: 'rgba(176,141,87,0.5)' }}>
-                  {input.length} chars · min 20
-                </div>
               </div>
 
               {error && <ErrorBlock>{error}</ErrorBlock>}
@@ -208,7 +326,7 @@ export default function NewThesisPage() {
               <div className="flex flex-col gap-3 pt-2">
                 <button
                   onClick={handleGenerate}
-                  disabled={generating || input.trim().length < 20}
+                  disabled={generating || !canGenerate()}
                   className="self-start px-7 py-3 font-bold text-sm uppercase tracking-wide transition hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald), sans-serif' }}
                 >
@@ -222,6 +340,7 @@ export default function NewThesisPage() {
           </>
         )}
 
+        {/* ── REVIEW STEP ──────────────────────────────────────────── */}
         {step === 'review' && draft && (
           <>
             <div style={{ borderLeft: '4px solid #B08D57', paddingLeft: '1.25rem' }} className="mb-8">
@@ -254,19 +373,19 @@ export default function NewThesisPage() {
                   <Label>Title</Label>
                   <input
                     value={draft.frontmatter.title}
-                    onChange={(e) => updateFm('title', e.target.value)}
+                    onChange={e => updateFm('title', e.target.value)}
                     className="w-full bg-transparent text-base focus:outline-none"
                     style={{ color: '#F5EFE0' }}
                   />
                 </div>
                 <div className="p-4">
-                  <Label>Conviction (1-5)</Label>
+                  <Label>Conviction (1–5)</Label>
                   <input
                     type="number"
                     min={1}
                     max={5}
                     value={draft.frontmatter.conviction}
-                    onChange={(e) => updateFm('conviction', parseInt(e.target.value) || 1)}
+                    onChange={e => updateFm('conviction', parseInt(e.target.value) || 1)}
                     className="w-full bg-transparent text-base focus:outline-none font-mono"
                     style={{ color: '#B08D57' }}
                   />
@@ -278,8 +397,8 @@ export default function NewThesisPage() {
                   <Label>Horizon</Label>
                   <input
                     value={draft.frontmatter.horizon || ''}
-                    onChange={(e) => updateFm('horizon', e.target.value)}
-                    placeholder="3-12 months"
+                    onChange={e => updateFm('horizon', e.target.value)}
+                    placeholder="3–12 months"
                     className="w-full bg-transparent text-sm focus:outline-none font-mono"
                     style={{ color: '#F5EFE0' }}
                   />
@@ -288,7 +407,7 @@ export default function NewThesisPage() {
                   <Label>Tags (comma-separated)</Label>
                   <input
                     value={(draft.frontmatter.tags || []).join(', ')}
-                    onChange={(e) => updateFm('tags', e.target.value.split(',').map((t) => t.trim()).filter(Boolean))}
+                    onChange={e => updateFm('tags', e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
                     className="w-full bg-transparent text-sm focus:outline-none font-mono"
                     style={{ color: '#F5EFE0' }}
                   />
@@ -299,7 +418,7 @@ export default function NewThesisPage() {
                 <Label>Thesis</Label>
                 <textarea
                   value={draft.frontmatter.thesis}
-                  onChange={(e) => updateFm('thesis', e.target.value)}
+                  onChange={e => updateFm('thesis', e.target.value)}
                   rows={6}
                   className="w-full bg-transparent text-sm focus:outline-none font-mono resize-y leading-relaxed"
                   style={{ color: '#F5EFE0' }}
@@ -310,7 +429,7 @@ export default function NewThesisPage() {
                 <Label>Mechanism</Label>
                 <textarea
                   value={draft.frontmatter.mechanism || ''}
-                  onChange={(e) => updateFm('mechanism', e.target.value)}
+                  onChange={e => updateFm('mechanism', e.target.value)}
                   rows={5}
                   className="w-full bg-transparent text-sm focus:outline-none font-mono resize-y leading-relaxed"
                   style={{ color: '#F5EFE0' }}
@@ -320,7 +439,7 @@ export default function NewThesisPage() {
               <ListCard
                 title={`Validation criteria (${draft.frontmatter.validation_criteria?.length || 0})`}
                 accent="#3ecf6a"
-                rows={(draft.frontmatter.validation_criteria || []).map((c) => ({
+                rows={(draft.frontmatter.validation_criteria || []).map(c => ({
                   primary: c.description,
                   badges: [c.id, c.weight, c.type].filter(Boolean) as string[],
                 }))}
@@ -329,7 +448,7 @@ export default function NewThesisPage() {
               <ListCard
                 title={`Invalidation criteria (${draft.frontmatter.invalidation_criteria?.length || 0})`}
                 accent="#e8453c"
-                rows={(draft.frontmatter.invalidation_criteria || []).map((c) => ({
+                rows={(draft.frontmatter.invalidation_criteria || []).map(c => ({
                   primary: c.description,
                   badges: [c.id, c.weight, c.type].filter(Boolean) as string[],
                 }))}
@@ -338,7 +457,7 @@ export default function NewThesisPage() {
               <ListCard
                 title={`Trades (${draft.frontmatter.trades?.length || 0})`}
                 accent="#B08D57"
-                rows={(draft.frontmatter.trades || []).map((t) => ({
+                rows={(draft.frontmatter.trades || []).map(t => ({
                   primary: `$${t.symbol}${t.name ? ` — ${t.name}` : ''}`,
                   badges: [t.role, t.type, t.entry?.zone_low ? `entry ${t.entry.zone_low}${t.entry.zone_high ? `–${t.entry.zone_high}` : ''}` : null].filter(Boolean) as string[],
                 }))}
@@ -346,13 +465,13 @@ export default function NewThesisPage() {
               />
 
               <details style={{ border: '1px solid rgba(176,141,87,0.28)' }}>
-                <summary className="px-4 py-3 cursor-pointer text-xs uppercase tracking-wider font-[var(--font-oswald)]" style={{ color: 'rgba(245,239,224,0.7)' }}>
+                <summary className="px-4 py-3 cursor-pointer text-xs uppercase tracking-wider" style={{ fontFamily: 'var(--font-oswald), sans-serif', color: 'rgba(245,239,224,0.7)' }}>
                   Long-form discussion (markdown body)
                 </summary>
                 <div className="p-4" style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}>
                   <textarea
                     value={draft.body}
-                    onChange={(e) => setDraft({ ...draft, body: e.target.value })}
+                    onChange={e => setDraft({ ...draft, body: e.target.value })}
                     rows={20}
                     className="w-full bg-[#080604] px-3 py-2 text-xs focus:outline-none font-mono leading-relaxed"
                     style={{ border: '1px solid rgba(176,141,87,0.18)', color: '#F5EFE0' }}
@@ -389,10 +508,7 @@ export default function NewThesisPage() {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <p
-      className="text-[10px] uppercase tracking-[0.2em] mb-2"
-      style={{ fontFamily: 'var(--font-mono), monospace', color: 'rgba(176,141,87,0.7)' }}
-    >
+    <p className="text-[10px] uppercase tracking-[0.2em] mb-2" style={{ fontFamily: 'var(--font-mono), monospace', color: 'rgba(176,141,87,0.7)' }}>
       {children}
     </p>
   );
@@ -406,23 +522,14 @@ function ErrorBlock({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ListCard({
-  title,
-  accent,
-  rows,
-  emptyText,
-}: {
-  title: string;
-  accent: string;
+function ListCard({ title, accent, rows, emptyText }: {
+  title: string; accent: string;
   rows: Array<{ primary: string; badges: string[] }>;
   emptyText?: string;
 }) {
   return (
     <div style={{ border: '1px solid rgba(176,141,87,0.28)' }}>
-      <div
-        className="px-4 py-2 text-[10px] uppercase tracking-[0.2em]"
-        style={{ fontFamily: 'var(--font-mono), monospace', color: accent, borderBottom: '1px solid rgba(176,141,87,0.18)' }}
-      >
+      <div className="px-4 py-2 text-[10px] uppercase tracking-[0.2em]" style={{ fontFamily: 'var(--font-mono), monospace', color: accent, borderBottom: '1px solid rgba(176,141,87,0.18)' }}>
         {title}
       </div>
       {rows.length === 0 ? (
@@ -430,19 +537,11 @@ function ListCard({
       ) : (
         <ul>
           {rows.map((r, i) => (
-            <li
-              key={i}
-              className="px-4 py-2.5 text-sm flex flex-wrap items-center gap-2"
-              style={{ borderBottom: i < rows.length - 1 ? '1px solid rgba(176,141,87,0.12)' : 'none' }}
-            >
+            <li key={i} className="px-4 py-2.5 text-sm flex flex-wrap items-center gap-2" style={{ borderBottom: i < rows.length - 1 ? '1px solid rgba(176,141,87,0.12)' : 'none' }}>
               <span className="text-[#F5EFE0]/85 flex-1 min-w-[200px]">{r.primary}</span>
               <div className="flex gap-1.5">
                 {r.badges.map((b, j) => (
-                  <span
-                    key={j}
-                    className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 font-mono"
-                    style={{ color: 'rgba(176,141,87,0.75)', border: '1px solid rgba(176,141,87,0.25)' }}
-                  >
+                  <span key={j} className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 font-mono" style={{ color: 'rgba(176,141,87,0.75)', border: '1px solid rgba(176,141,87,0.25)' }}>
                     {b}
                   </span>
                 ))}

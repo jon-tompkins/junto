@@ -12,6 +12,10 @@ const CLAUDE_MODEL = 'claude-sonnet-4-6';
 
 export const maxDuration = 60;
 
+const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const;
+const SUPPORTED_DOC_TYPES = ['application/pdf'] as const;
+type SupportedImageType = typeof SUPPORTED_IMAGE_TYPES[number];
+
 async function resolveUserId(session: any): Promise<string | null> {
   const supabase = getSupabase();
   const twitterId = session.user?.twitterId;
@@ -27,9 +31,63 @@ async function resolveUserId(session: any): Promise<string | null> {
   return null;
 }
 
+async function callClaude(anthropic: ReturnType<typeof getAnthropic>, userMessage: string, fileContent?: { base64: string; mimeType: string; fileName: string }) {
+  if (!fileContent) {
+    return anthropic.messages.create({
+      model: CLAUDE_MODEL,
+      system: THESIS_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userMessage }],
+      max_tokens: 4000,
+    });
+  }
+
+  const { base64, mimeType, fileName } = fileContent;
+  const isImage = (SUPPORTED_IMAGE_TYPES as readonly string[]).includes(mimeType);
+  const isPdf = (SUPPORTED_DOC_TYPES as readonly string[]).includes(mimeType);
+
+  if (isImage) {
+    return anthropic.messages.create({
+      model: CLAUDE_MODEL,
+      system: THESIS_SYSTEM_PROMPT,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: { type: 'base64', media_type: mimeType as SupportedImageType, data: base64 },
+          },
+          { type: 'text', text: userMessage },
+        ],
+      }],
+      max_tokens: 4000,
+    });
+  }
+
+  if (isPdf) {
+    return anthropic.messages.create({
+      model: CLAUDE_MODEL,
+      system: THESIS_SYSTEM_PROMPT,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'document',
+            source: { type: 'base64', media_type: 'application/pdf', data: base64 },
+            title: fileName,
+          } as any,
+          { type: 'text', text: userMessage },
+        ],
+      }],
+      max_tokens: 4000,
+    });
+  }
+
+  throw new Error(`Unsupported file type: ${mimeType}`);
+}
+
 // POST /api/theses/ingest
-// Body: { input: string, sourceType?, sourceRef? }
-// Returns: { draft: { frontmatter, body, raw, summary } }
+// Accepts JSON ({ input, sourceType?, sourceRef?, context? })
+// or FormData (file, context, sourceRef?) for file uploads
 export async function POST(req: NextRequest) {
   const limited = authLimiter(req);
   if (limited) return limited;
@@ -45,29 +103,67 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { input, sourceType, sourceRef } = body;
-
-    if (!input || typeof input !== 'string' || input.trim().length < 20) {
-      return NextResponse.json({ error: 'Input too short (minimum 20 chars)' }, { status: 400 });
-    }
-
+    const contentType = req.headers.get('content-type') || '';
     const today = new Date().toISOString().split('T')[0];
-    const userMessage = `Today's date: ${today}
 
-${sourceRef ? `Source: ${sourceRef} (${sourceType || 'chat'})` : ''}
+    let userMessage: string;
+    let fileContent: { base64: string; mimeType: string; fileName: string } | undefined;
+
+    if (contentType.includes('multipart/form-data')) {
+      // File upload mode
+      const formData = await req.formData();
+      const file = formData.get('file') as File | null;
+      const context = (formData.get('context') as string || '').trim();
+      const sourceRef = (formData.get('sourceRef') as string || '').trim();
+
+      if (!file) {
+        return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+      }
+      if (context.length < 10) {
+        return NextResponse.json({ error: 'Add at least a sentence of context about this file.' }, { status: 400 });
+      }
+
+      const mimeType = file.type;
+      const isSupported =
+        (SUPPORTED_IMAGE_TYPES as readonly string[]).includes(mimeType) ||
+        (SUPPORTED_DOC_TYPES as readonly string[]).includes(mimeType);
+
+      if (!isSupported) {
+        return NextResponse.json({ error: `Unsupported file type: ${mimeType}. Upload a PDF or image (JPEG, PNG, GIF, WebP).` }, { status: 400 });
+      }
+
+      const bytes = await file.arrayBuffer();
+      const base64 = Buffer.from(bytes).toString('base64');
+      fileContent = { base64, mimeType, fileName: file.name };
+
+      userMessage = `Today's date: ${today}
+${sourceRef ? `\nSource file: ${sourceRef}` : `\nSource file: ${file.name}`}
+
+## My context and notes
+
+${context}`;
+
+    } else {
+      // JSON mode (text or link)
+      const body = await req.json();
+      const { input, sourceType, sourceRef, context } = body;
+
+      const combinedInput = [input, context].filter(Boolean).join('\n\n## Additional context\n\n');
+
+      if (!combinedInput || combinedInput.trim().length < 20) {
+        return NextResponse.json({ error: 'Input too short (minimum 20 chars)' }, { status: 400 });
+      }
+
+      userMessage = `Today's date: ${today}
+${sourceRef ? `\nSource: ${sourceRef} (${sourceType || 'link'})` : ''}
 
 ## My raw material
 
-${input}`;
+${combinedInput}`;
+    }
 
     const anthropic = getAnthropic();
-    const response = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      system: THESIS_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userMessage }],
-      max_tokens: 4000,
-    });
+    const response = await callClaude(anthropic, userMessage, fileContent);
 
     const rawOutput = response.content[0]?.type === 'text' ? response.content[0].text : '';
     const inputTokens = response.usage?.input_tokens || 0;
@@ -96,7 +192,6 @@ ${input}`;
       );
     }
 
-    // The model's plain-text summary lives after the fenced block
     const fenceEndIdx = rawOutput.lastIndexOf('```');
     const summary = fenceEndIdx > -1 ? rawOutput.substring(fenceEndIdx + 3).trim() : '';
 
