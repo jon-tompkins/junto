@@ -92,19 +92,21 @@ async function main() {
   }
 
   // 4. Repoint trades and thesis_sources
-  const { count: tradeCount } = await supabase
+  const { data: trades, error: trErr } = await supabase
     .from('thesis_trades')
     .update({ source_id: toPersonalId })
     .eq('source_id', fromSrc.id)
-    .select('id', { count: 'exact', head: true });
-  console.log(`Repointed trades: ${tradeCount}`);
+    .select('id');
+  if (trErr) throw trErr;
+  console.log(`Repointed trades: ${trades?.length || 0}`);
 
-  const { count: srcCount } = await supabase
+  const { data: srcs, error: sErr } = await supabase
     .from('thesis_sources')
     .update({ source_id: toPersonalId })
     .eq('source_id', fromSrc.id)
-    .select('id', { count: 'exact', head: true });
-  console.log(`Repointed thesis_sources: ${srcCount}`);
+    .select('id');
+  if (sErr) throw sErr;
+  console.log(`Repointed thesis_sources: ${srcs?.length || 0}`);
 
   // 5. Delete the now-empty source personal source
   const { error: delErr } = await supabase.from('sources').delete().eq('id', fromSrc.id);
