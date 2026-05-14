@@ -17,6 +17,7 @@ export async function createNewsletter(newsletter: {
   schedule_cadence?: string;
   credit_cost?: number;
   send_days?: string[];
+  default_send_windows?: string[];
   prompt_template_id?: string | null;
   junto_id: string | null;
   watchlist_id?: string | null;
@@ -33,6 +34,7 @@ export async function createNewsletter(newsletter: {
       schedule_cadence: newsletter.schedule_cadence ?? 'daily',
       credit_cost: newsletter.credit_cost ?? 1,
       send_days: newsletter.send_days ?? ['mon', 'tue', 'wed', 'thu', 'fri'],
+      default_send_windows: newsletter.default_send_windows ?? ['morning'],
       prompt_template_id: newsletter.prompt_template_id || null,
       junto_id: newsletter.junto_id || null,
       watchlist_id: newsletter.watchlist_id || null,
@@ -392,40 +394,30 @@ export async function getNewslettersDueForGeneration(): Promise<NewsletterV2[]> 
 
   console.log(`[generate] Current window: ${currentWindow}, day: ${currentDay} (UTC ${now.getUTCHours()}:${String(now.getUTCMinutes()).padStart(2, '0')})`);
 
-  // Get all newsletters that have at least one active subscriber wanting this window
-  // Use receive_windows (new) with fallback check on send_windows (legacy)
-  const { data: subData, error: subError } = await supabase()
-    .from('subscriptions')
-    .select('newsletter_id, receive_windows, receive_days, send_windows')
-    .eq('is_active', true);
-
-  if (subError || !subData?.length) return [];
-
-  // Filter subscribers who want this window AND this day
-  const matchingNewsletterIds = new Set<string>();
-  for (const sub of subData) {
-    const windows = sub.receive_windows || sub.send_windows || ['morning'];
-    const days = sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-    if (windows.includes(currentWindow) && days.includes(currentDay)) {
-      matchingNewsletterIds.add(sub.newsletter_id);
-    }
-  }
-
-  if (matchingNewsletterIds.size === 0) return [];
-
-  // Get those newsletters, but only if the OWNER has this day enabled
+  // Owner's schedule drives generation — fetch all newsletters and filter by their windows+days
   const { data: newsletters, error } = await supabase()
     .from('newsletters_v2')
-    .select('*')
-    .in('id', Array.from(matchingNewsletterIds));
+    .select('*');
 
   if (error || !newsletters?.length) return [];
 
-  // Filter: owner must have this day in send_days
-  const dayFiltered = newsletters.filter(nl => {
+  const scheduled = newsletters.filter(nl => {
+    const ownerWindows = nl.default_send_windows || ['morning'];
     const ownerDays = nl.send_days || ['mon', 'tue', 'wed', 'thu', 'fri'];
-    return ownerDays.includes(currentDay);
+    return ownerWindows.includes(currentWindow) && ownerDays.includes(currentDay);
   });
+
+  if (scheduled.length === 0) return [];
+
+  // Only generate for newsletters with at least one active subscriber
+  const { data: subData } = await supabase()
+    .from('subscriptions')
+    .select('newsletter_id')
+    .eq('is_active', true)
+    .in('newsletter_id', scheduled.map(nl => nl.id));
+
+  const subscribedIds = new Set((subData || []).map((s: any) => s.newsletter_id));
+  const dayFiltered = scheduled.filter(nl => subscribedIds.has(nl.id));
 
   // Filter out newsletters that already ran in this window (min 5h gap)
   const due: NewsletterV2[] = [];

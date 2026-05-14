@@ -79,7 +79,7 @@ function CreatePageInner() {
   const [prompt, setPrompt] = useState('');
   const [promptTemplateId, setPromptTemplateId] = useState<string | null>(null);
   const [customStyle, setCustomStyle] = useState(false);
-  const [cadence, setCadence] = useState('daily');
+  const [sendWindows, setSendWindows] = useState<string[]>(['morning']);
   const [isPublic, setIsPublic] = useState(true);
   const [sendDays, setSendDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
   const [labels, setLabels] = useState<string[]>([]);
@@ -148,7 +148,7 @@ function CreatePageInner() {
         if (nl.prompt_template_id) { setPromptTemplateId(nl.prompt_template_id); setCustomStyle(false); }
         else { setPrompt(nl.prompt || ''); setCustomStyle(true); }
         setLabels(nl.labels || []);
-        setCadence(nl.schedule_cadence || 'daily');
+        if (nl.default_send_windows?.length) setSendWindows(nl.default_send_windows);
         if (nl.junto_id) {
           const jRes = await fetch(`/api/juntos/${nl.junto_id}`);
           if (jRes.ok) {
@@ -257,8 +257,8 @@ function CreatePageInner() {
           prompt: promptTemplateId ? '' : prompt,
           prompt_template_id: promptTemplateId || undefined,
           labels,
-          schedule_cadence: cadence,
           send_days: sendDays,
+          default_send_windows: sendWindows,
           is_public: isPublic,
           junto_id: juntoId,
         }),
@@ -283,6 +283,7 @@ function CreatePageInner() {
 
   const canCreate = !!name.trim() &&
     (!!prompt.trim() || !!promptTemplateId) &&
+    sendWindows.length > 0 &&
     ((!adHocMode && !!selectedJuntoId) || (adHocMode && adHocSources.some(s => s.status !== 'invalid')));
 
   return (
@@ -668,33 +669,57 @@ function CreatePageInner() {
 
         {/* ─── 04 SCHEDULE ─────────────────────────────── */}
         <Section>
-          <SectionHeader number="04" title="Schedule" />
-          <div className="space-y-5">
+          <SectionHeader number="04" title="Schedule" subtitle="Dispatches run at every selected time. All subscribers receive each issue." />
+          <div className="space-y-6">
+
+            {/* Time windows */}
             <div>
-              <p className="text-xs text-[#F5EFE0]/45 mb-3">Delivery cadence</p>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { value: 'daily', label: 'Daily', desc: 'Once a day' },
-                  { value: 'twice_daily', label: '2× Daily', desc: 'Morning & evening' },
-                  { value: 'weekly', label: 'Weekly', desc: 'Once a week' },
-                ].map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setCadence(opt.value)}
-                    className="p-3 text-left transition"
-                    style={{
-                      border: `1px solid ${cadence === opt.value ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`,
-                      background: cadence === opt.value ? 'rgba(176,141,87,0.08)' : '#141210',
-                    }}
-                  >
-                    <div className="text-sm font-semibold text-[#F5EFE0]" style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}>{opt.label}</div>
-                    <div className="text-xs text-[#F5EFE0]/45 mt-0.5">{opt.desc}</div>
-                  </button>
-                ))}
+              <p className="text-xs mb-3" style={{ color: 'rgba(245,239,224,0.45)' }}>Dispatch times <span className="font-mono" style={{ color: 'rgba(245,239,224,0.3)' }}>(Pacific time)</span></p>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { key: 'morning', label: 'Morning', time: '6:00 AM' },
+                  { key: 'midday',  label: 'Midday',  time: '12:00 PM' },
+                  { key: 'evening', label: 'Evening', time: '6:00 PM' },
+                  { key: 'night',   label: 'Night',   time: '12:00 AM' },
+                ] as const).map(w => {
+                  const on = sendWindows.includes(w.key);
+                  return (
+                    <button
+                      key={w.key}
+                      onClick={() => setSendWindows(prev =>
+                        on ? prev.filter(x => x !== w.key) : [...prev, w.key]
+                      )}
+                      className="flex items-center gap-3 px-4 py-3 text-left transition"
+                      style={{
+                        border: `1px solid ${on ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`,
+                        background: on ? 'rgba(176,141,87,0.08)' : '#141210',
+                      }}
+                    >
+                      <div
+                        className="w-4 h-4 flex-shrink-0 flex items-center justify-center transition"
+                        style={{
+                          border: `1px solid ${on ? '#B08D57' : 'rgba(245,239,224,0.2)'}`,
+                          background: on ? '#B08D57' : 'transparent',
+                        }}
+                      >
+                        {on && <span style={{ color: '#080604', fontSize: 9, fontWeight: 700 }}>✓</span>}
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold" style={{ color: on ? '#F5EFE0' : 'rgba(245,239,224,0.6)', fontFamily: 'var(--font-oswald, sans-serif)' }}>{w.label}</div>
+                        <div className="text-xs font-mono" style={{ color: on ? 'rgba(176,141,87,0.8)' : 'rgba(245,239,224,0.3)' }}>{w.time}</div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
+              {sendWindows.length === 0 && (
+                <p className="text-xs mt-2" style={{ color: '#e8453c' }}>Select at least one time.</p>
+              )}
             </div>
+
+            {/* Active days */}
             <div>
-              <p className="text-xs text-[#F5EFE0]/45 mb-3">Active days</p>
+              <p className="text-xs mb-3" style={{ color: 'rgba(245,239,224,0.45)' }}>Active days</p>
               <div className="flex gap-1.5">
                 {[
                   { key: 'mon', label: 'M' },

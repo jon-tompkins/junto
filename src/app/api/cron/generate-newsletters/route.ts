@@ -171,17 +171,8 @@ export async function GET(req: NextRequest) {
         // 7. Fan out to subscribers — charge each, send
         // Normally filter to subscribers who want this window AND this day.
         // When force=true, send to every active subscriber regardless.
-        const allSubscribers = await getNewsletterSubscribers(newsletter.id);
-        const currentWindow = getCurrentSendWindow();
-        const currentDay = getCurrentPSTDay();
-        const subscribers = force
-          ? allSubscribers
-          : allSubscribers.filter(sub => {
-              const windows = sub.receive_windows || sub.send_windows || ['morning'];
-              const days = sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-              return (!currentWindow || windows.includes(currentWindow)) &&
-                     (!currentDay || days.includes(currentDay));
-            });
+        // Owner's schedule drives timing — all active subscribers receive every dispatch
+        const subscribers = await getNewsletterSubscribers(newsletter.id);
 
         if (subscribers.length === 0) {
           console.log(`[generate] No subscribers for ${newsletter.name}`);
