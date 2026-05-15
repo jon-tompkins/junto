@@ -77,6 +77,10 @@ export default function ExplorePage() {
     if (!session?.user) return;
     fetch('/api/v2/account').then(r => r.json()).then(d => { if (d.email) setSubEmail(d.email); }).catch(() => {});
     fetch('/api/telegram/link').then(r => r.json()).then(d => setTgLinked(!!d.linked)).catch(() => setTgLinked(false));
+    fetch('/api/v2/dashboard/subscriptions').then(r => r.json()).then(d => {
+      const ids = (d.subscriptions || []).map((s: any) => s.newsletter_id);
+      setSubscribedIds(new Set(ids));
+    }).catch(() => {});
   }, [session]);
 
   function openSubscribeModal(e: React.MouseEvent, nl: NewsletterCard) {
