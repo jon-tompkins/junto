@@ -9,7 +9,7 @@ export async function subscribe(
   deliveryEmail?: string,
   sendWindows?: string[],
   receiveDays?: string[],
-  deliveryChannel?: 'email' | 'telegram',
+  deliveryChannel?: 'email' | 'telegram' | 'both',
 ): Promise<Subscription> {
   const row: Record<string, any> = { user_id: userId, newsletter_id: newsletterId, is_active: true };
   if (deliveryEmail) row.delivery_email = deliveryEmail;
@@ -79,22 +79,33 @@ export async function getNewsletterSubscribers(newsletterId: string): Promise<{
     .eq('is_active', true);
 
   if (error) throw error;
-  return (data || [])
-    .map((row: any) => ({
+
+  type Row = { user_id: string; email: string; delivery_email: string | null; send_windows: string[]; receive_windows: string[]; receive_days: string[]; delivery_channel: 'email' | 'telegram'; telegram_chat_id: string | null };
+  const results: Row[] = [];
+
+  for (const row of data || []) {
+    const base = {
       user_id: row.user_id,
-      email: row.users?.email || '',
+      email: (row as any).users?.email || '',
       delivery_email: row.delivery_email || null,
       send_windows: row.send_windows || ['morning'],
       receive_windows: row.receive_windows || row.send_windows || ['morning'],
       receive_days: row.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
-      delivery_channel: (row.delivery_channel || 'email') as 'email' | 'telegram',
-      telegram_chat_id: row.users?.telegram_chat_id || null,
-    }))
-    // Keep any subscriber with a valid route: email address OR linked telegram chat
-    .filter((row: any) => {
-      if (row.delivery_channel === 'telegram') return !!row.telegram_chat_id;
-      return !!(row.delivery_email || row.email);
-    });
+      telegram_chat_id: (row as any).users?.telegram_chat_id || null,
+    };
+    const channel = (row.delivery_channel || 'email') as 'email' | 'telegram' | 'both';
+
+    if (channel === 'both') {
+      if (base.delivery_email || base.email) results.push({ ...base, delivery_channel: 'email' });
+      if (base.telegram_chat_id) results.push({ ...base, delivery_channel: 'telegram' });
+    } else if (channel === 'telegram') {
+      if (base.telegram_chat_id) results.push({ ...base, delivery_channel: 'telegram' });
+    } else {
+      if (base.delivery_email || base.email) results.push({ ...base, delivery_channel: 'email' });
+    }
+  }
+
+  return results;
 }
 
 export async function isSubscribed(userId: string, newsletterId: string): Promise<boolean> {

@@ -182,7 +182,7 @@ export interface Subscription {
   newsletter_id: string;
   is_active: boolean;
   delivery_email?: string | null;
-  delivery_channel?: 'email' | 'telegram';
+  delivery_channel?: 'email' | 'telegram' | 'both';
   send_windows?: string[];
   receive_windows?: string[];
   receive_days?: string[];

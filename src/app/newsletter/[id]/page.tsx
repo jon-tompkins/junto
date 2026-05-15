@@ -53,9 +53,8 @@ export default function NewsletterDetailPage() {
   const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
   const [subEmail, setSubEmail] = useState('');
-  const [subWindows, setSubWindows] = useState<string[]>(['morning']);
-  const [subDays, setSubDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
-  const [subDeliveryChannel, setSubDeliveryChannel] = useState<'email' | 'telegram'>('email');
+  const [subViaEmail, setSubViaEmail] = useState(true);
+  const [subViaTelegram, setSubViaTelegram] = useState(false);
   const [tgLinked, setTgLinked] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -144,15 +143,14 @@ export default function NewsletterDetailPage() {
 
   async function handleSubscribe() {
     setSubscribing(true);
+    const deliveryChannel = subViaEmail && subViaTelegram ? 'both' : subViaTelegram ? 'telegram' : 'email';
     try {
       const res = await fetch(`/api/v2/newsletters/${id}/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          delivery_email: subDeliveryChannel === 'email' ? subEmail : undefined,
-          receive_windows: subWindows,
-          receive_days: subDays,
-          delivery_channel: subDeliveryChannel,
+          delivery_email: subViaEmail ? subEmail : undefined,
+          delivery_channel: deliveryChannel,
         }),
       });
       if (res.ok) {
@@ -403,139 +401,59 @@ export default function NewsletterDetailPage() {
       {showSubscribeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowSubscribeModal(false)} />
-          <div className="relative bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 max-w-md w-full shadow-2xl space-y-5">
+          <div className="relative bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 max-w-sm w-full shadow-2xl space-y-5">
             <div>
               <h2 className="text-lg font-bold text-[#F5EFE0] font-[var(--font-oswald)] uppercase tracking-wide">Subscribe to {newsletter?.name}</h2>
-              <p className="text-sm text-[#F5EFE0]/60 mt-1">2 credits per delivery</p>
+              <p className="text-sm text-[#F5EFE0]/60 mt-1">Where should we send it?</p>
             </div>
 
-            {/* Delivery channel */}
-            <div>
-              <label className="block text-xs text-[#F5EFE0]/60 font-medium mb-2">Deliver via</label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { key: 'email', label: 'Email' },
-                  { key: 'telegram', label: 'Telegram' },
-                ].map((opt) => (
-                  <button
-                    key={opt.key}
-                    onClick={() => setSubDeliveryChannel(opt.key as 'email' | 'telegram')}
-                    className={`px-3 py-2 rounded-sm text-sm font-medium transition ${
-                      subDeliveryChannel === opt.key
-                        ? 'bg-[#B08D57] text-[#080604]'
-                        : 'bg-[#1c1a17] text-[#F5EFE0]/60 hover:bg-[#1c1a17]/80'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+            {/* Email option */}
+            <div
+              className={`rounded border p-4 cursor-pointer transition ${subViaEmail ? 'border-[#B08D57]' : 'border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.45)]'}`}
+              onClick={() => { if (!subViaEmail || subViaTelegram) setSubViaEmail(!subViaEmail); }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition ${subViaEmail ? 'bg-[#B08D57] border-[#B08D57]' : 'border-[#F5EFE0]/30'}`}>
+                  {subViaEmail && <svg className="w-3 h-3 text-[#080604]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                </div>
+                <span className="text-sm font-medium text-[#F5EFE0]">Email</span>
               </div>
-            </div>
-
-            {/* Email field */}
-            {subDeliveryChannel === 'email' && (
-              <div>
-                <label className="block text-xs text-[#F5EFE0]/60 font-medium mb-2">Delivery email</label>
+              {subViaEmail && (
                 <input
                   type="email"
                   value={subEmail}
                   onChange={(e) => setSubEmail(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
                   placeholder="you@example.com"
-                  className="w-full px-3 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
+                  className="w-full px-3 py-2 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
                 />
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* Telegram status */}
-            {subDeliveryChannel === 'telegram' && (
-              <div>
-                <label className="block text-xs text-[#F5EFE0]/60 font-medium mb-2">Telegram</label>
-                {tgLinked ? (
-                  <div className="px-3 py-2.5 bg-[#3ecf6a]/10 border border-[#3ecf6a]/30 rounded text-sm text-[#3ecf6a]">
-                    ✓ Connected — newsletters will arrive as DMs
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Link
-                      href="/settings"
-                      className="block w-full px-3 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] hover:border-[#B08D57] rounded text-sm text-[#F5EFE0] transition text-center"
-                    >
-                      Link Telegram in Settings →
-                    </Link>
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-[#F5EFE0]/45">
-                        One-time setup. Applies to all your newsletters.
-                      </p>
-                      <button
-                        onClick={refreshTelegramStatus}
-                        className="text-xs text-[#F5EFE0]/45 hover:text-[#B08D57] transition"
-                      >
-                        Already linked? Refresh
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Send windows */}
-            <div>
-              <label className="block text-xs text-[#F5EFE0]/60 font-medium mb-2">Send times (Pacific)</label>
-              <div className="flex gap-2 flex-wrap">
-                {[
-                  { key: 'morning', label: '6 AM' },
-                  { key: 'midday', label: '12 PM' },
-                  { key: 'evening', label: '6 PM' },
-                  { key: 'night', label: '12 AM' },
-                ].map((w) => (
-                  <button
-                    key={w.key}
-                    onClick={() => setSubWindows(prev =>
-                      prev.includes(w.key) ? prev.filter(x => x !== w.key) : [...prev, w.key]
-                    )}
-                    className={`px-3 py-1.5 rounded-sm text-sm font-medium transition ${
-                      subWindows.includes(w.key)
-                        ? 'bg-[#B08D57] text-[#080604]'
-                        : 'bg-[#1c1a17] text-[#F5EFE0]/60 hover:bg-[#1c1a17]/80'
-                    }`}
-                  >
-                    {w.label}
-                  </button>
-                ))}
+            {/* Telegram option */}
+            <div
+              className={`rounded border p-4 transition ${tgLinked ? 'cursor-pointer' : 'cursor-default'} ${subViaTelegram ? 'border-[#B08D57]' : tgLinked ? 'border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.45)]' : 'border-[rgba(176,141,87,0.15)] opacity-60'}`}
+              onClick={() => { if (tgLinked && (!subViaTelegram || subViaEmail)) setSubViaTelegram(!subViaTelegram); }}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition ${subViaTelegram ? 'bg-[#B08D57] border-[#B08D57]' : 'border-[#F5EFE0]/30'}`}>
+                  {subViaTelegram && <svg className="w-3 h-3 text-[#080604]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                </div>
+                <div className="flex-1">
+                  <span className="text-sm font-medium text-[#F5EFE0]">Telegram</span>
+                  {tgLinked ? (
+                    <p className="text-xs text-[#F5EFE0]/45 mt-0.5">Arrives as a DM — no extra setup</p>
+                  ) : (
+                    <p className="text-xs text-[#F5EFE0]/45 mt-0.5">
+                      <Link href="/settings" className="text-[#B08D57] hover:underline" onClick={(e) => e.stopPropagation()}>Link Telegram in Settings</Link> to enable
+                    </p>
+                  )}
+                </div>
+                {tgLinked && <span className="text-xs text-[#3ecf6a]">✓ Connected</span>}
               </div>
             </div>
 
-            {/* Days */}
-            <div>
-              <label className="block text-xs text-[#F5EFE0]/60 font-medium mb-2">Days</label>
-              <div className="flex gap-1.5">
-                {[
-                  { key: 'mon', label: 'M' },
-                  { key: 'tue', label: 'T' },
-                  { key: 'wed', label: 'W' },
-                  { key: 'thu', label: 'T' },
-                  { key: 'fri', label: 'F' },
-                  { key: 'sat', label: 'S' },
-                  { key: 'sun', label: 'S' },
-                ].map((d) => (
-                  <button
-                    key={d.key}
-                    onClick={() => setSubDays(prev =>
-                      prev.includes(d.key) ? prev.filter(x => x !== d.key) : [...prev, d.key]
-                    )}
-                    className={`w-9 h-9 rounded-sm text-sm font-medium transition ${
-                      subDays.includes(d.key)
-                        ? 'bg-[#B08D57] text-[#080604]'
-                        : 'bg-[#1c1a17] text-[#F5EFE0]/60 hover:bg-[#1c1a17]/80'
-                    }`}
-                  >
-                    {d.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3 pt-1">
               <button
                 onClick={() => setShowSubscribeModal(false)}
                 className="flex-1 px-4 py-2.5 bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/80 rounded text-sm font-medium transition"
@@ -546,10 +464,8 @@ export default function NewsletterDetailPage() {
                 onClick={handleSubscribe}
                 disabled={
                   subscribing ||
-                  subWindows.length === 0 ||
-                  subDays.length === 0 ||
-                  (subDeliveryChannel === 'email' && !subEmail) ||
-                  (subDeliveryChannel === 'telegram' && !tgLinked)
+                  (!subViaEmail && !subViaTelegram) ||
+                  (subViaEmail && !subEmail)
                 }
                 className="flex-1 px-4 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 text-[#080604] rounded text-sm font-medium transition font-[var(--font-oswald)] uppercase tracking-wide"
               >

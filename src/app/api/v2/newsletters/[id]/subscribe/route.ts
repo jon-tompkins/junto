@@ -67,22 +67,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const body = await req.json().catch(() => ({}));
     let deliveryEmail = body.delivery_email;
-    const sendWindows: string[] = body.receive_windows || body.send_windows || ['morning'];
-    const receiveDays: string[] = body.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-    const deliveryChannel: 'email' | 'telegram' = body.delivery_channel === 'telegram' ? 'telegram' : 'email';
+    const rawChannel = body.delivery_channel;
+    const deliveryChannel: 'email' | 'telegram' | 'both' =
+      rawChannel === 'telegram' ? 'telegram' : rawChannel === 'both' ? 'both' : 'email';
 
-    // Validate send_windows values
-    const validWindows = ['morning', 'midday', 'evening', 'night'];
-    const invalidWindows = sendWindows.filter((w: string) => !validWindows.includes(w));
-    if (invalidWindows.length > 0) {
-      return NextResponse.json(
-        { error: `Invalid send windows: ${invalidWindows.join(', ')}. Valid values: ${validWindows.join(', ')}` },
-        { status: 400 },
-      );
-    }
+    const wantsEmail = deliveryChannel === 'email' || deliveryChannel === 'both';
+    const wantsTelegram = deliveryChannel === 'telegram' || deliveryChannel === 'both';
 
-    // Telegram channel requires the user to have linked their account first
-    if (deliveryChannel === 'telegram') {
+    if (wantsTelegram) {
       const { data: userRow } = await supabase.from('users').select('telegram_chat_id').eq('id', userId).single();
       if (!userRow?.telegram_chat_id) {
         return NextResponse.json(
@@ -90,11 +82,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           { status: 400 },
         );
       }
-    } else {
-      // Email channel: fall back to account email if no delivery_email provided
-      if (!deliveryEmail) {
-        deliveryEmail = await getUserEmail(userId);
-      }
+    }
+
+    if (wantsEmail) {
+      if (!deliveryEmail) deliveryEmail = await getUserEmail(userId);
       if (!deliveryEmail) {
         return NextResponse.json(
           { error: 'Delivery email required. Set an account email or provide delivery_email.' },
@@ -103,17 +94,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
-    // Validate receive_days
-    const validDays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-    const invalidDays = receiveDays.filter((d: string) => !validDays.includes(d));
-    if (invalidDays.length > 0) {
-      return NextResponse.json(
-        { error: `Invalid days: ${invalidDays.join(', ')}. Valid: ${validDays.join(', ')}` },
-        { status: 400 },
-      );
-    }
-
-    const subscription = await subscribe(userId, id, deliveryEmail, sendWindows, receiveDays, deliveryChannel);
+    const subscription = await subscribe(userId, id, deliveryEmail, ['morning'], ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], deliveryChannel);
     return NextResponse.json({ subscription, subscribed: true });
   } catch (error) {
     console.error('[POST /subscribe]', error);
