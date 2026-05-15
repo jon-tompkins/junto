@@ -42,6 +42,15 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
+  // Subscribe modal state
+  const [subscribeTarget, setSubscribeTarget] = useState<NewsletterCard | null>(null);
+  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set());
+  const [subscribing, setSubscribing] = useState(false);
+  const [subEmail, setSubEmail] = useState('');
+  const [subViaEmail, setSubViaEmail] = useState(true);
+  const [subViaTelegram, setSubViaTelegram] = useState(false);
+  const [tgLinked, setTgLinked] = useState<boolean | null>(null);
+
   useEffect(() => {
     async function fetchNewsletters() {
       setLoading(true);
@@ -49,7 +58,6 @@ export default function ExplorePage() {
         const params = new URLSearchParams();
         if (search) params.set('q', search);
         if (selectedLabel) params.set('label', selectedLabel);
-
         const res = await fetch(`/api/v2/newsletters/search?${params}`);
         if (res.ok) {
           const data = await res.json();
@@ -61,10 +69,50 @@ export default function ExplorePage() {
         setLoading(false);
       }
     }
-
     const debounce = setTimeout(fetchNewsletters, 300);
     return () => clearTimeout(debounce);
   }, [search, selectedLabel]);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch('/api/v2/account').then(r => r.json()).then(d => { if (d.email) setSubEmail(d.email); }).catch(() => {});
+    fetch('/api/telegram/link').then(r => r.json()).then(d => setTgLinked(!!d.linked)).catch(() => setTgLinked(false));
+  }, [session]);
+
+  function openSubscribeModal(e: React.MouseEvent, nl: NewsletterCard) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!session?.user) { setShowAuthModal(true); return; }
+    setSubscribeTarget(nl);
+  }
+
+  async function handleSubscribe() {
+    if (!subscribeTarget) return;
+    setSubscribing(true);
+    const deliveryChannel = subViaEmail && subViaTelegram ? 'both' : subViaTelegram ? 'telegram' : 'email';
+    try {
+      const res = await fetch(`/api/v2/newsletters/${subscribeTarget.id}/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          delivery_email: subViaEmail ? subEmail : undefined,
+          delivery_channel: deliveryChannel,
+        }),
+      });
+      if (res.ok) {
+        setSubscribedIds(prev => new Set([...prev, subscribeTarget.id]));
+        setNewsletters(prev => prev.map(n =>
+          n.id === subscribeTarget.id ? { ...n, subscriber_count: n.subscriber_count + 1 } : n
+        ));
+        setSubscribeTarget(null);
+      } else {
+        const data = await res.json();
+        if (data.redirect) window.location.href = data.redirect;
+      }
+    } finally {
+      setSubscribing(false);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
@@ -149,59 +197,149 @@ export default function ExplorePage() {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {newsletters.map((nl) => (
-              <Link
-                key={nl.id}
-                href={`/newsletter/${nl.id}`}
-                className="group bg-[#141210] hover:bg-[#1c1a17] border border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.5)] rounded p-6 transition-all duration-200 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-lg font-semibold group-hover:text-[#B08D57] transition">
-                    {nl.name}
-                  </h3>
-                  <span className="text-xs px-2 py-0.5 rounded-sm bg-[#B08D57]/15 text-[#B08D57] shrink-0 ml-2 font-medium">
-                    {CADENCE_LABELS[nl.schedule_cadence] || nl.schedule_cadence}
-                  </span>
-                </div>
-                {nl.curator && (
-                  <div className="flex items-center gap-1.5 mb-2">
-                    {nl.curator.avatar_url ? (
-                      <img src={nl.curator.avatar_url} alt="" className="w-4 h-4 rounded-sm" />
-                    ) : (
-                      <div className="w-4 h-4 rounded-sm bg-[#1c1a17]" />
-                    )}
-                    <span className="text-xs text-[#F5EFE0]/45">
-                      {nl.curator.twitter_handle ? `@${nl.curator.twitter_handle}` : nl.curator.name || 'Anonymous'}
-                    </span>
-                  </div>
-                )}
-                <p className="text-sm text-[#F5EFE0]/60 mb-4 leading-relaxed line-clamp-2">
-                  {nl.description}
-                </p>
-                <div className="flex items-center justify-between pt-3 border-t border-[rgba(176,141,87,0.18)]">
-                  <div className="flex gap-1.5 flex-wrap">
-                    {nl.labels.slice(0, 3).map((label) => (
-                      <span
-                        key={label}
-                        className="text-xs px-2 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/60"
-                      >
-                        {label}
+            {newsletters.map((nl) => {
+              const isSubscribed = subscribedIds.has(nl.id);
+              return (
+                <div
+                  key={nl.id}
+                  className="group bg-[#141210] hover:bg-[#1c1a17] border border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.5)] rounded p-6 transition-all duration-200 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5 flex flex-col"
+                >
+                  <Link href={`/newsletter/${nl.id}`} className="flex-1 block">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="text-lg font-semibold group-hover:text-[#B08D57] transition">
+                        {nl.name}
+                      </h3>
+                      <span className="text-xs px-2 py-0.5 rounded-sm bg-[#B08D57]/15 text-[#B08D57] shrink-0 ml-2 font-medium">
+                        {CADENCE_LABELS[nl.schedule_cadence] || nl.schedule_cadence}
                       </span>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-[#3ecf6a]/80">2 cr/send</span>
-                    <span className="text-xs text-[#F5EFE0]/45 flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                      {nl.subscriber_count}
-                    </span>
+                    </div>
+                    {nl.curator && (
+                      <div className="flex items-center gap-1.5 mb-2">
+                        {nl.curator.avatar_url ? (
+                          <img src={nl.curator.avatar_url} alt="" className="w-4 h-4 rounded-sm" />
+                        ) : (
+                          <div className="w-4 h-4 rounded-sm bg-[#1c1a17]" />
+                        )}
+                        <span className="text-xs text-[#F5EFE0]/45">
+                          {nl.curator.twitter_handle ? `@${nl.curator.twitter_handle}` : nl.curator.name || 'Anonymous'}
+                        </span>
+                      </div>
+                    )}
+                    <p className="text-sm text-[#F5EFE0]/60 mb-4 leading-relaxed line-clamp-2">
+                      {nl.description}
+                    </p>
+                  </Link>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-[rgba(176,141,87,0.18)]">
+                    <div className="flex gap-1.5 flex-wrap">
+                      {nl.labels.slice(0, 3).map((label) => (
+                        <span key={label} className="text-xs px-2 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/60">
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="text-xs text-[#F5EFE0]/45 flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        {nl.subscriber_count}
+                      </span>
+                      {isSubscribed ? (
+                        <span className="text-xs px-2.5 py-1 rounded bg-[#3ecf6a]/10 text-[#3ecf6a] font-medium">
+                          ✓ Subscribed
+                        </span>
+                      ) : (
+                        <button
+                          onClick={(e) => openSubscribeModal(e, nl)}
+                          className="text-xs px-2.5 py-1 rounded bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] font-semibold transition font-[var(--font-oswald)] uppercase tracking-wide"
+                        >
+                          Subscribe
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </Link>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
+
+      {/* Subscribe modal */}
+      {subscribeTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSubscribeTarget(null)} />
+          <div className="relative bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 max-w-sm w-full shadow-2xl space-y-5">
+            <div>
+              <h2 className="text-lg font-bold text-[#F5EFE0] font-[var(--font-oswald)] uppercase tracking-wide">
+                Subscribe to {subscribeTarget.name}
+              </h2>
+              <p className="text-sm text-[#F5EFE0]/60 mt-1">Where should we send it?</p>
+            </div>
+
+            {/* Email option */}
+            <div
+              className={`rounded border p-4 cursor-pointer transition ${subViaEmail ? 'border-[#B08D57]' : 'border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.45)]'}`}
+              onClick={() => { if (!subViaEmail || subViaTelegram) setSubViaEmail(!subViaEmail); }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition ${subViaEmail ? 'bg-[#B08D57] border-[#B08D57]' : 'border-[#F5EFE0]/30'}`}>
+                  {subViaEmail && <svg className="w-3 h-3 text-[#080604]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                </div>
+                <span className="text-sm font-medium text-[#F5EFE0]">Email</span>
+              </div>
+              {subViaEmail && (
+                <input
+                  type="email"
+                  value={subEmail}
+                  onChange={(e) => setSubEmail(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  placeholder="you@example.com"
+                  className="w-full px-3 py-2 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
+                />
+              )}
+            </div>
+
+            {/* Telegram option */}
+            <div
+              className={`rounded border p-4 transition ${tgLinked ? 'cursor-pointer' : 'cursor-default'} ${subViaTelegram ? 'border-[#B08D57]' : tgLinked ? 'border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.45)]' : 'border-[rgba(176,141,87,0.15)] opacity-60'}`}
+              onClick={() => { if (tgLinked && (!subViaTelegram || subViaEmail)) setSubViaTelegram(!subViaTelegram); }}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition ${subViaTelegram ? 'bg-[#B08D57] border-[#B08D57]' : 'border-[#F5EFE0]/30'}`}>
+                  {subViaTelegram && <svg className="w-3 h-3 text-[#080604]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                </div>
+                <div className="flex-1">
+                  <span className="text-sm font-medium text-[#F5EFE0]">Telegram</span>
+                  {tgLinked ? (
+                    <p className="text-xs text-[#F5EFE0]/45 mt-0.5">Arrives as a DM — no extra setup</p>
+                  ) : (
+                    <p className="text-xs text-[#F5EFE0]/45 mt-0.5">
+                      <Link href="/settings" className="text-[#B08D57] hover:underline" onClick={(e) => e.stopPropagation()}>Link Telegram in Settings</Link> to enable
+                    </p>
+                  )}
+                </div>
+                {tgLinked && <span className="text-xs text-[#3ecf6a]">✓ Connected</span>}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setSubscribeTarget(null)}
+                className="flex-1 px-4 py-2.5 bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/80 rounded text-sm font-medium transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubscribe}
+                disabled={subscribing || (!subViaEmail && !subViaTelegram) || (subViaEmail && !subEmail)}
+                className="flex-1 px-4 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 text-[#080604] rounded text-sm font-medium transition font-[var(--font-oswald)] uppercase tracking-wide"
+              >
+                {subscribing ? 'Subscribing...' : 'Subscribe'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <AuthModal
         isOpen={showAuthModal}
