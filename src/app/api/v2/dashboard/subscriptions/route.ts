@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getSupabase } from '@/lib/db/client';
-import { getUserSubscriptions } from '@/lib/db/subscriptions';
 
 async function resolveUserId(session: any): Promise<string | null> {
   const supabase = getSupabase();
@@ -30,8 +29,15 @@ export async function GET() {
       return NextResponse.json({ subscriptions: [] });
     }
 
-    const subscriptions = await getUserSubscriptions(userId);
-    return NextResponse.json({ subscriptions });
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('id, newsletter_id, is_active, delivery_channel, delivery_email, created_at')
+      .eq('user_id', userId)
+      .eq('is_active', true);
+
+    if (error) throw error;
+    return NextResponse.json({ subscriptions: data || [] });
   } catch (error) {
     console.error('[GET /dashboard/subscriptions]', error);
     return NextResponse.json({ error: 'Failed to load subscriptions' }, { status: 500 });
