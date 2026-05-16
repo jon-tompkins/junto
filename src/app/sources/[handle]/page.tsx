@@ -26,6 +26,14 @@ interface Dispatch {
   schedule_cadence: string;
 }
 
+interface Junto {
+  id: string;
+  name: string;
+  description: string | null;
+  is_public: boolean;
+  created_at: string;
+}
+
 interface SourceProfile {
   id: string;
   summary: string | null;
@@ -69,6 +77,8 @@ export default function SourceProfilePage() {
   const handle = params.handle as string;
   const [profile, setProfile] = useState<SourceProfile | null>(null);
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
+  const [juntos, setJuntos] = useState<Junto[]>([]);
+  const [subscribedDispatches, setSubscribedDispatches] = useState<Dispatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [quotes, setQuotes] = useState<Record<string, QuoteData>>({});
@@ -83,6 +93,8 @@ export default function SourceProfilePage() {
         if (!d) return;
         setProfile(d.profile);
         setDispatches(d.dispatches ?? []);
+        setJuntos(d.juntos ?? []);
+        setSubscribedDispatches(d.subscribedDispatches ?? []);
         const tickers = Object.keys(d.profile?.positions ?? {});
         if (tickers.length === 0) return;
         Promise.all(
@@ -269,7 +281,39 @@ export default function SourceProfilePage() {
           )}
         </div>
 
-        {/* Curator dispatches */}
+        {/* Juntos */}
+        <div className="mb-8">
+          <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
+            Juntos
+          </h2>
+          {juntos.length === 0 ? (
+            <p className="text-[#F5EFE0]/45 text-sm">No juntos yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {juntos.map((j) => (
+                <Link
+                  key={j.id}
+                  href={`/junto/${j.id}`}
+                  className="block bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 hover:border-[rgba(176,141,87,0.4)] transition"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-[#F5EFE0] truncate">{j.name}</p>
+                      {j.description && (
+                        <p className="text-sm text-[#F5EFE0]/60 mt-0.5 line-clamp-2">{j.description}</p>
+                      )}
+                    </div>
+                    {!j.is_public && (
+                      <span className="text-xs text-[#F5EFE0]/30 shrink-0">Private</span>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Dispatches owned */}
         <div className="mb-8">
           <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
             Dispatches
@@ -279,6 +323,39 @@ export default function SourceProfilePage() {
           ) : (
             <div className="space-y-3">
               {dispatches.map((d) => (
+                <Link
+                  key={d.id}
+                  href={`/newsletter/${d.id}`}
+                  className="block bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 hover:border-[rgba(176,141,87,0.4)] transition"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-[#F5EFE0] truncate">{d.name}</p>
+                      {d.description && (
+                        <p className="text-sm text-[#F5EFE0]/60 mt-0.5 line-clamp-2">{d.description}</p>
+                      )}
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs text-[#F5EFE0]/45">{d.subscriber_count} subscriber{d.subscriber_count !== 1 ? 's' : ''}</p>
+                      <p className="text-xs text-[#F5EFE0]/30 capitalize">{d.schedule_cadence}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Subscribed dispatches */}
+        <div className="mb-8">
+          <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
+            Subscribed To
+          </h2>
+          {subscribedDispatches.length === 0 ? (
+            <p className="text-[#F5EFE0]/45 text-sm">No active subscriptions.</p>
+          ) : (
+            <div className="space-y-3">
+              {subscribedDispatches.map((d) => (
                 <Link
                   key={d.id}
                   href={`/newsletter/${d.id}`}

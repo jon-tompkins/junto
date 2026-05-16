@@ -134,6 +134,18 @@ export async function getSubscription(userId: string, newsletterId: string) {
   return data;
 }
 
+export async function getSubscribedNewslettersByUserId(userId: string): Promise<NewsletterV2[]> {
+  const { data, error } = await supabase()
+    .from('subscriptions')
+    .select('newsletters_v2(*)')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map((row: any) => row.newsletters_v2).filter(Boolean);
+}
+
 export async function getSubscriptionCount(newsletterId: string): Promise<number> {
   const { count, error } = await supabase()
     .from('subscriptions')

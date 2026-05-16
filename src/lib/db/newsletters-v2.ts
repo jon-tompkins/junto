@@ -171,6 +171,17 @@ export interface CuratorInfo {
   avatar_url: string | null;
 }
 
+export async function getUserIdByTwitterHandle(handle: string): Promise<string | null> {
+  const clean = handle.toLowerCase().replace('@', '');
+  const { data, error } = await supabase()
+    .from('users')
+    .select('id')
+    .eq('twitter_handle', clean)
+    .single();
+  if (error) return null;
+  return data?.id ?? null;
+}
+
 export async function getCuratorInfo(userId: string): Promise<CuratorInfo | null> {
   const { data, error } = await supabase()
     .from('users')
