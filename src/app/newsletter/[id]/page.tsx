@@ -224,14 +224,12 @@ export default function NewsletterDetailPage() {
                   <div className="flex items-center gap-1.5 text-sm">
                     <span className="text-[#F5EFE0]/45">Curated by</span>
                     {newsletter.curator.twitter_handle ? (
-                      <a
-                        href={`https://x.com/${newsletter.curator.twitter_handle}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Link
+                        href={`/sources/${newsletter.curator.twitter_handle}`}
                         className="text-[#B08D57] hover:text-[#B08D57]/80 font-medium transition"
                       >
                         @{newsletter.curator.twitter_handle}
-                      </a>
+                      </Link>
                     ) : (
                       <span className="text-[#F5EFE0]/80 font-medium">{newsletter.curator.name || 'Anonymous'}</span>
                     )}

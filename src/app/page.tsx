@@ -558,16 +558,14 @@ function NewsletterModal({
                   <span className="text-xs" style={{ color: 'rgba(245,239,224,0.45)' }}>
                     Curated by{' '}
                     {newsletter.curator.twitter_handle ? (
-                      <a
-                        href={`https://x.com/${newsletter.curator.twitter_handle}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Link
+                        href={`/sources/${newsletter.curator.twitter_handle}`}
                         className="transition"
                         style={{ color: '#B08D57' }}
                         onClick={(e) => e.stopPropagation()}
                       >
                         @{newsletter.curator.twitter_handle}
-                      </a>
+                      </Link>
                     ) : (
                       <span style={{ color: 'rgba(245,239,224,0.7)' }}>{newsletter.curator.name || 'Anonymous'}</span>
                     )}
