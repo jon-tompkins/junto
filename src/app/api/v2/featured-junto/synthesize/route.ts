@@ -64,7 +64,7 @@ export async function POST() {
     }
 
     // Deduct credits
-    const ok = await deductCredits(userId, CREDIT_COST, TRANSACTION_TYPE, { junto_id: juntoId });
+    const ok = await deductCredits(userId, CREDIT_COST, TRANSACTION_TYPE, `junto:${juntoId}`);
     if (!ok) return NextResponse.json({ error: 'Insufficient credits' }, { status: 402 });
 
     // Fetch recent content
