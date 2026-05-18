@@ -5,6 +5,14 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 
+interface UserRow {
+  user_id: string;
+  email: string;
+  total: number;
+  active: number;
+  joined_at: string;
+}
+
 interface CostSummary {
   since: string;
   total_cents: number;
@@ -38,6 +46,7 @@ function fmtUsd(cents: number): string {
 export default function AdminDashboard() {
   const { status } = useSession();
   const [summary, setSummary] = useState<CostSummary | null>(null);
+  const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [windowDays, setWindowDays] = useState<number>(30);
@@ -46,13 +55,21 @@ export default function AdminDashboard() {
     if (status !== 'authenticated') return;
     const since = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000).toISOString();
     setLoading(true);
-    fetch(`/api/admin/costs?since=${encodeURIComponent(since)}`)
-      .then(async (r) => {
+    Promise.all([
+      fetch(`/api/admin/costs?since=${encodeURIComponent(since)}`).then(async (r) => {
         if (r.status === 403) throw new Error('You are not a platform admin.');
         if (!r.ok) throw new Error(`Failed (${r.status})`);
-        return r.json();
+        return r.json() as Promise<CostSummary>;
+      }),
+      fetch('/api/admin/users').then(async (r) => {
+        if (!r.ok) return { users: [] };
+        return r.json() as Promise<{ users: UserRow[] }>;
+      }),
+    ])
+      .then(([costs, usersData]) => {
+        setSummary(costs);
+        setUsers(usersData.users);
       })
-      .then((data: CostSummary) => setSummary(data))
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [status, windowDays]);
@@ -194,6 +211,45 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Users table */}
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-8">
+          <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">
+            Users · {users.length} total
+          </h2>
+          {users.length === 0 ? (
+            <p className="text-[#F5EFE0]/45 text-sm">No subscribers yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
+                  <tr>
+                    <th className="py-2 pr-6">Email</th>
+                    <th className="py-2 pr-6 text-right">Active subs</th>
+                    <th className="py-2 pr-6 text-right">Total subs</th>
+                    <th className="py-2 text-right">Joined</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.user_id} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
+                      <td className="py-2 pr-6 text-[#F5EFE0]/80 font-mono text-xs">{u.email}</td>
+                      <td className="py-2 pr-6 text-right">
+                        <span className={`font-semibold ${u.active > 0 ? 'text-[#3ecf6a]' : 'text-[#F5EFE0]/30'}`}>
+                          {u.active}
+                        </span>
+                      </td>
+                      <td className="py-2 pr-6 text-right text-[#F5EFE0]/45">{u.total}</td>
+                      <td className="py-2 text-right text-[#F5EFE0]/30 text-xs whitespace-nowrap">
+                        {new Date(u.joined_at).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Recent events */}
