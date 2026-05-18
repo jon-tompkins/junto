@@ -12,6 +12,41 @@ const CLAUDE_MODEL = 'claude-sonnet-4-6';
 
 export const maxDuration = 60;
 
+const TWITTER_HOSTS = new Set(['twitter.com', 'x.com', 'mobile.twitter.com', 'mobile.x.com']);
+
+function isTwitterUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, '');
+    return TWITTER_HOSTS.has(host);
+  } catch {
+    return false;
+  }
+}
+
+async function fetchUrlText(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        'Accept': 'text/html,application/xhtml+xml,text/plain',
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    // Strip tags, collapse whitespace, cap at ~8k chars for Claude context
+    return html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+      .slice(0, 8000);
+  } catch {
+    return null;
+  }
+}
+
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const;
 const SUPPORTED_DOC_TYPES = ['application/pdf'] as const;
 type SupportedImageType = typeof SUPPORTED_IMAGE_TYPES[number];
@@ -154,12 +189,39 @@ ${context}`;
         return NextResponse.json({ error: 'Input too short (minimum 20 chars)' }, { status: 400 });
       }
 
-      userMessage = `Today's date: ${today}
+      if (sourceType === 'link' && sourceRef) {
+        if (isTwitterUrl(sourceRef)) {
+          return NextResponse.json(
+            { error: 'Twitter/X links can\'t be fetched automatically — paste the tweet text into the Text tab instead.' },
+            { status: 400 },
+          );
+        }
+        const urlText = await fetchUrlText(sourceRef);
+        if (urlText) {
+          userMessage = `Today's date: ${today}
+Source: ${sourceRef} (link)
+
+## Content fetched from URL
+
+${urlText}
+
+## My context and notes
+
+${combinedInput}`;
+        } else {
+          return NextResponse.json(
+            { error: `Couldn't fetch content from ${sourceRef} — the page may require login or block crawlers. Paste the content into the Text tab instead.` },
+            { status: 400 },
+          );
+        }
+      } else {
+        userMessage = `Today's date: ${today}
 ${sourceRef ? `\nSource: ${sourceRef} (${sourceType || 'link'})` : ''}
 
 ## My raw material
 
 ${combinedInput}`;
+      }
     }
 
     const anthropic = getAnthropic();
