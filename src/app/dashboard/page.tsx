@@ -12,6 +12,8 @@ import { markdownToHtml } from '@/lib/utils/markdown-client';
 interface FeaturedJuntoSource {
   id: string;
   source_id: string;
+  added_at: string | null;
+  last_tweeted_at: string | null;
   source: {
     id: string;
     handle_or_url: string;
@@ -508,12 +510,13 @@ export default function DashboardPage() {
                 {featuredJunto.junto_sources.slice(0, 12).map(js => {
                   const src = js.source;
                   if (!src) return null;
+                  const isSilent = !js.last_tweeted_at || (js.added_at && js.last_tweeted_at < js.added_at);
                   return (
                     <Link
                       key={js.id}
                       href={`/sources/${src.handle_or_url}`}
                       title={src.display_name || src.handle_or_url}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1c1a17] hover:bg-[#1c1a17]/70 transition"
+                      className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1c1a17] hover:bg-[#1c1a17]/70 transition group"
                     >
                       {src.avatar_url ? (
                         <img src={src.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
@@ -523,6 +526,14 @@ export default function DashboardPage() {
                         </div>
                       )}
                       <span className="text-xs text-[#F5EFE0]/70">@{src.handle_or_url}</span>
+                      {isSilent && (
+                        <>
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#F5EFE0]/25 flex-shrink-0" />
+                          <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-max max-w-[180px] px-2 py-1 rounded text-[10px] text-[#F5EFE0]/70 bg-[#0f0e0a] border border-[#F5EFE0]/10 opacity-0 group-hover:opacity-100 transition whitespace-normal text-center z-10">
+                            Source hasn&apos;t tweeted since addition to myjunto
+                          </span>
+                        </>
+                      )}
                     </Link>
                   );
                 })}
