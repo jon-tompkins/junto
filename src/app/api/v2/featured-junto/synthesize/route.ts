@@ -73,7 +73,10 @@ export async function POST() {
       getSourcesByIds(sourceIds),
     ]);
 
-    const grouped = groupContentByHandle(recentContent, sources);
+    const sourceMap: Record<string, string> = Object.fromEntries(
+      sources.map((s: any) => [s.id, s.handle_or_url])
+    );
+    const grouped = groupContentByHandle(recentContent, sourceMap);
     const sourcesById = Object.fromEntries(sources.map((s: any) => [s.id, s]));
 
     const contentBlocks = Object.entries(grouped)
