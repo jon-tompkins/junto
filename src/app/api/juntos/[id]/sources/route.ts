@@ -45,6 +45,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'source_id required' }, { status: 400 });
     }
 
+    // Enforce 20-source cap per junto
+    const supabase = getSupabase();
+    const { count } = await supabase
+      .from('junto_sources')
+      .select('id', { count: 'exact', head: true })
+      .eq('junto_id', id);
+    if ((count ?? 0) >= 20) {
+      return NextResponse.json({ error: 'Junto is at the 20-source limit' }, { status: 422 });
+    }
+
     await addSourceToJunto(id, source_id);
     return NextResponse.json({ success: true });
   } catch (error) {

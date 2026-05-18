@@ -93,9 +93,9 @@ export default function PricingPage() {
 
             <ul className="space-y-2.5 flex-1 mb-6">
               {[
-                '1 junto (up to 10 sources)',
-                'No dispatches',
-                '50 credits / month',
+                '1 junto (up to 20 sources)',
+                '1,000 signup credits',
+                'Sources from existing accounts only',
                 'Quick synthesis',
                 'Dashboard & explore',
               ].map(f => (
@@ -104,6 +104,8 @@ export default function PricingPage() {
                 </li>
               ))}
               {[
+                'Add new accounts',
+                'Dispatches',
                 'Thesis generation',
                 'Deep dive reports',
                 'Ailmanack access',

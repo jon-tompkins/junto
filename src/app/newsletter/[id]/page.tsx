@@ -37,6 +37,52 @@ interface Run {
   generated_at: string;
 }
 
+function ShareButton({ url, title }: { url: string; title: string }) {
+  const [copied, setCopied] = useState(false);
+
+  function copyLink() {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`;
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <button
+        onClick={copyLink}
+        title="Copy link"
+        className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[#F5EFE0]/45 hover:text-[#F5EFE0]/75 hover:bg-[#1c1a17] transition"
+      >
+        {copied ? (
+          <span className="text-[#3ecf6a]">Copied!</span>
+        ) : (
+          <>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            Copy link
+          </>
+        )}
+      </button>
+      <a
+        href={xUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Share on X"
+        className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[#F5EFE0]/45 hover:text-[#F5EFE0]/75 hover:bg-[#1c1a17] transition"
+      >
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.632zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+        </svg>
+        Share
+      </a>
+    </div>
+  );
+}
+
 export default function NewsletterDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: session } = useSession();
@@ -320,12 +366,15 @@ export default function NewsletterDetailPage() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-[#F5EFE0]/45 uppercase tracking-wider font-[var(--font-oswald)]">Latest Issue</h2>
-              <span className="text-xs text-[#F5EFE0]/45">
-                {new Date(latestRun.generated_at).toLocaleDateString('en-US', {
-                  weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
-                  hour: 'numeric', minute: '2-digit',
-                })}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-[#F5EFE0]/45">
+                  {new Date(latestRun.generated_at).toLocaleDateString('en-US', {
+                    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+                    hour: 'numeric', minute: '2-digit',
+                  })}
+                </span>
+                <ShareButton url={typeof window !== 'undefined' ? window.location.href : ''} title={latestRun.subject || newsletter?.name || 'Dispatch'} />
+              </div>
             </div>
 
             {latestRun.subject && (
