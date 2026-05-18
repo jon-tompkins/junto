@@ -11,6 +11,19 @@ interface UserRow {
   total: number;
   active: number;
   joined_at: string;
+  is_pro?: boolean;
+}
+
+interface PromoCode {
+  id: string;
+  code: string;
+  description: string | null;
+  grants_pro: boolean;
+  bonus_credits: number;
+  max_uses: number;
+  uses_count: number;
+  expires_at: string | null;
+  created_at: string;
 }
 
 interface CostSummary {
@@ -50,6 +63,12 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [windowDays, setWindowDays] = useState<number>(30);
+  const [togglingPro, setTogglingPro] = useState<string | null>(null);
+  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+  const [newCode, setNewCode] = useState('');
+  const [newCodeDesc, setNewCodeDesc] = useState('');
+  const [newCodeMaxUses, setNewCodeMaxUses] = useState('1');
+  const [creatingCode, setCreatingCode] = useState(false);
 
   useEffect(() => {
     if (status !== 'authenticated') return;
@@ -65,14 +84,64 @@ export default function AdminDashboard() {
         if (!r.ok) return { users: [] };
         return r.json() as Promise<{ users: UserRow[] }>;
       }),
+      fetch('/api/admin/promo').then(async (r) => {
+        if (!r.ok) return { codes: [] };
+        return r.json() as Promise<{ codes: PromoCode[] }>;
+      }),
     ])
-      .then(([costs, usersData]) => {
+      .then(([costs, usersData, promoData]) => {
         setSummary(costs);
         setUsers(usersData.users);
+        setPromoCodes(promoData.codes);
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [status, windowDays]);
+
+  async function togglePro(userId: string, currentlyPro: boolean) {
+    setTogglingPro(userId);
+    try {
+      await fetch(`/api/admin/users/${userId}/pro`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_pro: !currentlyPro }),
+      });
+      setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, is_pro: !currentlyPro } : u));
+    } finally {
+      setTogglingPro(null);
+    }
+  }
+
+  async function createPromoCode() {
+    setCreatingCode(true);
+    try {
+      const res = await fetch('/api/admin/promo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: newCode.trim() || undefined,
+          description: newCodeDesc.trim() || undefined,
+          max_uses: parseInt(newCodeMaxUses) || 1,
+          grants_pro: true,
+          bonus_credits: 0,
+        }),
+      });
+      const data = await res.json();
+      if (data.code) {
+        setPromoCodes(prev => [data.code, ...prev]);
+        setNewCode('');
+        setNewCodeDesc('');
+        setNewCodeMaxUses('1');
+      }
+    } finally {
+      setCreatingCode(false);
+    }
+  }
+
+  async function deletePromoCode(id: string) {
+    await fetch(`/api/admin/promo?id=${id}`, { method: 'DELETE' });
+    setPromoCodes(prev => prev.filter(c => c.id !== id));
+  }
 
   if (status === 'loading' || loading) {
     return (
@@ -225,7 +294,8 @@ export default function AdminDashboard() {
               <table className="w-full text-sm">
                 <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
                   <tr>
-                    <th className="py-2 pr-6">Email</th>
+                    <th className="py-2 pr-6">Email / ID</th>
+                    <th className="py-2 pr-6 text-right">Plan</th>
                     <th className="py-2 pr-6 text-right">Active subs</th>
                     <th className="py-2 pr-6 text-right">Total subs</th>
                     <th className="py-2 text-right">Joined</th>
@@ -234,7 +304,20 @@ export default function AdminDashboard() {
                 <tbody>
                   {users.map((u) => (
                     <tr key={u.user_id} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
-                      <td className="py-2 pr-6 text-[#F5EFE0]/80 font-mono text-xs">{u.email}</td>
+                      <td className="py-2 pr-6 text-[#F5EFE0]/80 font-mono text-xs truncate max-w-[200px]">{u.email}</td>
+                      <td className="py-2 pr-6 text-right">
+                        <button
+                          onClick={() => togglePro(u.user_id, !!u.is_pro)}
+                          disabled={togglingPro === u.user_id}
+                          className={`text-xs px-2 py-0.5 rounded font-bold font-[var(--font-oswald)] uppercase tracking-wide transition ${
+                            u.is_pro
+                              ? 'bg-[#B08D57] text-[#080604] hover:bg-[#B08D57]/70'
+                              : 'bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/40 hover:text-[#F5EFE0]/70'
+                          } disabled:opacity-50`}
+                        >
+                          {togglingPro === u.user_id ? '…' : u.is_pro ? 'Pro ✓' : 'Free'}
+                        </button>
+                      </td>
                       <td className="py-2 pr-6 text-right">
                         <span className={`font-semibold ${u.active > 0 ? 'text-[#3ecf6a]' : 'text-[#F5EFE0]/30'}`}>
                           {u.active}
@@ -242,13 +325,90 @@ export default function AdminDashboard() {
                       </td>
                       <td className="py-2 pr-6 text-right text-[#F5EFE0]/45">{u.total}</td>
                       <td className="py-2 text-right text-[#F5EFE0]/30 text-xs whitespace-nowrap">
-                        {new Date(u.joined_at).toLocaleDateString()}
+                        {u.joined_at ? new Date(u.joined_at).toLocaleDateString() : '—'}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+          )}
+        </div>
+
+        {/* Promo Codes */}
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-8">
+          <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">Promo Codes</h2>
+
+          {/* Create form */}
+          <div className="flex flex-wrap gap-2 mb-5">
+            <input
+              type="text"
+              value={newCode}
+              onChange={e => setNewCode(e.target.value.toUpperCase())}
+              placeholder="CODE (auto if blank)"
+              className="flex-1 min-w-[140px] bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] font-mono placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
+            />
+            <input
+              type="text"
+              value={newCodeDesc}
+              onChange={e => setNewCodeDesc(e.target.value)}
+              placeholder="Description (optional)"
+              className="flex-1 min-w-[160px] bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
+            />
+            <input
+              type="number"
+              value={newCodeMaxUses}
+              onChange={e => setNewCodeMaxUses(e.target.value)}
+              min="1"
+              placeholder="Max uses"
+              className="w-24 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]"
+            />
+            <button
+              onClick={createPromoCode}
+              disabled={creatingCode}
+              className="px-4 py-2 rounded bg-[#B08D57] text-[#080604] text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide hover:bg-[#B08D57]/80 transition disabled:opacity-50"
+            >
+              {creatingCode ? 'Creating…' : '+ Create'}
+            </button>
+          </div>
+
+          {/* Code list */}
+          {promoCodes.length === 0 ? (
+            <p className="text-sm text-[#F5EFE0]/30">No promo codes yet.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
+                <tr>
+                  <th className="py-2 pr-6">Code</th>
+                  <th className="py-2 pr-6">Description</th>
+                  <th className="py-2 pr-6 text-center">Grants Pro</th>
+                  <th className="py-2 pr-6 text-right">Uses</th>
+                  <th className="py-2 text-right">Created</th>
+                  <th className="py-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {promoCodes.map(c => (
+                  <tr key={c.id} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
+                    <td className="py-2 pr-6 font-mono text-[#B08D57] font-bold">{c.code}</td>
+                    <td className="py-2 pr-6 text-[#F5EFE0]/60 text-xs">{c.description || '—'}</td>
+                    <td className="py-2 pr-6 text-center">{c.grants_pro ? '✓' : '—'}</td>
+                    <td className="py-2 pr-6 text-right text-[#F5EFE0]/60">{c.uses_count}/{c.max_uses}</td>
+                    <td className="py-2 text-right text-[#F5EFE0]/30 text-xs whitespace-nowrap">
+                      {new Date(c.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="py-2 pl-4">
+                      <button
+                        onClick={() => deletePromoCode(c.id)}
+                        className="text-xs text-[#e8453c]/60 hover:text-[#e8453c] transition"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
 

@@ -35,6 +35,9 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const [promoCode, setPromoCode] = useState('');
+  const [redeemingCode, setRedeemingCode] = useState(false);
+  const [promoMessage, setPromoMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   // Telegram linking
   const [tgLinked, setTgLinked] = useState<boolean | null>(null);
@@ -183,6 +186,32 @@ export default function SettingsPage() {
     }
   };
 
+  const redeemPromo = async () => {
+    if (!promoCode.trim()) return;
+    setRedeemingCode(true);
+    setPromoMessage(null);
+    try {
+      const res = await fetch('/api/v2/billing/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: promoCode.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPromoMessage({ ok: false, text: data.error || 'Invalid code' });
+      } else {
+        const parts = [];
+        if (data.grantedPro) parts.push('Pro activated!');
+        if (data.bonusCredits > 0) parts.push(`${data.bonusCredits} credits added`);
+        setPromoMessage({ ok: true, text: parts.join(' · ') || 'Code redeemed!' });
+        setPromoCode('');
+        fetchAccount();
+      }
+    } finally {
+      setRedeemingCode(false);
+    }
+  };
+
   const creditColor =
     creditBalance !== null && creditBalance <= 50
       ? 'text-[#e8453c]'
@@ -253,9 +282,39 @@ export default function SettingsPage() {
           {/* Credit Balance */}
           <div className="flex items-center justify-between">
             <span className="text-sm text-[#F5EFE0]/60">Credit Balance</span>
-            <span className={`text-lg font-bold ${creditColor}`}>
-              {creditBalance !== null ? creditBalance.toLocaleString() : '—'} credits
-            </span>
+            <div className="flex items-center gap-3">
+              <span className={`text-lg font-bold ${creditColor}`}>
+                {creditBalance !== null ? creditBalance.toLocaleString() : '—'} credits
+              </span>
+              <a href="/credits" className="text-xs text-[#B08D57] hover:opacity-80 transition">Top up →</a>
+            </div>
+          </div>
+
+          {/* Promo Code */}
+          <div>
+            <label className="block text-sm text-[#F5EFE0]/60 mb-2">Promo Code</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={promoCode}
+                onChange={e => setPromoCode(e.target.value.toUpperCase())}
+                onKeyDown={e => e.key === 'Enter' && redeemPromo()}
+                placeholder="ENTER CODE"
+                className="flex-1 px-4 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded font-mono text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/25 focus:border-[#B08D57] focus:outline-none transition"
+              />
+              <button
+                onClick={redeemPromo}
+                disabled={redeemingCode || !promoCode.trim()}
+                className="px-4 py-2.5 rounded bg-[#B08D57] text-[#080604] text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide hover:bg-[#B08D57]/80 transition disabled:opacity-50"
+              >
+                {redeemingCode ? '…' : 'Redeem'}
+              </button>
+            </div>
+            {promoMessage && (
+              <p className={`text-xs mt-1.5 ${promoMessage.ok ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
+                {promoMessage.text}
+              </p>
+            )}
           </div>
 
           {/* Account Email */}
