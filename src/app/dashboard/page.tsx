@@ -9,6 +9,31 @@ import { markdownToHtml } from '@/lib/utils/markdown-client';
 
 // ─── Types ──────────────────────────────────────────
 
+interface FeaturedJuntoSource {
+  id: string;
+  source_id: string;
+  source: {
+    id: string;
+    handle_or_url: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    type: string;
+  } | null;
+}
+
+interface FeaturedJunto {
+  id: string;
+  name: string;
+  description: string | null;
+  owner_id: string;
+  junto_sources: FeaturedJuntoSource[];
+}
+
+interface UserJunto {
+  id: string;
+  name: string;
+}
+
 interface SubscribedNewsletter {
   id: string;
   newsletter_id: string;
@@ -94,6 +119,14 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  const [featuredJunto, setFeaturedJunto] = useState<FeaturedJunto | null>(null);
+  const [allJuntos, setAllJuntos] = useState<UserJunto[]>([]);
+  const [juntoLoading, setJuntoLoading] = useState(true);
+  const [showJuntoPicker, setShowJuntoPicker] = useState(false);
+  const [synthesizing, setSynthesizing] = useState(false);
+  const [synthesis, setSynthesis] = useState<string | null>(null);
+  const [synthError, setSynthError] = useState<string | null>(null);
+
   const [subscriptions, setSubscriptions] = useState<SubscribedNewsletter[]>([]);
   const [created, setCreated] = useState<CreatedNewsletter[]>([]);
   const [runs, setRuns] = useState<RunEntry[]>([]);
@@ -119,8 +152,53 @@ export default function DashboardPage() {
   }, [status, router]);
 
   useEffect(() => {
-    if (session?.user) loadData();
+    if (session?.user) {
+      loadData();
+      loadFeaturedJunto();
+    }
   }, [session]);
+
+  async function loadFeaturedJunto() {
+    setJuntoLoading(true);
+    try {
+      const res = await fetch('/api/v2/featured-junto');
+      if (res.ok) {
+        const data = await res.json();
+        setFeaturedJunto(data.junto);
+        setAllJuntos(data.allJuntos || []);
+      }
+    } catch {} finally {
+      setJuntoLoading(false);
+    }
+  }
+
+  async function handleChangeFeaturedJunto(juntoId: string) {
+    try {
+      await fetch('/api/v2/featured-junto', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ juntoId }),
+      });
+      setShowJuntoPicker(false);
+      loadFeaturedJunto();
+    } catch {}
+  }
+
+  async function handleSynthesize() {
+    setSynthesizing(true);
+    setSynthError(null);
+    setSynthesis(null);
+    try {
+      const res = await fetch('/api/v2/featured-junto/synthesize', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Synthesis failed');
+      setSynthesis(data.content);
+    } catch (err) {
+      setSynthError(err instanceof Error ? err.message : 'Synthesis failed');
+    } finally {
+      setSynthesizing(false);
+    }
+  }
 
   async function loadData() {
     try {
@@ -358,6 +436,144 @@ export default function DashboardPage() {
             </div>
             <div className="text-sm text-[#F5EFE0]/60 mt-1">Total Subscribers</div>
           </div>
+        </div>
+
+        {/* ─── Featured Junto ───────────────────────────── */}
+        <div className="mb-10 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(176,141,87,0.18)]">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-[#B08D57]/70 font-mono mb-0.5">Featured Junto</p>
+              {juntoLoading ? (
+                <div className="h-5 w-40 bg-[#1c1a17] rounded animate-pulse" />
+              ) : (
+                <h2 className="text-base font-semibold text-[#F5EFE0] truncate">
+                  {featuredJunto?.name ?? 'Loading…'}
+                </h2>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0 ml-4">
+              {featuredJunto && (
+                <>
+                  <Link
+                    href={`/junto/${featuredJunto.id}/edit`}
+                    className="text-xs px-3 py-1.5 rounded-sm bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/70 transition"
+                  >
+                    Edit accounts
+                  </Link>
+                  <button
+                    onClick={() => setShowJuntoPicker(p => !p)}
+                    className="text-xs px-3 py-1.5 rounded-sm bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#B08D57] transition"
+                  >
+                    Change
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Junto picker */}
+          {showJuntoPicker && (
+            <div className="px-5 py-3 bg-[#0f0e0c] border-b border-[rgba(176,141,87,0.18)]">
+              <p className="text-xs text-[#F5EFE0]/50 mb-2">Select a junto to feature:</p>
+              <div className="flex flex-wrap gap-2">
+                {allJuntos.map(j => (
+                  <button
+                    key={j.id}
+                    onClick={() => handleChangeFeaturedJunto(j.id)}
+                    className={`text-xs px-3 py-1.5 rounded-sm transition ${
+                      j.id === featuredJunto?.id
+                        ? 'bg-[#B08D57] text-[#080604] font-semibold'
+                        : 'bg-[#1c1a17] text-[#F5EFE0]/70 hover:text-[#F5EFE0]'
+                    }`}
+                  >
+                    {j.name}
+                  </button>
+                ))}
+                {allJuntos.length === 0 && (
+                  <p className="text-xs text-[#F5EFE0]/40">No juntos yet. <Link href="/junto/new" className="text-[#B08D57]">Create one →</Link></p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Sources */}
+          <div className="px-5 py-4">
+            {juntoLoading ? (
+              <div className="flex gap-2">
+                {[1,2,3].map(i => <div key={i} className="w-9 h-9 rounded-full bg-[#1c1a17] animate-pulse" />)}
+              </div>
+            ) : featuredJunto && featuredJunto.junto_sources.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-2">
+                {featuredJunto.junto_sources.slice(0, 12).map(js => {
+                  const src = js.source;
+                  if (!src) return null;
+                  return (
+                    <Link
+                      key={js.id}
+                      href={`/sources/${src.handle_or_url}`}
+                      title={src.display_name || src.handle_or_url}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1c1a17] hover:bg-[#1c1a17]/70 transition"
+                    >
+                      {src.avatar_url ? (
+                        <img src={src.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-[#B08D57]/30 flex items-center justify-center text-[8px] text-[#B08D57] font-bold">
+                          {(src.display_name || src.handle_or_url).charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <span className="text-xs text-[#F5EFE0]/70">@{src.handle_or_url}</span>
+                    </Link>
+                  );
+                })}
+                {featuredJunto.junto_sources.length > 12 && (
+                  <span className="text-xs text-[#F5EFE0]/40">+{featuredJunto.junto_sources.length - 12} more</span>
+                )}
+              </div>
+            ) : (
+              <div className="text-sm text-[#F5EFE0]/45">
+                No accounts yet.{' '}
+                {featuredJunto && (
+                  <Link href={`/junto/${featuredJunto.id}/edit`} className="text-[#B08D57] hover:opacity-80">
+                    Add the accounts you follow →
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Synthesis */}
+          {featuredJunto && featuredJunto.junto_sources.length > 0 && (
+            <div className="px-5 pb-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleSynthesize}
+                  disabled={synthesizing}
+                  className="px-4 py-2 text-xs font-semibold uppercase tracking-wide rounded-sm transition disabled:opacity-40 font-[var(--font-oswald)]"
+                  style={{ background: '#B08D57', color: '#080604' }}
+                >
+                  {synthesizing ? 'Synthesizing…' : 'What are they talking about?'}
+                </button>
+                <Link
+                  href={`/positions?junto_id=${featuredJunto.id}`}
+                  className="text-xs text-[#B08D57] hover:opacity-80 transition"
+                >
+                  View positions →
+                </Link>
+              </div>
+
+              {synthError && (
+                <p className="text-xs text-[#e8453c]">{synthError}</p>
+              )}
+
+              {synthesis && (
+                <div
+                  className="text-sm text-[#F5EFE0]/80 leading-relaxed border-t border-[rgba(176,141,87,0.18)] pt-4 prose prose-invert prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: synthesis }}
+                />
+              )}
+            </div>
+          )}
         </div>
 
         {/* Tab Switcher */}
