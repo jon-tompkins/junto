@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
@@ -165,6 +165,9 @@ const LOCAL_WINDOW_LABELS: Record<string, string> = {
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const subSuccess = searchParams.get('sub') === 'success';
 
   const [featuredJunto, setFeaturedJunto] = useState<FeaturedJunto | null>(null);
   const [allJuntos, setAllJuntos] = useState<UserJunto[]>([]);
@@ -418,6 +421,19 @@ export default function DashboardPage() {
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
+        {/* Pro subscription success banner */}
+        {subSuccess && (
+          <div className="mb-6 p-4 bg-[#3ecf6a]/10 border border-[#3ecf6a]/40 rounded flex items-center gap-3">
+            <svg className="w-5 h-5 text-[#3ecf6a] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            <div>
+              <p className="text-[#3ecf6a] font-medium text-sm">Welcome to Pro!</p>
+              <p className="text-[#3ecf6a]/70 text-xs mt-0.5">1,000 credits added to your account. You can now add new accounts and create dispatches.</p>
+            </div>
+          </div>
+        )}
+
         {/* Email Collection Banner */}
         {accountEmail === null && !loading && (
           <div className="mb-8 p-4 bg-[#B08D57]/10 border border-[rgba(176,141,87,0.28)] rounded flex flex-col sm:flex-row items-start sm:items-center gap-3">

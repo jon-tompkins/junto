@@ -31,6 +31,7 @@ export default function SettingsPage() {
   const [timezone, setTimezone] = useState('America/New_York');
   const [savedTimezone, setSavedTimezone] = useState('America/New_York');
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [isPro, setIsPro] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
@@ -137,6 +138,7 @@ export default function SettingsPage() {
         setSavedTimezone(data.timezone);
       }
       if (data.balance !== undefined) setCreditBalance(data.balance);
+      if (data.isPro !== undefined) setIsPro(data.isPro);
     } catch (err) {
       console.error('Failed to fetch account:', err);
     } finally {
@@ -224,6 +226,29 @@ export default function SettingsPage() {
         {/* Account Section */}
         <div className="mb-8 p-6 bg-[#141210] rounded border border-[rgba(176,141,87,0.28)] space-y-6">
           <h2 className="text-lg font-semibold font-[var(--font-oswald)] uppercase tracking-wide">Account</h2>
+
+          {/* Plan */}
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-[#F5EFE0]/60">Plan</span>
+              {isPro && <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-[#B08D57] text-[#080604] font-bold font-[var(--font-oswald)] uppercase tracking-wide">Pro</span>}
+            </div>
+            {isPro ? (
+              <a
+                href="/api/v2/billing/portal"
+                className="text-xs text-[#F5EFE0]/50 hover:text-[#F5EFE0]/80 underline transition"
+              >
+                Manage subscription →
+              </a>
+            ) : (
+              <a
+                href="/pricing"
+                className="text-xs px-3 py-1 rounded bg-[#B08D57] text-[#080604] font-bold font-[var(--font-oswald)] uppercase tracking-wide hover:bg-[#B08D57]/80 transition"
+              >
+                Upgrade to Pro
+              </a>
+            )}
+          </div>
 
           {/* Credit Balance */}
           <div className="flex items-center justify-between">
