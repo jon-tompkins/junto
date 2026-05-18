@@ -39,7 +39,7 @@ export async function GET() {
       getUserEmail(userId),
     ]);
 
-    const { data: user } = await supabase.from('users').select('timezone, is_onboarded').eq('id', userId).single();
+    const { data: user } = await supabase.from('users').select('timezone, is_onboarded, is_pro').eq('id', userId).single();
 
     return NextResponse.json({
       balance,
@@ -47,6 +47,7 @@ export async function GET() {
       userId,
       timezone: user?.timezone || 'America/New_York',
       isOnboarded: user?.is_onboarded ?? false,
+      isPro: user?.is_pro ?? false,
     });
   } catch (error) {
     console.error('[GET /account]', error);
@@ -96,7 +97,7 @@ export async function PUT(req: NextRequest) {
       getUserEmail(userId),
     ]);
 
-    const { data: user } = await supabase.from('users').select('timezone, is_onboarded').eq('id', userId).single();
+    const { data: user } = await supabase.from('users').select('timezone, is_onboarded, is_pro').eq('id', userId).single();
 
     return NextResponse.json({
       balance,
@@ -104,6 +105,7 @@ export async function PUT(req: NextRequest) {
       userId,
       timezone: user?.timezone || 'America/New_York',
       isOnboarded: user?.is_onboarded ?? false,
+      isPro: user?.is_pro ?? false,
     });
   } catch (error) {
     console.error('[PUT /account]', error);

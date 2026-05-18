@@ -73,7 +73,12 @@ export default function EditJuntoPage() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [error, setError] = useState('');
   const [adding, setAdding] = useState(false);
+  const [isPro, setIsPro] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    fetch('/api/v2/account').then(r => r.json()).then(d => setIsPro(d.isPro ?? false)).catch(() => {});
+  }, []);
 
   function refresh() {
     return fetch(`/api/juntos/${id}`)
@@ -158,7 +163,11 @@ export default function EditJuntoPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: cleanUrl, type: sourceType }),
       });
-      if (!createRes.ok) throw new Error('Failed to create source');
+      if (!createRes.ok) {
+        const d = await createRes.json().catch(() => ({}));
+        if (d.error === 'pro_required') throw new Error('Adding new sources requires a Pro account — upgrade at /pricing');
+        throw new Error('Failed to create source');
+      }
       const source = await createRes.json();
       await addSource(source);
     } catch {
@@ -345,14 +354,23 @@ export default function EditJuntoPage() {
                 className="flex-1 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition"
               />
               {isUrlType && (
-                <button
-                  type="button"
-                  onClick={() => addNewUrl(query)}
-                  disabled={adding || !query.trim()}
-                  className="px-5 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 disabled:cursor-not-allowed rounded text-sm font-medium transition text-[#080604]"
-                >
-                  {adding ? 'Adding...' : 'Add'}
-                </button>
+                isPro ? (
+                  <button
+                    type="button"
+                    onClick={() => addNewUrl(query)}
+                    disabled={adding || !query.trim()}
+                    className="px-5 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 disabled:cursor-not-allowed rounded text-sm font-medium transition text-[#080604]"
+                  >
+                    {adding ? 'Adding...' : 'Add'}
+                  </button>
+                ) : (
+                  <a
+                    href="/pricing"
+                    className="px-4 py-2.5 rounded text-xs font-bold bg-[#B08D57] text-[#080604] font-[var(--font-oswald)] uppercase tracking-wide hover:bg-[#B08D57]/80 transition whitespace-nowrap"
+                  >
+                    Go Pro
+                  </a>
+                )
               )}
             </div>
             {sourceType === 'twitter' && showDropdown && (
@@ -385,27 +403,44 @@ export default function EditJuntoPage() {
                   );
                 })}
                 {query.trim() && !junto.junto_sources.some((js) => js.source?.handle_or_url === query.trim().toLowerCase().replace('@', '') && (js.source?.type || 'twitter') === 'twitter') && (
-                  <button
-                    type="button"
-                    disabled={adding}
-                    onClick={() => addNewHandle(query)}
-                    className="w-full text-left flex items-center gap-3 px-3 py-2.5 border-t border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17] transition"
-                  >
-                    <div className="w-8 h-8 rounded bg-[#B08D57]/20 flex items-center justify-center text-[#B08D57] text-sm font-bold">+</div>
-                    <div>
-                      <div className="text-sm font-medium text-[#B08D57]">
-                        {adding ? 'Adding...' : `Add @${query.trim().replace('@', '')}`}
+                  isPro ? (
+                    <button
+                      type="button"
+                      disabled={adding}
+                      onClick={() => addNewHandle(query)}
+                      className="w-full text-left flex items-center gap-3 px-3 py-2.5 border-t border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17] transition"
+                    >
+                      <div className="w-8 h-8 rounded bg-[#B08D57]/20 flex items-center justify-center text-[#B08D57] text-sm font-bold">+</div>
+                      <div>
+                        <div className="text-sm font-medium text-[#B08D57]">
+                          {adding ? 'Adding...' : `Add @${query.trim().replace('@', '')}`}
+                        </div>
+                        <div className="text-xs text-[#F5EFE0]/45">New source — {TYPE_PULL_TEXT.twitter}</div>
                       </div>
-                      <div className="text-xs text-[#F5EFE0]/45">New source — {TYPE_PULL_TEXT.twitter}</div>
+                    </button>
+                  ) : (
+                    <div className="flex items-center justify-between px-3 py-2.5 border-t border-[rgba(176,141,87,0.18)]">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded bg-[#F5EFE0]/5 flex items-center justify-center text-[#F5EFE0]/30 text-sm">+</div>
+                        <div>
+                          <div className="text-sm text-[#F5EFE0]/40">@{query.trim().replace('@', '')} not in myjunto yet</div>
+                          <div className="text-xs text-[#F5EFE0]/30">Adding new accounts requires Pro</div>
+                        </div>
+                      </div>
+                      <a href="/pricing" className="text-xs px-2.5 py-1 rounded bg-[#B08D57] text-[#080604] font-bold font-[var(--font-oswald)] uppercase tracking-wide hover:bg-[#B08D57]/80 transition whitespace-nowrap">
+                        Go Pro
+                      </a>
                     </div>
-                  </button>
+                  )
                 )}
               </div>
             )}
           </div>
           {isUrlType && (
             <p className="text-xs text-[#F5EFE0]/45 mt-2">
-              New source — {TYPE_PULL_TEXT[sourceType]}
+              {isPro ? `New source — ${TYPE_PULL_TEXT[sourceType]}` : (
+                <>Adding new sources requires <a href="/pricing" className="text-[#B08D57] hover:opacity-80">Pro</a></>
+              )}
             </p>
           )}
 
