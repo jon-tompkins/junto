@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
@@ -165,10 +165,7 @@ const LOCAL_WINDOW_LABELS: Record<string, string> = {
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const subSuccess = searchParams.get('sub') === 'success';
-
+  const [subSuccess, setSubSuccess] = useState(false);
   const [featuredJunto, setFeaturedJunto] = useState<FeaturedJunto | null>(null);
   const [allJuntos, setAllJuntos] = useState<UserJunto[]>([]);
   const [juntoLoading, setJuntoLoading] = useState(true);
@@ -196,6 +193,10 @@ export default function DashboardPage() {
   const [saving, setSaving] = useState(false);
 
   const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSubSuccess(new URLSearchParams(window.location.search).get('sub') === 'success');
+  }, []);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
