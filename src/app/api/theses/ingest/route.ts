@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getSupabase } from '@/lib/db/client';
-import { getAnthropic } from '@/lib/synthesis/client';
+import { getAnthropic, getXAI } from '@/lib/synthesis/client';
 import { THESIS_SYSTEM_PROMPT } from '@/lib/theses/system-prompt';
 import { parseThesisFile } from '@/lib/theses/parser';
-import { recordCost, anthropicHaikuCostCents } from '@/lib/costs';
+import { recordCost, anthropicHaikuCostCents, grokCostCents } from '@/lib/costs';
 import { authLimiter } from '@/lib/rate-limit';
 
 const CLAUDE_MODEL = 'claude-sonnet-4-6';
@@ -191,14 +191,52 @@ ${context}`;
 
       if (sourceType === 'link' && sourceRef) {
         if (isTwitterUrl(sourceRef)) {
-          return NextResponse.json(
-            { error: 'Twitter/X links can\'t be fetched automatically — paste the tweet text into the Text tab instead.' },
-            { status: 400 },
-          );
-        }
-        const urlText = await fetchUrlText(sourceRef);
-        if (urlText) {
+          // Use Grok (native X access) to retrieve the tweet content
+          const xai = getXAI();
+          const grokRes = await xai.chat.completions.create({
+            model: 'grok-3-fast',
+            messages: [{
+              role: 'user',
+              content: `Retrieve the full content of this tweet or X thread: ${sourceRef}
+
+Return ONLY the text of the tweet/thread and any key replies or context. Include the author handle, date if visible, and exact wording. Do not add commentary.`,
+            }],
+            max_tokens: 1000,
+          } as any);
+          const tweetText = (grokRes as any).choices?.[0]?.message?.content || '';
+          const grokIn = (grokRes as any).usage?.prompt_tokens || 0;
+          const grokOut = (grokRes as any).usage?.completion_tokens || 0;
+          recordCost({
+            supplier: 'grok',
+            operation: 'thesis_tweet_fetch',
+            cost_cents: grokCostCents(grokIn, grokOut, true),
+            usage_amount: grokIn + grokOut,
+            usage_unit: 'tokens',
+            input_tokens: grokIn,
+            output_tokens: grokOut,
+            user_id: userId,
+            metadata: { model: 'grok-3-fast', sourceRef },
+          });
+          if (!tweetText.trim()) {
+            return NextResponse.json(
+              { error: 'Grok couldn\'t retrieve the tweet — it may be deleted or private. Try pasting the text directly.' },
+              { status: 400 },
+            );
+          }
           userMessage = `Today's date: ${today}
+Source: ${sourceRef} (tweet)
+
+## Tweet content (retrieved via Grok)
+
+${tweetText}
+
+## My context and notes
+
+${combinedInput}`;
+        } else {
+          const urlText = await fetchUrlText(sourceRef);
+          if (urlText) {
+            userMessage = `Today's date: ${today}
 Source: ${sourceRef} (link)
 
 ## Content fetched from URL
@@ -208,11 +246,12 @@ ${urlText}
 ## My context and notes
 
 ${combinedInput}`;
-        } else {
-          return NextResponse.json(
-            { error: `Couldn't fetch content from ${sourceRef} — the page may require login or block crawlers. Paste the content into the Text tab instead.` },
-            { status: 400 },
-          );
+          } else {
+            return NextResponse.json(
+              { error: `Couldn't fetch content from ${sourceRef} — the page may require login or block crawlers. Paste the content into the Text tab instead.` },
+              { status: 400 },
+            );
+          }
         }
       } else {
         userMessage = `Today's date: ${today}

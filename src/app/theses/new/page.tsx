@@ -245,19 +245,13 @@ export default function NewThesisPage() {
                   <input
                     value={linkUrl}
                     onChange={e => setLinkUrl(e.target.value)}
-                    placeholder="https://substack.com/... or https://sec.gov/..."
+                    placeholder="https://x.com/... or https://substack.com/..."
                     className="w-full bg-[#141210] px-4 py-3 text-sm focus:outline-none transition font-mono"
                     style={{ border: '1px solid rgba(176,141,87,0.28)', color: '#F5EFE0' }}
                   />
-                  {/twitter\.com|x\.com/i.test(linkUrl) ? (
-                    <p className="text-[10px] mt-1.5 font-mono uppercase tracking-wider" style={{ color: '#e8453c' }}>
-                      Twitter/X links can&apos;t be fetched — switch to Text and paste the tweet content directly
-                    </p>
-                  ) : (
-                    <p className="text-[10px] mt-1.5 font-mono uppercase tracking-wider" style={{ color: 'rgba(176,141,87,0.4)' }}>
-                      Article, research note, filing, Substack — page content will be fetched automatically
-                    </p>
-                  )}
+                  <p className="text-[10px] mt-1.5 font-mono uppercase tracking-wider" style={{ color: 'rgba(176,141,87,0.4)' }}>
+                    Tweet, article, research note, filing — page content fetched automatically
+                  </p>
                 </div>
               )}
 
