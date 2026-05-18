@@ -32,9 +32,19 @@ export async function GET() {
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from('subscriptions')
-      .select('id, newsletter_id, is_active, delivery_channel, delivery_email, created_at')
-      .eq('user_id', userId)
-      .eq('is_active', true);
+      .select(`
+        id,
+        newsletter_id,
+        is_active,
+        delivery_channel,
+        delivery_email,
+        send_windows,
+        receive_windows,
+        receive_days,
+        created_at,
+        newsletter:newsletters_v2!newsletter_id(id, name, description, subscriber_count)
+      `)
+      .eq('user_id', userId);
 
     if (error) throw error;
     return NextResponse.json({ subscriptions: data || [] });
