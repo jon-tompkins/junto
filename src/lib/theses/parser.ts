@@ -71,49 +71,57 @@ export interface ParsedThesis {
  * Falls back to the raw text if no fence is found.
  */
 function extractFencedBlock(text: string): string {
-  // Match ``` or ```yaml or ```markdown fences
+  // Match ``` or ```yaml or ```markdown fences (greedy to get the outermost block)
   const fenceMatch = text.match(/```(?:yaml|markdown|md)?\s*\n([\s\S]*?)\n```/);
-  if (fenceMatch) return fenceMatch[1];
+  if (fenceMatch) return fenceMatch[1].trim();
   return text.trim();
 }
 
-/**
- * Parse a thesis file containing YAML frontmatter (between --- markers) + body.
- */
-export function parseThesisFile(raw: string): ParsedThesis {
-  const cleaned = extractFencedBlock(raw);
-
-  // Match --- ... --- frontmatter block followed by body
-  const fmMatch = cleaned.match(/^---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)$/);
-  if (!fmMatch) {
-    throw new Error('Could not find YAML frontmatter delimited by --- markers.');
-  }
-
-  const [, yamlText, body] = fmMatch;
-
-  let frontmatter: ThesisFrontmatter;
-  try {
-    frontmatter = yaml.load(yamlText) as ThesisFrontmatter;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Unknown YAML parse error';
-    throw new Error(`YAML parse failed: ${msg}`);
-  }
-
-  // Basic validation
+function validateFrontmatter(fm: unknown): ThesisFrontmatter {
+  const frontmatter = fm as ThesisFrontmatter;
   if (!frontmatter || typeof frontmatter !== 'object') {
     throw new Error('Frontmatter parsed to non-object');
   }
   if (!frontmatter.title) throw new Error('Frontmatter missing required field: title');
   if (!frontmatter.thesis) throw new Error('Frontmatter missing required field: thesis');
   if (typeof frontmatter.conviction !== 'number' || frontmatter.conviction < 1 || frontmatter.conviction > 5) {
-    throw new Error('Frontmatter conviction must be a number 1-5');
+    throw new Error('Frontmatter conviction must be a number 1–5');
+  }
+  return frontmatter;
+}
+
+/**
+ * Parse a thesis file containing YAML frontmatter (between --- markers) + body.
+ * Falls back to treating the whole block as YAML if no --- delimiters are found.
+ */
+export function parseThesisFile(raw: string): ParsedThesis {
+  const cleaned = extractFencedBlock(raw);
+
+  // Strategy 1: standard --- frontmatter + body
+  // Allow optional leading whitespace/newlines before the opening ---
+  const fmMatch = cleaned.match(/^-{3}\s*\n([\s\S]*?)\n-{3}\s*\n?([\s\S]*)$/);
+  if (fmMatch) {
+    const [, yamlText, body] = fmMatch;
+    let frontmatter: ThesisFrontmatter;
+    try {
+      frontmatter = validateFrontmatter(yaml.load(yamlText));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown YAML parse error';
+      throw new Error(`YAML parse failed: ${msg}`);
+    }
+    return { frontmatter, body: body.trim(), raw: cleaned };
   }
 
-  return {
-    frontmatter,
-    body: body.trim(),
-    raw: cleaned,
-  };
+  // Strategy 2: entire block is plain YAML (no --- delimiters)
+  try {
+    const fm = yaml.load(cleaned);
+    if (fm && typeof fm === 'object' && 'title' in (fm as object)) {
+      const frontmatter = validateFrontmatter(fm);
+      return { frontmatter, body: '', raw: cleaned };
+    }
+  } catch {}
+
+  throw new Error('missing YAML frontmatter delimiters (--- markers).');
 }
 
 export function slugify(input: string): string {
