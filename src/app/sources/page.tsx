@@ -241,7 +241,7 @@ export default function SourcesPage() {
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">
-            Analyst <span className="text-[#B08D57]">Profiles</span>
+            Source <span className="text-[#B08D57]">Profiles</span>
           </h1>
           <p className="text-[#F5EFE0]/60">Live positions tracked across all sources. Click any position to see aggregate sentiment.</p>
         </div>
@@ -251,7 +251,7 @@ export default function SourcesPage() {
           <div className="flex gap-3 flex-wrap items-center">
             <input
               type="text"
-              placeholder="Search analysts..."
+              placeholder="Search sources..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition text-sm w-48"
@@ -349,7 +349,7 @@ export default function SourcesPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-[#141210] border-b border-[rgba(176,141,87,0.28)]">
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide w-48 font-[var(--font-oswald)]">Analyst</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide w-48 font-[var(--font-oswald)]">Source</th>
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Analysis</th>
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide w-72 font-[var(--font-oswald)]">Positions</th>
                   <th className="px-4 py-2.5 text-right text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide w-28 font-[var(--font-oswald)]">Updated</th>
@@ -366,7 +366,7 @@ export default function SourcesPage() {
 
         {!loading && filtered.length > 0 && (
           <p className="text-xs text-[#F5EFE0]/30 mt-4 text-right">
-            {filtered.length} analyst{filtered.length !== 1 ? 's' : ''}
+            {filtered.length} source{filtered.length !== 1 ? 's' : ''}
             {filtered.length !== profiles.length ? ` of ${profiles.length}` : ''}
           </p>
         )}

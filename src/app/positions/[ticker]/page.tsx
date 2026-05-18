@@ -97,17 +97,26 @@ function TradingViewChart({ ticker }: { ticker: string }) {
       colorTheme: 'dark',
       isTransparent: true,
       autosize: true,
-      largeChartUrl: `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}`,
     });
     container.appendChild(script);
   }, [symbol]);
 
+  const tvUrl = `https://www.tradingview.com/chart/g53lUOaf/?symbol=${encodeURIComponent(symbol)}`;
+
   return (
-    <div className="mb-8 rounded border border-[rgba(176,141,87,0.18)] overflow-hidden">
+    <div className="relative mb-8 rounded border border-[rgba(176,141,87,0.18)] overflow-hidden">
       <div
         ref={containerRef}
         className="tradingview-widget-container"
         style={{ height: 220 }}
+      />
+      {/* overlay captures clicks before the widget iframe does */}
+      <a
+        href={tvUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="absolute inset-0 z-10"
+        aria-label={`Open ${symbol} on TradingView`}
       />
     </div>
   );
@@ -179,7 +188,7 @@ export default function PositionPage() {
           href="/sources"
           className="text-sm text-[#F5EFE0]/45 hover:text-[#F5EFE0]/80 transition mb-6 inline-block"
         >
-          ← All analysts
+          ← All positions
         </Link>
 
         {loading ? (
@@ -218,7 +227,7 @@ export default function PositionPage() {
               </div>
               {total > 0 && (
                 <p className="text-[#F5EFE0]/60 text-sm">
-                  {total} analyst{total !== 1 ? 's' : ''} tracking this position
+                  {total} source{total !== 1 ? 's' : ''} tracking this position
                 </p>
               )}
             </div>
@@ -229,7 +238,7 @@ export default function PositionPage() {
             {!data || total === 0 ? (
               <div className="text-center py-20 border border-dashed border-[rgba(176,141,87,0.28)] rounded">
                 <p className="text-[#F5EFE0]/60 font-medium mb-1">No positions tracked for {ticker}</p>
-                <p className="text-[#F5EFE0]/45 text-sm">Analysts may not have an explicit stance on this asset yet.</p>
+                <p className="text-[#F5EFE0]/45 text-sm">No source has an explicit stance on this asset yet.</p>
               </div>
             ) : (
               <>
@@ -263,9 +272,9 @@ export default function PositionPage() {
                   </div>
                 </div>
 
-                {/* Analysts */}
+                {/* Sources */}
                 <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide mb-3 font-[var(--font-oswald)]">
-                  Analysts
+                  Sources
                 </h2>
                 <div className="space-y-2">
                   {analysts.map((a) => (

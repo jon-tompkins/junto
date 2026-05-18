@@ -46,11 +46,10 @@ export function TopNav() {
         {[
           { href: '/explore', label: 'Dispatches' },
           { href: '/juntos', label: 'Juntos' },
-          { href: '/sources', label: 'Analysts' },
+          { href: '/sources', label: 'Sources' },
           { href: '/positions', label: 'Positions' },
           ...(session?.user ? [{ href: '/theses', label: 'Theses' }] : []),
           { href: '/docs', label: 'Docs' },
-          ...(session?.user ? [{ href: '/dashboard', label: 'Dashboard' }, { href: '/create', label: 'Create' }] : []),
         ].map(({ href, label }) => (
           <Link
             key={href}
@@ -103,12 +102,13 @@ export function TopNav() {
                       )}
                     </div>
                     {[
+                      { href: '/dashboard', label: 'Dashboard', brass: false },
+                      { href: '/create', label: 'Create Dispatch', brass: false },
+                      { href: '/juntos', label: 'My Juntos', brass: false },
+                      { href: '/history', label: 'History', brass: false },
+                      { href: '/pricing', label: 'Pricing', brass: false },
                       { href: '/credits', label: 'Buy Credits', brass: true },
                       { href: '/settings', label: 'Settings', brass: false },
-                      { href: '/dashboard', label: 'Dashboard', brass: false },
-                      { href: '/history', label: 'History', brass: false },
-                      { href: '/juntos', label: 'My Juntos', brass: false },
-                      { href: '/create', label: 'Create Dispatch', brass: false },
                     ].map(({ href, label, brass }) => (
                       <Link
                         key={href}
@@ -142,7 +142,7 @@ export function TopNav() {
               Sign In
             </Link>
             <Link
-              href="/create"
+              href="/login"
               className="px-4 py-2 rounded-sm text-sm font-semibold transition uppercase tracking-wide"
               style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}
             >
@@ -192,14 +192,17 @@ export function TopNav() {
             {[
               { href: '/explore', label: 'Dispatches' },
               { href: '/juntos', label: 'Juntos' },
-              { href: '/sources', label: 'Analysts' },
+              { href: '/sources', label: 'Sources' },
               { href: '/positions', label: 'Positions' },
               ...(session?.user ? [{ href: '/theses', label: 'Theses' }] : []),
               { href: '/docs', label: 'Docs' },
               ...(session?.user ? [
                 { href: '/dashboard', label: 'Dashboard' },
                 { href: '/create', label: 'Create Dispatch' },
-              ] : []),
+                { href: '/pricing', label: 'Pricing' },
+              ] : [
+                { href: '/pricing', label: 'Pricing' },
+              ]),
             ].map(({ href, label }) => (
               <Link
                 key={href}

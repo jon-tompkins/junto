@@ -239,7 +239,7 @@ export default function OnboardingPage() {
             <div className="text-center">
               <h1 className="text-2xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Build your junto</h1>
               <p className="text-[#F5EFE0]/60 text-sm max-w-sm mx-auto">
-                A junto is your curated list of voices you trust — analysts, traders, investors.
+                A junto is your curated list of voices you trust — traders, investors, thinkers.
                 Pick the accounts whose signal you want to follow.
               </p>
             </div>

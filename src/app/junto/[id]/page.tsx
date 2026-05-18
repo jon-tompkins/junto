@@ -52,12 +52,26 @@ const STANCE_BADGE: Record<string, string> = {
   neutral: 'bg-[#1c1a17] text-[#F5EFE0]/45 border border-[rgba(176,141,87,0.18)]',
 };
 
-const STANCE_BAR: Record<string, string> = {
-  bullish: 'bg-[#3ecf6a]',
-  bearish: 'bg-[#e8453c]',
-  cautious: 'bg-amber-400',
-  neutral: 'bg-[#F5EFE0]/30',
+const STANCE_BG: Record<string, string> = {
+  bullish: '#3ecf6a',
+  bearish: '#e8453c',
+  cautious: '#d97706',
+  neutral: '#4b5563',
 };
+
+const STANCE_LABEL: Record<string, string> = {
+  bullish: 'Long',
+  bearish: 'Short',
+  cautious: 'Cautious',
+  neutral: 'Neutral',
+};
+
+function hexToRgb(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `${r}, ${g}, ${b}`;
+}
 
 interface TickerStance {
   ticker: string;
@@ -66,6 +80,22 @@ interface TickerStance {
   cautious: number;
   neutral: number;
   total: number;
+}
+
+interface HeatmapTile {
+  ticker: string;
+  stance: 'bullish' | 'bearish' | 'cautious' | 'neutral';
+  count: number;
+}
+
+function buildHeatmapTiles(stances: TickerStance[]): HeatmapTile[] {
+  const tiles: HeatmapTile[] = [];
+  for (const s of stances) {
+    for (const stance of ['bullish', 'bearish', 'cautious', 'neutral'] as const) {
+      if (s[stance] > 0) tiles.push({ ticker: s.ticker, stance, count: s[stance] });
+    }
+  }
+  return tiles.sort((a, b) => b.count - a.count);
 }
 
 function aggregatePositions(sources: JuntoSourceWithProfile[]): TickerStance[] {
@@ -101,6 +131,118 @@ interface Dispatch {
   description: string | null;
   schedule_cadence: string;
   subscriber_count: number;
+}
+
+function PositionsHeatmap({ tiles, maxCount }: { tiles: HeatmapTile[]; maxCount: number }) {
+  const [view, setView] = useState<'heatmap' | 'list'>('heatmap');
+
+  return (
+    <section className="mb-10">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider font-[var(--font-oswald)]">
+          Positions
+        </h2>
+        <div className="flex rounded overflow-hidden border border-[rgba(176,141,87,0.28)]">
+          {(['heatmap', 'list'] as const).map(v => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className="px-3 py-1 text-xs transition"
+              style={{
+                background: view === v ? '#B08D57' : '#141210',
+                color: view === v ? '#080604' : 'rgba(245,239,224,0.5)',
+                fontFamily: 'var(--font-oswald)',
+              }}
+            >
+              {v === 'heatmap' ? '⊞ Heatmap' : '≡ List'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {tiles.length === 0 ? (
+        <p className="text-[#F5EFE0]/45 text-sm">No tracked stances across this junto yet.</p>
+      ) : view === 'heatmap' ? (
+        <div className="flex flex-wrap gap-2 items-start content-start">
+          {tiles.map((item) => {
+            const ratio = item.count / maxCount;
+            const size = Math.round(70 + ratio * 110);
+            const bg = STANCE_BG[item.stance] ?? '#4b5563';
+            const alpha = 0.12 + ratio * 0.25;
+            return (
+              <Link
+                key={`${item.ticker}-${item.stance}`}
+                href={`/positions/${encodeURIComponent(item.ticker)}`}
+                className="rounded flex flex-col items-center justify-center gap-1 transition hover:scale-105 active:scale-100 shrink-0"
+                style={{
+                  width: `${size}px`,
+                  height: `${size}px`,
+                  background: `rgba(${hexToRgb(bg)}, ${alpha})`,
+                  border: `1px solid ${bg}55`,
+                }}
+                title={`${item.ticker} · ${STANCE_LABEL[item.stance] ?? item.stance} · ${item.count} source${item.count !== 1 ? 's' : ''}`}
+              >
+                <span
+                  className="font-bold font-mono text-center px-1 w-full"
+                  style={{
+                    fontSize: `${Math.min(Math.round(11 + ratio * 12), Math.floor(size * 0.55 / (3 * 1.25)))}px`,
+                    color: '#F5EFE0',
+                    lineHeight: 1.25,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {item.ticker}
+                </span>
+                <span
+                  className="font-medium uppercase tracking-wider leading-none"
+                  style={{ fontSize: `${Math.round(7 + ratio * 2)}px`, color: bg }}
+                >
+                  {STANCE_LABEL[item.stance] ?? item.stance}
+                </span>
+                <span style={{ fontSize: '11px', color: 'rgba(245,239,224,0.4)' }}>{item.count}</span>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[rgba(176,141,87,0.28)] text-xs uppercase text-[#F5EFE0]/30 font-[var(--font-oswald)]">
+                <th className="py-2 px-4 text-left">Ticker</th>
+                <th className="py-2 px-4 text-left">Stance</th>
+                <th className="py-2 px-4 text-right">Sources</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tiles.map(item => {
+                const bg = STANCE_BG[item.stance];
+                return (
+                  <tr key={`${item.ticker}-${item.stance}`} className="border-b border-[rgba(176,141,87,0.1)] last:border-0">
+                    <td className="py-2 px-4">
+                      <Link href={`/positions/${encodeURIComponent(item.ticker)}`} className="font-mono font-bold hover:text-[#B08D57] transition">
+                        {item.ticker}
+                      </Link>
+                    </td>
+                    <td className="py-2 px-4">
+                      <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: bg }}>
+                        {STANCE_LABEL[item.stance] ?? item.stance}
+                      </span>
+                    </td>
+                    <td className="py-2 px-4 text-right text-[#F5EFE0]/60">{item.count}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
 }
 
 export default function JuntoViewPage() {
@@ -158,6 +300,8 @@ export default function JuntoViewPage() {
 
   const sources = junto.junto_sources || [];
   const heatmap = aggregatePositions(sources);
+  const heatmapTiles = buildHeatmapTiles(heatmap);
+  const maxTileCount = Math.max(...heatmapTiles.map(t => t.count), 1);
   const isOwner = junto.is_owner === true;
 
   return (
@@ -277,52 +421,7 @@ export default function JuntoViewPage() {
         )}
 
         {/* Stance Heatmap */}
-        <section className="mb-10">
-          <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
-            Stance Heatmap
-            <span className="ml-2 font-normal normal-case text-[#F5EFE0]/30">— how members stack up by ticker</span>
-          </h2>
-          {heatmap.length === 0 ? (
-            <p className="text-[#F5EFE0]/45 text-sm">No tracked stances across this junto yet.</p>
-          ) : (
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4 space-y-2">
-              {heatmap.map((row) => (
-                <div key={row.ticker} className="flex items-center gap-3">
-                  <Link
-                    href={`/positions/${encodeURIComponent(row.ticker)}`}
-                    className="font-mono font-bold text-[#F5EFE0] hover:text-[#B08D57] transition text-sm w-20 shrink-0"
-                  >
-                    {row.ticker}
-                  </Link>
-                  <div className="flex-1 flex h-6 rounded overflow-hidden bg-[#080604]">
-                    {(['bullish', 'neutral', 'cautious', 'bearish'] as const).map((stance) => {
-                      const count = row[stance];
-                      if (count === 0) return null;
-                      const pct = (count / row.total) * 100;
-                      return (
-                        <div
-                          key={stance}
-                          className={`${STANCE_BAR[stance]} flex items-center justify-center text-[10px] font-semibold text-[#080604]`}
-                          style={{ width: `${pct}%` }}
-                          title={`${stance}: ${count}`}
-                        >
-                          {pct >= 12 ? count : ''}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <span className="text-xs text-[#F5EFE0]/45 w-12 text-right shrink-0">{row.total}</span>
-                </div>
-              ))}
-              <div className="flex items-center gap-4 pt-3 mt-2 border-t border-[rgba(176,141,87,0.18)] text-xs text-[#F5EFE0]/45">
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#3ecf6a]" /> Bullish</span>
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#F5EFE0]/30" /> Neutral</span>
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-amber-400" /> Cautious</span>
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#e8453c]" /> Bearish</span>
-              </div>
-            </div>
-          )}
-        </section>
+        <PositionsHeatmap tiles={heatmapTiles} maxCount={maxTileCount} />
       </div>
     </main>
   );

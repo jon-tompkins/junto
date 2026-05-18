@@ -208,7 +208,7 @@ export default function LandingPage() {
           <p className="mt-5 text-sm" style={{ color: 'rgba(245,239,224,0.35)' }}>
             Or{' '}
             <Link href="/sources" className="transition underline underline-offset-4 decoration-[rgba(176,141,87,0.4)] hover:text-[#B08D57]">
-              browse analyst profiles &amp; tracked positions
+              browse source profiles &amp; tracked positions
             </Link>
           </p>
         </div>
@@ -294,7 +294,7 @@ export default function LandingPage() {
                   <span className="text-xs font-bold" style={{ color: '#B08D57', fontFamily: 'var(--font-oswald)' }}>A</span>
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-1">Analyst profiles</h3>
+                  <h3 className="font-semibold mb-1">Source profiles</h3>
                   <p className="text-sm" style={{ color: 'rgba(245,239,224,0.45)' }}>Every source gets a profile tracking positions, sentiment, and conviction over time.</p>
                 </div>
               </div>

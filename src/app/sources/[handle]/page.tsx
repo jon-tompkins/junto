@@ -140,7 +140,7 @@ export default function SourceProfilePage() {
         <div className="container mx-auto px-4 py-16 max-w-3xl text-center">
           <p className="text-[#F5EFE0]/60 mb-4">Profile not found for @{handle}</p>
           <Link href="/sources" className="text-[#B08D57] hover:text-[#B08D57]/80 text-sm">
-            ← Back to Analyst Profiles
+            ← Back to Sources
           </Link>
         </div>
       </main>
@@ -161,7 +161,7 @@ export default function SourceProfilePage() {
 
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         <Link href="/sources" className="text-[#F5EFE0]/45 hover:text-[#F5EFE0]/80 text-sm transition mb-6 inline-block">
-          ← Analyst Profiles
+          ← Sources
         </Link>
 
         {/* Header */}
@@ -195,7 +195,7 @@ export default function SourceProfilePage() {
         {/* Summary */}
         {profile.summary && (
           <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-8">
-            <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-2 font-[var(--font-oswald)]">Analyst Summary</h2>
+            <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-2 font-[var(--font-oswald)]">Source Summary</h2>
             <p className="text-[#F5EFE0]/80 leading-relaxed">{profile.summary}</p>
           </div>
         )}

@@ -151,7 +151,7 @@ export default function PositionsPage() {
               Positions
             </h1>
             <p className="text-[#F5EFE0]/50 text-sm">
-              Aggregate stances across all tracked analysts · {items.length} signals
+              Aggregate stances across all tracked sources · {items.length} signals
             </p>
           </div>
 
@@ -275,7 +275,7 @@ export default function PositionsPage() {
                     background: `rgba(${hexToRgb(bg)}, ${alpha})`,
                     border: `1px solid ${bg}55`,
                   }}
-                  title={`${item.ticker} · ${STANCE_LABEL[item.stance] ?? item.stance} · ${item.count} analyst${item.count !== 1 ? 's' : ''}`}
+                  title={`${item.ticker} · ${STANCE_LABEL[item.stance] ?? item.stance} · ${item.count} source${item.count !== 1 ? 's' : ''}`}
                 >
                   {session?.user && (
                     <button
@@ -358,7 +358,7 @@ export default function PositionsPage() {
                   {([
                     { col: 'ticker' as SortCol, label: 'Position' },
                     { col: 'stance' as SortCol, label: 'Side' },
-                    { col: 'count' as SortCol, label: 'Analysts' },
+                    { col: 'count' as SortCol, label: 'Sources' },
                   ]).map(({ col, label }) => (
                     <th
                       key={col}
