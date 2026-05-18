@@ -686,73 +686,67 @@ export default function DashboardPage() {
               actionHref="/explore"
             />
           ) : (
-            <div className="space-y-3">
+            <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
               {subscriptions.map((sub) => (
                 <div
                   key={sub.id}
-                  className={`bg-[#141210] border rounded transition-all duration-200 ${
-                    sub.is_active ? 'border-[rgba(176,141,87,0.28)]' : 'border-[rgba(176,141,87,0.18)] opacity-60'
+                  className={`border-b border-[rgba(176,141,87,0.18)] last:border-0 transition-colors ${
+                    sub.is_active ? '' : 'opacity-60'
                   }`}
                 >
-                  <div className="flex items-center justify-between p-5">
+                  <div className="flex items-center gap-4 px-4 py-3 hover:bg-[#141210] transition">
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <Link href={`/newsletter/${sub.newsletter.id}`} className="font-semibold hover:text-[#B08D57] transition truncate">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Link href={`/newsletter/${sub.newsletter.id}`} className="text-sm font-medium hover:text-[#B08D57] transition truncate">
                           {sub.newsletter.name}
                         </Link>
                         {!sub.is_active && (
-                          <span className="text-xs px-2 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45 shrink-0">
-                            Paused
-                          </span>
+                          <span className="text-xs px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45">Paused</span>
                         )}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-[#F5EFE0]/45 flex-wrap">
-                        <span>{sub.delivery_email || accountEmail || 'No email set'}</span>
-                        <span>·</span>
-                        <span>
+                        <span className="text-xs text-[#F5EFE0]/30 hidden sm:inline">·</span>
+                        <span className="text-xs text-[#F5EFE0]/40 hidden sm:inline">
                           {(sub.receive_windows || sub.send_windows || ['morning']).map(w => LOCAL_WINDOW_LABELS[w] || w).join(', ')}
                         </span>
-                        <span>·</span>
-                        <span>
+                        <span className="text-xs text-[#F5EFE0]/30 hidden sm:inline">·</span>
+                        <span className="text-xs text-[#F5EFE0]/40 hidden sm:inline">
                           {(sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']).map(d => DAY_LABELS[d] || d).join(', ')}
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-4">
+                    <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={() => editingSubId === sub.id ? setEditingSubId(null) : startEditSub(sub)}
-                        className="text-xs px-3 py-1.5 rounded-sm bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/80 transition"
+                        className="text-xs px-2.5 py-1 rounded-sm bg-[#141210] hover:bg-[#1c1a17] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] transition"
                       >
                         {editingSubId === sub.id ? 'Cancel' : 'Edit'}
                       </button>
                       <button
                         onClick={() => handleToggleSubscription(sub.id, sub.is_active)}
-                        className={`text-xs px-3 py-1.5 rounded-sm transition ${
+                        className={`text-xs px-2.5 py-1 rounded-sm border transition ${
                           sub.is_active
-                            ? 'bg-[#1c1a17] hover:bg-[#e8453c]/20 text-[#F5EFE0]/45 hover:text-[#e8453c]'
-                            : 'bg-[#3ecf6a]/15 hover:bg-[#3ecf6a]/25 text-[#3ecf6a]'
+                            ? 'border-[rgba(176,141,87,0.18)] text-[#F5EFE0]/40 hover:text-[#e8453c] hover:border-[#e8453c]/30'
+                            : 'border-[#3ecf6a]/30 text-[#3ecf6a]'
                         }`}
                       >
-                        {sub.is_active ? 'Pause' : 'Reactivate'}
+                        {sub.is_active ? 'Pause' : 'Resume'}
                       </button>
                     </div>
                   </div>
 
                   {/* Inline edit panel */}
                   {editingSubId === sub.id && (
-                    <div className="border-t border-[rgba(176,141,87,0.18)] p-5 space-y-4">
-                      {/* Send windows */}
+                    <div className="border-t border-[rgba(176,141,87,0.18)] px-4 py-4 bg-[#080604] space-y-4">
                       <div>
-                        <label className="text-xs text-[#F5EFE0]/60 font-medium block mb-2">Send times (your local timezone)</label>
+                        <label className="text-xs text-[#F5EFE0]/50 font-medium block mb-2">Send times (your local timezone)</label>
                         <div className="flex gap-2 flex-wrap">
                           {WINDOW_OPTIONS.map((w) => (
                             <button
                               key={w.key}
                               onClick={() => toggleWindow(w.key)}
-                              className={`px-3 py-1.5 rounded-sm text-sm font-medium transition ${
+                              className={`px-3 py-1.5 rounded-sm text-xs font-medium transition ${
                                 editWindows.includes(w.key)
                                   ? 'bg-[#B08D57] text-[#080604]'
-                                  : 'bg-[#1c1a17] text-[#F5EFE0]/60 hover:bg-[#1c1a17]/80'
+                                  : 'bg-[#141210] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17]'
                               }`}
                             >
                               {LOCAL_WINDOW_LABELS[w.key]}
@@ -760,19 +754,17 @@ export default function DashboardPage() {
                           ))}
                         </div>
                       </div>
-
-                      {/* Days */}
                       <div>
-                        <label className="text-xs text-[#F5EFE0]/60 font-medium block mb-2">Days</label>
+                        <label className="text-xs text-[#F5EFE0]/50 font-medium block mb-2">Days</label>
                         <div className="flex gap-1.5">
                           {DAY_OPTIONS.map((d) => (
                             <button
                               key={d.key}
                               onClick={() => toggleDay(d.key)}
-                              className={`w-9 h-9 rounded-sm text-sm font-medium transition ${
+                              className={`w-8 h-8 rounded-sm text-xs font-medium transition ${
                                 editDays.includes(d.key)
                                   ? 'bg-[#B08D57] text-[#080604]'
-                                  : 'bg-[#1c1a17] text-[#F5EFE0]/60 hover:bg-[#1c1a17]/80'
+                                  : 'bg-[#141210] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17]'
                               }`}
                               title={DAY_LABELS[d.key]}
                             >
@@ -781,23 +773,20 @@ export default function DashboardPage() {
                           ))}
                         </div>
                       </div>
-
-                      {/* Delivery email */}
                       <div>
-                        <label className="text-xs text-[#F5EFE0]/60 font-medium block mb-2">Delivery email</label>
+                        <label className="text-xs text-[#F5EFE0]/50 font-medium block mb-2">Delivery email</label>
                         <input
                           type="email"
                           value={editEmail}
                           onChange={(e) => setEditEmail(e.target.value)}
                           placeholder={accountEmail || 'you@example.com'}
-                          className="w-full sm:w-80 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-1.5 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
+                          className="w-full sm:w-72 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-1.5 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
                         />
                       </div>
-
                       <button
                         onClick={() => handleUpdateSubscription(sub.id)}
                         disabled={saving || editWindows.length === 0 || editDays.length === 0}
-                        className="px-4 py-2 bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] text-sm font-medium rounded transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
+                        className="px-4 py-1.5 bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] text-xs font-medium rounded transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
                       >
                         {saving ? 'Saving...' : 'Save Changes'}
                       </button>
@@ -822,42 +811,38 @@ export default function DashboardPage() {
               actionHref="/create"
             />
           ) : (
-            <div className="space-y-3">
+            <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
               {created.map((nl) => (
                 <div
                   key={nl.id}
-                  className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 hover:border-[rgba(176,141,87,0.5)] transition-all duration-200"
+                  className="flex items-center gap-4 px-4 py-3 border-b border-[rgba(176,141,87,0.18)] last:border-0 hover:bg-[#141210] transition"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <Link href={`/newsletter/${nl.id}`} className="font-semibold hover:text-[#B08D57] transition truncate">
-                          {nl.name}
-                        </Link>
-                        {!nl.is_public && (
-                          <span className="text-xs px-2 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45 shrink-0">
-                            Private
-                          </span>
-                        )}
-                      </div>
-                      {nl.description && (
-                        <p className="text-sm text-[#F5EFE0]/60 truncate mb-2">{nl.description}</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Link href={`/newsletter/${nl.id}`} className="text-sm font-medium hover:text-[#B08D57] transition truncate">
+                        {nl.name}
+                      </Link>
+                      {!nl.is_public && (
+                        <span className="text-xs px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45">Private</span>
                       )}
-                      <div className="flex items-center gap-4 text-xs text-[#F5EFE0]/45">
-                        <span>{nl.subscriber_count} subscriber{nl.subscriber_count !== 1 ? 's' : ''}</span>
-                        <span>·</span>
-                        <span>~{nl.credit_cost || 5} credits/run (owner cost)</span>
-                        <span>·</span>
-                        <span>Subscribers earn you ~{Math.round((nl.credit_cost || 5) * 0.25)} credits/send each</span>
-                      </div>
+                      <span className="text-xs text-[#F5EFE0]/30 hidden sm:inline">·</span>
+                      <span className="text-xs text-[#F5EFE0]/40 hidden sm:inline">
+                        {nl.subscriber_count} subscriber{nl.subscriber_count !== 1 ? 's' : ''}
+                      </span>
+                      {nl.description && (
+                        <>
+                          <span className="text-xs text-[#F5EFE0]/30 hidden sm:inline">·</span>
+                          <span className="text-xs text-[#F5EFE0]/40 hidden sm:inline truncate max-w-xs">{nl.description}</span>
+                        </>
+                      )}
                     </div>
-                    <Link
-                      href={`/newsletter/${nl.id}/edit`}
-                      className="text-xs px-3 py-1.5 rounded-sm bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/80 transition shrink-0 ml-4"
-                    >
-                      Edit
-                    </Link>
                   </div>
+                  <Link
+                    href={`/newsletter/${nl.id}/edit`}
+                    className="text-xs px-2.5 py-1 rounded-sm bg-[#141210] hover:bg-[#1c1a17] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] transition shrink-0"
+                  >
+                    Edit
+                  </Link>
                 </div>
               ))}
             </div>
@@ -873,30 +858,52 @@ export default function DashboardPage() {
               subtitle="Issues will appear here once newsletters start generating."
             />
           ) : (
-            <div className="space-y-3">
+            <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
               {runs.map((run) => (
-                <div key={run.id} className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
+                <div key={run.id} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
                   <button
                     onClick={() => setExpandedRunId(expandedRunId === run.id ? null : run.id)}
-                    className="w-full flex items-center justify-between p-5 hover:bg-[#1c1a17] transition text-left"
+                    className="w-full flex items-center gap-4 px-4 py-3 hover:bg-[#141210] transition text-left"
                   >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="font-semibold text-[#F5EFE0] truncate">
-                          {run.subject || 'Untitled issue'}
-                        </h3>
-                        {run.newsletter_name && (
-                          <span className="text-xs px-2 py-0.5 rounded-sm bg-[#B08D57]/15 text-[#B08D57] font-medium shrink-0">
-                            {run.newsletter_name}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-[#F5EFE0]/45">
+                    <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-[#F5EFE0] truncate">
+                        {run.subject || 'Untitled issue'}
+                      </span>
+                      {run.newsletter_name && (
+                        <span className="text-xs px-1.5 py-0.5 rounded-sm bg-[#B08D57]/15 text-[#B08D57] font-medium shrink-0">
+                          {run.newsletter_name}
+                        </span>
+                      )}
+                      <span className="text-xs text-[#F5EFE0]/30 hidden sm:inline">·</span>
+                      <span className="text-xs text-[#F5EFE0]/40 hidden sm:inline">
                         {new Date(run.generated_at).toLocaleDateString('en-US', {
                           weekday: 'short', month: 'short', day: 'numeric',
                           year: 'numeric', hour: 'numeric', minute: '2-digit',
                         })}
-                      </p>
+                      </span>
+                    </div>
+                    <svg
+                      className={`w-4 h-4 text-[#F5EFE0]/30 transition-transform shrink-0 ${expandedRunId === run.id ? 'rotate-180' : ''}`}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {expandedRunId === run.id && (
+                    <div className="border-t border-[rgba(176,141,87,0.18)] px-4 py-5 bg-[#080604]">
+                      <div
+                        className="research-content prose prose-invert prose-sm max-w-none text-[#F5EFE0]/80 leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: markdownToHtml(run.content) }}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
                     </div>
                     <svg
                       className={`w-5 h-5 text-[#F5EFE0]/45 transition-transform shrink-0 ml-4 ${expandedRunId === run.id ? 'rotate-180' : ''}`}
@@ -928,11 +935,11 @@ export default function DashboardPage() {
 
 function LoadingSkeleton() {
   return (
-    <div className="space-y-4">
+    <div className="rounded border border-[rgba(176,141,87,0.18)] overflow-hidden animate-pulse">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-6 animate-pulse">
-          <div className="h-5 bg-[#1c1a17] rounded w-1/3 mb-3" />
-          <div className="h-3 bg-[#1c1a17]/60 rounded w-2/3" />
+        <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-[rgba(176,141,87,0.18)] last:border-0">
+          <div className="h-4 bg-[#1c1a17] rounded w-1/4" />
+          <div className="h-3 bg-[#1c1a17]/60 rounded w-1/3" />
         </div>
       ))}
     </div>
