@@ -31,7 +31,7 @@ export default function SetupPage() {
   // Redirect if not logged in
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/login');
+      router.push('/login?callbackUrl=/setup');
     }
   }, [status, router]);
 

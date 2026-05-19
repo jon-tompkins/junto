@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 
@@ -39,6 +40,7 @@ function TypeBadge({ type }: { type: SourceType | string | undefined }) {
 
 export default function NewJuntoPage() {
   const router = useRouter();
+  const { status: authStatus } = useSession();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [sourceType, setSourceType] = useState<SourceType>('twitter');
@@ -170,6 +172,10 @@ export default function NewJuntoPage() {
       setSubmitting(false);
     }
   }
+
+  useEffect(() => {
+    if (authStatus === 'unauthenticated') router.push('/login?callbackUrl=/junto/new');
+  }, [authStatus, router]);
 
   const isUrlType = sourceType !== 'twitter';
   const inputPlaceholder = sourceType === 'twitter' ? 'Search by handle or name...' : 'https://...';

@@ -62,7 +62,7 @@ export default function OnboardingPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (status === 'unauthenticated') router.push('/login');
+    if (status === 'unauthenticated') router.push('/login?callbackUrl=/onboarding');
   }, [status, router]);
 
   useEffect(() => {

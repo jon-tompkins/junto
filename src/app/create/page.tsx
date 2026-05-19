@@ -300,7 +300,7 @@ function CreatePageInner() {
           )}
           <p className="text-xs uppercase tracking-[0.2em] mb-2 font-mono" style={{ color: 'rgba(176,141,87,0.6)' }}>New Dispatch</p>
           <h1 className="text-4xl font-bold uppercase tracking-tight leading-none" style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}>
-            Create a Junto
+            Create a Dispatch
           </h1>
           <p className="text-sm mt-3" style={{ color: 'rgba(245,239,224,0.55)' }}>
             Pick your analysts, set the synthesis style, and it runs on your schedule.
@@ -358,7 +358,9 @@ function CreatePageInner() {
                 <p className="text-xs text-[#F5EFE0]/40 py-4">Loading juntos...</p>
               ) : juntos.length === 0 ? (
                 <div className="text-center py-6" style={{ border: '1px dashed rgba(176,141,87,0.2)', borderRadius: '4px' }}>
-                  <p className="text-sm text-[#F5EFE0]/40 mb-2">No juntos yet.</p>
+                  <p className="text-sm text-[#F5EFE0]/40 mb-2">
+                    {session?.user ? 'No juntos yet.' : 'Sign in to see your juntos.'}
+                  </p>
                   <button onClick={() => setAdHocMode(true)} className="text-xs text-[#B08D57] hover:opacity-80 transition">
                     Add sources directly →
                   </button>

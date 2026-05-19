@@ -64,10 +64,46 @@ export default function ThesesDashboard() {
     return (
       <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
         <TopNav />
-        <div className="max-w-6xl mx-auto px-6 py-16">
-          <p className="text-[#F5EFE0]/60 mb-4 text-sm">Sign in to track theses.</p>
-          <Link href="/login" className="text-[#B08D57] hover:opacity-80 text-sm font-[var(--font-oswald)] uppercase tracking-wide">
-            Sign in →
+        <div className="max-w-4xl mx-auto px-6 py-20 text-center">
+          <p
+            className="text-xs uppercase tracking-[0.2em] mb-4 font-mono"
+            style={{ color: 'rgba(176,141,87,0.6)' }}
+          >
+            myjunto / theses
+          </p>
+          <h1
+            className="text-5xl font-bold uppercase tracking-tight leading-none mb-5"
+            style={{ fontFamily: 'var(--font-oswald), sans-serif' }}
+          >
+            Theses
+          </h1>
+          <p className="text-base max-w-md mx-auto mb-3" style={{ color: 'rgba(245,239,224,0.6)' }}>
+            Track your investment convictions — with validation logic, linked trades, and a structured timeline.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-4 mb-16">
+            {[
+              { label: 'Conviction scoring', sub: '1–5 scale with rationale' },
+              { label: 'Validation events', sub: 'Track what confirms or breaks your thesis' },
+              { label: 'Linked trades', sub: 'See which trades are tied to each idea' },
+            ].map((f) => (
+              <div
+                key={f.label}
+                className="px-5 py-4 text-left w-full sm:w-auto"
+                style={{ background: '#141210', border: '1px solid rgba(176,141,87,0.18)' }}
+              >
+                <p className="text-sm font-semibold uppercase tracking-wide mb-1" style={{ fontFamily: 'var(--font-oswald), sans-serif' }}>
+                  {f.label}
+                </p>
+                <p className="text-xs" style={{ color: 'rgba(245,239,224,0.45)' }}>{f.sub}</p>
+              </div>
+            ))}
+          </div>
+          <Link
+            href="/login"
+            className="inline-block px-8 py-3 font-bold text-sm uppercase tracking-wide transition hover:opacity-90"
+            style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald), sans-serif' }}
+          >
+            Sign in to track theses →
           </Link>
         </div>
       </main>
