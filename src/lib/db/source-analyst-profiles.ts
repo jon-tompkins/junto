@@ -2,7 +2,8 @@ import { getSupabase } from './client';
 
 export interface PositionEntry {
   stance: 'bullish' | 'bearish' | 'neutral' | 'cautious';
-  since: string;  // ISO date string
+  since: string;           // ISO date — when this stance was first taken; never changes on confirmation
+  last_mentioned?: string; // ISO date — last time a tweet confirmed or updated this position
   note?: string;
   target_price?: number;
   entry_price?: number;

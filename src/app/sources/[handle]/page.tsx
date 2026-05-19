@@ -8,8 +8,33 @@ import { TopNav } from '@/components/top-nav';
 interface PositionEntry {
   stance: 'bullish' | 'bearish' | 'neutral' | 'cautious';
   since: string;
+  last_mentioned?: string;
   note?: string;
   target_price?: number;
+}
+
+function stalenessLevel(pos: PositionEntry): 'fresh' | 'warn' | 'stale' {
+  const ref = pos.last_mentioned || pos.since;
+  const days = Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000);
+  if (days >= 30) return 'stale';
+  if (days >= 14) return 'warn';
+  return 'fresh';
+}
+
+function StaleBadge({ pos }: { pos: PositionEntry }) {
+  const level = stalenessLevel(pos);
+  if (level === 'fresh') return null;
+  const ref = pos.last_mentioned || pos.since;
+  const days = Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000);
+  const label = level === 'stale' ? `stale · ${days}d ago` : `${days}d ago`;
+  const cls = level === 'stale'
+    ? 'text-[#e8453c]/80 bg-[#e8453c]/10 border-[#e8453c]/20'
+    : 'text-amber-400/80 bg-amber-400/10 border-amber-400/20';
+  return (
+    <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${cls}`}>
+      {label}
+    </span>
+  );
 }
 
 interface QuoteData {
@@ -221,12 +246,15 @@ export default function SourceProfilePage() {
                     : null;
                 return (
                   <Link key={ticker} href={`/positions/${ticker}`} className="block bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 hover:border-[rgba(176,141,87,0.4)] transition">
-                    {/* Top row: ticker + badge */}
+                    {/* Top row: ticker + badges */}
                     <div className="flex items-center justify-between gap-3 mb-3">
                       <span className="font-mono font-bold text-[#F5EFE0] text-lg">{ticker}</span>
-                      <span className={`text-xs px-2.5 py-1 rounded-sm font-medium shrink-0 ${STANCE_BADGE[pos.stance]}`}>
-                        {STANCE_LABELS[pos.stance]}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <StaleBadge pos={pos} />
+                        <span className={`text-xs px-2.5 py-1 rounded-sm font-medium shrink-0 ${STANCE_BADGE[pos.stance]}`}>
+                          {STANCE_LABELS[pos.stance]}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Price row */}
@@ -264,10 +292,15 @@ export default function SourceProfilePage() {
                       />
                     </div>
 
-                    {/* Since + days */}
+                    {/* Since + last mentioned */}
                     <div className="flex items-center justify-between text-xs text-[#F5EFE0]/30">
                       <span>since {new Date(pos.since).toLocaleDateString()}</span>
-                      <span>{days}d</span>
+                      <div className="flex items-center gap-2">
+                        {pos.last_mentioned && pos.last_mentioned !== pos.since && (
+                          <span>last mentioned {new Date(pos.last_mentioned).toLocaleDateString()}</span>
+                        )}
+                        <span>{days}d</span>
+                      </div>
                     </div>
 
                     {/* Note */}

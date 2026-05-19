@@ -7,8 +7,17 @@ import { TopNav } from '@/components/top-nav';
 interface PositionEntry {
   stance: 'bullish' | 'bearish' | 'neutral' | 'cautious';
   since: string;
+  last_mentioned?: string;
   note?: string;
   target_price?: number;
+}
+
+function stalenessLevel(pos: PositionEntry): 'fresh' | 'warn' | 'stale' {
+  const ref = pos.last_mentioned || pos.since;
+  const days = Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000);
+  if (days >= 30) return 'stale';
+  if (days >= 14) return 'warn';
+  return 'fresh';
 }
 
 interface SourceProfile {
@@ -135,15 +144,21 @@ function AnalystRow({ p }: { p: SourceProfile }) {
 
               {positionEntries.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {positionEntries.map(([ticker, pos]) => (
+                  {positionEntries.map(([ticker, pos]) => {
+                    const stale = stalenessLevel(pos);
+                    const ref = pos.last_mentioned || pos.since;
+                    const staleDays = Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000);
+                    return (
                     <Link
                       key={ticker}
                       href={`/positions/${encodeURIComponent(ticker)}`}
                       onClick={(e) => e.stopPropagation()}
-                      className={`text-xs px-3 py-1.5 rounded font-mono border flex flex-col gap-0.5 hover:opacity-80 transition ${STANCE_COLORS[pos.stance]}`}
+                      className={`text-xs px-3 py-1.5 rounded font-mono border flex flex-col gap-0.5 hover:opacity-80 transition ${STANCE_COLORS[pos.stance]} ${stale === 'stale' ? 'opacity-60' : ''}`}
                     >
-                      <div className="font-semibold">
+                      <div className="font-semibold flex items-center gap-1.5">
                         {STANCE_ICONS[pos.stance]} {ticker}
+                        {stale === 'stale' && <span className="text-[9px] px-1 py-0.5 rounded bg-[#e8453c]/20 text-[#e8453c]/80 border border-[#e8453c]/20 font-sans font-medium normal-case">stale</span>}
+                        {stale === 'warn' && <span className="text-[9px] px-1 py-0.5 rounded bg-amber-400/10 text-amber-400/70 border border-amber-400/20 font-sans font-medium normal-case">{staleDays}d</span>}
                       </div>
                       {pos.note && <div className="opacity-75 font-sans normal-case">{pos.note}</div>}
                       {pos.target_price && (
@@ -153,7 +168,8 @@ function AnalystRow({ p }: { p: SourceProfile }) {
                         since {new Date(pos.since).toLocaleDateString()}
                       </div>
                     </Link>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 

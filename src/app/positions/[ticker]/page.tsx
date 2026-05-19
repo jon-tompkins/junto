@@ -50,8 +50,17 @@ interface Analyst {
   stance: string;
   note?: string;
   since: string;
+  last_mentioned?: string;
   target_price?: number;
   entry_price?: number;
+}
+
+function stalenessLevel(a: Analyst): 'fresh' | 'warn' | 'stale' {
+  const ref = a.last_mentioned || a.since;
+  const days = Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000);
+  if (days >= 30) return 'stale';
+  if (days >= 14) return 'warn';
+  return 'fresh';
 }
 
 interface PositionData {
@@ -301,6 +310,16 @@ export default function PositionPage() {
                           </span>
                           {a.display_name && (
                             <span className="text-xs text-[#F5EFE0]/45">{a.display_name}</span>
+                          )}
+                          {stalenessLevel(a) === 'stale' && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded border border-[#e8453c]/20 bg-[#e8453c]/10 text-[#e8453c]/80 font-medium">
+                              stale · {Math.floor((Date.now() - new Date(a.last_mentioned || a.since).getTime()) / 86_400_000)}d ago
+                            </span>
+                          )}
+                          {stalenessLevel(a) === 'warn' && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-400/20 bg-amber-400/10 text-amber-400/70 font-medium">
+                              {Math.floor((Date.now() - new Date(a.last_mentioned || a.since).getTime()) / 86_400_000)}d ago
+                            </span>
                           )}
                           <span
                             className={`ml-auto text-xs px-2 py-0.5 rounded-sm font-medium capitalize ${STANCE_COLORS[a.stance]}`}

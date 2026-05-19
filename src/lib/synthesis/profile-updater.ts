@@ -51,9 +51,10 @@ WHAT NOT TO TRACK — remove these if they exist, never add new ones:
 - Anything that is not directly investable or a recognized sector
 
 Rules:
-- Only add/update a position when a tweet explicitly states a directional view on a specific asset or sector
-- If a new tweet contradicts an existing position, update it with today's date
-- Remove any existing position that falls into the "WHAT NOT TO TRACK" category
+- Include a position whenever a tweet states OR confirms a directional view — even "still long X" or "added more X" counts
+- If new tweets clearly show an exit or contradiction of an existing position, change the stance
+- If new tweets are silent on an existing position, still include it with its current stance (do not drop it just because it wasn't mentioned)
+- Remove positions in the "WHAT NOT TO TRACK" category
 - summary: 1–2 sentences on what this analyst focuses on and their style
 - Return ONLY valid JSON, no prose
 
@@ -63,14 +64,14 @@ Normalization:
 - Never duplicate: if an existing key covers the same asset, update it
 - Max 1–3 words for sector/theme keys: "semiconductors" not "semiconductor supply chains"
 
-Output schema:
+Output schema — do NOT include a "since" date, that is managed externally:
 {
   "summary": "string or null",
   "positions": {
     "<ticker or investable sector>": {
       "stance": "bullish" | "bearish" | "neutral" | "cautious",
-      "since": "YYYY-MM-DD",
-      "note": "optional brief context"
+      "note": "optional brief context — only if tweet provides specific reason or target",
+      "mentioned_in_tweets": true | false  // true if these new tweets explicitly reference this position
     }
   }
 }`,
@@ -87,9 +88,8 @@ Output schema:
     .map((b) => b.text)
     .join('');
 
-  let parsed: { summary: string | null; positions: Record<string, PositionEntry> };
+  let parsed: { summary: string | null; positions: Record<string, { stance: PositionEntry['stance']; note?: string; mentioned_in_tweets?: boolean }> };
   try {
-    // Strip markdown code fences, then extract the outermost JSON object
     const stripped = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
     const match = stripped.match(/\{[\s\S]*\}/);
     if (!match) throw new Error('no JSON object found');
@@ -99,17 +99,46 @@ Output schema:
     return { summary: existing?.summary ?? null, positions: existing?.positions ?? {}, changed: false };
   }
 
-  // For new positions, fetch entry price. For existing, preserve it.
+  const today = new Date().toISOString().split('T')[0];
+  const STALE_DROP_DAYS = 60;
+
+  // Start with carried-over existing positions — stale ones persist until 60 days without mention
   const enriched: Record<string, PositionEntry> = {};
+  if (existing?.positions) {
+    for (const [ticker, pos] of Object.entries(existing.positions)) {
+      const refDate = pos.last_mentioned || pos.since;
+      const daysOld = Math.floor((Date.now() - new Date(refDate).getTime()) / 86_400_000);
+      if (daysOld < STALE_DROP_DAYS) {
+        enriched[ticker] = pos;
+      }
+    }
+  }
+
+  // Process Claude's returned positions — these override the carry-over
   await Promise.all(
     Object.entries(parsed.positions).map(async ([ticker, pos]) => {
       const prev = existing?.positions?.[ticker];
-      if (prev?.entry_price != null) {
-        enriched[ticker] = { ...pos, entry_price: prev.entry_price };
-      } else {
+      const stanceFlipped = prev && prev.stance !== pos.stance;
+
+      // since: never changes for same stance; resets only on a flip
+      const since = (prev && !stanceFlipped) ? prev.since : today;
+      // last_mentioned: only advance if Claude says these tweets actually referenced it
+      const last_mentioned = pos.mentioned_in_tweets ? today : (prev?.last_mentioned || prev?.since || today);
+
+      let entry_price = prev?.entry_price ?? null;
+      if (entry_price == null) {
         const price = await fetchCurrentPrice(ticker);
-        enriched[ticker] = price != null ? { ...pos, entry_price: price } : pos;
+        if (price != null) entry_price = price;
       }
+
+      enriched[ticker] = {
+        stance: pos.stance,
+        since,
+        last_mentioned,
+        ...(pos.note ? { note: pos.note } : {}),
+        ...(entry_price != null ? { entry_price } : {}),
+        ...(prev?.target_price != null ? { target_price: prev.target_price } : {}),
+      };
     }),
   );
 
