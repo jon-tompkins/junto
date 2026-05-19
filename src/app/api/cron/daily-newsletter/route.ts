@@ -115,13 +115,14 @@ async function getUserProfiles(userId: string): Promise<string[]> {
 }
 
 export async function GET(request: NextRequest) {
-  // Verify cron secret
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    console.error('[daily-newsletter] CRON_SECRET is not set — refusing to run');
+    return NextResponse.json({ error: 'Cron not configured' }, { status: 500 });
+  }
   const authHeader = request.headers.get('authorization');
-  if (config.app.cronSecret && authHeader !== `Bearer ${config.app.cronSecret}`) {
-    const cronHeader = request.headers.get('x-vercel-cron');
-    if (!cronHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {

@@ -3,6 +3,15 @@ import { ingestNewslettersFromGmail, IngestResult } from '@/lib/email/gmail-inge
 
 // POST /api/newsletters/ingest - Fetch and store newsletters from Gmail
 export async function POST(request: NextRequest) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return NextResponse.json({ error: 'Cron not configured' }, { status: 500 });
+  }
+  const authHeader = request.headers.get('authorization');
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json().catch(() => ({}));
     const daysBack = body.daysBack || 7;

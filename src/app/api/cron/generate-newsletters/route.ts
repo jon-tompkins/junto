@@ -20,9 +20,13 @@ export const maxDuration = 300; // 5 minutes
 // Triggered by Vercel cron every 5 minutes
 export async function GET(req: NextRequest) {
   try {
-    // Verify cron secret in production
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret) {
+      console.error('[generate] CRON_SECRET is not set — refusing to run');
+      return NextResponse.json({ error: 'Cron not configured' }, { status: 500 });
+    }
     const authHeader = req.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

@@ -24,8 +24,13 @@ const FIRST_PULL_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 // GET /api/cron/pull-content — pull fresh content from all source types
 export async function GET(req: NextRequest) {
   try {
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret) {
+      console.error('[pull-content] CRON_SECRET is not set — refusing to run');
+      return NextResponse.json({ error: 'Cron not configured' }, { status: 500 });
+    }
     const authHeader = req.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

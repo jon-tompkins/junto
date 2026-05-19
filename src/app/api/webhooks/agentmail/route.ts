@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createHmac } from 'crypto';
 import { getSupabase } from '@/lib/db/client';
 
 // AgentMail webhook payload for message.received
@@ -63,26 +64,38 @@ async function matchNewsletter(fromEmail: string, subject: string): Promise<{ id
 
 export async function POST(request: NextRequest) {
   try {
-    const payload: AgentMailWebhook = await request.json();
-    
+    const rawBody = await request.text();
+
+    // Verify HMAC signature if secret is configured
+    const webhookSecret = process.env.AGENTMAIL_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const sig = request.headers.get('x-agentmail-signature') || request.headers.get('x-webhook-signature') || '';
+      const expected = createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
+      if (sig !== expected && sig !== `sha256=${expected}`) {
+        console.warn('[AgentMail] Invalid webhook signature');
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+      }
+    }
+
+    const payload: AgentMailWebhook = JSON.parse(rawBody);
+
     console.log(`[AgentMail] Received event: ${payload.event_type}`);
-    
+
     // Only process received messages
     if (payload.event_type !== 'message.received' || !payload.message) {
       return NextResponse.json({ status: 'ignored', reason: 'not a received message' });
     }
-    
+
     const msg = payload.message;
     const fromEmail = msg.from_?.[0] || '';
-    
+
     console.log(`[AgentMail] Processing email from: ${fromEmail}, subject: ${msg.subject}`);
-    
+
     // Try to match to a known newsletter
     const newsletter = await matchNewsletter(fromEmail, msg.subject);
-    
+
     if (!newsletter) {
       console.log(`[AgentMail] No matching newsletter for sender: ${fromEmail}`);
-      // Store as unmatched for review
       const supabase = getSupabase();
       await supabase.from('agentmail_unmatched').insert({
         message_id: msg.message_id,
@@ -91,28 +104,25 @@ export async function POST(request: NextRequest) {
         received_at: msg.timestamp,
         text_preview: msg.text?.substring(0, 500),
       }).select();
-      
       return NextResponse.json({ status: 'stored_unmatched' });
     }
-    
+
     console.log(`[AgentMail] Matched newsletter: ${newsletter.name}`);
-    
-    // Store in newsletter_content
+
     const supabase = getSupabase();
-    
+
     // Check for duplicate
     const { data: existing } = await supabase
       .from('newsletter_content')
       .select('id')
       .eq('message_id', msg.message_id)
       .single();
-    
+
     if (existing) {
       console.log(`[AgentMail] Duplicate message, skipping: ${msg.message_id}`);
       return NextResponse.json({ status: 'duplicate' });
     }
-    
-    // Insert
+
     const { error } = await supabase.from('newsletter_content').insert({
       newsletter_id: newsletter.id,
       message_id: msg.message_id,
@@ -121,26 +131,18 @@ export async function POST(request: NextRequest) {
       content_html: msg.html || null,
       received_at: msg.timestamp,
     });
-    
+
     if (error) {
       console.error('[AgentMail] Error storing newsletter:', error);
       return NextResponse.json({ status: 'error', error: error.message }, { status: 500 });
     }
-    
+
     console.log(`[AgentMail] Stored newsletter: ${newsletter.name} - ${msg.subject}`);
-    
-    return NextResponse.json({ 
-      status: 'stored',
-      newsletter: newsletter.name,
-      subject: msg.subject 
-    });
-    
+    return NextResponse.json({ status: 'stored', newsletter: newsletter.name, subject: msg.subject });
+
   } catch (error) {
     console.error('[AgentMail] Webhook error:', error);
-    return NextResponse.json(
-      { status: 'error', error: String(error) },
-      { status: 500 }
-    );
+    return NextResponse.json({ status: 'error', error: String(error) }, { status: 500 });
   }
 }
 

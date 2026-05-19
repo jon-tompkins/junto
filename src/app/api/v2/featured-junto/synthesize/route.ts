@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getSupabase } from '@/lib/db/client';
@@ -8,6 +8,7 @@ import { deductCredits } from '@/lib/db/credits';
 import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
 import { QUICK_DISPATCH_SYSTEM_PROMPT, parseNewsletterResponse } from '@/lib/synthesis/prompts';
 import { recordCost, anthropicHaikuCostCents } from '@/lib/costs';
+import { synthesisLimiter } from '@/lib/rate-limit';
 
 const CREDIT_COST = 5;
 const TRANSACTION_TYPE = 'featured_junto_synthesize';
@@ -31,7 +32,10 @@ async function resolveUserId(session: any): Promise<string | null> {
 
 // POST /api/v2/featured-junto/synthesize
 // Runs a quick dispatch over the current user's featured junto sources.
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const limited = synthesisLimiter(req);
+  if (limited) return limited;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

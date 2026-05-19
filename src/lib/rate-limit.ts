@@ -64,7 +64,8 @@ export function rateLimit(limit: number, windowMs: number) {
 }
 
 // Pre-configured limiters
-export const apiLimiter = rateLimit(60, 60_000);       // 60 req/min for general API
+export const apiLimiter = rateLimit(60, 60_000);        // 60 req/min for general API
 export const searchLimiter = rateLimit(30, 60_000);     // 30 req/min for search
 export const authLimiter = rateLimit(10, 60_000);       // 10 req/min for auth actions
 export const webhookLimiter = rateLimit(100, 60_000);   // 100 req/min for webhooks
+export const synthesisLimiter = rateLimit(5, 60_000);  // 5 req/min for Claude synthesis calls

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { synthesisLimiter } from '@/lib/rate-limit';
 import { getSupabase } from '@/lib/db/client';
 import { getRecentContentForSources, groupContentByHandle } from '@/lib/db/content-twitter';
 import { getSourcesByIds } from '@/lib/db/sources';
@@ -211,6 +212,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = synthesisLimiter(req);
+  if (limited) return limited;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {

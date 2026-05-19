@@ -73,6 +73,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'junto_id is required' }, { status: 400 });
     }
 
+    if (name && name.length > 100) {
+      return NextResponse.json({ error: 'name must be 100 characters or fewer' }, { status: 400 });
+    }
+
+    if (secondary_prompt && secondary_prompt.length > 1000) {
+      return NextResponse.json({ error: 'secondary_prompt must be 1000 characters or fewer' }, { status: 400 });
+    }
+
+    if (prompt && prompt.length > 10000) {
+      return NextResponse.json({ error: 'prompt must be 10000 characters or fewer' }, { status: 400 });
+    }
+
     const newsletter = await createNewsletter({
       name,
       description,
