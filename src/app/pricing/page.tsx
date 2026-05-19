@@ -26,8 +26,10 @@ const CREDIT_COSTS = [
 ];
 
 const TOP_UP_PACKAGES = [
-  { id: 'credits_500', credits: 500, price: 5, label: '$5' },
-  { id: 'credits_1000', credits: 1000, price: 10, label: '$10', popular: true },
+  { id: 'credits_500', credits: 500, price: 5, label: '$5', popular: false, bonus: 0 },
+  { id: 'credits_1000', credits: 1000, price: 10, label: '$10', popular: true, bonus: 0 },
+  { id: 'credits_5000', credits: 5250, price: 50, label: '$50', popular: false, bonus: 250 },
+  { id: 'credits_10000', credits: 11000, price: 100, label: '$100', popular: false, bonus: 1000 },
 ];
 
 export default function PricingPage() {
@@ -117,10 +119,10 @@ export default function PricingPage() {
             </ul>
 
             <Link
-              href="/login"
+              href={session?.user ? '/dashboard' : '/login'}
               className="block text-center px-4 py-2.5 rounded border border-[rgba(176,141,87,0.3)] text-[#F5EFE0]/70 text-sm font-medium hover:border-[rgba(176,141,87,0.6)] hover:text-[#F5EFE0] transition"
             >
-              Get started free
+              {session?.user ? 'Go to dashboard' : 'Get started free'}
             </Link>
           </div>
 
@@ -140,8 +142,7 @@ export default function PricingPage() {
               {[
                 '3 juntos (up to 20 sources each)',
                 '3 dispatches',
-                '1,000 credits / month',
-                'Credits reset monthly (no rollover)',
+                '1,000 fresh credits each month',
                 'Quick synthesis',
                 'Thesis generation',
                 'Deep dive reports',
@@ -186,7 +187,12 @@ export default function PricingPage() {
                       : 'border-[rgba(176,141,87,0.2)] bg-[#141210] hover:bg-[#1c1a17]'
                   } disabled:cursor-wait disabled:opacity-60`}
                 >
-                  <span className="font-medium text-[#F5EFE0]">{pkg.credits.toLocaleString()} credits</span>
+                  <span className="font-medium text-[#F5EFE0]">
+                    {pkg.credits.toLocaleString()} credits
+                    {pkg.bonus > 0 && (
+                      <span className="text-[#3ecf6a] text-xs ml-1.5">+{pkg.bonus.toLocaleString()} bonus</span>
+                    )}
+                  </span>
                   <span className="text-[#B08D57] font-bold">{pkg.label}</span>
                   {pkg.popular && (
                     <span className="absolute -top-2 right-3 text-[9px] px-1.5 py-0.5 bg-[#B08D57] text-[#080604] rounded font-bold uppercase tracking-wide">

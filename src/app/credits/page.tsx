@@ -100,18 +100,26 @@ export default function CreditsPage() {
 
         {/* Pricing info */}
         <div className="mb-8 p-4 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded">
-          <div className="grid grid-cols-3 gap-4 text-center text-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center text-sm">
             <div>
-              <div className="text-[#F5EFE0]/60">Dispatch send</div>
-              <div className="text-[#F5EFE0] font-medium mt-1">2 credits</div>
+              <div className="text-[#F5EFE0]/60">Quick synthesis</div>
+              <div className="text-[#F5EFE0] font-medium mt-1">5 credits</div>
             </div>
             <div>
-              <div className="text-[#F5EFE0]/60">Dispatch (owner)</div>
-              <div className="text-[#F5EFE0] font-medium mt-1">10-25 credits</div>
+              <div className="text-[#F5EFE0]/60">Thesis generation</div>
+              <div className="text-[#F5EFE0] font-medium mt-1">25 credits</div>
             </div>
             <div>
               <div className="text-[#F5EFE0]/60">Deep dive report</div>
-              <div className="text-[#F5EFE0] font-medium mt-1">5 credits</div>
+              <div className="text-[#F5EFE0] font-medium mt-1">75 credits</div>
+            </div>
+            <div>
+              <div className="text-[#F5EFE0]/60">Dispatch (owner)</div>
+              <div className="text-[#F5EFE0] font-medium mt-1">10–25 credits</div>
+            </div>
+            <div>
+              <div className="text-[#F5EFE0]/60">Dispatch send</div>
+              <div className="text-[#F5EFE0] font-medium mt-1">2 credits</div>
             </div>
           </div>
         </div>
@@ -155,7 +163,21 @@ export default function CreditsPage() {
           ))}
         </div>
 
-        <p className="text-center text-xs text-[#F5EFE0]/30 mt-8">
+        {/* Pro upsell */}
+        <div className="mt-8 p-4 rounded border border-[#B08D57]/30 bg-[#B08D57]/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <div className="text-sm font-medium text-[#B08D57]">Go Pro — $9/month</div>
+            <div className="text-xs text-[#F5EFE0]/50 mt-0.5">1,000 credits every month + dispatches, thesis generation, and deep dive reports.</div>
+          </div>
+          <a
+            href="/pricing"
+            className="shrink-0 px-4 py-2 rounded border border-[#B08D57]/60 text-[#B08D57] text-xs font-bold font-[var(--font-oswald)] uppercase tracking-wide hover:bg-[#B08D57]/10 transition whitespace-nowrap"
+          >
+            See plans →
+          </a>
+        </div>
+
+        <p className="text-center text-xs text-[#F5EFE0]/30 mt-6">
           Payments processed securely by Stripe. 100 credits = $1.00.
         </p>
       </div>
