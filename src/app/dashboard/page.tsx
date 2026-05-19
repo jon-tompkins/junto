@@ -903,29 +903,6 @@ export default function DashboardPage() {
             </div>
           )
         )}
-
-                    </div>
-                    <svg
-                      className={`w-5 h-5 text-[#F5EFE0]/45 transition-transform shrink-0 ml-4 ${expandedRunId === run.id ? 'rotate-180' : ''}`}
-                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-
-                  {expandedRunId === run.id && (
-                    <div className="border-t border-[rgba(176,141,87,0.18)] p-6">
-                      <div
-                        className="research-content prose prose-invert prose-sm max-w-none text-[#F5EFE0]/80 leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: markdownToHtml(run.content) }}
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )
-        )}
       </div>
     </main>
   );
