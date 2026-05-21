@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 import { markdownToHtml } from '@/lib/utils/markdown-client';
@@ -713,55 +713,62 @@ export default function DashboardPage() {
             />
           ) : (
             <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-[#141210] border-b border-[rgba(176,141,87,0.28)]">
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Dispatch</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Send times</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Days</th>
+                    <th className="px-4 py-2.5 text-right text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap"></th>
+                  </tr>
+                </thead>
+                <tbody>
               {subscriptions.map((sub) => (
-                <div
-                  key={sub.id}
-                  className={`border-b border-[rgba(176,141,87,0.18)] last:border-0 transition-colors ${
-                    sub.is_active ? '' : 'opacity-60'
-                  }`}
-                >
-                  <div className="flex items-center gap-4 px-4 py-3 hover:bg-[#141210] transition">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Link href={`/newsletter/${sub.newsletter.id}`} className="text-sm font-medium hover:text-[#B08D57] transition truncate">
+                <React.Fragment key={sub.id}>
+                  <tr className={`border-b border-[rgba(176,141,87,0.18)] hover:bg-[#141210] transition-colors ${sub.is_active ? '' : 'opacity-60'}`}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Link href={`/newsletter/${sub.newsletter.id}`} className="text-sm font-medium hover:text-[#B08D57] transition">
                           {sub.newsletter.name}
                         </Link>
                         {!sub.is_active && (
                           <span className="text-xs px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45">Paused</span>
                         )}
-                        <span className="text-xs text-[#F5EFE0]/30 hidden sm:inline">·</span>
-                        <span className="text-xs text-[#F5EFE0]/40 hidden sm:inline">
-                          {(sub.receive_windows || sub.send_windows || ['morning']).map(w => LOCAL_WINDOW_LABELS[w] || w).join(', ')}
-                        </span>
-                        <span className="text-xs text-[#F5EFE0]/30 hidden sm:inline">·</span>
-                        <span className="text-xs text-[#F5EFE0]/40 hidden sm:inline">
-                          {(sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']).map(d => DAY_LABELS[d] || d).join(', ')}
-                        </span>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => editingSubId === sub.id ? setEditingSubId(null) : startEditSub(sub)}
-                        className="text-xs px-2.5 py-1 rounded-sm bg-[#141210] hover:bg-[#1c1a17] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] transition"
-                      >
-                        {editingSubId === sub.id ? 'Cancel' : 'Edit'}
-                      </button>
-                      <button
-                        onClick={() => handleToggleSubscription(sub.id, sub.is_active)}
-                        className={`text-xs px-2.5 py-1 rounded-sm border transition ${
-                          sub.is_active
-                            ? 'border-[rgba(176,141,87,0.18)] text-[#F5EFE0]/40 hover:text-[#e8453c] hover:border-[#e8453c]/30'
-                            : 'border-[#3ecf6a]/30 text-[#3ecf6a]'
-                        }`}
-                      >
-                        {sub.is_active ? 'Pause' : 'Resume'}
-                      </button>
-                    </div>
-                  </div>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-xs text-[#F5EFE0]/55">
+                      {(sub.receive_windows || sub.send_windows || ['morning']).map(w => LOCAL_WINDOW_LABELS[w] || w).join(', ')}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-xs text-[#F5EFE0]/55">
+                      {(sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']).map(d => DAY_LABELS[d] || d).join(', ')}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-right">
+                      <div className="flex items-center gap-2 justify-end">
+                        <button
+                          onClick={() => editingSubId === sub.id ? setEditingSubId(null) : startEditSub(sub)}
+                          className="text-xs px-2.5 py-1 rounded-sm bg-[#141210] hover:bg-[#1c1a17] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] transition"
+                        >
+                          {editingSubId === sub.id ? 'Cancel' : 'Edit'}
+                        </button>
+                        <button
+                          onClick={() => handleToggleSubscription(sub.id, sub.is_active)}
+                          className={`text-xs px-2.5 py-1 rounded-sm border transition ${
+                            sub.is_active
+                              ? 'border-[rgba(176,141,87,0.18)] text-[#F5EFE0]/40 hover:text-[#e8453c] hover:border-[#e8453c]/30'
+                              : 'border-[#3ecf6a]/30 text-[#3ecf6a]'
+                          }`}
+                        >
+                          {sub.is_active ? 'Pause' : 'Resume'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
 
                   {/* Inline edit panel */}
                   {editingSubId === sub.id && (
-                    <div className="border-t border-[rgba(176,141,87,0.18)] px-4 py-4 bg-[#080604] space-y-4">
+                    <tr className="border-b border-[rgba(176,141,87,0.18)] bg-[#080604]">
+                      <td colSpan={4} className="px-4 py-4">
+                        <div className="space-y-4">
                       <div>
                         <label className="text-xs text-[#F5EFE0]/50 font-medium block mb-2">Send times (your local timezone)</label>
                         <div className="flex gap-2 flex-wrap">
@@ -816,10 +823,14 @@ export default function DashboardPage() {
                       >
                         {saving ? 'Saving...' : 'Save Changes'}
                       </button>
-                    </div>
+                        </div>
+                      </td>
+                    </tr>
                   )}
-                </div>
+                </React.Fragment>
               ))}
+                </tbody>
+              </table>
             </div>
           )
         )}
@@ -838,39 +849,46 @@ export default function DashboardPage() {
             />
           ) : (
             <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
-              {created.map((nl) => (
-                <div
-                  key={nl.id}
-                  className="flex items-center gap-4 px-4 py-3 border-b border-[rgba(176,141,87,0.18)] last:border-0 hover:bg-[#141210] transition"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Link href={`/newsletter/${nl.id}`} className="text-sm font-medium hover:text-[#B08D57] transition truncate">
-                        {nl.name}
-                      </Link>
-                      {!nl.is_public && (
-                        <span className="text-xs px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45">Private</span>
-                      )}
-                      <span className="text-xs text-[#F5EFE0]/30 hidden sm:inline">·</span>
-                      <span className="text-xs text-[#F5EFE0]/40 hidden sm:inline">
-                        {nl.subscriber_count} subscriber{nl.subscriber_count !== 1 ? 's' : ''}
-                      </span>
-                      {nl.description && (
-                        <>
-                          <span className="text-xs text-[#F5EFE0]/30 hidden sm:inline">·</span>
-                          <span className="text-xs text-[#F5EFE0]/40 hidden sm:inline truncate max-w-xs">{nl.description}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <Link
-                    href={`/newsletter/${nl.id}/edit`}
-                    className="text-xs px-2.5 py-1 rounded-sm bg-[#141210] hover:bg-[#1c1a17] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] transition shrink-0"
-                  >
-                    Edit
-                  </Link>
-                </div>
-              ))}
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-[#141210] border-b border-[rgba(176,141,87,0.28)]">
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Name</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Description</th>
+                    <th className="px-4 py-2.5 text-right text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Subs</th>
+                    <th className="px-4 py-2.5 text-right text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {created.map((nl) => (
+                    <tr key={nl.id} className="border-b border-[rgba(176,141,87,0.18)] hover:bg-[#141210] transition-colors last:border-b-0">
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <Link href={`/newsletter/${nl.id}`} className="text-sm font-medium hover:text-[#B08D57] transition">
+                            {nl.name}
+                          </Link>
+                          {!nl.is_public && (
+                            <span className="text-xs px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45">Private</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 max-w-sm">
+                        <p className="text-xs text-[#F5EFE0]/55 line-clamp-1">{nl.description || '—'}</p>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-right text-xs text-[#F5EFE0]/55 font-mono">
+                        {nl.subscriber_count}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-right">
+                        <Link
+                          href={`/newsletter/${nl.id}/edit`}
+                          className="text-xs px-2.5 py-1 rounded-sm bg-[#141210] hover:bg-[#1c1a17] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] transition"
+                        >
+                          Edit
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )
         )}

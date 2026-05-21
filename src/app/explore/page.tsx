@@ -174,15 +174,7 @@ export default function ExplorePage() {
 
         {/* Grid */}
         {loading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-6 animate-pulse">
-                <div className="h-5 bg-[#1c1a17] rounded w-3/4 mb-3" />
-                <div className="h-3 bg-[#1c1a17]/60 rounded w-full mb-2" />
-                <div className="h-3 bg-[#1c1a17]/60 rounded w-2/3" />
-              </div>
-            ))}
-          </div>
+          <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] p-8 text-sm text-[#F5EFE0]/45 font-mono">Loading…</div>
         ) : newsletters.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-16 h-16 rounded bg-[#141210] border border-[rgba(176,141,87,0.18)] flex items-center justify-center mx-auto mb-4">
@@ -200,70 +192,85 @@ export default function ExplorePage() {
             </Link>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {newsletters.map((nl) => {
-              const isSubscribed = subscribedIds.has(nl.id);
-              return (
-                <div
-                  key={nl.id}
-                  className="group bg-[#141210] hover:bg-[#1c1a17] border border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.5)] rounded p-6 transition-all duration-200 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5 flex flex-col"
-                >
-                  <Link href={`/newsletter/${nl.id}`} className="flex-1 block">
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="text-lg font-semibold group-hover:text-[#B08D57] transition">
-                        {nl.name}
-                      </h3>
-                      <span className="text-xs px-2 py-0.5 rounded-sm bg-[#B08D57]/15 text-[#B08D57] shrink-0 ml-2 font-medium">
-                        {CADENCE_LABELS[nl.schedule_cadence] || nl.schedule_cadence}
-                      </span>
-                    </div>
-                    {nl.curator && (
-                      <div className="flex items-center gap-1.5 mb-2">
-                        {nl.curator.avatar_url ? (
-                          <img src={nl.curator.avatar_url} alt="" className="w-4 h-4 rounded-sm" />
-                        ) : (
-                          <div className="w-4 h-4 rounded-sm bg-[#1c1a17]" />
+          <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-[#141210] border-b border-[rgba(176,141,87,0.28)]">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Dispatch</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Curator</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Cadence</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Labels</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Subs</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {newsletters.map((nl) => {
+                  const isSubscribed = subscribedIds.has(nl.id);
+                  return (
+                    <tr
+                      key={nl.id}
+                      onClick={() => { window.location.href = `/newsletter/${nl.id}`; }}
+                      className="border-b border-[rgba(176,141,87,0.18)] hover:bg-[#141210] transition-colors cursor-pointer last:border-b-0"
+                    >
+                      <td className="px-4 py-3 max-w-md">
+                        <div className="text-sm font-semibold text-[#F5EFE0] font-[var(--font-oswald)] uppercase tracking-wide">{nl.name}</div>
+                        {nl.description && (
+                          <p className="text-xs text-[#F5EFE0]/55 mt-1 line-clamp-1">{nl.description}</p>
                         )}
-                        <span className="text-xs text-[#F5EFE0]/45">
-                          {nl.curator.twitter_handle ? `@${nl.curator.twitter_handle}` : nl.curator.name || 'Anonymous'}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {nl.curator ? (
+                          <div className="flex items-center gap-1.5">
+                            {nl.curator.avatar_url ? (
+                              <img src={nl.curator.avatar_url} alt="" className="w-4 h-4 rounded-sm" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-sm bg-[#1c1a17]" />
+                            )}
+                            <span className="text-xs text-[#F5EFE0]/55">
+                              {nl.curator.twitter_handle ? `@${nl.curator.twitter_handle}` : nl.curator.name || 'Anonymous'}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-[#F5EFE0]/30">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-xs px-2 py-0.5 rounded-sm bg-[#B08D57]/15 text-[#B08D57] font-medium">
+                          {CADENCE_LABELS[nl.schedule_cadence] || nl.schedule_cadence}
                         </span>
-                      </div>
-                    )}
-                    <p className="text-sm text-[#F5EFE0]/60 mb-4 leading-relaxed line-clamp-2">
-                      {nl.description}
-                    </p>
-                  </Link>
-
-                  <div className="flex items-center justify-between pt-3 border-t border-[rgba(176,141,87,0.18)]">
-                    <div className="flex gap-1.5 flex-wrap">
-                      {nl.labels.slice(0, 3).map((label) => (
-                        <span key={label} className="text-xs px-2 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/60">
-                          {label}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      <span className="text-xs text-[#F5EFE0]/45 flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-1 flex-wrap">
+                          {nl.labels.slice(0, 3).map((label) => (
+                            <span key={label} className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/60">
+                              {label}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-right text-xs text-[#F5EFE0]/55 font-mono">
                         {nl.subscriber_count}
-                      </span>
-                      {isSubscribed ? (
-                        <span className="text-xs px-2.5 py-1 rounded bg-[#3ecf6a]/10 text-[#3ecf6a] font-medium">
-                          ✓ Subscribed
-                        </span>
-                      ) : (
-                        <button
-                          onClick={(e) => openSubscribeModal(e, nl)}
-                          className="text-xs px-2.5 py-1 rounded bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] font-semibold transition font-[var(--font-oswald)] uppercase tracking-wide"
-                        >
-                          Subscribe
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
+                        {isSubscribed ? (
+                          <span className="text-xs px-2 py-1 rounded bg-[#3ecf6a]/10 text-[#3ecf6a] font-medium">
+                            ✓ Subscribed
+                          </span>
+                        ) : (
+                          <button
+                            onClick={(e) => openSubscribeModal(e, nl)}
+                            className="text-xs px-2.5 py-1 rounded bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] font-semibold transition font-[var(--font-oswald)] uppercase tracking-wide"
+                          >
+                            Subscribe
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

@@ -165,20 +165,7 @@ export default function ThesesDashboard() {
         </div>
 
         {loading ? (
-          <div className="grid md:grid-cols-2 gap-0" style={{ border: '1px solid rgba(176,141,87,0.28)' }}>
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="p-6 animate-pulse"
-                style={{
-                  background: '#141210',
-                  borderRight: i % 2 === 1 ? '1px solid rgba(176,141,87,0.18)' : undefined,
-                  borderBottom: i <= 2 ? '1px solid rgba(176,141,87,0.18)' : undefined,
-                  minHeight: '160px',
-                }}
-              />
-            ))}
-          </div>
+          <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] p-8 text-sm text-[#F5EFE0]/45 font-mono">Loading…</div>
         ) : theses.length === 0 ? (
           <div
             className="text-center py-16 px-6"
@@ -197,72 +184,65 @@ export default function ThesesDashboard() {
             </Link>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 gap-0" style={{ border: '1px solid rgba(176,141,87,0.28)' }}>
-            {theses.map((t, idx) => {
-              const isRight = idx % 2 === 1;
-              const lastTwo = idx >= theses.length - (theses.length % 2 || 2);
-              return (
-                <Link
-                  key={t.id}
-                  href={`/theses/${t.id}`}
-                  className="group p-5 transition relative"
-                  style={{
-                    background: '#141210',
-                    borderRight: !isRight ? '1px solid rgba(176,141,87,0.18)' : undefined,
-                    borderBottom: !lastTwo ? '1px solid rgba(176,141,87,0.18)' : undefined,
-                  }}
-                >
-                  <div className="absolute left-0 top-0 bottom-0 w-1 transition" style={{ background: 'transparent' }} />
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <h3
-                      className="text-base font-semibold uppercase tracking-wide leading-snug group-hover:text-[#B08D57] transition"
-                      style={{ fontFamily: 'var(--font-oswald), sans-serif' }}
-                    >
-                      {t.title}
-                    </h3>
-                    <div
-                      className="shrink-0 flex items-baseline gap-1 font-mono text-xs"
-                      style={{ color: CONV_COLOR[t.conviction] || '#F5EFE0' }}
-                    >
-                      <span className="font-bold text-base leading-none">{t.conviction}</span>
-                      <span className="text-[10px] opacity-60">/5</span>
-                    </div>
-                  </div>
-                  {t.horizon && (
-                    <p className="text-xs text-[#F5EFE0]/55 font-mono mb-3">{t.horizon}</p>
-                  )}
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {(t.tags || []).slice(0, 4).map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-[10px] uppercase tracking-wider px-2 py-0.5"
-                        style={{
-                          color: 'rgba(176,141,87,0.85)',
-                          border: '1px solid rgba(176,141,87,0.28)',
-                          fontFamily: 'var(--font-mono), monospace',
-                        }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                  <div
-                    className="flex items-center gap-5 text-[10px] uppercase tracking-wider font-mono pt-3"
-                    style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}
+          <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-[#141210] border-b border-[rgba(176,141,87,0.28)]">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Title</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Conv</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Horizon</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Tags</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">V / I / T</th>
+                </tr>
+              </thead>
+              <tbody>
+                {theses.map((t) => (
+                  <tr
+                    key={t.id}
+                    className="border-b border-[rgba(176,141,87,0.18)] hover:bg-[#141210] transition-colors cursor-pointer last:border-b-0"
+                    onClick={() => { window.location.href = `/theses/${t.id}`; }}
                   >
-                    <span className="text-[#F5EFE0]/50">
-                      <span className="text-[#3ecf6a]">{t.validation_count}</span> validations
-                    </span>
-                    <span className="text-[#F5EFE0]/50">
-                      <span className="text-[#e8453c]">{t.invalidation_count}</span> invalidations
-                    </span>
-                    <span className="text-[#F5EFE0]/50">
-                      <span className="text-[#F5EFE0]">{t.trade_count}</span> {t.trade_count === 1 ? 'trade' : 'trades'}
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/theses/${t.id}`}
+                        className="text-sm font-semibold uppercase tracking-wide text-[#F5EFE0] hover:text-[#B08D57] transition font-[var(--font-oswald)]"
+                      >
+                        {t.title}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className="font-mono text-sm" style={{ color: CONV_COLOR[t.conviction] || '#F5EFE0' }}>
+                        <span className="font-bold">{t.conviction}</span>
+                        <span className="text-[10px] opacity-60">/5</span>
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-xs text-[#F5EFE0]/55 font-mono">
+                      {t.horizon || '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {(t.tags || []).slice(0, 4).map((tag) => (
+                          <span
+                            key={tag}
+                            className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 font-mono"
+                            style={{ color: 'rgba(176,141,87,0.85)', border: '1px solid rgba(176,141,87,0.28)' }}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-right text-xs font-mono">
+                      <span className="text-[#3ecf6a]">{t.validation_count}</span>
+                      <span className="text-[#F5EFE0]/30 mx-1">/</span>
+                      <span className="text-[#e8453c]">{t.invalidation_count}</span>
+                      <span className="text-[#F5EFE0]/30 mx-1">/</span>
+                      <span className="text-[#F5EFE0]">{t.trade_count}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

@@ -282,11 +282,7 @@ export default function JuntosPage() {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="animate-pulse bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-5 h-36" />
-            ))}
-          </div>
+          <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] p-8 text-sm text-[#F5EFE0]/45 font-mono">Loading…</div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20">
             {juntos.length === 0 ? (
@@ -301,71 +297,76 @@ export default function JuntosPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {filtered.map((junto) => (
-              <button
-                key={junto.id}
-                onClick={() => setSelectedJunto(junto)}
-                className="text-left transition group flex flex-col gap-3 p-5 w-full"
-                style={{
-                  background: '#141210',
-                  border: '1px solid rgba(176,141,87,0.28)',
-                }}
-                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.borderColor = 'rgba(176,141,87,0.5)')}
-                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.borderColor = 'rgba(176,141,87,0.28)')}
-              >
-                {/* Name + badges */}
-                <div className="flex items-start justify-between gap-2">
-                  <h2 className="font-semibold text-lg leading-tight group-hover:text-[#B08D57] transition" style={{ fontFamily: 'var(--font-oswald, sans-serif)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {junto.name}
-                  </h2>
-                  <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
-                    {junto.is_own && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-sm font-medium" style={{ background: 'rgba(176,141,87,0.15)', color: '#B08D57', border: '1px solid rgba(176,141,87,0.28)' }}>
-                        Yours
-                      </span>
-                    )}
-                    {!junto.is_public && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-sm font-medium" style={{ background: '#1c1a17', color: 'rgba(245,239,224,0.45)', border: '1px solid rgba(176,141,87,0.18)' }}>
-                        Private
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {junto.description && (
-                  <p className="text-sm line-clamp-2" style={{ color: 'rgba(245,239,224,0.6)' }}>{junto.description}</p>
-                )}
-
-                {/* Source avatars */}
-                {junto.sources.length > 0 ? (
-                  <AvatarStack sources={junto.sources} max={8} />
-                ) : (
-                  <p className="text-xs" style={{ color: 'rgba(245,239,224,0.3)' }}>No sources yet</p>
-                )}
-
-                {/* Meta + dispatch pills */}
-                <div className="flex items-center gap-3 mt-auto flex-wrap">
-                  <span className="text-xs" style={{ color: 'rgba(245,239,224,0.4)' }}>
-                    {junto.source_count} {junto.source_count === 1 ? 'source' : 'sources'}
-                  </span>
-                  {junto.dispatches.slice(0, 2).map((d) => (
-                    <span
-                      key={d.id}
-                      className="text-[11px] px-2 py-0.5"
-                      style={{ background: '#1c1a17', color: 'rgba(245,239,224,0.7)', border: '1px solid rgba(176,141,87,0.18)' }}
-                    >
-                      {d.name} · {CADENCE_LABELS[d.schedule_cadence] ?? d.schedule_cadence}
-                    </span>
-                  ))}
-                  {junto.dispatches.length > 2 && (
-                    <span className="text-[11px]" style={{ color: 'rgba(245,239,224,0.35)' }}>
-                      +{junto.dispatches.length - 2} more
-                    </span>
-                  )}
-                </div>
-              </button>
-            ))}
+          <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-[#141210] border-b border-[rgba(176,141,87,0.28)]">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Name</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Description</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Sources</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Dispatches</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((junto) => (
+                  <tr
+                    key={junto.id}
+                    onClick={() => setSelectedJunto(junto)}
+                    className="border-b border-[rgba(176,141,87,0.18)] hover:bg-[#141210] transition-colors cursor-pointer last:border-b-0"
+                  >
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold uppercase tracking-wide text-[#F5EFE0] font-[var(--font-oswald)]">
+                          {junto.name}
+                        </span>
+                        {junto.is_own && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-sm" style={{ background: 'rgba(176,141,87,0.15)', color: '#B08D57', border: '1px solid rgba(176,141,87,0.28)' }}>
+                            Yours
+                          </span>
+                        )}
+                        {!junto.is_public && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-sm" style={{ background: '#1c1a17', color: 'rgba(245,239,224,0.45)', border: '1px solid rgba(176,141,87,0.18)' }}>
+                            Private
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 max-w-sm">
+                      <p className="text-sm text-[#F5EFE0]/60 line-clamp-2">{junto.description || '—'}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        {junto.sources.length > 0 ? (
+                          <AvatarStack sources={junto.sources} max={6} />
+                        ) : null}
+                        <span className="text-xs text-[#F5EFE0]/40 font-mono">
+                          {junto.source_count}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {junto.dispatches.slice(0, 2).map((d) => (
+                          <span
+                            key={d.id}
+                            className="text-[11px] px-1.5 py-0.5"
+                            style={{ background: '#1c1a17', color: 'rgba(245,239,224,0.7)', border: '1px solid rgba(176,141,87,0.18)' }}
+                          >
+                            {d.name} · {CADENCE_LABELS[d.schedule_cadence] ?? d.schedule_cadence}
+                          </span>
+                        ))}
+                        {junto.dispatches.length > 2 && (
+                          <span className="text-[11px] text-[#F5EFE0]/35">+{junto.dispatches.length - 2}</span>
+                        )}
+                        {junto.dispatches.length === 0 && (
+                          <span className="text-xs text-[#F5EFE0]/30">—</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
