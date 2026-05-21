@@ -34,14 +34,18 @@ export async function deductCredits(
 
   if (rpcErr || newBalance === -1) return false;
 
-  // Record the transaction
-  await supabase().from('credit_transactions').insert({
+  // Record the transaction.
+  // The relatedId is a newsletter_runs.id for run-based charges (chargeOwner /
+  // chargeSubscriber). For non-run charges (e.g. admin grants) it's undefined.
+  const txn: Record<string, unknown> = {
     user_id: userId,
     amount: -amount,
     type,
     description,
-    ...(relatedId ? { metadata: { related_id: relatedId } } : {}),
-  });
+  };
+  if (relatedId) txn.run_id = relatedId;
+  const { error: insertErr } = await supabase().from('credit_transactions').insert(txn);
+  if (insertErr) console.error('credit_transactions insert failed', { type, userId, err: insertErr.message });
 
   return true;
 }

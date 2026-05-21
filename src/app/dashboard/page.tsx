@@ -192,7 +192,6 @@ export default function DashboardPage() {
     created_at: string;
   }>>([]);
   const [creditHistoryLoading, setCreditHistoryLoading] = useState(false);
-  const [showCreditHistory, setShowCreditHistory] = useState(false);
 
   // Inline editing state for subscriptions
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
@@ -523,76 +522,6 @@ export default function DashboardPage() {
             </div>
             <div className="text-sm text-[#F5EFE0]/60 mt-1">Total Subscribers</div>
           </div>
-        </div>
-
-        {/* ─── Credit history ──────────────────────────── */}
-        <div className="mb-10 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
-          <button
-            onClick={() => setShowCreditHistory((v) => !v)}
-            className="w-full flex items-center justify-between px-5 py-4 border-b border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17] transition"
-          >
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-[#B08D57]/70 font-mono mb-0.5">Credit history</p>
-              <h2 className="text-base font-semibold text-[#F5EFE0] text-left">
-                {creditHistory.length > 0
-                  ? `Last ${creditHistory.length} transaction${creditHistory.length === 1 ? '' : 's'}`
-                  : creditHistoryLoading ? 'Loading…' : 'No transactions yet'}
-              </h2>
-            </div>
-            <span className="text-[#F5EFE0]/45 text-sm">{showCreditHistory ? '▾' : '▸'}</span>
-          </button>
-
-          {showCreditHistory && (
-            <div className="overflow-x-auto">
-              {creditHistory.length === 0 && !creditHistoryLoading && (
-                <div className="px-5 py-6 text-sm text-[#F5EFE0]/45 text-center">
-                  No credit activity yet. Top up at <Link href="/credits" className="text-[#B08D57] hover:underline">/credits</Link>.
-                </div>
-              )}
-              {creditHistoryLoading && (
-                <div className="px-5 py-6 text-sm text-[#F5EFE0]/45 text-center animate-pulse">Loading…</div>
-              )}
-              {creditHistory.length > 0 && (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-[10px] uppercase tracking-[0.12em] text-[#F5EFE0]/45 border-b border-[rgba(176,141,87,0.12)]">
-                      <th className="text-left px-5 py-2 font-normal">Date</th>
-                      <th className="text-left px-5 py-2 font-normal">Type</th>
-                      <th className="text-left px-5 py-2 font-normal">Description</th>
-                      <th className="text-right px-5 py-2 font-normal">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {creditHistory.map((tx) => {
-                      const isPositive = tx.amount >= 0;
-                      const date = new Date(tx.created_at);
-                      const typeLabel = tx.type
-                        .replace(/_/g, ' ')
-                        .replace(/\b\w/g, (c) => c.toUpperCase());
-                      return (
-                        <tr key={tx.id} className="border-b border-[rgba(176,141,87,0.08)] hover:bg-[#1c1a17]">
-                          <td className="px-5 py-2.5 text-[#F5EFE0]/70 whitespace-nowrap text-xs">
-                            {date.toLocaleString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: '2-digit',
-                              hour: 'numeric',
-                              minute: '2-digit',
-                            })}
-                          </td>
-                          <td className="px-5 py-2.5 text-[#F5EFE0]/70 text-xs whitespace-nowrap">{typeLabel}</td>
-                          <td className="px-5 py-2.5 text-[#F5EFE0]/85 text-xs">{tx.description || '—'}</td>
-                          <td className={`px-5 py-2.5 text-right font-mono whitespace-nowrap ${isPositive ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
-                            {isPositive ? '+' : ''}{tx.amount.toLocaleString()}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          )}
         </div>
 
         {/* ─── Featured Junto ───────────────────────────── */}
@@ -1000,6 +929,70 @@ export default function DashboardPage() {
             </div>
           )
         )}
+
+        {/* ─── Credit history ──────────────────────────── */}
+        <div className="mt-12 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
+          <div className="px-5 py-4 border-b border-[rgba(176,141,87,0.18)]">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#B08D57]/70 font-mono mb-0.5">Credit history</p>
+            <h2 className="text-base font-semibold text-[#F5EFE0]">
+              {creditHistoryLoading
+                ? 'Loading…'
+                : creditHistory.length > 0
+                  ? `Last ${creditHistory.length} transaction${creditHistory.length === 1 ? '' : 's'}`
+                  : 'No transactions yet'}
+            </h2>
+          </div>
+
+          <div className="overflow-x-auto">
+            {creditHistory.length === 0 && !creditHistoryLoading && (
+              <div className="px-5 py-6 text-sm text-[#F5EFE0]/45 text-center">
+                No credit activity yet. Top up at <Link href="/credits" className="text-[#B08D57] hover:underline">/credits</Link>.
+              </div>
+            )}
+            {creditHistoryLoading && (
+              <div className="px-5 py-6 text-sm text-[#F5EFE0]/45 text-center animate-pulse">Loading…</div>
+            )}
+            {creditHistory.length > 0 && (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-[0.12em] text-[#F5EFE0]/45 border-b border-[rgba(176,141,87,0.12)]">
+                    <th className="text-left px-5 py-2 font-normal">Date</th>
+                    <th className="text-left px-5 py-2 font-normal">Type</th>
+                    <th className="text-left px-5 py-2 font-normal">Description</th>
+                    <th className="text-right px-5 py-2 font-normal">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {creditHistory.map((tx) => {
+                    const isPositive = tx.amount >= 0;
+                    const date = new Date(tx.created_at);
+                    const typeLabel = tx.type
+                      .replace(/_/g, ' ')
+                      .replace(/\b\w/g, (c) => c.toUpperCase());
+                    return (
+                      <tr key={tx.id} className="border-b border-[rgba(176,141,87,0.08)] hover:bg-[#1c1a17]">
+                        <td className="px-5 py-2.5 text-[#F5EFE0]/70 whitespace-nowrap text-xs">
+                          {date.toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: '2-digit',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })}
+                        </td>
+                        <td className="px-5 py-2.5 text-[#F5EFE0]/70 text-xs whitespace-nowrap">{typeLabel}</td>
+                        <td className="px-5 py-2.5 text-[#F5EFE0]/85 text-xs">{tx.description || '—'}</td>
+                        <td className={`px-5 py-2.5 text-right font-mono whitespace-nowrap ${isPositive ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
+                          {isPositive ? '+' : ''}{tx.amount.toLocaleString()}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
       </div>
     </main>
   );

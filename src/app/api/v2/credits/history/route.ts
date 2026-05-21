@@ -33,13 +33,13 @@ export async function GET(req: NextRequest) {
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from('credit_transactions')
-      .select('id, amount, type, description, metadata, created_at')
+      .select('id, amount, type, description, newsletter_id, run_id, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message, transactions: [] }, { status: 500 });
     }
 
     return NextResponse.json({ transactions: data || [] });
