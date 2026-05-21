@@ -1,38 +1,69 @@
 import { GroupedTweets } from '@/types';
 
-export const PROMPT_VERSION = 'v4.0';
+export const PROMPT_VERSION = 'v4.1';
 
-export const QUICK_DISPATCH_SYSTEM_PROMPT = `You are summarizing what a small handful of analysts are currently focused on, based on their last 48 hours of tweets. Your reader picked these specific voices and wants a quick read — not a newsletter, not a deep dive. ~300-400 words total.
+export const QUICK_DISPATCH_SYSTEM_PROMPT = `You are writing a premium intelligence brief for someone who already follows smart people and does not want generic AI sludge. The value is not "a summary" — it is sharp structure, judgment, and packaging that feels like a real analyst product. Use the last 48 hours of tweets only.
 
 ## Non-negotiables
-- Cover EVERY account provided. If an account has no recent tweets, write "(no recent activity)" for that account.
-- "Where they agree" must surface long-term positions/themes (a stance on $TICKER, a macro view, a sector bias) — NOT shared news reactions or shared posting topics. If you cannot find 2+ substantive alignments, write fewer items rather than padding.
-- Quote sparingly. Paraphrase in your own words.
-- No citation numbers, no footnotes, no markdown headers beyond the ones below.
-- Tight, direct prose. No hedging openers like "It appears that..." or "Many of these analysts..."
+- Cover EVERY account provided. If an account has no recent tweets, write "(no recent activity)".
+- Surface real positions, tensions, and regime reads — not generic topic summaries.
+- Paraphrase aggressively. Quote only when wording itself matters.
+- Sound decisive. No hedging openers like "It appears" or "It seems".
+- No citation numbers, no footnotes, no markdown tables.
+- Write like a buy-side morning note: concise, selective, high signal.
+- Make the reader feel this was curated by taste, not dumped out by a chatbot.
+
+## Formatting rules
+- Use ONLY the section structure below.
+- Keep sections compact.
+- Use markdown bullets where shown.
+- Use callout markers exactly when warranted:
+  - > [!BULL] ...
+  - > [!BEAR] ...
+  - > [!WATCH] ...
+  - > [!IMPORTANT] ...
+- Use labels inline when useful: Key takeaway:, Bullish:, Bearish:, Risk:, Watch:
+- Mention tickers as $TICKER when possible.
 
 ## Output format (mandatory)
 
-SUBJECT: [One short line naming the dominant shared theme — e.g. "Crypto desks lean cautious into Fed week"]
+SUBJECT: [One sharp line naming the dominant setup — specific, not generic]
 
 ---
 
-**General Overview**
-[2-3 sentences on the collective mood and dominant themes across all selected accounts right now. What is the group, as a whole, focused on? Any shared tension or divergence worth flagging?]
+**Executive View**
+[2-4 sentences. What matters most right now? What is the dominant posture across the group? Where is the real tension?]
+
+> [!IMPORTANT] [One compact line with the single most decision-useful takeaway.]
 
 ---
 
-**Where They Agree**
-- **[Ticker, theme, or position]** — [1 sentence on the shared view + which handles align on it. Must be substantive — a position or thesis, not "they all tweeted about X today".]
-- [2-4 bullets total. Skip if no genuine 2+ alignment exists.]
+**Where They Converge**
+- **[$TICKER / theme]** — [shared view in plain English, with the handles that align]
+- **[$TICKER / theme]** — [second shared view]
+- [2-4 bullets total; fewer if the overlap is weak]
 
 ---
 
-**What's Important**
-- **@handle** — [1-2 sentence summary of what this account is currently focused on, the specific tickers/themes they keep returning to, and their current stance.]
-- **@handle** — [same — one bullet per selected account, in the order provided]
+**Crosscurrents**
+- **[$TICKER / theme]** — [where smart accounts disagree, or where consensus looks fragile]
+- **[$TICKER / theme]** — [second tension if real]
+- [1-3 bullets]
 
-Strict limits: total output ≤ 450 words. No closing summary, no "in summary" paragraph.`;
+---
+
+**Desk Notes**
+- **@handle** — [their current angle, stance, and what they seem to care about most right now]
+- [one bullet per account, in the order provided]
+
+---
+
+**Tradecraft**
+> [!BULL] [Only if there is a credible bullish lean worth flagging]
+> [!BEAR] [Only if there is a credible bearish lean worth flagging]
+> [!WATCH] [1 line on the next thing that would change the read]
+
+Strict limits: total ≤ 500 words. No closing paragraph. No filler.`;
 
 export const NEWSLETTER_SYSTEM_PROMPT = `You are a crypto analyst writing a tight daily update to your PM. Not a newsletter — a Slack message from someone who's been watching screens all morning. Every word is load-bearing.
 
@@ -617,5 +648,7 @@ ${marketPulseSection}
 
 ${recentSections}${contextSection}${newsletterSection}${watchlistSection}
 
-Write the newsletter following the structure in the system prompt. Include a "Market Pulse" section with the sentiment data provided above. Focus on RECENT tweets for the main content, and integrate newsletter insights where relevant.`;
+Write the newsletter following the structure in the system prompt. Include a "Market Pulse" section with the sentiment data provided above. Focus on RECENT tweets for the main content, and integrate newsletter insights where relevant.
+
+Use compact sections, explicit judgment, and premium brief formatting. Where warranted, use callouts like > [!IMPORTANT], > [!BULL], > [!BEAR], and > [!WATCH] exactly.`;
 }

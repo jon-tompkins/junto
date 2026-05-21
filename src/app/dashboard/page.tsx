@@ -184,6 +184,15 @@ export default function DashboardPage() {
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [emailInput, setEmailInput] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
+  const [creditHistory, setCreditHistory] = useState<Array<{
+    id: string;
+    amount: number;
+    type: string;
+    description: string | null;
+    created_at: string;
+  }>>([]);
+  const [creditHistoryLoading, setCreditHistoryLoading] = useState(false);
+  const [showCreditHistory, setShowCreditHistory] = useState(false);
 
   // Inline editing state for subscriptions
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
@@ -251,6 +260,19 @@ export default function DashboardPage() {
     }
   }
 
+  async function loadCreditHistory() {
+    setCreditHistoryLoading(true);
+    try {
+      const res = await fetch('/api/v2/credits/history?limit=50');
+      if (res.ok) {
+        const data = await res.json();
+        setCreditHistory(data.transactions || []);
+      }
+    } catch {} finally {
+      setCreditHistoryLoading(false);
+    }
+  }
+
   async function loadData() {
     try {
       const [subsRes, createdRes, accountRes] = await Promise.all([
@@ -258,6 +280,7 @@ export default function DashboardPage() {
         fetch('/api/v2/dashboard/created'),
         fetch('/api/v2/account'),
       ]);
+      loadCreditHistory();
 
       if (subsRes.ok) {
         const data = await subsRes.json();
@@ -502,6 +525,76 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* ─── Credit history ──────────────────────────── */}
+        <div className="mb-10 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
+          <button
+            onClick={() => setShowCreditHistory((v) => !v)}
+            className="w-full flex items-center justify-between px-5 py-4 border-b border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17] transition"
+          >
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-[#B08D57]/70 font-mono mb-0.5">Credit history</p>
+              <h2 className="text-base font-semibold text-[#F5EFE0] text-left">
+                {creditHistory.length > 0
+                  ? `Last ${creditHistory.length} transaction${creditHistory.length === 1 ? '' : 's'}`
+                  : creditHistoryLoading ? 'Loading…' : 'No transactions yet'}
+              </h2>
+            </div>
+            <span className="text-[#F5EFE0]/45 text-sm">{showCreditHistory ? '▾' : '▸'}</span>
+          </button>
+
+          {showCreditHistory && (
+            <div className="overflow-x-auto">
+              {creditHistory.length === 0 && !creditHistoryLoading && (
+                <div className="px-5 py-6 text-sm text-[#F5EFE0]/45 text-center">
+                  No credit activity yet. Top up at <Link href="/credits" className="text-[#B08D57] hover:underline">/credits</Link>.
+                </div>
+              )}
+              {creditHistoryLoading && (
+                <div className="px-5 py-6 text-sm text-[#F5EFE0]/45 text-center animate-pulse">Loading…</div>
+              )}
+              {creditHistory.length > 0 && (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-[0.12em] text-[#F5EFE0]/45 border-b border-[rgba(176,141,87,0.12)]">
+                      <th className="text-left px-5 py-2 font-normal">Date</th>
+                      <th className="text-left px-5 py-2 font-normal">Type</th>
+                      <th className="text-left px-5 py-2 font-normal">Description</th>
+                      <th className="text-right px-5 py-2 font-normal">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {creditHistory.map((tx) => {
+                      const isPositive = tx.amount >= 0;
+                      const date = new Date(tx.created_at);
+                      const typeLabel = tx.type
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, (c) => c.toUpperCase());
+                      return (
+                        <tr key={tx.id} className="border-b border-[rgba(176,141,87,0.08)] hover:bg-[#1c1a17]">
+                          <td className="px-5 py-2.5 text-[#F5EFE0]/70 whitespace-nowrap text-xs">
+                            {date.toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: '2-digit',
+                              hour: 'numeric',
+                              minute: '2-digit',
+                            })}
+                          </td>
+                          <td className="px-5 py-2.5 text-[#F5EFE0]/70 text-xs whitespace-nowrap">{typeLabel}</td>
+                          <td className="px-5 py-2.5 text-[#F5EFE0]/85 text-xs">{tx.description || '—'}</td>
+                          <td className={`px-5 py-2.5 text-right font-mono whitespace-nowrap ${isPositive ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
+                            {isPositive ? '+' : ''}{tx.amount.toLocaleString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* ─── Featured Junto ───────────────────────────── */}
         <div className="mb-10 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
           {/* Header */}
@@ -641,8 +734,12 @@ export default function DashboardPage() {
 
               {synthesis && (
                 <div className="border-t border-[rgba(176,141,87,0.18)] pt-4">
+                  <div className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-[#F5EFE0]/35 font-[var(--font-mono)]">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#B08D57]" />
+                    Live synthesis
+                  </div>
                   <div
-                    className="text-sm text-[#F5EFE0]/80 leading-relaxed prose prose-invert prose-sm max-w-none mb-3"
+                    className="research-content text-sm max-w-none mb-3"
                     dangerouslySetInnerHTML={{ __html: synthesis }}
                   />
                   <DashboardShareButton />

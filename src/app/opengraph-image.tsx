@@ -10,46 +10,154 @@ export default async function Image() {
     (
       <div
         style={{
-          background: '#080604',
           width: '100%',
           height: '100%',
           display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontFamily: 'Georgia, serif',
           position: 'relative',
+          overflow: 'hidden',
+          background: '#080604',
+          color: '#F5EFE0',
+          fontFamily: 'Arial, sans-serif',
         }}
       >
-        {/* Brass border frame outer */}
-        <div style={{ display: 'flex', position: 'absolute', top: 32, left: 32, right: 32, bottom: 32, border: '1px solid rgba(176,141,87,0.35)', borderRadius: 4 }} />
-        {/* Brass border frame inner */}
-        <div style={{ display: 'flex', position: 'absolute', top: 40, left: 40, right: 40, bottom: 40, border: '1px solid rgba(176,141,87,0.15)', borderRadius: 2 }} />
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            background: 'radial-gradient(circle at top right, rgba(176,141,87,0.16), transparent 34%), radial-gradient(circle at bottom left, rgba(176,141,87,0.08), transparent 30%), linear-gradient(135deg, #080604 0%, #141210 55%, #1c1a17 100%)',
+          }}
+        />
 
-        {/* Wordmark */}
-        <div style={{ display: 'flex', alignItems: 'baseline', marginBottom: 32 }}>
-          <span style={{ fontSize: 52, fontWeight: 400, color: 'rgba(245,239,224,0.45)', letterSpacing: '0.05em' }}>my</span>
-          <span style={{ fontSize: 52, fontWeight: 700, color: '#F5EFE0', letterSpacing: '0.05em' }}>junto</span>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 28,
+            border: '1px solid rgba(176,141,87,0.32)',
+            borderRadius: 10,
+            display: 'flex',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            inset: 40,
+            border: '1px solid rgba(176,141,87,0.14)',
+            borderRadius: 6,
+            display: 'flex',
+          }}
+        />
+
+        <div
+          style={{
+            position: 'absolute',
+            top: 56,
+            left: 70,
+            right: 70,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: 18,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: 'rgba(176,141,87,0.72)',
+          }}
+        >
+          <span>myjunto</span>
+          <span>Signal, not noise</span>
         </div>
 
-        {/* Brass divider */}
-        <div style={{ display: 'flex', width: 80, height: 1, background: '#B08D57', marginBottom: 32 }} />
+        <div
+          style={{
+            position: 'absolute',
+            left: 70,
+            top: 130,
+            width: 700,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              marginBottom: 26,
+            }}
+          >
+            <div style={{ width: 56, height: 1, background: '#B08D57', display: 'flex' }} />
+            <span style={{ fontSize: 20, color: 'rgba(245,239,224,0.48)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+              Curated intelligence briefs
+            </span>
+          </div>
 
-        {/* Headline */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: 56, fontWeight: 700, textAlign: 'center', lineHeight: 1.15, color: '#F5EFE0', maxWidth: 800, marginBottom: 24 }}>
-          <span>Curate Your Sources.</span>
-          <span style={{ color: '#B08D57' }}>Get Your Dispatch.</span>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              fontSize: 68,
+              lineHeight: 1.02,
+              fontWeight: 700,
+              letterSpacing: '-0.04em',
+              marginBottom: 24,
+            }}
+          >
+            <span>The signal,</span>
+            <span style={{ color: '#B08D57' }}>not the noise.</span>
+          </div>
+
+          <div
+            style={{
+              fontSize: 28,
+              lineHeight: 1.35,
+              color: 'rgba(245,239,224,0.68)',
+              maxWidth: 660,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <span>Curate the voices you trust.</span>
+            <span>Get a daily AI-synthesized dispatch worth reading.</span>
+          </div>
         </div>
 
-        {/* Subtitle */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: 22, color: 'rgba(245,239,224,0.5)', textAlign: 'center', maxWidth: 620, lineHeight: 1.5 }}>
-          <span>Build a junto of the voices you trust.</span>
-          <span>Get a daily AI-synthesized dispatch — signal, not noise.</span>
+        <div
+          style={{
+            position: 'absolute',
+            right: 72,
+            bottom: 92,
+            width: 340,
+            padding: '22px 24px',
+            border: '1px solid rgba(176,141,87,0.22)',
+            borderRadius: 8,
+            background: 'rgba(20,18,16,0.82)',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.22)',
+          }}
+        >
+          <div style={{ display: 'flex', marginBottom: 14, fontSize: 14, color: 'rgba(176,141,87,0.82)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            Live brief
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 17, lineHeight: 1.35, color: 'rgba(245,239,224,0.9)' }}>
+            <span><span style={{ color: '#B08D57' }}>Key takeaway:</span> Crypto desks still lean constructive, but upside conviction is narrowing.</span>
+            <span><span style={{ color: '#3ecf6a' }}>Bullish:</span> $BTC holding leadership while selective risk appetite returns.</span>
+            <span><span style={{ color: '#d7b36c' }}>Watch:</span> Whether ETH follow-through confirms the rotation.</span>
+          </div>
         </div>
 
-        {/* Bottom domain */}
-        <div style={{ display: 'flex', position: 'absolute', bottom: 52, fontSize: 16, color: 'rgba(176,141,87,0.6)', letterSpacing: '0.12em' }}>
-          <span>MYJUNTO.XYZ</span>
+        <div
+          style={{
+            position: 'absolute',
+            left: 70,
+            bottom: 58,
+            display: 'flex',
+            fontSize: 18,
+            color: 'rgba(245,239,224,0.34)',
+            letterSpacing: '0.08em',
+          }}
+        >
+          myjunto.xyz
         </div>
       </div>
     ),

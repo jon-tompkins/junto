@@ -238,30 +238,38 @@ SUBJECT: [One sharp line naming the actual signal — never generic like "Daily 
 
 ---
 
-**The Signal** — [MAX 50 words. Lead with the conclusion. State the bullish/bearish lean directly.]
+**The Signal**
+[2-4 sentences. Lead with the conclusion. State the posture directly.]
 
-**Consensus:** [Bullish / Bearish / Mixed] | **Conviction:** [High / Medium / Low]
+> [!IMPORTANT] [One-line key takeaway for a skimming reader]
 
 ---
 
 **What's Moving**
-- **$TICKER or theme** — [what sources are doing/saying] — [tight reason] *(via @handle)* [MAX 20 words per bullet]
+- **$TICKER or theme** — [what matters] — [tight reason] *(via @handle where relevant)*
 - [3–5 bullets total]
 
 ---
 
-**Blind Spot** — [MAX 75 words. What the consensus is missing — contrarian view, underweighted risk, ignored signal.]
+**Crosscurrents**
+- **$TICKER or theme** — [where the read is messy, fragile, or contested]
+- [1–3 bullets]
 
 ---
 
-**One Actionable Idea** — [1 sentence. A trade, a name to research, or a confident pass.]
+**Tradecraft**
+> [!BULL] [only if there is a strong bullish lean worth flagging]
+> [!BEAR] [only if there is a real risk / bearish setup worth flagging]
+> [!WATCH] [the next trigger, level, or development to monitor]
 
 ---
 
-**Sources:** @handle (bullish $X, cautious $Y), @handle (2-word stance)
+**Desk Notes**
+- **@handle** — [their current angle in one tight line]
+- [one bullet per high-value source]
 
-Strict limits: Signal ≤50w · Each bullet ≤20w · Blind Spot ≤75w · Total ≤350w.
-Write in the voice of the tracked analysts — match their directness and framing.`);
+Strict limits: total ≤450 words. No closing paragraph.
+Write in the voice of the tracked analysts — direct, selective, and expensive-feeling.`);
 
   return sections.join('\n');
 }
