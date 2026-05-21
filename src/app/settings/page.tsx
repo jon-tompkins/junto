@@ -286,7 +286,7 @@ export default function SettingsPage() {
               <span className={`text-lg font-bold ${creditColor}`}>
                 {creditBalance !== null ? creditBalance.toLocaleString() : '—'} credits
               </span>
-              <a href="/credits" className="text-xs text-[#B08D57] hover:opacity-80 transition">Top up →</a>
+              <a href="/pricing" className="text-xs text-[#B08D57] hover:opacity-80 transition">Top up →</a>
             </div>
           </div>
 

@@ -64,8 +64,8 @@ export async function POST(req: NextRequest) {
         },
       ],
       mode: 'payment',
-      success_url: `${req.nextUrl.origin}/credits?purchase=success`,
-      cancel_url: `${req.nextUrl.origin}/credits?purchase=cancelled`,
+      success_url: `${req.nextUrl.origin}/pricing?purchase=success`,
+      cancel_url: `${req.nextUrl.origin}/pricing?purchase=cancelled`,
       metadata: {
         userId,
         packageId: pkg.id,

@@ -506,7 +506,7 @@ export default function DashboardPage() {
               {creditBalance !== null ? creditBalance.toLocaleString() : '—'}
             </div>
             <div className="text-sm text-[#F5EFE0]/60 mt-1">Credits</div>
-            <Link href="/credits" className="text-xs text-[#B08D57] hover:text-[#B08D57]/80 mt-1 inline-block">Top up →</Link>
+            <Link href="/pricing" className="text-xs text-[#B08D57] hover:text-[#B08D57]/80 mt-1 inline-block">Top up →</Link>
           </div>
           <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
             <div className="text-2xl font-bold text-[#F5EFE0]">{subscriptions.length}</div>
@@ -964,7 +964,7 @@ export default function DashboardPage() {
           <div className="overflow-x-auto">
             {creditHistory.length === 0 && !creditHistoryLoading && (
               <div className="px-5 py-6 text-sm text-[#F5EFE0]/45 text-center">
-                No credit activity yet. Top up at <Link href="/credits" className="text-[#B08D57] hover:underline">/credits</Link>.
+                No credit activity yet. Top up at <Link href="/pricing" className="text-[#B08D57] hover:underline">/credits</Link>.
               </div>
             )}
             {creditHistoryLoading && (

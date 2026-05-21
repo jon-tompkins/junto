@@ -119,7 +119,7 @@ export default function DocsPage() {
             </div>
           </div>
           <Link
-            href="/credits"
+            href="/pricing"
             className="inline-block bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] px-5 py-2.5 rounded text-sm font-semibold uppercase tracking-wide font-[var(--font-oswald)] transition"
           >
             Buy Credits &rarr;
@@ -291,7 +291,7 @@ export default function DocsPage() {
             </div>
           </div>
           <Link
-            href="/credits"
+            href="/pricing"
             className="inline-block bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] px-5 py-2.5 rounded text-sm font-semibold uppercase tracking-wide font-[var(--font-oswald)] transition"
           >
             Buy Credits &rarr;

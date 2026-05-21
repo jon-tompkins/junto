@@ -1,8 +1,8 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 
@@ -33,10 +33,41 @@ const TOP_UP_PACKAGES = [
 ];
 
 export default function PricingPage() {
+  return (
+    <Suspense fallback={null}>
+      <PricingPageInner />
+    </Suspense>
+  );
+}
+
+function PricingPageInner() {
   const { data: session } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [topUpLoading, setTopUpLoading] = useState<string | null>(null);
   const [proLoading, setProLoading] = useState(false);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [banner, setBanner] = useState<{ kind: 'success' | 'cancelled'; text: string } | null>(null);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch('/api/v2/account')
+      .then(r => r.json())
+      .then(data => setCreditBalance(data.balance ?? null))
+      .catch(() => {});
+  }, [session]);
+
+  useEffect(() => {
+    const purchase = searchParams.get('purchase');
+    const sub = searchParams.get('sub');
+    if (purchase === 'success') setBanner({ kind: 'success', text: 'Credits added. Balance updated.' });
+    else if (purchase === 'cancelled') setBanner({ kind: 'cancelled', text: 'Purchase cancelled.' });
+    else if (sub === 'success') setBanner({ kind: 'success', text: "You're on Pro. Welcome." });
+    else if (sub === 'cancelled') setBanner({ kind: 'cancelled', text: 'Subscription cancelled.' });
+    if (purchase === 'success' || sub === 'success') {
+      fetch('/api/v2/account').then(r => r.json()).then(d => setCreditBalance(d.balance ?? null)).catch(() => {});
+    }
+  }, [searchParams]);
 
   async function handleProSubscribe() {
     if (!session?.user) { router.push('/login'); return; }
@@ -72,14 +103,32 @@ export default function PricingPage() {
 
       <div className="container mx-auto px-4 py-12 max-w-5xl">
 
+        {banner && (
+          <div className={`mb-6 p-3 rounded border text-sm text-center ${
+            banner.kind === 'success'
+              ? 'bg-[#3ecf6a]/10 border-[#3ecf6a]/40 text-[#3ecf6a]'
+              : 'bg-[#1c1a17] border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/70'
+          }`}>
+            {banner.text}
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-3 font-[var(--font-oswald)] uppercase tracking-wide">
-            Simple Pricing
+            Billing
           </h1>
           <p className="text-[#F5EFE0]/55 max-w-lg mx-auto">
-            Build your signal layer for free. Go Pro when you&apos;re ready to automate it.
+            Build your signal layer for free. Go Pro to automate, or top up credits as you go.
           </p>
+          {session?.user && creditBalance !== null && (
+            <p className="text-sm text-[#F5EFE0]/55 mt-4">
+              Current balance:{' '}
+              <span className={`font-bold ${creditBalance <= 50 ? 'text-[#e8453c]' : creditBalance <= 100 ? 'text-amber-400' : 'text-[#3ecf6a]'}`}>
+                {creditBalance.toLocaleString()} credits
+              </span>
+            </p>
+          )}
         </div>
 
         {/* Plan cards */}

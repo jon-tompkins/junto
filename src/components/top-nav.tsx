@@ -71,7 +71,7 @@ export function TopNav() {
           <>
             {creditBalance !== null && (
               <Link
-                href="/credits"
+                href="/pricing"
                 className="text-xs font-medium transition hover:opacity-80"
                 style={{ color: creditColor, fontFamily: 'var(--font-mono)' }}
               >
@@ -107,7 +107,7 @@ export function TopNav() {
                       { href: '/juntos', label: 'My Juntos', brass: false },
                       { href: '/history', label: 'History', brass: false },
                       { href: '/pricing', label: 'Pricing', brass: false },
-                      { href: '/credits', label: 'Buy Credits', brass: true },
+                      { href: '/pricing', label: 'Buy Credits', brass: true },
                       { href: '/settings', label: 'Settings', brass: false },
                     ].map(({ href, label, brass }) => (
                       <Link
