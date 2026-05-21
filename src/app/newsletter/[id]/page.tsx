@@ -28,7 +28,28 @@ interface NewsletterDetail {
   labels: string[];
   created_at: string;
   curator: Curator | null;
+  junto: { id: string; name: string } | null;
+  prompt_template: { id: string; name: string; category: string | null } | null;
+  send_days?: string[] | null;
+  default_send_windows?: string[] | null;
 }
+
+const CADENCE_LABELS: Record<string, string> = {
+  daily: 'Daily',
+  twice_daily: '2x Daily',
+  weekly: 'Weekly',
+};
+
+const WINDOW_LABELS: Record<string, string> = {
+  morning: 'Morning',
+  midday: 'Midday',
+  afternoon: 'Afternoon',
+  evening: 'Evening',
+};
+
+const DAY_LABELS: Record<string, string> = {
+  mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun',
+};
 
 interface Run {
   id: string;
@@ -334,6 +355,81 @@ export default function NewsletterDetailPage() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Configuration */}
+        <div className="mb-8 rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
+          <table className="w-full">
+            <tbody>
+              <tr className="border-b border-[rgba(176,141,87,0.18)]">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210] w-48">Junto</th>
+                <td className="px-4 py-3 text-sm bg-[#0e0c0a]">
+                  {newsletter.junto ? (
+                    <Link href={`/junto/${newsletter.junto.id}`} className="text-[#B08D57] hover:text-[#B08D57]/80 font-medium font-[var(--font-oswald)] uppercase tracking-wide">
+                      {newsletter.junto.name}
+                    </Link>
+                  ) : (
+                    <span className="text-[#F5EFE0]/40">No connected junto</span>
+                  )}
+                </td>
+              </tr>
+              <tr className="border-b border-[rgba(176,141,87,0.18)]">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210]">Prompt</th>
+                <td className="px-4 py-3 text-sm bg-[#0e0c0a]">
+                  {newsletter.prompt_template ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#F5EFE0] font-medium">{newsletter.prompt_template.name}</span>
+                      {newsletter.prompt_template.category && (
+                        <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/55">
+                          {newsletter.prompt_template.category}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-[#F5EFE0]/70 font-mono text-xs whitespace-pre-wrap line-clamp-3">
+                      {newsletter.prompt || '—'}
+                    </span>
+                  )}
+                </td>
+              </tr>
+              <tr className="border-b border-[rgba(176,141,87,0.18)]">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210]">Cadence</th>
+                <td className="px-4 py-3 text-sm text-[#F5EFE0] bg-[#0e0c0a]">
+                  {CADENCE_LABELS[newsletter.schedule_cadence] || newsletter.schedule_cadence}
+                </td>
+              </tr>
+              <tr className="border-b border-[rgba(176,141,87,0.18)]">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210]">Send windows</th>
+                <td className="px-4 py-3 text-sm bg-[#0e0c0a]">
+                  <div className="flex flex-wrap gap-1.5">
+                    {(newsletter.default_send_windows && newsletter.default_send_windows.length > 0
+                      ? newsletter.default_send_windows
+                      : ['morning']
+                    ).map((w) => (
+                      <span key={w} className="text-xs px-2 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/80 border border-[rgba(176,141,87,0.18)]">
+                        {WINDOW_LABELS[w] || w}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210]">Send days</th>
+                <td className="px-4 py-3 text-sm bg-[#0e0c0a]">
+                  <div className="flex flex-wrap gap-1">
+                    {(newsletter.send_days && newsletter.send_days.length > 0
+                      ? newsletter.send_days
+                      : ['mon', 'tue', 'wed', 'thu', 'fri']
+                    ).map((d) => (
+                      <span key={d} className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/80 border border-[rgba(176,141,87,0.18)]">
+                        {DAY_LABELS[d] || d}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         {/* Sources */}

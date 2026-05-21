@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getNewsletterWithSources, updateNewsletter, deleteNewsletter, setNewsletterLabels, addNewsletterSource, removeNewsletterSource, getCuratorInfo } from '@/lib/db/newsletters-v2';
 import { getOrCreateSource } from '@/lib/db/sources';
+import { getPromptTemplateById } from '@/lib/db/prompt-templates';
 import { getSupabase } from '@/lib/db/client';
 import { apiLimiter } from '@/lib/rate-limit';
 
@@ -37,6 +38,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const curator = await getCuratorInfo(newsletter.admin_user_id);
 
+    let junto: { id: string; name: string } | null = null;
+    if ((newsletter as any).junto_id) {
+      const { data } = await getSupabase()
+        .from('juntos')
+        .select('id, name')
+        .eq('id', (newsletter as any).junto_id)
+        .single();
+      if (data) junto = { id: data.id, name: data.name };
+    }
+
+    let promptTemplate: { id: string; name: string; category: string | null } | null = null;
+    if ((newsletter as any).prompt_template_id) {
+      const tpl = await getPromptTemplateById((newsletter as any).prompt_template_id);
+      if (tpl) promptTemplate = { id: tpl.id, name: tpl.name, category: tpl.category };
+    }
+
     return NextResponse.json({
       newsletter: {
         ...newsletter,
@@ -45,6 +62,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           twitter_handle: curator.twitter_handle,
           avatar_url: curator.avatar_url,
         } : null,
+        junto,
+        prompt_template: promptTemplate,
       },
     });
   } catch (error) {
