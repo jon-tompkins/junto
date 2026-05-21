@@ -196,7 +196,7 @@ export default function LandingPage() {
               Curate a Junto &amp; create a dispatch
             </Link>
             <Link
-              href="/juntos"
+              href="/explore"
               className="inline-flex items-center justify-center px-7 py-3.5 rounded font-medium transition text-base"
               style={{ border: '1px solid rgba(176,141,87,0.28)', color: 'rgba(245,239,224,0.7)' }}
             >
