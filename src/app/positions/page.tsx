@@ -51,6 +51,7 @@ export default function PositionsPage() {
   const [juntos, setJuntos] = useState<JuntoOption[]>([]);
   const [juntoId, setJuntoId] = useState<string>('');
   const [includeStale, setIncludeStale] = useState(false);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (!session?.user) return;
@@ -126,10 +127,12 @@ export default function PositionsPage() {
     });
   }
 
+  const q = search.trim().replace(/^\$/, '').toLowerCase();
   const filtered = items
     .filter((i) => filter === 'all' || i.stance === filter)
     .filter((i) => categories.has(i.category))
-    .filter((i) => includeStale || effectiveCount(i) > 0);
+    .filter((i) => includeStale || effectiveCount(i) > 0)
+    .filter((i) => !q || i.ticker.toLowerCase().includes(q));
 
   // For heatmap: always sort by count desc so big tiles come first
   const heatmapItems = [...filtered].sort((a, b) => effectiveCount(b) - effectiveCount(a));
@@ -161,6 +164,28 @@ export default function PositionsPage() {
 
           {/* Controls */}
           <div className="flex items-center gap-3 flex-wrap">
+            {/* Search */}
+            <div className="relative">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search ticker…"
+                className="w-40 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-1.5 pr-7 text-xs text-[#F5EFE0] placeholder-[#F5EFE0]/30 font-mono uppercase focus:outline-none focus:border-[#B08D57]"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-xs text-[#F5EFE0]/35 hover:text-[#F5EFE0]/70 w-4 h-4 leading-none"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
+            <div className="w-px h-5 bg-[rgba(176,141,87,0.2)]" />
+
             {/* Junto filter */}
             {juntos.length > 0 && (
               <select
