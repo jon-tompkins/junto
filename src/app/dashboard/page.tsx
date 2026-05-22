@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
-import { markdownToHtml } from '@/lib/utils/markdown-client';
 
 // ─── Share Button ─────────────────────────────────────
 
@@ -99,23 +98,11 @@ interface SubscribedNewsletter {
   };
 }
 
-interface CreatedNewsletter {
-  id: string;
-  name: string;
-  description: string | null;
-  subscriber_count: number;
-  is_public: boolean;
-  created_at: string;
-  credit_cost: number | null;
-}
-
-interface RunEntry {
-  id: string;
-  subject: string | null;
-  content: string;
-  generated_at: string;
-  newsletter_id: string;
-  newsletter_name?: string;
+interface StarredItem {
+  ticker: string;
+  summary: string | null;
+  tweet_count: number;
+  last_report_at: string | null;
 }
 
 // ─── Constants ──────────────────────────────────────
@@ -141,7 +128,6 @@ const DAY_LABELS: Record<string, string> = {
   mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun',
 };
 
-// Convert Pacific time hour to user's local timezone label (DST-aware)
 function pacificToLocal(pacificHour: number): string {
   const now = new Date();
   const pacificStr = now.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -175,32 +161,19 @@ export default function DashboardPage() {
   const [synthError, setSynthError] = useState<string | null>(null);
 
   const [subscriptions, setSubscriptions] = useState<SubscribedNewsletter[]>([]);
-  const [created, setCreated] = useState<CreatedNewsletter[]>([]);
-  const [runs, setRuns] = useState<RunEntry[]>([]);
+  const [starred, setStarred] = useState<StarredItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'newsletters' | 'subscriptions' | 'history'>('subscriptions');
 
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [emailInput, setEmailInput] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
-  const [creditHistory, setCreditHistory] = useState<Array<{
-    id: string;
-    amount: number;
-    type: string;
-    description: string | null;
-    created_at: string;
-  }>>([]);
-  const [creditHistoryLoading, setCreditHistoryLoading] = useState(false);
 
-  // Inline editing state for subscriptions
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
   const [editWindows, setEditWindows] = useState<string[]>([]);
   const [editDays, setEditDays] = useState<string[]>([]);
   const [editEmail, setEditEmail] = useState('');
   const [saving, setSaving] = useState(false);
-
-  const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
 
   useEffect(() => {
     setSubSuccess(new URLSearchParams(window.location.search).get('sub') === 'success');
@@ -259,35 +232,21 @@ export default function DashboardPage() {
     }
   }
 
-  async function loadCreditHistory() {
-    setCreditHistoryLoading(true);
-    try {
-      const res = await fetch('/api/v2/credits/history?limit=50');
-      if (res.ok) {
-        const data = await res.json();
-        setCreditHistory(data.transactions || []);
-      }
-    } catch {} finally {
-      setCreditHistoryLoading(false);
-    }
-  }
-
   async function loadData() {
     try {
-      const [subsRes, createdRes, accountRes] = await Promise.all([
+      const [subsRes, accountRes, starredRes] = await Promise.all([
         fetch('/api/v2/dashboard/subscriptions'),
-        fetch('/api/v2/dashboard/created'),
         fetch('/api/v2/account'),
+        fetch('/api/v2/star/summaries'),
       ]);
-      loadCreditHistory();
 
       if (subsRes.ok) {
         const data = await subsRes.json();
         setSubscriptions(data.subscriptions || []);
       }
-      if (createdRes.ok) {
-        const data = await createdRes.json();
-        setCreated(data.newsletters || []);
+      if (starredRes.ok) {
+        const data = await starredRes.json();
+        setStarred(data.items || []);
       }
       if (accountRes.ok) {
         const data = await accountRes.json();
@@ -303,45 +262,6 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  async function loadHistory() {
-    try {
-      const subsRes = await fetch('/api/v2/dashboard/subscriptions');
-      const subsData = subsRes.ok ? await subsRes.json() : { subscriptions: [] };
-      const createdRes = await fetch('/api/v2/dashboard/created');
-      const createdData = createdRes.ok ? await createdRes.json() : { newsletters: [] };
-
-      const newsletterIds = new Set<string>();
-      const nameMap: Record<string, string> = {};
-
-      for (const sub of subsData.subscriptions || []) {
-        newsletterIds.add(sub.newsletter.id);
-        nameMap[sub.newsletter.id] = sub.newsletter.name;
-      }
-      for (const nl of createdData.newsletters || []) {
-        newsletterIds.add(nl.id);
-        nameMap[nl.id] = nl.name;
-      }
-
-      const allRuns: RunEntry[] = [];
-      await Promise.all(
-        Array.from(newsletterIds).map(async (nlId) => {
-          try {
-            const res = await fetch(`/api/v2/newsletters/${nlId}/runs?limit=10`);
-            if (res.ok) {
-              const data = await res.json();
-              for (const run of data.runs || []) {
-                allRuns.push({ ...run, newsletter_id: nlId, newsletter_name: nameMap[nlId] });
-              }
-            }
-          } catch {}
-        })
-      );
-
-      allRuns.sort((a, b) => new Date(b.generated_at).getTime() - new Date(a.generated_at).getTime());
-      setRuns(allRuns);
-    } catch {}
   }
 
   async function handleSaveEmail() {
@@ -419,11 +339,6 @@ export default function DashboardPage() {
     );
   }
 
-  function switchToHistory() {
-    setActiveTab('history');
-    if (runs.length === 0) loadHistory();
-  }
-
   const creditColor =
     creditBalance !== null && creditBalance <= 50
       ? 'text-[#e8453c]'
@@ -444,7 +359,6 @@ export default function DashboardPage() {
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
-        {/* Pro subscription success banner */}
         {subSuccess && (
           <div className="mb-6 p-4 bg-[#3ecf6a]/10 border border-[#3ecf6a]/40 rounded flex items-center gap-3">
             <svg className="w-5 h-5 text-[#3ecf6a] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -452,17 +366,16 @@ export default function DashboardPage() {
             </svg>
             <div>
               <p className="text-[#3ecf6a] font-medium text-sm">Welcome to Pro!</p>
-              <p className="text-[#3ecf6a]/70 text-xs mt-0.5">1,000 credits added to your account. You can now add new accounts and create dispatches.</p>
+              <p className="text-[#3ecf6a]/70 text-xs mt-0.5">1,000 credits added. You can now create dispatches and add watchlist tickers.</p>
             </div>
           </div>
         )}
 
-        {/* Email Collection Banner */}
         {accountEmail === null && !loading && (
           <div className="mb-8 p-4 bg-[#B08D57]/10 border border-[rgba(176,141,87,0.28)] rounded flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="flex-1">
               <p className="text-[#B08D57] font-medium text-sm">Add your email to receive dispatches</p>
-              <p className="text-[#B08D57]/60 text-xs mt-0.5">This will be used as the default delivery email for your subscriptions.</p>
+              <p className="text-[#B08D57]/60 text-xs mt-0.5">Used as the default delivery email for your subscriptions.</p>
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
               <input
@@ -491,42 +404,26 @@ export default function DashboardPage() {
               Welcome back{session?.user?.name ? `, ${session.user.name}` : ''}.
             </p>
           </div>
-          <Link
-            href="/create"
-            className="bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] px-5 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition text-sm shrink-0"
-          >
-            + New Dispatch
-          </Link>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-            <div className={`text-2xl font-bold ${creditColor}`}>
-              {creditBalance !== null ? creditBalance.toLocaleString() : '—'}
-            </div>
-            <div className="text-sm text-[#F5EFE0]/60 mt-1">Credits</div>
-            <Link href="/pricing" className="text-xs text-[#B08D57] hover:text-[#B08D57]/80 mt-1 inline-block">Top up →</Link>
-          </div>
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-            <div className="text-2xl font-bold text-[#F5EFE0]">{subscriptions.length}</div>
-            <div className="text-sm text-[#F5EFE0]/60 mt-1">Subscriptions</div>
-          </div>
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-            <div className="text-2xl font-bold text-[#F5EFE0]">{created.length}</div>
-            <div className="text-sm text-[#F5EFE0]/60 mt-1">My Dispatches</div>
-          </div>
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-            <div className="text-2xl font-bold text-[#F5EFE0]">
-              {created.reduce((sum, n) => sum + n.subscriber_count, 0)}
-            </div>
-            <div className="text-sm text-[#F5EFE0]/60 mt-1">Total Subscribers</div>
+          <div className="flex items-center gap-2">
+            {creditBalance !== null && (
+              <Link
+                href="/pricing"
+                className={`px-3 py-2.5 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-xs font-mono ${creditColor}`}
+              >
+                {creditBalance.toLocaleString()} credits
+              </Link>
+            )}
+            <Link
+              href="/create"
+              className="bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] px-5 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition text-sm shrink-0"
+            >
+              + New Dispatch
+            </Link>
           </div>
         </div>
 
         {/* ─── Featured Junto ───────────────────────────── */}
         <div className="mb-10 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
-          {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(176,141,87,0.18)]">
             <div className="min-w-0">
               <p className="text-[10px] uppercase tracking-[0.18em] text-[#B08D57]/70 font-mono mb-0.5">Featured Junto</p>
@@ -558,7 +455,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Junto picker */}
           {showJuntoPicker && (
             <div className="px-5 py-3 bg-[#0f0e0c] border-b border-[rgba(176,141,87,0.18)]">
               <p className="text-xs text-[#F5EFE0]/50 mb-2">Select a junto to feature:</p>
@@ -583,7 +479,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Sources */}
           <div className="px-5 py-4">
             {juntoLoading ? (
               <div className="flex gap-2">
@@ -637,7 +532,6 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Synthesis */}
           {featuredJunto && featuredJunto.junto_sources.length > 0 && (
             <div className="px-5 pb-5 space-y-3">
               <div className="flex items-center gap-3">
@@ -678,30 +572,67 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex gap-1 bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-1 mb-8 w-fit">
-          {[
-            { key: 'subscriptions', label: `My Subscriptions (${subscriptions.length})` },
-            { key: 'newsletters', label: `My Dispatches (${created.length})` },
-            { key: 'history', label: 'History' },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => tab.key === 'history' ? switchToHistory() : setActiveTab(tab.key as any)}
-              className={`px-5 py-2 rounded-sm text-sm font-medium transition ${
-                activeTab === tab.key
-                  ? 'bg-[#1c1a17] text-[#F5EFE0] shadow'
-                  : 'text-[#F5EFE0]/60 hover:text-[#F5EFE0]'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {/* ─── Starred Positions ────────────────────────── */}
+        <section className="mb-10">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
+              Starred Positions
+            </h2>
+            <Link href="/positions" className="text-xs text-[#B08D57] hover:underline">
+              All positions →
+            </Link>
+          </div>
+          {loading ? (
+            <LoadingSkeleton />
+          ) : starred.length === 0 ? (
+            <p className="text-sm text-[#F5EFE0]/45 border border-dashed border-[rgba(176,141,87,0.28)] rounded p-6 text-center">
+              You haven't starred any tickers yet.{' '}
+              <Link href="/positions" className="text-[#B08D57] hover:underline">
+                Browse positions →
+              </Link>
+            </p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {starred.map((s) => (
+                <Link
+                  key={s.ticker}
+                  href={`/positions/${s.ticker}`}
+                  className="block rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] p-4 hover:border-[#B08D57]/60 transition"
+                >
+                  <div className="flex items-baseline justify-between mb-2">
+                    <span className="text-base font-semibold text-[#F5EFE0] font-mono">${s.ticker}</span>
+                    <span className="text-[10px] text-[#F5EFE0]/40 font-mono">
+                      {s.last_report_at
+                        ? new Date(s.last_report_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                        : 'No report yet'}
+                    </span>
+                  </div>
+                  {s.summary ? (
+                    <p className="text-xs text-[#F5EFE0]/60 line-clamp-3 leading-relaxed">
+                      {s.summary.replace(/^#+\s/gm, '').replace(/\*\*/g, '')}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-[#F5EFE0]/35 italic">
+                      Daily report pending — generates at 13:30 UTC.
+                    </p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
 
-        {/* ─── My Subscriptions Tab ─────────────────────── */}
-        {activeTab === 'subscriptions' && (
-          loading ? (
+        {/* ─── Subscriptions ────────────────────────────── */}
+        <section className="mb-12">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
+              My Subscriptions ({subscriptions.length})
+            </h2>
+            <Link href="/explore" className="text-xs text-[#B08D57] hover:underline">
+              Explore →
+            </Link>
+          </div>
+          {loading ? (
             <LoadingSkeleton />
           ) : subscriptions.length === 0 ? (
             <EmptyState
@@ -723,294 +654,120 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-              {subscriptions.map((sub) => (
-                <React.Fragment key={sub.id}>
-                  <tr className={`border-b border-[rgba(176,141,87,0.18)] hover:bg-[#141210] transition-colors ${sub.is_active ? '' : 'opacity-60'}`}>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Link href={`/newsletter/${sub.newsletter.id}`} className="text-sm font-medium hover:text-[#B08D57] transition">
-                          {sub.newsletter.name}
-                        </Link>
-                        {!sub.is_active && (
-                          <span className="text-xs px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45">Paused</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-xs text-[#F5EFE0]/55">
-                      {(sub.receive_windows || sub.send_windows || ['morning']).map(w => LOCAL_WINDOW_LABELS[w] || w).join(', ')}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-xs text-[#F5EFE0]/55">
-                      {(sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']).map(d => DAY_LABELS[d] || d).join(', ')}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-right">
-                      <div className="flex items-center gap-2 justify-end">
-                        <button
-                          onClick={() => editingSubId === sub.id ? setEditingSubId(null) : startEditSub(sub)}
-                          className="text-xs px-2.5 py-1 rounded-sm bg-[#141210] hover:bg-[#1c1a17] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] transition"
-                        >
-                          {editingSubId === sub.id ? 'Cancel' : 'Edit'}
-                        </button>
-                        <button
-                          onClick={() => handleToggleSubscription(sub.id, sub.is_active)}
-                          className={`text-xs px-2.5 py-1 rounded-sm border transition ${
-                            sub.is_active
-                              ? 'border-[rgba(176,141,87,0.18)] text-[#F5EFE0]/40 hover:text-[#e8453c] hover:border-[#e8453c]/30'
-                              : 'border-[#3ecf6a]/30 text-[#3ecf6a]'
-                          }`}
-                        >
-                          {sub.is_active ? 'Pause' : 'Resume'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-
-                  {/* Inline edit panel */}
-                  {editingSubId === sub.id && (
-                    <tr className="border-b border-[rgba(176,141,87,0.18)] bg-[#080604]">
-                      <td colSpan={4} className="px-4 py-4">
-                        <div className="space-y-4">
-                      <div>
-                        <label className="text-xs text-[#F5EFE0]/50 font-medium block mb-2">Send times (your local timezone)</label>
-                        <div className="flex gap-2 flex-wrap">
-                          {WINDOW_OPTIONS.map((w) => (
+                  {subscriptions.map((sub) => (
+                    <React.Fragment key={sub.id}>
+                      <tr className={`border-b border-[rgba(176,141,87,0.18)] hover:bg-[#141210] transition-colors ${sub.is_active ? '' : 'opacity-60'}`}>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <Link href={`/newsletter/${sub.newsletter.id}`} className="text-sm font-medium hover:text-[#B08D57] transition">
+                              {sub.newsletter.name}
+                            </Link>
+                            {!sub.is_active && (
+                              <span className="text-xs px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45">Paused</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-xs text-[#F5EFE0]/55">
+                          {(sub.receive_windows || sub.send_windows || ['morning']).map(w => LOCAL_WINDOW_LABELS[w] || w).join(', ')}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-xs text-[#F5EFE0]/55">
+                          {(sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']).map(d => DAY_LABELS[d] || d).join(', ')}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right">
+                          <div className="flex items-center gap-2 justify-end">
                             <button
-                              key={w.key}
-                              onClick={() => toggleWindow(w.key)}
-                              className={`px-3 py-1.5 rounded-sm text-xs font-medium transition ${
-                                editWindows.includes(w.key)
-                                  ? 'bg-[#B08D57] text-[#080604]'
-                                  : 'bg-[#141210] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17]'
+                              onClick={() => editingSubId === sub.id ? setEditingSubId(null) : startEditSub(sub)}
+                              className="text-xs px-2.5 py-1 rounded-sm bg-[#141210] hover:bg-[#1c1a17] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] transition"
+                            >
+                              {editingSubId === sub.id ? 'Cancel' : 'Edit'}
+                            </button>
+                            <button
+                              onClick={() => handleToggleSubscription(sub.id, sub.is_active)}
+                              className={`text-xs px-2.5 py-1 rounded-sm border transition ${
+                                sub.is_active
+                                  ? 'border-[rgba(176,141,87,0.18)] text-[#F5EFE0]/40 hover:text-[#e8453c] hover:border-[#e8453c]/30'
+                                  : 'border-[#3ecf6a]/30 text-[#3ecf6a]'
                               }`}
                             >
-                              {LOCAL_WINDOW_LABELS[w.key]}
+                              {sub.is_active ? 'Pause' : 'Resume'}
                             </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-xs text-[#F5EFE0]/50 font-medium block mb-2">Days</label>
-                        <div className="flex gap-1.5">
-                          {DAY_OPTIONS.map((d) => (
-                            <button
-                              key={d.key}
-                              onClick={() => toggleDay(d.key)}
-                              className={`w-8 h-8 rounded-sm text-xs font-medium transition ${
-                                editDays.includes(d.key)
-                                  ? 'bg-[#B08D57] text-[#080604]'
-                                  : 'bg-[#141210] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17]'
-                              }`}
-                              title={DAY_LABELS[d.key]}
-                            >
-                              {d.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-xs text-[#F5EFE0]/50 font-medium block mb-2">Delivery email</label>
-                        <input
-                          type="email"
-                          value={editEmail}
-                          onChange={(e) => setEditEmail(e.target.value)}
-                          placeholder={accountEmail || 'you@example.com'}
-                          className="w-full sm:w-72 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-1.5 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
-                        />
-                      </div>
-                      <button
-                        onClick={() => handleUpdateSubscription(sub.id)}
-                        disabled={saving || editWindows.length === 0 || editDays.length === 0}
-                        className="px-4 py-1.5 bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] text-xs font-medium rounded transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
-                      >
-                        {saving ? 'Saving...' : 'Save Changes'}
-                      </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              ))}
-                </tbody>
-              </table>
-            </div>
-          )
-        )}
+                          </div>
+                        </td>
+                      </tr>
 
-        {/* ─── My Newsletters Tab ───────────────────────── */}
-        {activeTab === 'newsletters' && (
-          loading ? (
-            <LoadingSkeleton />
-          ) : created.length === 0 ? (
-            <EmptyState
-              icon="plus"
-              title="No dispatches created"
-              subtitle="Create your first dispatch and start building an audience."
-              actionLabel="Create Dispatch"
-              actionHref="/create"
-            />
-          ) : (
-            <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-[#141210] border-b border-[rgba(176,141,87,0.28)]">
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Name</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Description</th>
-                    <th className="px-4 py-2.5 text-right text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Subs</th>
-                    <th className="px-4 py-2.5 text-right text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {created.map((nl) => (
-                    <tr key={nl.id} className="border-b border-[rgba(176,141,87,0.18)] hover:bg-[#141210] transition-colors last:border-b-0">
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <Link href={`/newsletter/${nl.id}`} className="text-sm font-medium hover:text-[#B08D57] transition">
-                            {nl.name}
-                          </Link>
-                          {!nl.is_public && (
-                            <span className="text-xs px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45">Private</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 max-w-sm">
-                        <p className="text-xs text-[#F5EFE0]/55 line-clamp-1">{nl.description || '—'}</p>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-right text-xs text-[#F5EFE0]/55 font-mono">
-                        {nl.subscriber_count}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-right">
-                        <Link
-                          href={`/newsletter/${nl.id}/edit`}
-                          className="text-xs px-2.5 py-1 rounded-sm bg-[#141210] hover:bg-[#1c1a17] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] transition"
-                        >
-                          Edit
-                        </Link>
-                      </td>
-                    </tr>
+                      {editingSubId === sub.id && (
+                        <tr className="border-b border-[rgba(176,141,87,0.18)] bg-[#080604]">
+                          <td colSpan={4} className="px-4 py-4">
+                            <div className="space-y-4">
+                              <div>
+                                <label className="text-xs text-[#F5EFE0]/50 font-medium block mb-2">Send times (your local timezone)</label>
+                                <div className="flex gap-2 flex-wrap">
+                                  {WINDOW_OPTIONS.map((w) => (
+                                    <button
+                                      key={w.key}
+                                      onClick={() => toggleWindow(w.key)}
+                                      className={`px-3 py-1.5 rounded-sm text-xs font-medium transition ${
+                                        editWindows.includes(w.key)
+                                          ? 'bg-[#B08D57] text-[#080604]'
+                                          : 'bg-[#141210] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17]'
+                                      }`}
+                                    >
+                                      {LOCAL_WINDOW_LABELS[w.key]}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <label className="text-xs text-[#F5EFE0]/50 font-medium block mb-2">Days</label>
+                                <div className="flex gap-1.5">
+                                  {DAY_OPTIONS.map((d) => (
+                                    <button
+                                      key={d.key}
+                                      onClick={() => toggleDay(d.key)}
+                                      className={`w-8 h-8 rounded-sm text-xs font-medium transition ${
+                                        editDays.includes(d.key)
+                                          ? 'bg-[#B08D57] text-[#080604]'
+                                          : 'bg-[#141210] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17]'
+                                      }`}
+                                      title={DAY_LABELS[d.key]}
+                                    >
+                                      {d.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <label className="text-xs text-[#F5EFE0]/50 font-medium block mb-2">Delivery email</label>
+                                <input
+                                  type="email"
+                                  value={editEmail}
+                                  onChange={(e) => setEditEmail(e.target.value)}
+                                  placeholder={accountEmail || 'you@example.com'}
+                                  className="w-full sm:w-72 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-1.5 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
+                                />
+                              </div>
+                              <button
+                                onClick={() => handleUpdateSubscription(sub.id)}
+                                disabled={saving || editWindows.length === 0 || editDays.length === 0}
+                                className="px-4 py-1.5 bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] text-xs font-medium rounded transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
+                              >
+                                {saving ? 'Saving...' : 'Save Changes'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
             </div>
-          )
-        )}
+          )}
+        </section>
 
-        {/* ─── History Tab ──────────────────────────────── */}
-        {activeTab === 'history' && (
-          runs.length === 0 && !loading ? (
-            <EmptyState
-              icon="clock"
-              title="No issues yet"
-              subtitle="Issues will appear here once newsletters start generating."
-            />
-          ) : (
-            <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
-              {runs.map((run) => (
-                <div key={run.id} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
-                  <button
-                    onClick={() => setExpandedRunId(expandedRunId === run.id ? null : run.id)}
-                    className="w-full flex items-center gap-4 px-4 py-3 hover:bg-[#141210] transition text-left"
-                  >
-                    <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-[#F5EFE0] truncate">
-                        {run.subject || 'Untitled issue'}
-                      </span>
-                      {run.newsletter_name && (
-                        <span className="text-xs px-1.5 py-0.5 rounded-sm bg-[#B08D57]/15 text-[#B08D57] font-medium shrink-0">
-                          {run.newsletter_name}
-                        </span>
-                      )}
-                      <span className="text-xs text-[#F5EFE0]/30 hidden sm:inline">·</span>
-                      <span className="text-xs text-[#F5EFE0]/40 hidden sm:inline">
-                        {new Date(run.generated_at).toLocaleDateString('en-US', {
-                          weekday: 'short', month: 'short', day: 'numeric',
-                          year: 'numeric', hour: 'numeric', minute: '2-digit',
-                        })}
-                      </span>
-                    </div>
-                    <svg
-                      className={`w-4 h-4 text-[#F5EFE0]/30 transition-transform shrink-0 ${expandedRunId === run.id ? 'rotate-180' : ''}`}
-                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-
-                  {expandedRunId === run.id && (
-                    <div className="border-t border-[rgba(176,141,87,0.18)] px-4 py-5 bg-[#080604]">
-                      <div
-                        className="research-content prose prose-invert prose-sm max-w-none text-[#F5EFE0]/80 leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: markdownToHtml(run.content) }}
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )
-        )}
-
-        {/* ─── Credit history ──────────────────────────── */}
-        <div className="mt-12 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
-          <div className="px-5 py-4 border-b border-[rgba(176,141,87,0.18)]">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-[#B08D57]/70 font-mono mb-0.5">Credit history</p>
-            <h2 className="text-base font-semibold text-[#F5EFE0]">
-              {creditHistoryLoading
-                ? 'Loading…'
-                : creditHistory.length > 0
-                  ? `Last ${creditHistory.length} transaction${creditHistory.length === 1 ? '' : 's'}`
-                  : 'No transactions yet'}
-            </h2>
-          </div>
-
-          <div className="overflow-x-auto">
-            {creditHistory.length === 0 && !creditHistoryLoading && (
-              <div className="px-5 py-6 text-sm text-[#F5EFE0]/45 text-center">
-                No credit activity yet. Top up at <Link href="/pricing" className="text-[#B08D57] hover:underline">/credits</Link>.
-              </div>
-            )}
-            {creditHistoryLoading && (
-              <div className="px-5 py-6 text-sm text-[#F5EFE0]/45 text-center animate-pulse">Loading…</div>
-            )}
-            {creditHistory.length > 0 && (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-[10px] uppercase tracking-[0.12em] text-[#F5EFE0]/45 border-b border-[rgba(176,141,87,0.12)]">
-                    <th className="text-left px-5 py-2 font-normal">Date</th>
-                    <th className="text-left px-5 py-2 font-normal">Type</th>
-                    <th className="text-left px-5 py-2 font-normal">Description</th>
-                    <th className="text-right px-5 py-2 font-normal">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {creditHistory.map((tx) => {
-                    const isPositive = tx.amount >= 0;
-                    const date = new Date(tx.created_at);
-                    const typeLabel = tx.type
-                      .replace(/_/g, ' ')
-                      .replace(/\b\w/g, (c) => c.toUpperCase());
-                    return (
-                      <tr key={tx.id} className="border-b border-[rgba(176,141,87,0.08)] hover:bg-[#1c1a17]">
-                        <td className="px-5 py-2.5 text-[#F5EFE0]/70 whitespace-nowrap text-xs">
-                          {date.toLocaleString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: '2-digit',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                          })}
-                        </td>
-                        <td className="px-5 py-2.5 text-[#F5EFE0]/70 text-xs whitespace-nowrap">{typeLabel}</td>
-                        <td className="px-5 py-2.5 text-[#F5EFE0]/85 text-xs">{tx.description || '—'}</td>
-                        <td className={`px-5 py-2.5 text-right font-mono whitespace-nowrap ${isPositive ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
-                          {isPositive ? '+' : ''}{tx.amount.toLocaleString()}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
+        <p className="text-xs text-[#F5EFE0]/35 text-center">
+          Looking for your dispatches or credit history? <Link href="/profile" className="text-[#B08D57] hover:underline">Profile →</Link>
+        </p>
       </div>
     </main>
   );
