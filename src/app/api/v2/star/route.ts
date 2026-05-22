@@ -4,6 +4,13 @@ import { authOptions } from '@/lib/auth';
 import { getSupabase } from '@/lib/db/client';
 import { getUserWatchlist, addToWatchlist, removeFromWatchlist } from '@/lib/db/watchlist';
 
+const WATCHLIST_CAP = 5;
+
+async function isUserPro(userId: string): Promise<boolean> {
+  const { data } = await getSupabase().from('users').select('is_pro').eq('id', userId).single();
+  return !!data?.is_pro;
+}
+
 async function resolveUserId(session: any): Promise<string | null> {
   const supabase = getSupabase();
   if (session.user?.twitterId) {
@@ -51,6 +58,21 @@ export async function POST(req: NextRequest) {
 
     const { ticker } = await req.json();
     if (!ticker) return NextResponse.json({ error: 'ticker required' }, { status: 400 });
+
+    const pro = await isUserPro(userId);
+    if (!pro) {
+      return NextResponse.json({ error: 'Pro subscription required to add watchlist tickers' }, { status: 402 });
+    }
+
+    const existing = await getUserWatchlist(userId);
+    const upper = ticker.toUpperCase();
+    const already = existing.some((w) => w.ticker.toUpperCase() === upper);
+    if (!already && existing.length >= WATCHLIST_CAP) {
+      return NextResponse.json(
+        { error: `Watchlist limit reached (${WATCHLIST_CAP}). Remove a ticker before adding another.` },
+        { status: 409 }
+      );
+    }
 
     await addToWatchlist(userId, ticker);
     return NextResponse.json({ ok: true });

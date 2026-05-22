@@ -131,6 +131,166 @@ function TradingViewChart({ ticker }: { ticker: string }) {
   );
 }
 
+interface TickerReportRow {
+  id: string;
+  ticker: string;
+  report_date: string;
+  summary: string;
+  tweet_count: number;
+  created_at: string;
+}
+
+interface TickerSummaryRow {
+  ticker: string;
+  summary: string;
+  tweet_count: number;
+  last_report_at: string | null;
+  updated_at: string;
+}
+
+function SocialPulse({ ticker }: { ticker: string }) {
+  const [summary, setSummary] = useState<TickerSummaryRow | null>(null);
+  const [reports, setReports] = useState<TickerReportRow[]>([]);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [report, setReport] = useState<any>(null);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'gated' | 'empty' | 'error'>('loading');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/v2/tickers/${encodeURIComponent(ticker)}`)
+      .then(async (r) => {
+        if (r.status === 402 || r.status === 403) {
+          const body = await r.json().catch(() => ({}));
+          setErrorMsg(body.error || 'Not available');
+          setStatus('gated');
+          return null;
+        }
+        if (!r.ok) {
+          setStatus('error');
+          return null;
+        }
+        return r.json();
+      })
+      .then((d) => {
+        if (!d) return;
+        setSummary(d.summary);
+        setReports(d.reports || []);
+        setStatus(d.summary || (d.reports && d.reports.length) ? 'ready' : 'empty');
+      })
+      .catch(() => setStatus('error'));
+  }, [ticker]);
+
+  useEffect(() => {
+    if (!openId) return setReport(null);
+    const row = reports.find((r) => r.id === openId);
+    if (!row) return;
+    fetch(`/api/v2/tickers/${encodeURIComponent(ticker)}`)
+      .then((r) => r.json())
+      .then((d) => setReport((d.reports || []).find((rr: any) => rr.id === openId)))
+      .catch(() => setReport(null));
+  }, [openId, ticker, reports]);
+
+  if (status === 'gated') return null;
+  if (status === 'error') return null;
+
+  return (
+    <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
+          Social Pulse
+        </h2>
+        <span className="text-[10px] uppercase tracking-wide text-[#B08D57]/70 font-[var(--font-oswald)]">
+          Pro · ${ticker}
+        </span>
+      </div>
+
+      {status === 'loading' && (
+        <p className="text-sm text-[#F5EFE0]/45">Loading social pulse…</p>
+      )}
+
+      {status === 'empty' && (
+        <p className="text-sm text-[#F5EFE0]/45">
+          No reports yet. A daily report for ${ticker} will be generated on the next cron cycle.
+        </p>
+      )}
+
+      {status === 'ready' && (
+        <>
+          {summary && (
+            <div className="mb-4 p-3 rounded bg-[#0e0c0a] border border-[rgba(176,141,87,0.18)]">
+              <p className="text-sm text-[#F5EFE0]/80 whitespace-pre-wrap">{summary.summary}</p>
+              <p className="text-[11px] text-[#F5EFE0]/40 mt-2">
+                {summary.tweet_count} tweets · updated {new Date(summary.updated_at).toLocaleString()}
+              </p>
+            </div>
+          )}
+
+          {reports.length > 0 && (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[10px] uppercase tracking-wide text-[#F5EFE0]/45 font-[var(--font-oswald)]">
+                  <th className="py-2 pr-4">Date</th>
+                  <th className="py-2 pr-4">Summary</th>
+                  <th className="py-2 pr-4 text-right">Tweets</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reports.map((r) => (
+                  <tr
+                    key={r.id}
+                    className="border-t border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17] cursor-pointer"
+                    onClick={() => setOpenId(openId === r.id ? null : r.id)}
+                  >
+                    <td className="py-2 pr-4 font-mono text-[#F5EFE0]/60">{r.report_date}</td>
+                    <td className="py-2 pr-4 text-[#F5EFE0]/80 line-clamp-2">{r.summary}</td>
+                    <td className="py-2 pr-4 text-right text-[#F5EFE0]/45 font-mono">{r.tweet_count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {report && (
+            <div className="mt-4 p-3 rounded bg-[#0e0c0a] border border-[rgba(176,141,87,0.18)]">
+              <h3 className="text-xs uppercase text-[#B08D57] mb-2 font-[var(--font-oswald)]">
+                {report.report_date}
+              </h3>
+              <pre className="text-xs text-[#F5EFE0]/80 whitespace-pre-wrap font-sans">{report.content}</pre>
+              {report.tweet_refs?.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-[10px] uppercase tracking-wide text-[#F5EFE0]/45 font-[var(--font-oswald)]">
+                    Tweets
+                  </p>
+                  {report.tweet_refs.map((t: any) => (
+                    <a
+                      key={t.twitter_id}
+                      href={`https://twitter.com/${t.author_handle}/status/${t.twitter_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-2 rounded bg-[#141210] border border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17]"
+                    >
+                      <div className="flex items-center gap-2 mb-1 flex-wrap text-[11px]">
+                        <span className="text-[#B08D57]">@{t.author_handle}</span>
+                        {t.author_followers != null && (
+                          <span className="text-[#F5EFE0]/40">{t.author_followers.toLocaleString()} followers</span>
+                        )}
+                        <span className="text-[#F5EFE0]/40 ml-auto">
+                          {t.likes}❤ {t.retweets}🔁
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#F5EFE0]/70 line-clamp-3">{t.content}</p>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function PositionPage() {
   const params = useParams();
   const ticker = decodeURIComponent(params.ticker as string).toUpperCase();
@@ -162,19 +322,28 @@ export default function PositionPage() {
       .catch(() => {});
   }, [ticker, session?.user]);
 
+  const [starError, setStarError] = useState<string | null>(null);
+
   async function toggleStar() {
     if (!session?.user || starring) return;
     setStarring(true);
+    setStarError(null);
     const next = !starred;
     setStarred(next);
     try {
-      await fetch('/api/v2/star', {
+      const res = await fetch('/api/v2/star', {
         method: next ? 'POST' : 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ticker }),
       });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setStarred(!next);
+        setStarError(body.error || 'Failed to update watchlist');
+      }
     } catch {
       setStarred(!next);
+      setStarError('Network error');
     } finally {
       setStarring(false);
     }
@@ -239,6 +408,9 @@ export default function PositionPage() {
                   {total} source{total !== 1 ? 's' : ''} tracking this position
                 </p>
               )}
+              {starError && (
+                <p className="text-[#e8453c] text-xs mt-2">{starError}</p>
+              )}
             </div>
 
             {/* TradingView chart */}
@@ -280,6 +452,9 @@ export default function PositionPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* Social Pulse (Pro + on watchlist) */}
+                {starred && session?.user && <SocialPulse ticker={ticker} />}
 
                 {/* Sources */}
                 <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide mb-3 font-[var(--font-oswald)]">
