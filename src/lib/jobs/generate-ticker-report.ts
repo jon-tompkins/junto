@@ -60,13 +60,24 @@ async function summarizeTweets(ticker: string, tweets: TickerReportTweet[]): Pro
 Tweets:
 ${lines}
 
-Return two sections in plain markdown:
+Return premium-brief markdown using these conventions:
+
+- Cashtags MUST be written as $${ticker} (literal dollar sign), not just ${ticker}, so they render as ticker chips.
+- Use inline labels followed by a colon when relevant: \`Bullish: …\`, \`Bearish: …\`, \`Risk: …\`, \`Watch: …\`, \`Key takeaway: …\`. These render as colored chips.
+- If there is a clear one-sided lean, open the section with a callout on its own line:
+  - \`> [!BULL] one-line bull case\` (when narrative is meaningfully bullish)
+  - \`> [!BEAR] one-line bear case\` (when meaningfully bearish)
+  - \`> [!WATCH] one-line setup to watch\` (when there's a specific catalyst)
+  Use AT MOST one callout, only if warranted.
+- @handles must remain as @handle so they link to X.
+
+Structure exactly:
 
 ## Summary
-One paragraph (3-5 sentences). What is the dominant narrative? Bullish/bearish skew? Any notable specific claim, catalyst, or controversy? Cite handles inline (e.g., "@handle argues X"). Don't editorialize beyond what tweets say.
+One paragraph (3-5 sentences). What is the dominant narrative? Bullish/bearish skew? Notable specific claim, catalyst, or controversy? Cite @handles inline. Don't editorialize beyond what tweets say.
 
 ## Notable threads
-A bullet list (5-8 items) of the most signal-rich tweets, each one line: "@handle: <one-sentence gist>". Order by importance, not engagement.
+A bullet list (5-8 items) of the most signal-rich tweets, each one line: "@handle: <one-sentence gist>". Order by importance, not engagement. Prefix with an inline label like \`Bullish:\`/\`Bearish:\`/\`Watch:\` where it fits.
 
 Be specific and factual. Don't pad. Don't repeat the tweet count.`;
 

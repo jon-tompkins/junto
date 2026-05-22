@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { TopNav } from '@/components/top-nav';
+import { markdownToHtml } from '@/lib/utils/markdown-client';
 
 const STANCE_COLORS: Record<string, string> = {
   bullish: 'bg-[#3ecf6a]/15 text-[#3ecf6a] border border-[#3ecf6a]/40',
@@ -217,9 +218,12 @@ function SocialPulse({ ticker }: { ticker: string }) {
       {status === 'ready' && (
         <>
           {summary && (
-            <div className="mb-4 p-3 rounded bg-[#0e0c0a] border border-[rgba(176,141,87,0.18)]">
-              <p className="text-sm text-[#F5EFE0]/80 whitespace-pre-wrap">{summary.summary}</p>
-              <p className="text-[11px] text-[#F5EFE0]/40 mt-2">
+            <div className="mb-4 p-4 rounded bg-[#0e0c0a] border border-[rgba(176,141,87,0.18)]">
+              <div
+                className="research-content text-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(summary.summary) }}
+              />
+              <p className="text-[11px] text-[#F5EFE0]/40 mt-3">
                 {summary.tweet_count} tweets · updated {new Date(summary.updated_at).toLocaleString()}
               </p>
             </div>
@@ -251,11 +255,14 @@ function SocialPulse({ ticker }: { ticker: string }) {
           )}
 
           {report && (
-            <div className="mt-4 p-3 rounded bg-[#0e0c0a] border border-[rgba(176,141,87,0.18)]">
-              <h3 className="text-xs uppercase text-[#B08D57] mb-2 font-[var(--font-oswald)]">
+            <div className="mt-4 p-4 rounded bg-[#0e0c0a] border border-[rgba(176,141,87,0.18)]">
+              <h3 className="text-xs uppercase text-[#B08D57] mb-3 font-[var(--font-oswald)] tracking-wide">
                 {report.report_date}
               </h3>
-              <pre className="text-xs text-[#F5EFE0]/80 whitespace-pre-wrap font-sans">{report.content}</pre>
+              <div
+                className="research-content text-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(report.content) }}
+              />
               {report.tweet_refs?.length > 0 && (
                 <div className="mt-3 space-y-2">
                   <p className="text-[10px] uppercase tracking-wide text-[#F5EFE0]/45 font-[var(--font-oswald)]">
