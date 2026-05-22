@@ -169,6 +169,10 @@ export default function DashboardPage() {
   const [emailInput, setEmailInput] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
 
+  const [tickerInput, setTickerInput] = useState('');
+  const [starBusy, setStarBusy] = useState<string | null>(null);
+  const [starError, setStarError] = useState<string | null>(null);
+
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
   const [editWindows, setEditWindows] = useState<string[]>([]);
   const [editDays, setEditDays] = useState<string[]>([]);
@@ -229,6 +233,72 @@ export default function DashboardPage() {
       setSynthError(err instanceof Error ? err.message : 'Synthesis failed');
     } finally {
       setSynthesizing(false);
+    }
+  }
+
+  async function reloadStarred() {
+    try {
+      const res = await fetch('/api/v2/star/summaries');
+      if (res.ok) {
+        const data = await res.json();
+        setStarred(data.items || []);
+      }
+    } catch {}
+  }
+
+  async function addTicker(raw: string) {
+    const ticker = raw.trim().replace(/^\$/, '').toUpperCase();
+    if (!ticker || !/^[A-Z][A-Z0-9.\-]{0,9}$/.test(ticker)) {
+      setStarError('Enter a valid ticker (e.g. BB, BTC, AAPL).');
+      return;
+    }
+    setStarBusy(ticker);
+    setStarError(null);
+    try {
+      const res = await fetch('/api/v2/star', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker }),
+      });
+      if (res.status === 402) {
+        setStarError('Pro subscription required to add watchlist tickers.');
+        return;
+      }
+      if (res.status === 409) {
+        const body = await res.json().catch(() => ({}));
+        setStarError(body.error || 'Watchlist limit reached (5).');
+        return;
+      }
+      if (!res.ok) {
+        setStarError('Could not add ticker.');
+        return;
+      }
+      setTickerInput('');
+      await reloadStarred();
+    } finally {
+      setStarBusy(null);
+    }
+  }
+
+  async function removeTicker(ticker: string) {
+    setStarBusy(ticker);
+    setStarError(null);
+    // Optimistic
+    setStarred((prev) => prev.filter((s) => s.ticker !== ticker));
+    try {
+      const res = await fetch('/api/v2/star', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker }),
+      });
+      if (!res.ok) {
+        setStarError('Could not remove ticker.');
+        await reloadStarred();
+      }
+    } catch {
+      await reloadStarred();
+    } finally {
+      setStarBusy(null);
     }
   }
 
@@ -574,14 +644,39 @@ export default function DashboardPage() {
 
         {/* ─── Starred Positions ────────────────────────── */}
         <section className="mb-10">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
-              Starred Positions
+              Starred Positions <span className="text-[#F5EFE0]/30 font-mono normal-case">({starred.length}/5)</span>
             </h2>
-            <Link href="/positions" className="text-xs text-[#B08D57] hover:underline">
-              All positions →
-            </Link>
+            <div className="flex items-center gap-2">
+              <form
+                onSubmit={(e) => { e.preventDefault(); addTicker(tickerInput); }}
+                className="flex items-center gap-1"
+              >
+                <input
+                  type="text"
+                  value={tickerInput}
+                  onChange={(e) => setTickerInput(e.target.value)}
+                  placeholder="+ ticker"
+                  maxLength={10}
+                  className="w-24 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-2 py-1 text-xs text-[#F5EFE0] placeholder-[#F5EFE0]/30 font-mono uppercase focus:outline-none focus:border-[#B08D57]"
+                />
+                <button
+                  type="submit"
+                  disabled={!tickerInput.trim() || !!starBusy || starred.length >= 5}
+                  className="text-xs px-2.5 py-1 rounded bg-[#B08D57] text-[#080604] font-[var(--font-oswald)] uppercase tracking-wide disabled:opacity-40"
+                >
+                  Add
+                </button>
+              </form>
+              <Link href="/positions" className="text-xs text-[#B08D57] hover:underline">
+                All →
+              </Link>
+            </div>
           </div>
+          {starError && (
+            <p className="text-xs text-[#e8453c] mb-2">{starError}</p>
+          )}
           {loading ? (
             <LoadingSkeleton />
           ) : starred.length === 0 ? (
@@ -594,29 +689,38 @@ export default function DashboardPage() {
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               {starred.map((s) => (
-                <Link
+                <div
                   key={s.ticker}
-                  href={`/positions/${s.ticker}`}
-                  className="block rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] p-4 hover:border-[#B08D57]/60 transition"
+                  className="relative rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] hover:border-[#B08D57]/60 transition"
                 >
-                  <div className="flex items-baseline justify-between mb-2">
-                    <span className="text-base font-semibold text-[#F5EFE0] font-mono">${s.ticker}</span>
-                    <span className="text-[10px] text-[#F5EFE0]/40 font-mono">
-                      {s.last_report_at
-                        ? new Date(s.last_report_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                        : 'No report yet'}
-                    </span>
-                  </div>
-                  {s.summary ? (
-                    <p className="text-xs text-[#F5EFE0]/60 line-clamp-3 leading-relaxed">
-                      {s.summary.replace(/^#+\s/gm, '').replace(/\*\*/g, '')}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-[#F5EFE0]/35 italic">
-                      Daily report pending — generates at 13:30 UTC.
-                    </p>
-                  )}
-                </Link>
+                  <button
+                    onClick={() => removeTicker(s.ticker)}
+                    disabled={starBusy === s.ticker}
+                    title="Unstar"
+                    className="absolute top-2 right-2 w-6 h-6 rounded-sm text-xs text-[#F5EFE0]/35 hover:text-[#e8453c] hover:bg-[#1c1a17] transition disabled:opacity-40 z-10"
+                  >
+                    ×
+                  </button>
+                  <Link href={`/positions/${s.ticker}`} className="block p-4">
+                    <div className="flex items-baseline justify-between mb-2 pr-6">
+                      <span className="text-base font-semibold text-[#F5EFE0] font-mono">${s.ticker}</span>
+                      <span className="text-[10px] text-[#F5EFE0]/40 font-mono">
+                        {s.last_report_at
+                          ? new Date(s.last_report_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                          : 'No report yet'}
+                      </span>
+                    </div>
+                    {s.summary ? (
+                      <p className="text-xs text-[#F5EFE0]/60 line-clamp-3 leading-relaxed">
+                        {s.summary.replace(/^#+\s/gm, '').replace(/\*\*/g, '')}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-[#F5EFE0]/35 italic">
+                        Daily report pending — generates at 13:30 UTC.
+                      </p>
+                    )}
+                  </Link>
+                </div>
               ))}
             </div>
           )}
