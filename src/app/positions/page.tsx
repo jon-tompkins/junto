@@ -11,8 +11,9 @@ interface PositionGroup {
   ticker: string;
   stance: string;
   count: number;
+  fresh_count: number;
   category: PositionCategory;
-  sources: Array<{ handle: string; display_name: string | null; avatar_url: string | null }>;
+  sources: Array<{ handle: string; display_name: string | null; avatar_url: string | null; is_stale: boolean }>;
 }
 
 const STANCE_BG: Record<string, string> = {
@@ -49,6 +50,7 @@ export default function PositionsPage() {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [juntos, setJuntos] = useState<JuntoOption[]>([]);
   const [juntoId, setJuntoId] = useState<string>('');
+  const [includeStale, setIncludeStale] = useState(false);
 
   useEffect(() => {
     if (!session?.user) return;
@@ -112,7 +114,8 @@ export default function PositionsPage() {
     }
   }
 
-  const maxCount = Math.max(...items.map((i) => i.count), 1);
+  const effectiveCount = (i: PositionGroup) => (includeStale ? i.count : i.fresh_count ?? i.count);
+  const maxCount = Math.max(...items.map(effectiveCount), 1);
 
   function toggleCategory(cat: PositionCategory) {
     setCategories((prev) => {
@@ -125,17 +128,18 @@ export default function PositionsPage() {
 
   const filtered = items
     .filter((i) => filter === 'all' || i.stance === filter)
-    .filter((i) => categories.has(i.category));
+    .filter((i) => categories.has(i.category))
+    .filter((i) => includeStale || effectiveCount(i) > 0);
 
   // For heatmap: always sort by count desc so big tiles come first
-  const heatmapItems = [...filtered].sort((a, b) => b.count - a.count);
+  const heatmapItems = [...filtered].sort((a, b) => effectiveCount(b) - effectiveCount(a));
 
   // For table: user-controlled sort
   const tableItems = [...filtered].sort((a, b) => {
     let cmp = 0;
     if (sortCol === 'ticker') cmp = a.ticker.localeCompare(b.ticker);
     else if (sortCol === 'stance') cmp = (STANCE_ORDER[a.stance] ?? 4) - (STANCE_ORDER[b.stance] ?? 4);
-    else if (sortCol === 'count') cmp = a.count - b.count;
+    else if (sortCol === 'count') cmp = effectiveCount(a) - effectiveCount(b);
     return sortDir === 'asc' ? cmp : -cmp;
   });
 
@@ -227,6 +231,22 @@ export default function PositionsPage() {
               ))}
             </div>
 
+            {/* Include stale toggle */}
+            <button
+              onClick={() => setIncludeStale((v) => !v)}
+              className="px-3 py-1.5 rounded text-xs font-medium transition"
+              style={{
+                background: includeStale ? 'rgba(176,141,87,0.18)' : 'rgba(255,255,255,0.04)',
+                color: includeStale ? '#B08D57' : 'rgba(245,239,224,0.5)',
+                border: `1px solid ${includeStale ? 'rgba(176,141,87,0.4)' : 'rgba(176,141,87,0.18)'}`,
+              }}
+              title="Show positions not confirmed in 30+ days"
+            >
+              {includeStale ? '✓ ' : ''}Include stale
+            </button>
+
+            <div className="w-px h-5 bg-[rgba(176,141,87,0.2)]" />
+
             {/* View toggle */}
             <div className="flex rounded overflow-hidden border border-[rgba(176,141,87,0.28)]">
               {(['heatmap', 'table'] as const).map((v) => (
@@ -258,7 +278,8 @@ export default function PositionsPage() {
           // ─── Heatmap ───────────────────────────────────────────────
           <div className="flex flex-wrap gap-2 items-start content-start">
             {heatmapItems.map((item) => {
-              const ratio = item.count / maxCount;
+              const shownCount = effectiveCount(item);
+              const ratio = shownCount / maxCount;
               // Tile size: min 80px, max 220px — area proportional to count
               const size = Math.round(80 + ratio * 140);
               const bg = STANCE_BG[item.stance] ?? '#4b5563';
@@ -275,7 +296,7 @@ export default function PositionsPage() {
                     background: `rgba(${hexToRgb(bg)}, ${alpha})`,
                     border: `1px solid ${bg}55`,
                   }}
-                  title={`${item.ticker} · ${STANCE_LABEL[item.stance] ?? item.stance} · ${item.count} source${item.count !== 1 ? 's' : ''}`}
+                  title={`${item.ticker} · ${STANCE_LABEL[item.stance] ?? item.stance} · ${shownCount} source${shownCount !== 1 ? 's' : ''}${!includeStale && item.count > shownCount ? ` (+${item.count - shownCount} stale)` : ''}`}
                 >
                   {session?.user && (
                     <button
@@ -310,7 +331,7 @@ export default function PositionsPage() {
                     {STANCE_LABEL[item.stance] ?? item.stance}
                   </span>
                   <div className="flex items-center" style={{ gap: size > 120 ? '-6px' : '-4px' }}>
-                    {item.sources.slice(0, size > 100 ? 4 : 2).map((s, i) => (
+                    {(includeStale ? item.sources : item.sources.filter((s) => !s.is_stale)).slice(0, size > 100 ? 4 : 2).map((s, i) => (
                       <div
                         key={s.handle}
                         className="rounded-full border-2 overflow-hidden shrink-0"
@@ -333,7 +354,7 @@ export default function PositionsPage() {
                         )}
                       </div>
                     ))}
-                    {item.count > (size > 100 ? 4 : 2) && (
+                    {shownCount > (size > 100 ? 4 : 2) && (
                       <span
                         style={{
                           fontSize: `${Math.round(8 + ratio * 3)}px`,
@@ -341,7 +362,7 @@ export default function PositionsPage() {
                           marginLeft: '3px',
                         }}
                       >
-                        +{item.count - (size > 100 ? 4 : 2)}
+                        +{shownCount - (size > 100 ? 4 : 2)}
                       </span>
                     )}
                   </div>
@@ -380,6 +401,9 @@ export default function PositionsPage() {
               <tbody>
                 {tableItems.map((item) => {
                   const bg = STANCE_BG[item.stance] ?? '#4b5563';
+                  const shownCount = effectiveCount(item);
+                  const visibleSources = includeStale ? item.sources : item.sources.filter((s) => !s.is_stale);
+                  const staleHidden = item.count - shownCount;
                   return (
                     <tr
                       key={`${item.ticker}-${item.stance}`}
@@ -407,10 +431,15 @@ export default function PositionsPage() {
                           <div className="w-24 h-1.5 rounded-full bg-[#080604] overflow-hidden">
                             <div
                               className="h-full rounded-full"
-                              style={{ width: `${(item.count / maxCount) * 100}%`, background: bg }}
+                              style={{ width: `${(shownCount / maxCount) * 100}%`, background: bg }}
                             />
                           </div>
-                          <span className="text-[#F5EFE0]/70 tabular-nums">{item.count}</span>
+                          <span className="text-[#F5EFE0]/70 tabular-nums">{shownCount}</span>
+                          {!includeStale && staleHidden > 0 && (
+                            <span className="text-[10px] text-[#F5EFE0]/30 tabular-nums" title={`${staleHidden} stale source${staleHidden === 1 ? '' : 's'} hidden`}>
+                              (+{staleHidden})
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-5 py-3">
@@ -418,7 +447,7 @@ export default function PositionsPage() {
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex flex-wrap gap-2">
-                          {item.sources.slice(0, 5).map((s) => (
+                          {visibleSources.slice(0, 5).map((s) => (
                             <Link
                               key={s.handle}
                               href={`/sources/${s.handle}`}
@@ -436,8 +465,8 @@ export default function PositionsPage() {
                               <span className="text-xs text-[#F5EFE0]/50 hover:text-[#B08D57]">@{s.handle}</span>
                             </Link>
                           ))}
-                          {item.sources.length > 5 && (
-                            <span className="text-xs text-[#F5EFE0]/30 self-center">+{item.sources.length - 5} more</span>
+                          {visibleSources.length > 5 && (
+                            <span className="text-xs text-[#F5EFE0]/30 self-center">+{visibleSources.length - 5} more</span>
                           )}
                         </div>
                       </td>

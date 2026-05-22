@@ -7,8 +7,18 @@ export interface PositionGroup {
   ticker: string;
   stance: string;
   count: number;
+  fresh_count: number;
   category: PositionCategory;
-  sources: Array<{ handle: string; display_name: string | null; avatar_url: string | null }>;
+  sources: Array<{ handle: string; display_name: string | null; avatar_url: string | null; is_stale: boolean }>;
+}
+
+const STALE_DAYS = 30;
+
+function isStalePosition(pos: any): boolean {
+  const ref = pos?.last_mentioned || pos?.since;
+  if (!ref) return false;
+  const days = Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000);
+  return days >= STALE_DAYS;
 }
 
 // Well-known crypto tickers — anything here beats the equity heuristic
@@ -78,12 +88,15 @@ export async function GET(req: NextRequest) {
           ticker: normalized,
           stance,
           count: 0,
+          fresh_count: 0,
           category: classify(normalized),
           sources: [],
         };
       }
+      const stale = isStalePosition(pos);
       groups[key].count += 1;
-      groups[key].sources.push({ handle, display_name, avatar_url });
+      if (!stale) groups[key].fresh_count += 1;
+      groups[key].sources.push({ handle, display_name, avatar_url, is_stale: stale });
     }
   }
 
