@@ -108,6 +108,7 @@ export function TopNav() {
                       { href: '/history', label: 'History', brass: false },
                       { href: '/pricing', label: 'Pricing', brass: false },
                       { href: '/pricing', label: 'Buy Credits', brass: true },
+                      { href: '/profile', label: 'Profile', brass: false },
                       { href: '/settings', label: 'Settings', brass: false },
                     ].map(({ href, label, brass }) => (
                       <Link
@@ -199,6 +200,7 @@ export function TopNav() {
               ...(session?.user ? [
                 { href: '/dashboard', label: 'Dashboard' },
                 { href: '/create', label: 'Create Dispatch' },
+                { href: '/profile', label: 'Profile' },
                 { href: '/pricing', label: 'Pricing' },
               ] : [
                 { href: '/pricing', label: 'Pricing' },

@@ -1,0 +1,210 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { TopNav } from '@/components/top-nav';
+
+interface CreatedNewsletter {
+  id: string;
+  name: string;
+  description: string | null;
+  is_public: boolean;
+  subscriber_count: number;
+}
+
+interface CreditTx {
+  id: string;
+  type: string;
+  amount: number;
+  description: string | null;
+  created_at: string;
+}
+
+interface Account {
+  email: string | null;
+  balance: number;
+  isPro: boolean;
+}
+
+export default function ProfilePage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  const [account, setAccount] = useState<Account | null>(null);
+  const [created, setCreated] = useState<CreatedNewsletter[]>([]);
+  const [history, setHistory] = useState<CreditTx[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (status === 'unauthenticated') router.push('/');
+  }, [status, router]);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    Promise.all([
+      fetch('/api/v2/account').then((r) => (r.ok ? r.json() : null)),
+      fetch('/api/v2/dashboard/created').then((r) => (r.ok ? r.json() : { newsletters: [] })),
+      fetch('/api/v2/credits/history?limit=50').then((r) => (r.ok ? r.json() : { transactions: [] })),
+    ])
+      .then(([acct, createdRes, histRes]) => {
+        setAccount(acct);
+        setCreated(createdRes?.newsletters || []);
+        setHistory(histRes?.transactions || []);
+      })
+      .finally(() => setLoading(false));
+  }, [session?.user]);
+
+  if (status === 'loading' || (loading && !account)) {
+    return (
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+        <TopNav />
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <div className="animate-pulse text-[#F5EFE0]/45 text-sm">Loading profile…</div>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+      <TopNav />
+
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Profile</h1>
+          <div className="flex items-center gap-4 flex-wrap text-sm text-[#F5EFE0]/60">
+            {account?.email && <span>{account.email}</span>}
+            {account?.isPro && (
+              <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-sm bg-[#B08D57]/15 text-[#B08D57] font-[var(--font-oswald)]">
+                Pro
+              </span>
+            )}
+            {account && (
+              <span className="font-mono">{account.balance.toLocaleString()} credits</span>
+            )}
+            <Link href="/settings" className="ml-auto text-xs text-[#B08D57] hover:underline">
+              Settings →
+            </Link>
+          </div>
+        </div>
+
+        {/* Owned dispatches */}
+        <section className="mb-12">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
+              My Dispatches
+            </h2>
+            <Link
+              href="/create"
+              className="text-xs px-3 py-1 rounded bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] font-[var(--font-oswald)] uppercase tracking-wide"
+            >
+              + New
+            </Link>
+          </div>
+          {created.length === 0 ? (
+            <p className="text-sm text-[#F5EFE0]/45 border border-dashed border-[rgba(176,141,87,0.28)] rounded p-6 text-center">
+              You haven't created any dispatches yet.
+            </p>
+          ) : (
+            <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-[#141210] border-b border-[rgba(176,141,87,0.28)]">
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Name</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Description</th>
+                    <th className="px-4 py-2.5 text-right text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Subs</th>
+                    <th className="px-4 py-2.5"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {created.map((nl) => (
+                    <tr key={nl.id} className="border-b border-[rgba(176,141,87,0.18)] hover:bg-[#141210] last:border-b-0">
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <Link href={`/newsletter/${nl.id}`} className="text-sm font-medium hover:text-[#B08D57]">
+                          {nl.name}
+                        </Link>
+                        {!nl.is_public && (
+                          <span className="ml-2 text-xs px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45">Private</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 max-w-sm">
+                        <p className="text-xs text-[#F5EFE0]/55 line-clamp-1">{nl.description || '—'}</p>
+                      </td>
+                      <td className="px-4 py-3 text-right text-xs text-[#F5EFE0]/55 font-mono">
+                        {nl.subscriber_count}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Link
+                          href={`/newsletter/${nl.id}/edit`}
+                          className="text-xs px-2.5 py-1 rounded-sm bg-[#141210] hover:bg-[#1c1a17] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)]"
+                        >
+                          Edit
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        {/* Credit history */}
+        <section className="mb-12">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
+              Credit History
+            </h2>
+            <Link href="/pricing" className="text-xs text-[#B08D57] hover:underline">
+              Top up →
+            </Link>
+          </div>
+          {history.length === 0 ? (
+            <p className="text-sm text-[#F5EFE0]/45 border border-dashed border-[rgba(176,141,87,0.28)] rounded p-6 text-center">
+              No credit activity yet.
+            </p>
+          ) : (
+            <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-[#141210] text-[10px] uppercase tracking-[0.12em] text-[#F5EFE0]/45 border-b border-[rgba(176,141,87,0.18)]">
+                    <th className="text-left px-5 py-2 font-normal">Date</th>
+                    <th className="text-left px-5 py-2 font-normal">Type</th>
+                    <th className="text-left px-5 py-2 font-normal">Description</th>
+                    <th className="text-right px-5 py-2 font-normal">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((tx) => {
+                    const pos = tx.amount >= 0;
+                    const typeLabel = tx.type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                    return (
+                      <tr key={tx.id} className="border-b border-[rgba(176,141,87,0.08)] hover:bg-[#1c1a17]">
+                        <td className="px-5 py-2.5 text-[#F5EFE0]/70 text-xs whitespace-nowrap">
+                          {new Date(tx.created_at).toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: '2-digit',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })}
+                        </td>
+                        <td className="px-5 py-2.5 text-[#F5EFE0]/70 text-xs whitespace-nowrap">{typeLabel}</td>
+                        <td className="px-5 py-2.5 text-[#F5EFE0]/85 text-xs">{tx.description || '—'}</td>
+                        <td className={`px-5 py-2.5 text-right font-mono whitespace-nowrap ${pos ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
+                          {pos ? '+' : ''}{tx.amount.toLocaleString()}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
+  );
+}
