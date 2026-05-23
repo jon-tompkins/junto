@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, Suspense } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { AuthModal } from '@/components/auth-modal';
@@ -66,7 +67,7 @@ function Section({ children }: { children: React.ReactNode }) {
 function CreatePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
+  const { data: session, status: authStatus } = useSession();
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -285,6 +286,30 @@ function CreatePageInner() {
     (!!prompt.trim() || !!promptTemplateId) &&
     sendWindows.length > 0 &&
     ((!adHocMode && !!selectedJuntoId) || (adHocMode && adHocSources.some(s => s.status !== 'invalid')));
+
+  if (authStatus === 'unauthenticated') {
+    return (
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+        <TopNav />
+        <div className="max-w-xl mx-auto px-6 py-16 text-center">
+          <p className="text-xs uppercase tracking-[0.2em] mb-3 font-mono" style={{ color: 'rgba(176,141,87,0.6)' }}>New Dispatch</p>
+          <h1 className="text-3xl font-bold uppercase tracking-tight leading-none mb-4" style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}>
+            Sign in to create a dispatch
+          </h1>
+          <p className="text-sm text-[#F5EFE0]/55 mb-6">
+            Pick sources, write a synthesis prompt, and ship it on a schedule.
+          </p>
+          <Link
+            href="/login"
+            className="inline-block px-5 py-2.5 rounded bg-[#B08D57] text-[#080604] font-bold uppercase tracking-wide hover:bg-[#B08D57]/85 transition"
+            style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}
+          >
+            Sign in
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">

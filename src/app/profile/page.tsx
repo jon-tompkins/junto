@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
 
 interface CreatedNewsletter {
@@ -30,16 +29,11 @@ interface Account {
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
-  const router = useRouter();
 
   const [account, setAccount] = useState<Account | null>(null);
   const [created, setCreated] = useState<CreatedNewsletter[]>([]);
   const [history, setHistory] = useState<CreditTx[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (status === 'unauthenticated') router.push('/');
-  }, [status, router]);
 
   useEffect(() => {
     if (!session?.user) return;
@@ -56,12 +50,30 @@ export default function ProfilePage() {
       .finally(() => setLoading(false));
   }, [session?.user]);
 
-  if (status === 'loading' || (loading && !account)) {
+  if (status === 'loading' || (status === 'authenticated' && loading && !account)) {
     return (
       <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
         <TopNav />
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <div className="animate-pulse text-[#F5EFE0]/45 text-sm">Loading profile…</div>
+        </div>
+      </main>
+    );
+  }
+
+  if (status === 'unauthenticated') {
+    return (
+      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+        <TopNav />
+        <div className="container mx-auto px-4 py-12 max-w-xl text-center">
+          <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-3">Profile</h1>
+          <p className="text-[#F5EFE0]/70 mb-6">Sign in to view your account, credits, and history.</p>
+          <Link
+            href="/login"
+            className="inline-block px-5 py-2.5 rounded bg-[#B08D57] text-[#080604] font-bold font-[var(--font-oswald)] uppercase tracking-wide hover:bg-[#B08D57]/85 transition"
+          >
+            Sign in
+          </Link>
         </div>
       </main>
     );

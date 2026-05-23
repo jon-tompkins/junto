@@ -7,6 +7,16 @@ import { useSession } from 'next-auth/react';
 import { TopNav } from '@/components/top-nav';
 import { markdownToHtml } from '@/lib/utils/markdown-client';
 
+function enrichTweetHtml(text: string): string {
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return escaped
+    .replace(/(^|[^\w])\$([A-Z]{1,6})(?!\w)/g, '$1<span class="ticker-pill">$$$2</span>')
+    .replace(/(^|[^\w@])@([A-Za-z0-9_]{1,15})(?!\w)/g, '$1<a href="https://x.com/$2" target="_blank" rel="noopener" class="handle-link">@$2</a>');
+}
+
 const STANCE_COLORS: Record<string, string> = {
   bullish: 'bg-[#3ecf6a]/15 text-[#3ecf6a] border border-[#3ecf6a]/40',
   bearish: 'bg-[#e8453c]/15 text-[#e8453c] border border-[#e8453c]/40',
@@ -285,7 +295,10 @@ function SocialPulse({ ticker }: { ticker: string }) {
                           {t.likes}❤ {t.retweets}🔁
                         </span>
                       </div>
-                      <p className="text-xs text-[#F5EFE0]/70 line-clamp-3">{t.content}</p>
+                      <p
+                        className="text-xs text-[#F5EFE0]/70 line-clamp-3"
+                        dangerouslySetInnerHTML={{ __html: enrichTweetHtml(t.content) }}
+                      />
                     </a>
                   ))}
                 </div>
