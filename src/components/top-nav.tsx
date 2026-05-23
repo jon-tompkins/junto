@@ -44,6 +44,7 @@ export function TopNav() {
       {/* Center nav links */}
       <div className="hidden md:flex items-center gap-6">
         {[
+          ...(session?.user ? [{ href: '/today', label: 'Today' }] : []),
           { href: '/explore', label: 'Dispatches' },
           { href: '/juntos', label: 'Juntos' },
           { href: '/sources', label: 'Sources' },
@@ -191,6 +192,7 @@ export function TopNav() {
             </button>
 
             {[
+              ...(session?.user ? [{ href: '/today', label: 'Today' }] : []),
               { href: '/explore', label: 'Dispatches' },
               { href: '/juntos', label: 'Juntos' },
               { href: '/sources', label: 'Sources' },
