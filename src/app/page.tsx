@@ -12,7 +12,6 @@ import {
   calculateCreditCostPerPeriod,
   creditsToDollars,
   NEW_USER_BONUS_CREDITS,
-  CREDITS_PER_DOLLAR,
 } from '@/lib/pricing';
 
 interface NewsletterSource {
@@ -173,144 +172,40 @@ export default function LandingPage() {
       <TopNav />
 
       {/* Hero */}
-      <section className="container mx-auto px-4 pt-16 pb-10 relative">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: 'rgba(176,141,87,0.8)', fontFamily: 'var(--font-mono)' }}>
-            myjunto
-          </p>
-          <h1 className="text-4xl md:text-5xl font-bold leading-tight tracking-tight">
-            The signal,{' '}
+      <section className="container mx-auto px-4 pt-24 pb-16 relative">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-5xl md:text-7xl font-bold leading-[0.95] tracking-tight">
+            The signal,<br />
             <span style={{ color: '#B08D57' }}>not the noise.</span>
           </h1>
-          <p className="text-sm mt-3 max-w-lg" style={{ color: 'rgba(245,239,224,0.45)' }}>
-            AI-synthesized briefs from the Twitter voices you actually trust.
+          <p className="text-lg md:text-xl mt-6 max-w-xl mx-auto" style={{ color: 'rgba(245,239,224,0.6)' }}>
+            AI-synthesized briefs from the voices you actually trust. Pick your sources, set your lens, get your dispatch.
           </p>
 
-          {/* Dual CTA — curator / consumer */}
-          <div className="flex flex-col sm:flex-row gap-3 mt-8">
+          <div className="flex flex-col sm:flex-row gap-3 mt-10 justify-center">
             <Link
               href="/create"
-              className="inline-flex items-center justify-center px-7 py-3.5 rounded font-semibold transition text-base uppercase tracking-wide"
+              className="inline-flex items-center justify-center px-8 py-4 rounded font-semibold transition text-base uppercase tracking-wide"
               style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}
             >
-              Curate a Junto &amp; create a dispatch
+              Build your junto
             </Link>
             <Link
               href="/explore"
-              className="inline-flex items-center justify-center px-7 py-3.5 rounded font-medium transition text-base"
+              className="inline-flex items-center justify-center px-8 py-4 rounded font-medium transition text-base"
               style={{ border: '1px solid rgba(176,141,87,0.28)', color: 'rgba(245,239,224,0.7)' }}
             >
-              Subscribe to a dispatch →
+              Browse dispatches →
             </Link>
           </div>
-
-          {/* Analyst callout */}
-          <p className="mt-5 text-sm" style={{ color: 'rgba(245,239,224,0.35)' }}>
-            Or{' '}
-            <Link href="/sources" className="transition underline underline-offset-4 decoration-[rgba(176,141,87,0.4)] hover:text-[#B08D57]">
-              browse source profiles &amp; tracked positions
-            </Link>
-          </p>
         </div>
       </section>
 
       {/* Divider */}
       <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
 
-      {/* Quick Dispatch — featured analysts, one-tap synthesis */}
+      {/* Quick Dispatch — interactive demo, the most engaging proof */}
       <QuickDispatch />
-
-      {/* Divider */}
-      <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
-
-      {/* How It Works — horizontal steps, no cards */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-12" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>How it works</p>
-          <div className="grid md:grid-cols-3 gap-0" style={{ borderRight: 'none' }}>
-            <div className="md:pr-10 pb-10 md:pb-0" style={{ borderRight: '1px solid rgba(176,141,87,0.18)' }}>
-              <div className="text-xs font-medium mb-4" style={{ color: 'rgba(176,141,87,0.6)', fontFamily: 'var(--font-mono)' }}>01</div>
-              <h3 className="text-xl font-semibold mb-3">Choose your sources</h3>
-              <p className="text-sm leading-relaxed" style={{ color: 'rgba(245,239,224,0.45)' }}>
-                Twitter accounts, newsletters, YouTube channels. Pick the voices with the actual edge — not the loudest ones.
-              </p>
-            </div>
-            <div className="md:px-10 pb-10 md:pb-0" style={{ borderRight: '1px solid rgba(176,141,87,0.18)' }}>
-              <div className="text-xs font-medium mb-4" style={{ color: 'rgba(176,141,87,0.6)', fontFamily: 'var(--font-mono)' }}>02</div>
-              <h3 className="text-xl font-semibold mb-3">Define your lens</h3>
-              <p className="text-sm leading-relaxed" style={{ color: 'rgba(245,239,224,0.45)' }}>
-                Write a prompt or pick a template. Set the perspective — macro bear, DeFi bull, skeptic. Your frame, your dispatch.
-              </p>
-            </div>
-            <div className="md:pl-10">
-              <div className="text-xs font-medium mb-4" style={{ color: 'rgba(176,141,87,0.6)', fontFamily: 'var(--font-mono)' }}>03</div>
-              <h3 className="text-xl font-semibold mb-3">Get intelligence</h3>
-              <p className="text-sm leading-relaxed" style={{ color: 'rgba(245,239,224,0.45)' }}>
-                AI synthesizes everything into a brief that moves. Daily, twice daily, or weekly — delivered to email or Telegram.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Divider */}
-      <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
-
-      {/* Juntos Feature — asymmetric layout */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-start">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-5" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>Juntos</p>
-              <h2 className="text-4xl font-bold mb-5 leading-tight">
-                Curated collections.<br />
-                <span style={{ color: 'rgba(245,239,224,0.45)' }}>One subscription.</span>
-              </h2>
-              <p className="leading-relaxed mb-8" style={{ color: 'rgba(245,239,224,0.45)' }}>
-                A junto is a themed collection of dispatches — crypto, macro, AI — curated by someone
-                who lives in that space. Subscribe to a junto and get the whole picture in one place.
-              </p>
-              <Link
-                href="/juntos"
-                className="inline-flex items-center gap-2 text-sm font-medium transition"
-                style={{ color: '#B08D57' }}
-              >
-                Browse all Juntos
-                <span>→</span>
-              </Link>
-            </div>
-            <div className="space-y-px">
-              <div className="flex items-start gap-4 p-5 transition rounded-sm" style={{ border: '1px solid rgba(176,141,87,0.18)' }}>
-                <div className="w-8 h-8 rounded-sm flex items-center justify-center shrink-0 mt-0.5" style={{ background: 'rgba(176,141,87,0.1)' }}>
-                  <span className="text-xs font-bold" style={{ color: '#B08D57', fontFamily: 'var(--font-oswald)' }}>J</span>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Themed collections</h3>
-                  <p className="text-sm" style={{ color: 'rgba(245,239,224,0.45)' }}>Group dispatches by topic — crypto, macro, AI. Curated by people who actually know the space.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4 p-5 transition" style={{ border: '1px solid rgba(176,141,87,0.18)' }}>
-                <div className="w-8 h-8 rounded-sm flex items-center justify-center shrink-0 mt-0.5" style={{ background: 'rgba(176,141,87,0.1)' }}>
-                  <span className="text-xs font-bold" style={{ color: '#B08D57', fontFamily: 'var(--font-oswald)' }}>A</span>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Source profiles</h3>
-                  <p className="text-sm" style={{ color: 'rgba(245,239,224,0.45)' }}>Every source gets a profile tracking positions, sentiment, and conviction over time.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4 p-5 transition rounded-sm" style={{ border: '1px solid rgba(176,141,87,0.18)' }}>
-                <div className="w-8 h-8 rounded-sm flex items-center justify-center shrink-0 mt-0.5" style={{ background: 'rgba(176,141,87,0.1)' }}>
-                  <span className="text-xs font-bold" style={{ color: '#B08D57', fontFamily: 'var(--font-oswald)' }}>M</span>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Multi-source synthesis</h3>
-                  <p className="text-sm" style={{ color: 'rgba(245,239,224,0.45)' }}>Twitter, newsletters, and YouTube in one dispatch. Signal from wherever it lives.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Divider */}
       <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
@@ -319,16 +214,13 @@ export default function LandingPage() {
       <section className="container mx-auto px-4 py-20">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-end justify-between mb-10">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>Dispatches</p>
-              <h2 className="text-3xl font-bold">Popular right now</h2>
-            </div>
-            <Link href="/explore" className="text-sm font-medium transition hidden md:block" style={{ color: '#B08D57' }}>
+            <h2 className="text-2xl md:text-3xl font-bold">Popular dispatches</h2>
+            <Link href="/explore" className="text-sm font-medium transition" style={{ color: '#B08D57' }}>
               View all →
             </Link>
           </div>
           <div className="grid md:grid-cols-2 gap-3">
-            {newsletters.slice(0, 8).map((nl) => (
+            {newsletters.slice(0, 4).map((nl) => (
               <div
                 key={nl.id}
                 className="group rounded-sm transition-all duration-200"
@@ -387,73 +279,44 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-          <div className="text-center mt-6 md:hidden">
-            <Link href="/explore" className="text-sm font-medium transition" style={{ color: '#B08D57' }}>
-              View all dispatches →
-            </Link>
-          </div>
         </div>
       </section>
 
       {/* Divider */}
       <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
 
-      {/* Pricing — clean stat row */}
-      <section className="container mx-auto px-4 py-20">
+      {/* Pricing + Creator CTA — combined, compact */}
+      <section className="container mx-auto px-4 py-20 grain">
         <div className="max-w-5xl mx-auto">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-12" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>Pricing</p>
-          <div className="grid md:grid-cols-3 gap-0">
-            <div className="md:pr-10 pb-10 md:pb-0" style={{ borderRight: '1px solid rgba(176,141,87,0.18)' }}>
+          <div className="grid md:grid-cols-3 gap-0 mb-16">
+            <div className="md:pr-10 pb-8 md:pb-0" style={{ borderRight: '1px solid rgba(176,141,87,0.18)' }}>
               <div className="text-4xl font-bold mb-2">{NEW_USER_BONUS_CREDITS.toLocaleString()}</div>
-              <div className="mb-1" style={{ color: 'rgba(245,239,224,0.6)' }}>free credits on signup</div>
-              <div className="text-sm" style={{ color: 'rgba(245,239,224,0.3)' }}>{creditsToDollars(NEW_USER_BONUS_CREDITS)} value, no card required</div>
+              <div className="text-sm" style={{ color: 'rgba(245,239,224,0.5)' }}>free credits on signup, no card</div>
             </div>
-            <div className="md:px-10 pb-10 md:pb-0" style={{ borderRight: '1px solid rgba(176,141,87,0.18)' }}>
-              <div className="text-4xl font-bold mb-2">{CREDITS_PER_DOLLAR}</div>
-              <div className="mb-1" style={{ color: 'rgba(245,239,224,0.6)' }}>credits per $1</div>
-              <div className="text-sm" style={{ color: 'rgba(245,239,224,0.3)' }}>top up anytime, use what you need</div>
+            <div className="md:px-10 pb-8 md:pb-0" style={{ borderRight: '1px solid rgba(176,141,87,0.18)' }}>
+              <div className="text-4xl font-bold mb-2">${5}<span className="text-base font-normal" style={{ color: 'rgba(245,239,224,0.45)' }}>/mo</span></div>
+              <div className="text-sm" style={{ color: 'rgba(245,239,224,0.5)' }}>Pro: 500 credits + daily personal dispatch</div>
             </div>
             <div className="md:pl-10">
               <div className="text-4xl font-bold mb-2">50%</div>
-              <div className="mb-1" style={{ color: 'rgba(245,239,224,0.6)' }}>creator revenue share</div>
-              <div className="text-sm" style={{ color: 'rgba(245,239,224,0.3)' }}>earn from every subscriber to your dispatches</div>
+              <div className="text-sm" style={{ color: 'rgba(245,239,224,0.5)' }}>creator share on every subscriber</div>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Divider */}
-      <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
-
-      {/* Creator CTA — full-width, minimal */}
-      <section className="container mx-auto px-4 py-24 grain">
-        <div className="max-w-5xl mx-auto relative">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_80%_at_80%_50%,rgba(176,141,87,0.06),transparent)] pointer-events-none" />
-          <div className="relative max-w-2xl">
-            <h2 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
-              Build your<br />
-              <span style={{ color: '#B08D57' }}>junto.</span>
+          <div className="text-center max-w-2xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">
+              Curate the voices. <span style={{ color: '#B08D57' }}>Earn from your edge.</span>
             </h2>
-            <p className="mb-10 text-lg leading-relaxed" style={{ color: 'rgba(245,239,224,0.55)' }}>
-              Create public dispatches, bundle them into a junto, and earn 50% of every subscriber&apos;s credits.
-              Your sources + your lens = your intelligence business.
+            <p className="mb-8 text-base" style={{ color: 'rgba(245,239,224,0.55)' }}>
+              Bundle dispatches into a junto. Charge subscribers. Keep half.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link
-                href="/create"
-                className="inline-flex items-center justify-center px-7 py-3.5 rounded font-semibold transition text-base uppercase tracking-wide"
-                style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}
-              >
-                Start creating
-              </Link>
-              <Link
-                href="/juntos"
-                className="inline-flex items-center justify-center px-7 py-3.5 rounded font-medium transition text-base"
-                style={{ border: '1px solid rgba(176,141,87,0.28)', color: 'rgba(245,239,224,0.7)' }}
-              >
-                See examples
-              </Link>
-            </div>
+            <Link
+              href="/create"
+              className="inline-flex items-center justify-center px-8 py-4 rounded font-semibold transition text-base uppercase tracking-wide"
+              style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}
+            >
+              Start creating
+            </Link>
           </div>
         </div>
       </section>
