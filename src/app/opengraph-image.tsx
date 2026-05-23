@@ -139,10 +139,19 @@ export default async function Image() {
           <div style={{ display: 'flex', marginBottom: 14, fontSize: 14, color: 'rgba(176,141,87,0.82)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             Live brief
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 17, lineHeight: 1.35, color: 'rgba(245,239,224,0.9)' }}>
-            <span><span style={{ color: '#B08D57' }}>Key takeaway:</span> Crypto desks still lean constructive, but upside conviction is narrowing.</span>
-            <span><span style={{ color: '#3ecf6a' }}>Bullish:</span> $BTC holding leadership while selective risk appetite returns.</span>
-            <span><span style={{ color: '#d7b36c' }}>Watch:</span> Whether ETH follow-through confirms the rotation.</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 17, lineHeight: 1.35, color: 'rgba(245,239,224,0.9)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ color: '#B08D57', fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>Key takeaway</span>
+              <span>Crypto desks still lean constructive, but upside conviction is narrowing.</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ color: '#3ecf6a', fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>Bullish</span>
+              <span>$BTC holding leadership while selective risk appetite returns.</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ color: '#d7b36c', fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>Watch</span>
+              <span>Whether ETH follow-through confirms the rotation.</span>
+            </div>
           </div>
         </div>
 
