@@ -2,7 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe/client';
 import { getSupabase } from '@/lib/db/client';
 
-const PRO_MONTHLY_CREDITS = 1000;
+const PRO_MONTHLY_CREDITS = 500;
+const PRO_ANNUAL_CREDITS = PRO_MONTHLY_CREDITS * 12;
+
+async function creditsForSubscription(subscriptionId: string): Promise<{ amount: number; interval: 'month' | 'year' }> {
+  try {
+    const sub = await getStripe().subscriptions.retrieve(subscriptionId);
+    const interval = (sub.items.data[0]?.price?.recurring?.interval ?? 'month') as 'month' | 'year';
+    return interval === 'year'
+      ? { amount: PRO_ANNUAL_CREDITS, interval }
+      : { amount: PRO_MONTHLY_CREDITS, interval };
+  } catch {
+    return { amount: PRO_MONTHLY_CREDITS, interval: 'month' };
+  }
+}
 
 async function addCredits(userId: string, amount: number, description: string, relatedId: string) {
   const supabase = getSupabase();
@@ -83,8 +96,10 @@ export async function POST(req: NextRequest) {
           const customerId = session.customer as string;
           const subscriptionId = session.subscription as string;
           await setProStatus(userId, true, customerId, subscriptionId);
-          await addCredits(userId, PRO_MONTHLY_CREDITS, 'Pro subscription — monthly credits', session.id);
-          console.log(`[webhook] Pro activated for user ${userId}`);
+          const { amount, interval } = await creditsForSubscription(subscriptionId);
+          const label = interval === 'year' ? 'Pro subscription — annual credits' : 'Pro subscription — monthly credits';
+          await addCredits(userId, amount, label, session.id);
+          console.log(`[webhook] Pro activated (${interval}) for user ${userId}, +${amount} credits`);
         }
         break;
       }
@@ -101,8 +116,13 @@ export async function POST(req: NextRequest) {
           userId = await resolveUserByCustomerId(invoice.customer as string);
         }
         if (!userId) break;
-        await addCredits(userId, PRO_MONTHLY_CREDITS, 'Pro subscription — monthly credits', invoice.id);
-        console.log(`[webhook] Monthly credits added for user ${userId}`);
+        const subId = invoice.subscription as string | undefined;
+        const { amount, interval } = subId
+          ? await creditsForSubscription(subId)
+          : { amount: PRO_MONTHLY_CREDITS, interval: 'month' as const };
+        const label = interval === 'year' ? 'Pro subscription — annual credits' : 'Pro subscription — monthly credits';
+        await addCredits(userId, amount, label, invoice.id);
+        console.log(`[webhook] Renewal credits (${interval}) +${amount} for user ${userId}`);
         break;
       }
 

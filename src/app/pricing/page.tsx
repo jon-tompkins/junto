@@ -201,7 +201,7 @@ function PricingPageInner() {
               {[
                 '3 juntos (up to 20 sources each)',
                 '3 dispatches',
-                '1,000 fresh credits each month',
+                '500 fresh credits each month',
                 'Quick synthesis',
                 'Thesis generation',
                 'Deep dive reports',
