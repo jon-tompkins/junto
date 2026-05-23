@@ -45,7 +45,7 @@ function PricingPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [topUpLoading, setTopUpLoading] = useState<string | null>(null);
-  const [proLoading, setProLoading] = useState(false);
+  const [proLoading, setProLoading] = useState<'monthly' | 'annual' | null>(null);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [banner, setBanner] = useState<{ kind: 'success' | 'cancelled'; text: string } | null>(null);
 
@@ -69,15 +69,19 @@ function PricingPageInner() {
     }
   }, [searchParams]);
 
-  async function handleProSubscribe() {
+  async function handleProSubscribe(plan: 'monthly' | 'annual') {
     if (!session?.user) { router.push('/login'); return; }
-    setProLoading(true);
+    setProLoading(plan);
     try {
-      const res = await fetch('/api/v2/billing/subscribe', { method: 'POST' });
+      const res = await fetch('/api/v2/billing/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
     } catch {
-      setProLoading(false);
+      setProLoading(null);
     }
   }
 
@@ -183,8 +187,14 @@ function PricingPageInner() {
 
             <div className="mb-5">
               <div className="text-xs font-[var(--font-oswald)] uppercase tracking-widest text-[#B08D57]/80 mb-2">Pro</div>
-              <div className="text-4xl font-bold font-[var(--font-oswald)] text-[#B08D57]">$9</div>
-              <div className="text-[#F5EFE0]/40 text-sm mt-1">per month</div>
+              <div className="flex items-baseline gap-2">
+                <div className="text-4xl font-bold font-[var(--font-oswald)] text-[#B08D57]">$5</div>
+                <div className="text-[#F5EFE0]/40 text-sm">/ month</div>
+              </div>
+              <div className="text-[#F5EFE0]/55 text-sm mt-2">
+                or <span className="text-[#B08D57] font-bold">$50/year</span>
+                <span className="text-[#3ecf6a] text-xs ml-1.5">save $10</span>
+              </div>
             </div>
 
             <ul className="space-y-2.5 flex-1 mb-6">
@@ -203,13 +213,22 @@ function PricingPageInner() {
               ))}
             </ul>
 
-            <button
-              onClick={handleProSubscribe}
-              disabled={proLoading}
-              className="px-4 py-2.5 rounded bg-[#B08D57] hover:bg-[#B08D57]/85 text-[#080604] text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide transition disabled:opacity-60 disabled:cursor-wait"
-            >
-              {proLoading ? 'Redirecting…' : 'Subscribe — $9/mo'}
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={() => handleProSubscribe('monthly')}
+                disabled={proLoading !== null}
+                className="w-full px-4 py-2.5 rounded bg-[#B08D57] hover:bg-[#B08D57]/85 text-[#080604] text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide transition disabled:opacity-60 disabled:cursor-wait"
+              >
+                {proLoading === 'monthly' ? 'Redirecting…' : 'Subscribe — $5/mo'}
+              </button>
+              <button
+                onClick={() => handleProSubscribe('annual')}
+                disabled={proLoading !== null}
+                className="w-full px-4 py-2.5 rounded border border-[#B08D57] text-[#B08D57] hover:bg-[#B08D57]/10 text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide transition disabled:opacity-60 disabled:cursor-wait"
+              >
+                {proLoading === 'annual' ? 'Redirecting…' : 'Or pay $50/year'}
+              </button>
+            </div>
           </div>
 
           {/* Top-Up */}

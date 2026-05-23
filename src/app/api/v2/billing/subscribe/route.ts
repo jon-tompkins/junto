@@ -39,8 +39,13 @@ export async function POST(req: NextRequest) {
 
     if (user.is_pro) return NextResponse.json({ error: 'Already subscribed' }, { status: 400 });
 
-    const priceId = process.env.STRIPE_PRO_PRICE_ID;
-    if (!priceId) throw new Error('STRIPE_PRO_PRICE_ID not configured');
+    const body = await req.json().catch(() => ({}));
+    const plan: 'monthly' | 'annual' = body?.plan === 'annual' ? 'annual' : 'monthly';
+
+    const priceId = plan === 'annual'
+      ? process.env.STRIPE_PRO_ANNUAL_PRICE_ID
+      : process.env.STRIPE_PRO_PRICE_ID;
+    if (!priceId) throw new Error(`Stripe price ID not configured for plan: ${plan}`);
 
     const stripe = getStripe();
 
