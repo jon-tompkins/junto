@@ -427,6 +427,22 @@ export default function SettingsPage() {
           )}
         </div>
 
+        {/* API Keys */}
+        <div className="mb-6 flex items-center justify-between p-4 bg-[#141210] rounded border border-[rgba(176,141,87,0.18)]">
+          <div>
+            <h3 className="text-sm font-semibold text-[#F5EFE0]">API Keys</h3>
+            <p className="text-xs text-[#F5EFE0]/55 mt-1">
+              Programmatic access to source profiles, ticker consensus, and public dispatches. Pay-as-you-go via credits.
+            </p>
+          </div>
+          <a
+            href="/settings/api-keys"
+            className="shrink-0 px-3 py-1.5 rounded text-xs font-semibold bg-[#B08D57] text-[#080604] uppercase tracking-wide font-[var(--font-oswald)]"
+          >
+            Manage →
+          </a>
+        </div>
+
         {/* Provider Info */}
         <div className="p-4 bg-[#141210] rounded border border-[rgba(176,141,87,0.18)] text-sm text-[#F5EFE0]/45">
           <p>

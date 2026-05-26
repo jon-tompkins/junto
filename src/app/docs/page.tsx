@@ -349,6 +349,17 @@ export default function DocsPage() {
           </div>
         </section>
 
+        {/* API CTA */}
+        <div className="mb-12 p-5 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] flex items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-semibold mb-1">Building something on top of Junto?</h3>
+            <p className="text-xs text-[#F5EFE0]/55">REST API for source profiles, ticker consensus, and public dispatches. Pay-as-you-go via credits.</p>
+          </div>
+          <Link href="/docs/api" className="shrink-0 text-xs px-3 py-1.5 rounded bg-[#B08D57] text-[#080604] font-semibold uppercase tracking-wide font-[var(--font-oswald)]">
+            API Docs →
+          </Link>
+        </div>
+
         {/* Footer CTA */}
         <div className="text-center py-8 border-t border-[rgba(176,141,87,0.18)]">
           <p className="text-[#F5EFE0]/60 mb-4">Ready to get started?</p>
