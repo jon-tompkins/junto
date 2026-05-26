@@ -46,8 +46,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Pro required', code: 'pro_required' }, { status: 402 });
   }
 
-  const latest = await getLatestPersonalDispatch(userId);
-  const history = await listPersonalDispatches(userId, 14);
+  let latest = null;
+  let history: Awaited<ReturnType<typeof listPersonalDispatches>> = [];
+  try {
+    latest = await getLatestPersonalDispatch(userId);
+    history = await listPersonalDispatches(userId, 14);
+  } catch (err: any) {
+    // 42P01 = relation does not exist — migration 038 not yet applied
+    if (err?.code !== '42P01') throw err;
+  }
 
   return NextResponse.json({
     latest,
