@@ -96,6 +96,11 @@ function CreatePageInner() {
   const [adHocSources, setAdHocSources] = useState<SourceEntry[]>([]);
   const [sourceInput, setSourceInput] = useState('');
   const [sourceType, setSourceType] = useState<SourceType>('twitter');
+  const [showListImport, setShowListImport] = useState(false);
+  const [listInput, setListInput] = useState('');
+  const [importingList, setImportingList] = useState(false);
+  const [listImportError, setListImportError] = useState('');
+  const [lastImportSummary, setLastImportSummary] = useState('');
 
   // Prompt templates from API
   const [promptTemplates, setPromptTemplates] = useState<PromptTemplate[]>([]);
@@ -203,6 +208,52 @@ function CreatePageInner() {
       validateSource(s, sourceType);
     } else {
       setSourceInput('');
+    }
+  }
+
+  async function importList() {
+    if (!listInput.trim()) return;
+    setImportingList(true);
+    setListImportError('');
+    setLastImportSummary('');
+    try {
+      const res = await fetch('/api/lists/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ list_url: listInput.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setListImportError(data.error || 'Failed to scrape list');
+        return;
+      }
+      const members: { handle: string; displayName: string | null }[] = data.members || [];
+      let added = 0;
+      let skipped = 0;
+      setAdHocSources(prev => {
+        const existing = new Set(prev.map(s => s.handle));
+        const next = [...prev];
+        for (const m of members) {
+          const clean = m.handle.replace('@', '').toLowerCase();
+          if (existing.has(clean)) { skipped += 1; continue; }
+          existing.add(clean);
+          next.push({
+            handle: clean,
+            type: 'twitter',
+            status: 'valid',
+            name: m.displayName || clean,
+          });
+          added += 1;
+        }
+        return next;
+      });
+      setLastImportSummary(`Imported ${added} from list${skipped ? ` (${skipped} already present)` : ''}. Remove any you don't want with ×.`);
+      setListInput('');
+      setShowListImport(false);
+    } catch (err: any) {
+      setListImportError(err?.message || 'Failed to scrape list');
+    } finally {
+      setImportingList(false);
     }
   }
 
@@ -565,6 +616,67 @@ function CreatePageInner() {
                   </button>
                 ))}
               </div>
+              {sourceType === 'twitter' && (
+                <div className="mb-3">
+                  {!showListImport ? (
+                    <button
+                      type="button"
+                      onClick={() => { setShowListImport(true); setListImportError(''); }}
+                      className="text-xs text-[#B08D57] hover:text-[#B08D57]/80 transition"
+                      style={{ fontFamily: 'var(--font-oswald, sans-serif)', textTransform: 'uppercase', letterSpacing: '0.08em' }}
+                    >
+                      + Import from X list
+                    </button>
+                  ) : (
+                    <div className="p-3" style={{ border: '1px solid rgba(176,141,87,0.28)', background: '#141210' }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-[#F5EFE0]/60" style={{ fontFamily: 'var(--font-oswald, sans-serif)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                          Import from X list
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => { setShowListImport(false); setListImportError(''); setListInput(''); }}
+                          className="text-xs text-[#F5EFE0]/40 hover:text-[#F5EFE0]/80 transition"
+                        >
+                          cancel
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-[#F5EFE0]/45 mb-2 leading-relaxed">
+                        Paste a public X list URL (e.g. <span className="font-mono">x.com/i/lists/12345…</span>). Scraping can take up to a minute. You&apos;ll be able to review and × any handles before creating.
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={listInput}
+                          onChange={e => setListInput(e.target.value)}
+                          disabled={importingList}
+                          placeholder="https://x.com/i/lists/..."
+                          className="flex-1 bg-[#080604] px-3 py-2 text-xs text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none transition disabled:opacity-50"
+                          style={{ border: '1px solid rgba(176,141,87,0.28)' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={importList}
+                          disabled={!listInput.trim() || importingList}
+                          className="px-4 py-2 text-xs font-semibold transition disabled:opacity-30"
+                          style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald, sans-serif)' }}
+                        >
+                          {importingList ? 'Scraping…' : 'Scrape'}
+                        </button>
+                      </div>
+                      {importingList && (
+                        <p className="text-[11px] text-[#B08D57]/70 mt-2">Scraping list — can take up to a minute…</p>
+                      )}
+                      {listImportError && (
+                        <p className="text-[11px] text-[#e8453c] mt-2">{listImportError}</p>
+                      )}
+                    </div>
+                  )}
+                  {lastImportSummary && !showListImport && (
+                    <p className="text-[11px] text-[#3ecf6a] mt-2">{lastImportSummary}</p>
+                  )}
+                </div>
+              )}
               <div className="flex gap-2 mb-3">
                 <div className="relative flex-1">
                   {sourceType === 'twitter' && (
