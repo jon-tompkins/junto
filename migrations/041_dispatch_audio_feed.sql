@@ -19,6 +19,17 @@ VALUES ('dispatch-audio', 'dispatch-audio', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Anyone can read (public bucket). Only the service role uploads.
-CREATE POLICY IF NOT EXISTS "Public read for dispatch-audio"
-  ON storage.objects FOR SELECT
-  USING (bucket_id = 'dispatch-audio');
+-- CREATE POLICY does not support IF NOT EXISTS, so guard via DO block.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'Public read for dispatch-audio'
+  ) THEN
+    CREATE POLICY "Public read for dispatch-audio"
+      ON storage.objects FOR SELECT
+      USING (bucket_id = 'dispatch-audio');
+  END IF;
+END $$;
