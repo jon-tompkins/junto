@@ -76,6 +76,12 @@ export default function EditJuntoPage() {
   const [isPro, setIsPro] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Import-from-X-list state
+  const [showListImport, setShowListImport] = useState(false);
+  const [listInput, setListInput] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<string | null>(null);
+
   useEffect(() => {
     fetch('/api/v2/account').then(r => r.json()).then(d => setIsPro(d.isPro ?? false)).catch(() => {});
   }, []);
@@ -194,6 +200,37 @@ export default function EditJuntoPage() {
     setResults([]);
     setShowDropdown(false);
     await refresh();
+  }
+
+  async function importList() {
+    if (!listInput.trim()) return;
+    setImporting(true);
+    setImportResult(null);
+    setError('');
+    try {
+      const res = await fetch(`/api/juntos/${id}/import-list`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ list_url: listInput.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Import failed');
+        return;
+      }
+      const parts: string[] = [];
+      parts.push(`${data.members_found} member${data.members_found === 1 ? '' : 's'} found`);
+      if (data.added) parts.push(`${data.added} added`);
+      if (data.already_present) parts.push(`${data.already_present} already in junto`);
+      if (data.capped) parts.push(`${data.skipped_due_to_cap} skipped (20-source cap)`);
+      setImportResult(parts.join(' · '));
+      setListInput('');
+      await refresh();
+    } catch (err: any) {
+      setError(err?.message || 'Import failed');
+    } finally {
+      setImporting(false);
+    }
   }
 
   async function removeSource(sourceId: string) {
@@ -336,6 +373,56 @@ export default function EditJuntoPage() {
               </button>
             ))}
           </div>
+
+          {sourceType === 'twitter' && isPro && (
+            <div className="mb-3">
+              {!showListImport ? (
+                <button
+                  type="button"
+                  onClick={() => setShowListImport(true)}
+                  className="text-xs text-[#B08D57] hover:underline"
+                >
+                  + Import from X list
+                </button>
+              ) : (
+                <div className="p-3 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-[var(--font-oswald)] uppercase tracking-wider text-[#F5EFE0]/70">Import from X list</span>
+                    <button
+                      type="button"
+                      onClick={() => { setShowListImport(false); setListInput(''); setImportResult(null); }}
+                      className="text-xs text-[#F5EFE0]/40 hover:text-[#F5EFE0]/70"
+                    >
+                      cancel
+                    </button>
+                  </div>
+                  <p className="text-xs text-[#F5EFE0]/50">
+                    Paste a public X list URL (e.g. https://x.com/i/lists/1497044363846635523). We&apos;ll scrape members and add them as Twitter sources (capped at the 20-source junto limit).
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={listInput}
+                      onChange={(e) => setListInput(e.target.value)}
+                      placeholder="https://x.com/i/lists/…"
+                      className="flex-1 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
+                    />
+                    <button
+                      type="button"
+                      onClick={importList}
+                      disabled={importing || !listInput.trim()}
+                      className="px-4 py-2 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 rounded text-sm font-medium text-[#080604]"
+                    >
+                      {importing ? 'Scraping…' : 'Import'}
+                    </button>
+                  </div>
+                  {importResult && (
+                    <p className="text-xs text-[#3ecf6a]">{importResult}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="relative">
             <div className="flex gap-2">
