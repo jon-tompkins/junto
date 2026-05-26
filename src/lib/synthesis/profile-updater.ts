@@ -51,7 +51,7 @@ export async function updateSourceProfile(
   const client = getAnthropic();
   const response = await client.messages.create({
     model: HAIKU_MODEL,
-    max_tokens: 800,
+    max_tokens: 4096,
     system: `You maintain analyst profiles for a financial newsletter platform. Given new tweets from a source and their existing profile, return an updated JSON profile.
 
 WHAT TO TRACK — only investable assets or sectors:
@@ -111,8 +111,10 @@ Output schema — do NOT include a "since" date, that is managed externally:
     const match = stripped.match(/\{[\s\S]*\}/);
     if (!match) throw new Error('no JSON object found');
     parsed = JSON.parse(match[0]);
-  } catch {
-    console.warn(`[profile-updater] Failed to parse JSON for @${handle}, raw response: ${raw.slice(0, 300)}`);
+  } catch (err) {
+    console.warn(
+      `[profile-updater] Failed to parse JSON for @${handle}, stop_reason=${(response as any).stop_reason}, raw response (full): ${raw}`,
+    );
     return { summary: existing?.summary ?? null, positions: existing?.positions ?? {}, changed: false };
   }
 
