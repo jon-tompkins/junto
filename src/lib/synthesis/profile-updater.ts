@@ -27,6 +27,23 @@ export async function updateSourceProfile(
     .map((t) => `[${new Date(t.posted_at).toLocaleDateString()} — ${t.likes}L/${t.retweets}RT] ${t.content}`)
     .join('\n');
 
+  // Extract every explicit $CASHTAG mentioned, with frequency — pass as a hint
+  // so Haiku doesn't silently drop short or unfamiliar tickers ($BB, $V, $X).
+  const cashtagCounts = new Map<string, number>();
+  for (const t of newTweets) {
+    const matches = t.content.matchAll(/\$([A-Z]{1,6}(?:\.[A-Z]{1,3})?)\b/g);
+    for (const m of matches) {
+      const sym = m[1].toUpperCase();
+      cashtagCounts.set(sym, (cashtagCounts.get(sym) || 0) + 1);
+    }
+  }
+  const cashtagHint = cashtagCounts.size
+    ? `\nCashtags mentioned (symbol × count): ${[...cashtagCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([s, n]) => `$${s}×${n}`)
+        .join(', ')}`
+    : '';
+
   const existingBlock = existing
     ? `Current summary: ${existing.summary || 'none'}\nCurrent positions: ${JSON.stringify(existing.positions, null, 2)}`
     : 'No existing profile.';
@@ -38,7 +55,7 @@ export async function updateSourceProfile(
     system: `You maintain analyst profiles for a financial newsletter platform. Given new tweets from a source and their existing profile, return an updated JSON profile.
 
 WHAT TO TRACK — only investable assets or sectors:
-- Specific tickers: BTC, ETH, INTC, DRO.AX, TSLA, etc.
+- Specific tickers: BTC, ETH, INTC, DRO.AX, TSLA, etc. ANY explicit cashtag (e.g. $BB, $V, $X, $LPTH) is a valid ticker regardless of length — never drop a cashtag just because it is short or unfamiliar
 - Named commodities: uranium, gold, oil, fertilizer
 - Clear investable sectors/industries: semiconductors, defense, AI, energy, biotech
 - Major crypto ecosystems: DeFi, altcoins, NFTs
@@ -78,7 +95,7 @@ Output schema — do NOT include a "since" date, that is managed externally:
     messages: [
       {
         role: 'user',
-        content: `Handle: @${handle}\n\n${existingBlock}\n\nNew tweets:\n${tweetBlock}\n\nReturn updated profile JSON.`,
+        content: `Handle: @${handle}\n\n${existingBlock}\n\nNew tweets:\n${tweetBlock}${cashtagHint}\n\nReturn updated profile JSON.`,
       },
     ],
   });
