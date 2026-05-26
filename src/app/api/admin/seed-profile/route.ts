@@ -46,12 +46,22 @@ export async function POST(req: NextRequest) {
       raw_data: r.raw_data,
     }));
 
+  // Extract cashtags for debug visibility (same regex used inside updater)
+  const seenCashtags = new Map<string, number>();
+  for (const t of tweets) {
+    for (const m of t.content.matchAll(/\$([A-Z]{1,6}(?:\.[A-Z]{1,3})?)\b/g)) {
+      const sym = m[1].toUpperCase();
+      seenCashtags.set(sym, (seenCashtags.get(sym) || 0) + 1);
+    }
+  }
+
   const result = await updateSourceProfile(source.id, clean, tweets);
 
   return NextResponse.json({
     success: true,
     handle: clean,
     tweets_used: tweets.length,
+    cashtags_in_corpus: Object.fromEntries(seenCashtags),
     summary: result.summary,
     positions: Object.keys(result.positions),
   });

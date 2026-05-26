@@ -95,7 +95,7 @@ Output schema — do NOT include a "since" date, that is managed externally:
     messages: [
       {
         role: 'user',
-        content: `Handle: @${handle}\n\n${existingBlock}\n\nNew tweets:\n${tweetBlock}${cashtagHint}\n\nReturn updated profile JSON.`,
+        content: `Handle: @${handle}\n\n${existingBlock}${cashtagHint}\n\nNew tweets:\n${tweetBlock}\n\nReturn updated profile JSON. Include EVERY cashtag from the hint above as a position — use the tweet text to determine stance.`,
       },
     ],
   });
