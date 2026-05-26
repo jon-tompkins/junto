@@ -10,6 +10,7 @@ export async function synthesizeSpeech(args: {
   text: string;
   voice?: TtsVoice;
   model?: 'tts-1' | 'tts-1-hd';
+  speed?: number; // 0.25–4.0, default 1.0
 }): Promise<Buffer> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
@@ -30,6 +31,7 @@ export async function synthesizeSpeech(args: {
       voice: args.voice || 'onyx',
       input: text,
       response_format: 'mp3',
+      speed: args.speed ?? 1.1,
     }),
   });
 

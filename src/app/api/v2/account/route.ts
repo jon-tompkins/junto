@@ -39,7 +39,11 @@ export async function GET() {
       getUserEmail(userId),
     ]);
 
-    const { data: user } = await supabase.from('users').select('timezone, is_onboarded, is_pro').eq('id', userId).single();
+    const { data: user } = await supabase
+      .from('users')
+      .select('timezone, is_onboarded, is_pro, dispatch_tg_text, dispatch_tg_audio')
+      .eq('id', userId)
+      .single();
 
     return NextResponse.json({
       balance,
@@ -48,6 +52,8 @@ export async function GET() {
       timezone: user?.timezone || 'America/New_York',
       isOnboarded: user?.is_onboarded ?? false,
       isPro: user?.is_pro ?? false,
+      dispatchTgText: user?.dispatch_tg_text ?? true,
+      dispatchTgAudio: user?.dispatch_tg_audio ?? true,
     });
   } catch (error) {
     console.error('[GET /account]', error);
@@ -92,12 +98,23 @@ export async function PUT(req: NextRequest) {
       await supabase.from('users').update({ is_onboarded: true }).eq('id', userId);
     }
 
+    if (typeof body.dispatchTgText === 'boolean') {
+      await supabase.from('users').update({ dispatch_tg_text: body.dispatchTgText }).eq('id', userId);
+    }
+    if (typeof body.dispatchTgAudio === 'boolean') {
+      await supabase.from('users').update({ dispatch_tg_audio: body.dispatchTgAudio }).eq('id', userId);
+    }
+
     const [balance, email] = await Promise.all([
       getCreditBalance(userId),
       getUserEmail(userId),
     ]);
 
-    const { data: user } = await supabase.from('users').select('timezone, is_onboarded, is_pro').eq('id', userId).single();
+    const { data: user } = await supabase
+      .from('users')
+      .select('timezone, is_onboarded, is_pro, dispatch_tg_text, dispatch_tg_audio')
+      .eq('id', userId)
+      .single();
 
     return NextResponse.json({
       balance,
@@ -106,6 +123,8 @@ export async function PUT(req: NextRequest) {
       timezone: user?.timezone || 'America/New_York',
       isOnboarded: user?.is_onboarded ?? false,
       isPro: user?.is_pro ?? false,
+      dispatchTgText: user?.dispatch_tg_text ?? true,
+      dispatchTgAudio: user?.dispatch_tg_audio ?? true,
     });
   } catch (error) {
     console.error('[PUT /account]', error);

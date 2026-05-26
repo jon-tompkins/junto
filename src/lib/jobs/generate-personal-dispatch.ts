@@ -19,12 +19,14 @@ interface ProUser {
   email: string | null;
   display_name: string | null;
   featured_junto_id: string | null;
+  dispatch_tg_text?: boolean;
+  dispatch_tg_audio?: boolean;
 }
 
 export async function getProUsersForDispatch(): Promise<ProUser[]> {
   const { data, error } = await getSupabase()
     .from('users')
-    .select('id, email, display_name, featured_junto_id')
+    .select('id, email, display_name, featured_junto_id, dispatch_tg_text, dispatch_tg_audio')
     .eq('is_pro', true)
     .not('featured_junto_id', 'is', null);
   if (error) throw error;
@@ -233,18 +235,23 @@ export async function generatePersonalDispatchForUser(
 
     const chatId = await getUserTelegramChatId(user.id);
     if (chatId) {
-      try {
-        await sendTelegramNewsletter({
-          chatId,
-          subject,
-          contentMarkdown: content,
-        });
-        await markPersonalDispatchSent(dispatch.id, 'telegram');
-      } catch (err) {
-        console.error('[personal-dispatch] telegram send failed', user.id, err);
+      const wantText = user.dispatch_tg_text !== false;
+      const wantAudio = user.dispatch_tg_audio !== false;
+
+      if (wantText) {
+        try {
+          await sendTelegramNewsletter({
+            chatId,
+            subject,
+            contentMarkdown: content,
+          });
+          await markPersonalDispatchSent(dispatch.id, 'telegram');
+        } catch (err) {
+          console.error('[personal-dispatch] telegram send failed', user.id, err);
+        }
       }
 
-      if (process.env.PERSONAL_DISPATCH_AUDIO === '1' && process.env.OPENAI_API_KEY) {
+      if (wantAudio && process.env.OPENAI_API_KEY) {
         try {
           const script = await dispatchToAudioScript({
             subject,

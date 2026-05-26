@@ -47,6 +47,11 @@ export default function SettingsPage() {
   const [tgCopied, setTgCopied] = useState(false);
   const [tgUnlinking, setTgUnlinking] = useState(false);
 
+  // Per-user dispatch delivery prefs (Telegram)
+  const [dispatchTgText, setDispatchTgText] = useState(true);
+  const [dispatchTgAudio, setDispatchTgAudio] = useState(true);
+  const [savingPrefs, setSavingPrefs] = useState(false);
+
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
   }, [status, router]);
@@ -142,6 +147,8 @@ export default function SettingsPage() {
       }
       if (data.balance !== undefined) setCreditBalance(data.balance);
       if (data.isPro !== undefined) setIsPro(data.isPro);
+      if (typeof data.dispatchTgText === 'boolean') setDispatchTgText(data.dispatchTgText);
+      if (typeof data.dispatchTgAudio === 'boolean') setDispatchTgAudio(data.dispatchTgAudio);
     } catch (err) {
       console.error('Failed to fetch account:', err);
     } finally {
@@ -183,6 +190,28 @@ export default function SettingsPage() {
       setError('Failed to save settings');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveDeliveryPref = async (next: { text?: boolean; audio?: boolean }) => {
+    setSavingPrefs(true);
+    try {
+      const body: Record<string, boolean> = {};
+      if (typeof next.text === 'boolean') {
+        body.dispatchTgText = next.text;
+        setDispatchTgText(next.text);
+      }
+      if (typeof next.audio === 'boolean') {
+        body.dispatchTgAudio = next.audio;
+        setDispatchTgAudio(next.audio);
+      }
+      await fetch('/api/v2/account', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    } finally {
+      setSavingPrefs(false);
     }
   };
 
@@ -373,18 +402,52 @@ export default function SettingsPage() {
           {tgLinked === null ? (
             <div className="text-sm text-[#F5EFE0]/45">Loading…</div>
           ) : tgLinked ? (
-            <div className="flex items-center justify-between gap-3 p-3 bg-[#3ecf6a]/10 border border-[#3ecf6a]/30 rounded">
-              <div className="text-sm text-[#3ecf6a]">
-                ✓ Connected — newsletters set to Telegram delivery will arrive as DMs.
+            <>
+              <div className="flex items-center justify-between gap-3 p-3 bg-[#3ecf6a]/10 border border-[#3ecf6a]/30 rounded">
+                <div className="text-sm text-[#3ecf6a]">
+                  ✓ Connected — newsletters set to Telegram delivery will arrive as DMs.
+                </div>
+                <button
+                  onClick={unlinkTelegram}
+                  disabled={tgUnlinking}
+                  className="px-3 py-1.5 bg-[#1c1a17] hover:bg-[#141210] text-[#F5EFE0]/60 text-xs font-medium rounded transition whitespace-nowrap disabled:opacity-50"
+                >
+                  {tgUnlinking ? 'Unlinking…' : 'Unlink'}
+                </button>
               </div>
-              <button
-                onClick={unlinkTelegram}
-                disabled={tgUnlinking}
-                className="px-3 py-1.5 bg-[#1c1a17] hover:bg-[#141210] text-[#F5EFE0]/60 text-xs font-medium rounded transition whitespace-nowrap disabled:opacity-50"
-              >
-                {tgUnlinking ? 'Unlinking…' : 'Unlink'}
-              </button>
-            </div>
+
+              {isPro && (
+                <div className="pt-2">
+                  <div className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 mb-2 font-[var(--font-oswald)]">
+                    Daily dispatch delivery
+                  </div>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-3 cursor-pointer text-sm text-[#F5EFE0]/85">
+                      <input
+                        type="checkbox"
+                        checked={dispatchTgText}
+                        disabled={savingPrefs}
+                        onChange={(e) => saveDeliveryPref({ text: e.target.checked })}
+                        className="w-4 h-4 accent-[#B08D57]"
+                      />
+                      <span>Text brief</span>
+                      <span className="text-xs text-[#F5EFE0]/40">— the full markdown dispatch</span>
+                    </label>
+                    <label className="flex items-center gap-3 cursor-pointer text-sm text-[#F5EFE0]/85">
+                      <input
+                        type="checkbox"
+                        checked={dispatchTgAudio}
+                        disabled={savingPrefs}
+                        onChange={(e) => saveDeliveryPref({ audio: e.target.checked })}
+                        className="w-4 h-4 accent-[#B08D57]"
+                      />
+                      <span>Audio brief</span>
+                      <span className="text-xs text-[#F5EFE0]/40">— 3-5 min narrated MP3</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+            </>
           ) : tgCode && tgBotUsername ? (
             <div className="space-y-3">
               <div className="text-sm text-[#F5EFE0]/80 leading-relaxed">
