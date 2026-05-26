@@ -32,6 +32,18 @@ export const RESEND_COST_PER_EMAIL = 0.0004; // USD
 // Supadata YouTube transcripts: free tier 200/mo, then $0.50/1000 after
 export const SUPADATA_COST_PER_TRANSCRIPT = 0.50 / 1000; // USD
 
+// OpenAI TTS: tts-1 = $15/1M chars, tts-1-hd = $30/1M chars
+// Ref: https://platform.openai.com/docs/pricing
+export const OPENAI_TTS_HD_COST_PER_CHAR = 30 / 1_000_000;   // USD
+export const OPENAI_TTS_STD_COST_PER_CHAR = 15 / 1_000_000;  // USD
+
+// Supabase Storage: $0.021/GB/mo storage, $0.09/GB egress
+// Approximated per dispatch — actual recorded as usage_amount in bytes.
+// We don't charge storage at write-time; egress is captured opportunistically
+// if/when we add a CDN-side counter. For now, log uploads as 0-cost rows
+// so they show up in volume tracking.
+export const SUPABASE_STORAGE_COST_PER_BYTE = 0; // tracked, not billed inline
+
 // ─── Helpers ─────────────────────────────────────────────
 
 export function dollarsToCents(usd: number): number {
@@ -61,16 +73,21 @@ export function resendCostCents(emailCount: number): number {
   return dollarsToCents(emailCount * RESEND_COST_PER_EMAIL);
 }
 
+export function openaiTtsCostCents(chars: number, hd = true): number {
+  const rate = hd ? OPENAI_TTS_HD_COST_PER_CHAR : OPENAI_TTS_STD_COST_PER_CHAR;
+  return dollarsToCents(chars * rate);
+}
+
 // ─── Recorder ─────────────────────────────────────────────
 
-type Supplier = 'grok' | 'anthropic' | 'apify' | 'resend' | 'supadata';
+type Supplier = 'grok' | 'anthropic' | 'apify' | 'resend' | 'supadata' | 'openai' | 'supabase';
 
 interface CostRecord {
   supplier: Supplier;
   operation: string;
   cost_cents: number;
   usage_amount?: number;
-  usage_unit?: 'tokens' | 'tweets' | 'emails' | 'transcripts';
+  usage_unit?: 'tokens' | 'tweets' | 'emails' | 'transcripts' | 'chars' | 'bytes';
   input_tokens?: number;
   output_tokens?: number;
   external_id?: string;

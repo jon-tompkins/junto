@@ -10,7 +10,42 @@ export interface PersonalDispatch {
   ticker_count: number;
   sent_email_at: string | null;
   sent_telegram_at: string | null;
+  audio_url: string | null;
+  audio_bytes: number | null;
+  audio_duration_sec: number | null;
+  audio_script: string | null;
   created_at: string;
+}
+
+export async function setDispatchAudio(
+  id: string,
+  audio: { url: string; bytes: number; durationSec: number; script: string },
+): Promise<void> {
+  const { error } = await getSupabase()
+    .from('personal_dispatches')
+    .update({
+      audio_url: audio.url,
+      audio_bytes: audio.bytes,
+      audio_duration_sec: audio.durationSec,
+      audio_script: audio.script,
+    })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function listPersonalDispatchesWithAudio(
+  userId: string,
+  limit = 50,
+): Promise<PersonalDispatch[]> {
+  const { data, error } = await getSupabase()
+    .from('personal_dispatches')
+    .select('*')
+    .eq('user_id', userId)
+    .not('audio_url', 'is', null)
+    .order('dispatch_date', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data as PersonalDispatch[]) || [];
 }
 
 export async function upsertPersonalDispatch(d: {

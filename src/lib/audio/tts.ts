@@ -11,7 +11,7 @@ export async function synthesizeSpeech(args: {
   voice?: TtsVoice;
   model?: 'tts-1' | 'tts-1-hd';
   speed?: number; // 0.25–4.0, default 1.0
-}): Promise<Buffer> {
+}): Promise<{ audio: Buffer; chars: number; model: 'tts-1' | 'tts-1-hd' }> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
 
@@ -19,6 +19,7 @@ export async function synthesizeSpeech(args: {
   if (text.length > MAX_INPUT_CHARS) {
     throw new Error(`TTS input too long: ${text.length} > ${MAX_INPUT_CHARS}`);
   }
+  const model = args.model || 'tts-1-hd';
 
   const res = await fetch(OPENAI_TTS_URL, {
     method: 'POST',
@@ -27,7 +28,7 @@ export async function synthesizeSpeech(args: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: args.model || 'tts-1-hd',
+      model,
       voice: args.voice || 'onyx',
       input: text,
       response_format: 'mp3',
@@ -41,5 +42,11 @@ export async function synthesizeSpeech(args: {
   }
 
   const ab = await res.arrayBuffer();
-  return Buffer.from(ab);
+  return { audio: Buffer.from(ab), chars: text.length, model };
+}
+
+// Rough duration estimate at speed 1.1: ~165 wpm, ~5.5 chars/word ⇒ ~907 chars/min.
+export function estimateAudioDurationSec(chars: number, speed = 1.1): number {
+  const charsPerMin = 825 * speed;
+  return Math.max(1, Math.round((chars / charsPerMin) * 60));
 }

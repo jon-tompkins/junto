@@ -7,7 +7,7 @@ export async function dispatchToAudioScript(args: {
   markdown: string;
   displayName: string | null;
   dateLabel: string;
-}): Promise<string> {
+}): Promise<{ script: string; usage: { input_tokens: number; output_tokens: number } | null }> {
   const { subject, markdown, displayName, dateLabel } = args;
 
   const prompt = `Rewrite this written intelligence brief as a 3-5 minute conversational audio script for ${displayName || 'the listener'}, dated ${dateLabel}.
@@ -35,9 +35,15 @@ Return only the audio script, nothing else.`;
     messages: [{ role: 'user', content: prompt }],
   });
 
-  return resp.content
+  const script = resp.content
     .filter((b: any) => b.type === 'text')
     .map((b: any) => b.text)
     .join('\n')
     .trim();
+
+  const usage = resp.usage
+    ? { input_tokens: resp.usage.input_tokens, output_tokens: resp.usage.output_tokens }
+    : null;
+
+  return { script, usage };
 }

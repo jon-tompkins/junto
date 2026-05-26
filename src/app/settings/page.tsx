@@ -52,6 +52,11 @@ export default function SettingsPage() {
   const [dispatchTgAudio, setDispatchTgAudio] = useState(true);
   const [savingPrefs, setSavingPrefs] = useState(false);
 
+  // Personal podcast feed
+  const [feedToken, setFeedToken] = useState<string | null>(null);
+  const [feedCopied, setFeedCopied] = useState(false);
+  const [rotatingFeed, setRotatingFeed] = useState(false);
+
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
   }, [status, router]);
@@ -60,6 +65,7 @@ export default function SettingsPage() {
     if (session?.user) {
       fetchAccount();
       fetchTelegramStatus();
+      fetchFeedToken();
     }
   }, [session]);
 
@@ -190,6 +196,38 @@ export default function SettingsPage() {
       setError('Failed to save settings');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const fetchFeedToken = async () => {
+    try {
+      const res = await fetch('/api/v2/feed-token');
+      const data = await res.json();
+      if (data.token) setFeedToken(data.token);
+    } catch (err) {
+      console.error('feed token fetch failed', err);
+    }
+  };
+
+  const rotateFeedToken = async () => {
+    if (!confirm('Rotate feed URL? Your podcast app will lose access until you paste the new URL.')) return;
+    setRotatingFeed(true);
+    try {
+      const res = await fetch('/api/v2/feed-token', { method: 'POST' });
+      const data = await res.json();
+      if (data.token) setFeedToken(data.token);
+    } finally {
+      setRotatingFeed(false);
+    }
+  };
+
+  const copyFeedUrl = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setFeedCopied(true);
+      setTimeout(() => setFeedCopied(false), 1500);
+    } catch {
+      // noop
     }
   };
 
@@ -505,6 +543,49 @@ export default function SettingsPage() {
             Manage →
           </a>
         </div>
+
+        {/* Personal Podcast Feed */}
+        {isPro && feedToken && (() => {
+          const feedUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/api/feed/dispatches/${feedToken}.xml`;
+          return (
+            <div className="mb-6 p-6 bg-[#141210] rounded border border-[rgba(176,141,87,0.28)] space-y-3">
+              <div>
+                <h2 className="text-lg font-semibold font-[var(--font-oswald)] uppercase tracking-wide">Personal Podcast Feed</h2>
+                <p className="text-sm text-[#F5EFE0]/60 mt-1">
+                  Paste this URL into Overcast, Pocket Casts, Apple Podcasts (Add a Show by URL), or any podcast app to receive each daily audio brief as an episode. Treat the URL like a password — it grants access to your private feed.
+                </p>
+              </div>
+
+              <button
+                onClick={() => copyFeedUrl(feedUrl)}
+                className="w-full px-4 py-3 bg-[#080604] border border-[rgba(176,141,87,0.28)] hover:border-[#B08D57] rounded text-left transition group"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <code className="text-xs text-[#B08D57] font-mono truncate">{feedUrl}</code>
+                  <span className={`text-xs whitespace-nowrap ${feedCopied ? 'text-[#3ecf6a]' : 'text-[#F5EFE0]/30 group-hover:text-[#F5EFE0]/60'} transition`}>
+                    {feedCopied ? '✓ copied' : 'tap to copy'}
+                  </span>
+                </div>
+              </button>
+
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <a
+                  href={`overcast://x-callback-url/add?url=${encodeURIComponent(feedUrl)}`}
+                  className="text-xs text-[#B08D57] hover:underline"
+                >
+                  Open in Overcast →
+                </a>
+                <button
+                  onClick={rotateFeedToken}
+                  disabled={rotatingFeed}
+                  className="text-xs text-[#F5EFE0]/50 hover:text-[#e8453c] disabled:opacity-50 transition"
+                >
+                  {rotatingFeed ? 'Rotating…' : 'Rotate URL'}
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Provider Info */}
         <div className="p-4 bg-[#141210] rounded border border-[rgba(176,141,87,0.18)] text-sm text-[#F5EFE0]/45">
