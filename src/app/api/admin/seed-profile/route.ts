@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/db/client';
 import { getRecentContentForSources } from '@/lib/db/content-twitter';
 import { updateSourceProfile } from '@/lib/synthesis/profile-updater';
+import { upsertSourceProfile } from '@/lib/db/source-analyst-profiles';
 
 // POST /api/admin/seed-profile — manually seed the analyst profile for a handle
 // Body: { handle: string }
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { handle } = await req.json();
+  const { handle, fresh } = await req.json();
   if (!handle) return NextResponse.json({ error: 'handle required' }, { status: 400 });
 
   const supabase = getSupabase();
@@ -24,6 +25,12 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (!source) return NextResponse.json({ error: `Source not found: ${clean}` }, { status: 404 });
+
+  if (fresh) {
+    // Clear existing profile so the updater has no anchor — useful when
+    // the model has been silently dropping a position for a long time.
+    await upsertSourceProfile(source.id, null, {});
+  }
 
   const recent = await getRecentContentForSources([source.id], 336);
   if (recent.length === 0) {
