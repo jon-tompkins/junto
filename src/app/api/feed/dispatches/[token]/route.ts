@@ -62,7 +62,7 @@ function buildPodcastXml(args: {
   const title = `${args.userName}'s Junto Brief`;
   const description = `Daily intelligence brief — narrated.`;
   const lastBuild = args.dispatches[0]?.created_at || new Date().toISOString();
-  const cover = `${SITE_URL}/og-image.png`;
+  const cover = `${SITE_URL}/api/podcast/cover`;
 
   const items = args.dispatches
     .filter((d) => d.audio_url)
@@ -77,6 +77,7 @@ function buildPodcastXml(args: {
       <guid isPermaLink="false">junto-dispatch-${d.id}</guid>
       <enclosure url="${escapeXml(d.audio_url!)}" length="${d.audio_bytes ?? 0}" type="audio/mpeg"/>
       <itunes:duration>${d.audio_duration_sec ?? 0}</itunes:duration>
+      <itunes:image href="${escapeXml(cover)}"/>
       <itunes:explicit>false</itunes:explicit>
     </item>`;
     })
