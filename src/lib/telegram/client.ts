@@ -49,6 +49,38 @@ export async function sendTelegramMessage(
   });
 }
 
+// Send an MP3 audio file. Uses sendAudio so Telegram shows playable audio player + duration.
+export async function sendTelegramAudio(params: {
+  chatId: string | number;
+  audio: Buffer;
+  title: string;
+  performer?: string;
+  caption?: string;
+  filename?: string;
+}): Promise<{ message_id: number }> {
+  const token = getToken();
+  const form = new FormData();
+  form.append('chat_id', String(params.chatId));
+  form.append('title', params.title);
+  if (params.performer) form.append('performer', params.performer);
+  if (params.caption) {
+    form.append('caption', params.caption);
+    form.append('parse_mode', 'HTML');
+  }
+  const blob = new Blob([new Uint8Array(params.audio)], { type: 'audio/mpeg' });
+  form.append('audio', blob, params.filename || 'dispatch.mp3');
+
+  const res = await fetch(`${TG_API}/bot${token}/sendAudio`, {
+    method: 'POST',
+    body: form,
+  });
+  const data = (await res.json()) as TgResponse<{ message_id: number }>;
+  if (!data.ok) {
+    throw new Error(`Telegram sendAudio failed: ${data.error_code} ${data.description}`);
+  }
+  return data.result!;
+}
+
 // Newsletter delivery. Splits long content across multiple messages (TG caps at 4096 chars).
 // First message gets the subject as a bold header.
 export async function sendTelegramNewsletter(params: {

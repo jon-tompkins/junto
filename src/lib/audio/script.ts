@@ -1,0 +1,43 @@
+import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
+
+// Convert a markdown dispatch into plain prose suitable for TTS.
+// Expands cashtags, strips formatting, conversational tone.
+export async function dispatchToAudioScript(args: {
+  subject: string;
+  markdown: string;
+  displayName: string | null;
+  dateLabel: string;
+}): Promise<string> {
+  const { subject, markdown, displayName, dateLabel } = args;
+
+  const prompt = `Rewrite this written intelligence brief as a 3-5 minute conversational audio script for ${displayName || 'the listener'}, dated ${dateLabel}.
+
+RULES:
+- No markdown, no headers, no bullets. Flowing prose with natural paragraph breaks.
+- Expand cashtags into spoken form: $BB → "B B", $LPTH → "L P T H". Common tickers can use the company name if obvious ($V → "Visa", $TSLA → "Tesla").
+- Expand @handles to "at handle" (e.g. @crypto_condom → "at crypto condom").
+- Open with a brief greeting that includes the day ("Tuesday morning brief — here's what your sources are watching today"). Don't read the subject line verbatim.
+- Use signposts like "First up", "On the watchlist side", "One more thing" to transition between sections.
+- End with a short sign-off.
+- Keep it tight and skimmable by ear. Cut filler.
+- Don't editorialize beyond what the source brief says.
+
+Original subject: ${subject}
+
+BRIEF:
+${markdown}
+
+Return only the audio script, nothing else.`;
+
+  const resp = await getAnthropic().messages.create({
+    model: HAIKU_MODEL,
+    max_tokens: 2000,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  return resp.content
+    .filter((b: any) => b.type === 'text')
+    .map((b: any) => b.text)
+    .join('\n')
+    .trim();
+}

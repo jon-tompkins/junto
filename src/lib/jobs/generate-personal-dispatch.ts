@@ -3,7 +3,9 @@ import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
 import { getRecentContentForSources } from '@/lib/db/content-twitter';
 import { getUserTelegramChatId } from '@/lib/telegram/link';
 import { sendNewsletter } from '@/lib/email/sender';
-import { sendTelegramNewsletter } from '@/lib/telegram/client';
+import { sendTelegramNewsletter, sendTelegramAudio } from '@/lib/telegram/client';
+import { dispatchToAudioScript } from '@/lib/audio/script';
+import { synthesizeSpeech } from '@/lib/audio/tts';
 import {
   upsertPersonalDispatch,
   markPersonalDispatchSent,
@@ -240,6 +242,28 @@ export async function generatePersonalDispatchForUser(
         await markPersonalDispatchSent(dispatch.id, 'telegram');
       } catch (err) {
         console.error('[personal-dispatch] telegram send failed', user.id, err);
+      }
+
+      if (process.env.PERSONAL_DISPATCH_AUDIO === '1' && process.env.OPENAI_API_KEY) {
+        try {
+          const script = await dispatchToAudioScript({
+            subject,
+            markdown: content,
+            displayName: user.display_name,
+            dateLabel,
+          });
+          const audio = await synthesizeSpeech({ text: script, voice: 'onyx', model: 'tts-1-hd' });
+          await sendTelegramAudio({
+            chatId,
+            audio,
+            title: subject,
+            performer: 'Junto',
+            caption: `🎧 <b>${subject}</b>`,
+            filename: `junto-${dispatchDate}.mp3`,
+          });
+        } catch (err) {
+          console.error('[personal-dispatch] audio send failed', user.id, err);
+        }
       }
     }
   }
