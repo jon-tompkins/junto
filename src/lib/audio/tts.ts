@@ -19,7 +19,7 @@ export async function synthesizeSpeech(args: {
   if (text.length > MAX_INPUT_CHARS) {
     throw new Error(`TTS input too long: ${text.length} > ${MAX_INPUT_CHARS}`);
   }
-  const model = args.model || 'tts-1-hd';
+  const model = args.model || 'tts-1';
 
   const res = await fetch(OPENAI_TTS_URL, {
     method: 'POST',
