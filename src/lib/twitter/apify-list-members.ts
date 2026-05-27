@@ -28,7 +28,7 @@ export function parseListId(input: string): string | null {
   return match ? match[1] : null;
 }
 
-async function pollUntilDone(runId: string, token: string, maxWaitMs = 120000): Promise<any[]> {
+async function pollUntilDone(runId: string, token: string, maxWaitMs = 270000): Promise<any[]> {
   const start = Date.now();
   while (Date.now() - start < maxWaitMs) {
     const statusRes = await fetch(`${APIFY_BASE_URL}/actor-runs/${runId}?token=${token}`);
