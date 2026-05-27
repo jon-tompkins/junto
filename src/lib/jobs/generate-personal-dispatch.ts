@@ -278,7 +278,7 @@ export async function generatePersonalDispatchForUser(
             });
           }
 
-          const tts = await synthesizeSpeech({ text: script, voice: 'onyx', model: 'tts-1-hd' });
+          const tts = await synthesizeSpeech({ text: script, voice: 'onyx' });
 
           recordCost({
             supplier: 'openai',

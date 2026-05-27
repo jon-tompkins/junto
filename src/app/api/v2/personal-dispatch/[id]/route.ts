@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getSupabase } from '@/lib/db/client';
+import { getPersonalDispatchById } from '@/lib/db/personal-dispatches';
 
 async function resolveUserId(session: any): Promise<string | null> {
   const supabase = getSupabase();
@@ -32,15 +33,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
 
-  const { data, error } = await getSupabase()
-    .from('personal_dispatches')
-    .select('*')
-    .eq('id', id)
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-
-  return NextResponse.json({ dispatch: data });
+  try {
+    const dispatch = await getPersonalDispatchById(id, userId);
+    if (!dispatch) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return NextResponse.json({ dispatch });
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message || 'Failed to fetch dispatch' }, { status: 500 });
+  }
 }
