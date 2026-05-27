@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, Suspense } from 'react';
+import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -101,6 +101,37 @@ function CreatePageInner() {
   const [importingList, setImportingList] = useState(false);
   const [listImportError, setListImportError] = useState('');
   const [lastImportSummary, setLastImportSummary] = useState('');
+
+  // Source autocomplete
+  interface SourceSuggestion {
+    id: string;
+    handle_or_url: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    type: string;
+  }
+  const [sourceSuggestions, setSourceSuggestions] = useState<SourceSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    if (sourceType !== 'twitter') { setSourceSuggestions([]); setShowSuggestions(false); return; }
+    const q = sourceInput.trim().replace('@', '');
+    if (!q) { setSourceSuggestions([]); setShowSuggestions(false); return; }
+    searchDebounceRef.current = setTimeout(() => {
+      fetch(`/api/sources/search?q=${encodeURIComponent(q)}&type=twitter`)
+        .then(r => r.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setSourceSuggestions(data);
+            setShowSuggestions(true);
+          }
+        })
+        .catch(() => {});
+    }, 250);
+    return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
+  }, [sourceInput, sourceType]);
 
   // Prompt templates from API
   const [promptTemplates, setPromptTemplates] = useState<PromptTemplate[]>([]);
@@ -677,7 +708,7 @@ function CreatePageInner() {
                   )}
                 </div>
               )}
-              <div className="flex gap-2 mb-3">
+              <div className="flex gap-2 mb-3 relative">
                 <div className="relative flex-1">
                   {sourceType === 'twitter' && (
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#F5EFE0]/40 text-sm">@</span>
@@ -686,11 +717,48 @@ function CreatePageInner() {
                     type="text"
                     value={sourceInput}
                     onChange={e => setSourceInput(sourceType === 'twitter' ? e.target.value.replace('@', '') : e.target.value)}
+                    onFocus={() => sourceType === 'twitter' && sourceSuggestions.length > 0 && setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                     onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSource())}
                     placeholder={sourceType === 'twitter' ? 'twitter_handle' : 'https://youtube.com/@channel'}
                     className="w-full bg-[#141210] px-4 py-2.5 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none transition"
                     style={{ paddingLeft: sourceType === 'twitter' ? '28px' : '16px', border: '1px solid rgba(176,141,87,0.28)' }}
                   />
+                  {sourceType === 'twitter' && showSuggestions && sourceSuggestions.length > 0 && (
+                    <div className="absolute z-20 left-0 right-0 mt-1 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded shadow-xl max-h-64 overflow-y-auto">
+                      {sourceSuggestions.map((r) => {
+                        const alreadyAdded = adHocSources.some(s => s.handle === r.handle_or_url && s.type === 'twitter');
+                        return (
+                          <button
+                            key={r.id}
+                            type="button"
+                            disabled={alreadyAdded}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              if (alreadyAdded) return;
+                              setAdHocSources(prev => [...prev, { handle: r.handle_or_url, type: 'twitter', status: 'valid', name: r.display_name || undefined }]);
+                              setSourceInput('');
+                              setShowSuggestions(false);
+                            }}
+                            className={`w-full text-left flex items-center gap-3 px-3 py-2 transition ${alreadyAdded ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#1c1a17]'}`}
+                          >
+                            {r.avatar_url ? (
+                              <img src={r.avatar_url} alt={r.handle_or_url} className="w-8 h-8 rounded bg-[#1c1a17] object-cover" />
+                            ) : (
+                              <div className="w-8 h-8 rounded bg-[#1c1a17] flex items-center justify-center text-xs font-bold text-[#F5EFE0]/80">
+                                {r.handle_or_url[0]?.toUpperCase()}
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-medium truncate">@{r.handle_or_url}</div>
+                              {r.display_name && <div className="text-xs text-[#F5EFE0]/60 truncate">{r.display_name}</div>}
+                            </div>
+                            {alreadyAdded && <span className="text-xs text-[#3ecf6a]">added</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={addSource}
