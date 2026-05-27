@@ -14,7 +14,7 @@ export async function dispatchToAudioScript(args: {
 
 RULES:
 - No markdown, no headers, no bullets. Flowing prose with natural paragraph breaks.
-- Expand cashtags into spoken form: $BB → "B B", $LPTH → "L P T H". Common tickers can use the company name if obvious ($V → "Visa", $TSLA → "Tesla").
+- Expand cashtags into spoken form by spelling the letters: $BB → "B B", $LPTH → "L P T H", $ABCL → "A B C L", $TSLA → "T S L A". NEVER substitute a company name for a ticker — even if you think you recognize it, you might be wrong (e.g. $ABCL is Abcellera, not Abercrombie). Always spell. The one exception: well-known single-letter tickers can stay as the letter ($V → "V", $F → "F").
 - Expand @handles to "at handle" (e.g. @crypto_condom → "at crypto condom").
 - Open with a brief greeting that includes the day ("Tuesday morning brief — here's what your sources are watching today"). Don't read the subject line verbatim.
 - Use signposts like "First up", "On the watchlist side", "One more thing" to transition between sections.
