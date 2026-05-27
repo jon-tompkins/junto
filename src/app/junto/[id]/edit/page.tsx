@@ -374,7 +374,7 @@ export default function EditJuntoPage() {
             ))}
           </div>
 
-          {sourceType === 'twitter' && isPro && (
+          {sourceType === 'twitter' && (
             <div className="mb-3">
               {!showListImport ? (
                 <button
