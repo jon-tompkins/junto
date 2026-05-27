@@ -63,10 +63,14 @@ export async function fetchListMembers(listId: string): Promise<ListMember[]> {
   const token = process.env.APIFY_API_KEY;
   if (!token) throw new Error('APIFY_API_KEY not configured');
 
-  // Most list-member actors accept either listId or listUrl. Send both for safety.
+  // apidojo/twitter-list-scraper wants startUrls (array of {url}) or listIds (plural).
+  // Send the common shapes so we work across actor variants without code changes.
+  const listUrl = `https://x.com/i/lists/${listId}`;
   const input = {
+    listIds: [listId],
+    startUrls: [{ url: listUrl }],
+    listUrls: [listUrl],
     listId,
-    listUrls: [`https://x.com/i/lists/${listId}`],
   };
 
   const runRes = await fetch(
