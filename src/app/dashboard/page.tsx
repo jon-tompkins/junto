@@ -188,10 +188,22 @@ export default function DashboardPage() {
   }, [status, router]);
 
   useEffect(() => {
-    if (session?.user) {
-      loadData();
-      loadFeaturedJunto();
-    }
+    if (!session?.user) return;
+    // Send first-time users to onboarding before any data loads.
+    fetch('/api/v2/account')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d && d.isOnboarded === false) {
+          router.push('/onboarding');
+        } else {
+          loadData();
+          loadFeaturedJunto();
+        }
+      })
+      .catch(() => {
+        loadData();
+        loadFeaturedJunto();
+      });
   }, [session]);
 
   async function loadFeaturedJunto() {

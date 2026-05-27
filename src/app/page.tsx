@@ -201,6 +201,37 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* How it works — 3-step illustration */}
+      <section className="container mx-auto px-4 pb-16">
+        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-3">
+          {[
+            { n: '1', title: 'Connect', body: 'Sign in with X or Google in one click.' },
+            { n: '2', title: 'Select your Junto', body: 'Pick the voices you trust — add accounts or import a Twitter list.' },
+            { n: '3', title: 'Get the signal', body: 'A daily brief in your inbox, plus optional audio podcast.' },
+          ].map((step) => (
+            <div
+              key={step.n}
+              className="rounded-sm p-5"
+              style={{ border: '1px solid rgba(176,141,87,0.18)', background: 'rgba(176,141,87,0.02)' }}
+            >
+              <div
+                className="text-xs font-mono mb-3"
+                style={{ color: '#B08D57' }}
+              >
+                {step.n.padStart(2, '0')}
+              </div>
+              <div
+                className="font-semibold mb-1.5"
+                style={{ color: '#F5EFE0', fontFamily: 'var(--font-oswald)', textTransform: 'uppercase', letterSpacing: '0.04em' }}
+              >
+                {step.title}
+              </div>
+              <div className="text-sm" style={{ color: 'rgba(245,239,224,0.55)' }}>{step.body}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Divider */}
       <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
 

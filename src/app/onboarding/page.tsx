@@ -20,47 +20,87 @@ const TIMEZONES = [
   { value: 'Australia/Sydney', label: 'Sydney (AEST)' },
 ];
 
+const DAYS: { key: string; label: string }[] = [
+  { key: 'sun', label: 'S' },
+  { key: 'mon', label: 'M' },
+  { key: 'tue', label: 'T' },
+  { key: 'wed', label: 'W' },
+  { key: 'thu', label: 'T' },
+  { key: 'fri', label: 'F' },
+  { key: 'sat', label: 'S' },
+];
+
+const WINDOWS = [
+  { value: 'morning', label: 'Morning (7am local)' },
+  { value: 'midday', label: 'Midday (noon local)' },
+  { value: 'evening', label: 'Evening (5pm local)' },
+];
+
 interface Source {
   id: string;
   handle_or_url: string;
   display_name: string | null;
   avatar_url: string | null;
-  type: string;
+  type?: string;
 }
 
-interface SuggestedDispatch {
+interface ListMember {
+  handle: string;
+  display_name: string | null;
+  avatar_url: string | null;
+}
+
+interface ExistingJunto {
   id: string;
   name: string;
-  description: string | null;
-  subscriber_count: number;
-  overlap: number;
+  source_count?: number;
 }
 
-const TOTAL_STEPS = 3;
+type JuntoMode = 'manual' | 'list' | 'existing';
 
 export default function OnboardingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [step, setStep] = useState(1);
-
-  // Step 1: email + timezone
+  // Header
+  const handle = (session?.user as any)?.twitterHandle as string | undefined;
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [timezone, setTimezone] = useState('America/New_York');
 
-  // Step 2: account picker
+  // Junto selection
+  const [mode, setMode] = useState<JuntoMode>('manual');
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Source[]>([]);
   const [searching, setSearching] = useState(false);
   const [selectedSources, setSelectedSources] = useState<Source[]>([]);
-  const [suggestions, setSuggestions] = useState<SuggestedDispatch[]>([]);
-  const [subscribing, setSubscribing] = useState<string | null>(null);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Step 3: completion
+  const [listInput, setListInput] = useState('');
+  const [importingList, setImportingList] = useState(false);
+  const [listMembers, setListMembers] = useState<ListMember[]>([]);
+  const [listError, setListError] = useState('');
+
+  const [existingJuntos, setExistingJuntos] = useState<ExistingJunto[]>([]);
+  const [existingJuntoId, setExistingJuntoId] = useState<string | null>(null);
+
+  // Collapsibles
+  const [tickers, setTickers] = useState<string[]>([]);
+  const [tickerInput, setTickerInput] = useState('');
+  const [scheduleDays, setScheduleDays] = useState<string[]>(['mon','tue','wed','thu','fri']);
+  const [sendWindow, setSendWindow] = useState('morning');
+  const [dispatchEmail, setDispatchEmail] = useState(true);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [dispatchTgText, setDispatchTgText] = useState(false);
+  const [dispatchTgAudio, setDispatchTgAudio] = useState(false);
+
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({ junto: true });
+
+  // Submit
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  // ── Effects ─────────────────────────────────────────────────────
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login?callbackUrl=/onboarding');
   }, [status, router]);
@@ -73,11 +113,16 @@ export default function OnboardingPage() {
   }, []);
 
   useEffect(() => {
+    if (handle && !name) setName(`${handle} Daily Dispatch`);
+  }, [handle]);
+
+  useEffect(() => {
     if (session?.user?.email && !email) setEmail(session.user.email);
   }, [session]);
 
-  // Search sources as user types
+  // Source search
   useEffect(() => {
+    if (mode !== 'manual') return;
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     if (!query.trim()) { setSearchResults([]); return; }
     searchTimeout.current = setTimeout(async () => {
@@ -89,18 +134,18 @@ export default function OnboardingPage() {
         setSearching(false);
       }
     }, 300);
-  }, [query]);
+  }, [query, mode]);
 
-  // Fetch suggested dispatches whenever selection changes
+  // Load existing juntos when switching to that mode
   useEffect(() => {
-    if (selectedSources.length === 0) { setSuggestions([]); return; }
-    const ids = selectedSources.map(s => s.id).join(',');
-    fetch(`/api/v2/onboarding/suggestions?sourceIds=${ids}`)
-      .then(r => r.ok ? r.json() : { dispatches: [] })
-      .then(d => setSuggestions(d.dispatches || []))
+    if (mode !== 'existing' || existingJuntos.length > 0) return;
+    fetch('/api/juntos')
+      .then(r => r.ok ? r.json() : { juntos: [] })
+      .then(d => setExistingJuntos(d.juntos || []))
       .catch(() => {});
-  }, [selectedSources]);
+  }, [mode]);
 
+  // ── Handlers ────────────────────────────────────────────────────
   function toggleSource(src: Source) {
     setSelectedSources(prev =>
       prev.find(s => s.id === src.id)
@@ -109,39 +154,84 @@ export default function OnboardingPage() {
     );
   }
 
-  async function handleSubscribe(dispatchId: string) {
-    setSubscribing(dispatchId);
+  async function handleImportList() {
+    setListError('');
+    setImportingList(true);
     try {
-      await fetch(`/api/v2/subscriptions`, {
+      const res = await fetch('/api/lists/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newsletter_id: dispatchId }),
+        body: JSON.stringify({ list_url: listInput }),
       });
-    } catch {} finally {
-      setSubscribing(null);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Import failed');
+      setListMembers(data.members || []);
+    } catch (err: any) {
+      setListError(err?.message || 'Failed to import list');
+    } finally {
+      setImportingList(false);
     }
   }
 
-  async function handleComplete(destination: 'dashboard' | 'create') {
-    setSaving(true);
+  function removeListMember(handle: string) {
+    setListMembers(prev => prev.filter(m => m.handle !== handle));
+  }
+
+  function addTicker() {
+    const clean = tickerInput.trim().toUpperCase().replace(/^\$/, '');
+    if (!clean) return;
+    if (tickers.includes(clean)) { setTickerInput(''); return; }
+    if (tickers.length >= 10) { setTickerInput(''); return; }
+    setTickers(prev => [...prev, clean]);
+    setTickerInput('');
+  }
+
+  function toggleDay(d: string) {
+    setScheduleDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
+  }
+
+  function toggle(key: string) {
+    setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  async function handleSubmit() {
     setError('');
+    if (!email.includes('@')) { setError('Enter a valid delivery email'); return; }
+
+    setSaving(true);
     try {
+      const payload: any = {
+        name: name.trim() || undefined,
+        email,
+        timezone,
+        juntoMode: mode,
+        tickers,
+        scheduleDays,
+        sendWindows: [sendWindow],
+        dispatchEmail,
+        audioEnabled,
+        dispatchTgText,
+        dispatchTgAudio: audioEnabled && dispatchTgAudio,
+      };
+      if (mode === 'manual') {
+        payload.sourceIds = selectedSources.map(s => s.id);
+      } else if (mode === 'list') {
+        payload.sourceHandles = listMembers.map(m => m.handle);
+      } else if (mode === 'existing') {
+        if (!existingJuntoId) throw new Error('Pick a junto');
+        payload.existingJuntoId = existingJuntoId;
+      }
+
       const res = await fetch('/api/v2/onboarding/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          timezone,
-          sourceIds: selectedSources.map(s => s.id),
-        }),
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.error || 'Setup failed');
-      }
-      router.push(destination === 'create' ? '/create' : '/dashboard');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Setup failed');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Setup failed');
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err?.message || 'Setup failed');
       setSaving(false);
     }
   }
@@ -154,271 +244,437 @@ export default function OnboardingPage() {
     );
   }
 
+  const sourceCount = mode === 'manual' ? selectedSources.length
+    : mode === 'list' ? listMembers.length
+    : (existingJuntoId ? 1 : 0);
+
+  const juntoSummary = mode === 'manual' ? `${selectedSources.length} accounts`
+    : mode === 'list' ? `${listMembers.length} from list`
+    : (existingJuntoId ? existingJuntos.find(j => j.id === existingJuntoId)?.name || 'existing junto' : 'none selected');
+
   return (
     <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
-      <div className="container mx-auto px-4 py-14 max-w-lg">
-        {/* Logo */}
-        <div className="text-center mb-10">
-          <Link href="/" className="text-2xl font-bold tracking-tight font-[var(--font-oswald)] uppercase">
-            <span className="text-[#F5EFE0]">my</span>
-            <span className="text-[#B08D57]">junto</span>
+      <div className="container mx-auto px-4 py-10 max-w-2xl">
+        <div className="text-center mb-8">
+          <Link href="/" className="text-2xl font-bold tracking-tight uppercase" style={{ fontFamily: 'var(--font-oswald)' }}>
+            <span className="text-[#F5EFE0]">my</span><span className="text-[#B08D57]">junto</span>
           </Link>
+          <h1 className="mt-6 text-2xl font-bold uppercase tracking-wide" style={{ fontFamily: 'var(--font-oswald)' }}>
+            Set up your Daily Dispatch
+          </h1>
+          <p className="mt-2 text-sm text-[#F5EFE0]/55">
+            Defaults are sensible — expand any section to customize.
+          </p>
         </div>
 
-        {/* Step dots */}
-        <div className="flex items-center justify-center gap-2 mb-10">
-          {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-            <div
-              key={i}
-              className={`rounded-sm transition-all duration-300 ${
-                i + 1 < step ? 'bg-[#B08D57] w-10 h-1' :
-                i + 1 === step ? 'bg-[#B08D57] w-14 h-1.5' :
-                'bg-[#1c1a17] w-6 h-1'
-              }`}
+        {/* ── Header card: name + email ───────────────────── */}
+        <div className="rounded p-5 mb-4 space-y-4" style={{ background: '#141210', border: '1px solid rgba(176,141,87,0.28)' }}>
+          <div>
+            <label className="block text-[10px] uppercase tracking-wider text-[#F5EFE0]/60 font-mono mb-2">Dispatch name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder={handle ? `${handle} Daily Dispatch` : 'Your Daily Dispatch'}
+              className="w-full px-4 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none text-sm text-[#F5EFE0]"
             />
-          ))}
+          </div>
+          <div>
+            <label className="block text-[10px] uppercase tracking-wider text-[#F5EFE0]/60 font-mono mb-2">Delivery email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => { setEmail(e.target.value); setError(''); }}
+              placeholder="you@example.com"
+              className="w-full px-4 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none text-sm text-[#F5EFE0]"
+            />
+          </div>
         </div>
 
-        {/* ── STEP 1: Welcome + email ───────────────────────────── */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Welcome</h1>
-              <p className="text-[#F5EFE0]/60 text-sm max-w-xs mx-auto">
-                You have <span className="text-[#3ecf6a] font-semibold">1,000 free credits</span> to get started. Let&apos;s set up your account.
-              </p>
-            </div>
-
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 space-y-5">
-              <div>
-                <label className="block text-xs uppercase tracking-wider text-[#F5EFE0]/60 font-mono mb-2">Delivery email</label>
-                <p className="text-xs text-[#F5EFE0]/40 mb-3">Where your dispatches will land. Change anytime.</p>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => { setEmail(e.target.value); setError(''); }}
-                  placeholder="you@example.com"
-                  autoFocus
-                  className="w-full px-4 py-3 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none transition text-sm placeholder-[#F5EFE0]/30 text-[#F5EFE0]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs uppercase tracking-wider text-[#F5EFE0]/60 font-mono mb-2">Timezone</label>
-                <select
-                  value={timezone}
-                  onChange={e => setTimezone(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none transition text-sm text-[#F5EFE0]"
-                >
-                  {TIMEZONES.map(tz => (
-                    <option key={tz.value} value={tz.value}>{tz.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {error && <p className="text-[#e8453c] text-sm">{error}</p>}
-
+        {/* ── Section: Select your Junto ─────────────────── */}
+        <Section
+          title="Select your Junto"
+          summary={juntoSummary}
+          expanded={!!expanded.junto}
+          onToggle={() => toggle('junto')}
+        >
+          <div className="flex gap-1 mb-4 p-1 rounded" style={{ background: '#080604', border: '1px solid rgba(176,141,87,0.18)' }}>
+            {(['manual','list','existing'] as JuntoMode[]).map(m => (
               <button
-                onClick={() => {
-                  if (!email.includes('@') || !email.includes('.')) { setError('Enter a valid email'); return; }
-                  setError('');
-                  setStep(2);
+                key={m}
+                onClick={() => setMode(m)}
+                className="flex-1 px-3 py-1.5 text-xs uppercase tracking-wider rounded transition"
+                style={{
+                  background: mode === m ? '#B08D57' : 'transparent',
+                  color: mode === m ? '#080604' : 'rgba(245,239,224,0.55)',
+                  fontFamily: 'var(--font-oswald)',
                 }}
-                disabled={!email.trim()}
-                className="w-full px-5 py-3 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-30 text-[#080604] rounded font-bold uppercase tracking-wide font-[var(--font-oswald)] transition"
               >
-                Continue →
+                {m === 'manual' ? 'Add Manually' : m === 'list' ? 'From Twitter List' : 'Choose Existing'}
               </button>
-            </div>
+            ))}
           </div>
-        )}
 
-        {/* ── STEP 2: Build junto ───────────────────────────────── */}
-        {step === 2 && (
-          <div className="space-y-5">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Build your junto</h1>
-              <p className="text-[#F5EFE0]/60 text-sm max-w-sm mx-auto">
-                A junto is your curated list of voices you trust — traders, investors, thinkers.
-                Pick the accounts whose signal you want to follow.
-              </p>
-            </div>
-
-            {/* Search */}
-            <div className="relative">
-              <input
-                type="text"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Search Twitter accounts…"
-                className="w-full px-4 py-3 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none transition text-sm placeholder-[#F5EFE0]/30 text-[#F5EFE0]"
-                autoFocus
-              />
-              {searching && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-[#B08D57]/40 border-t-[#B08D57] rounded-full animate-spin" />
-              )}
-            </div>
-
-            {/* Search results */}
-            {searchResults.length > 0 && (
-              <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded divide-y divide-[rgba(176,141,87,0.12)]">
-                {searchResults.map(src => {
-                  const selected = selectedSources.some(s => s.id === src.id);
-                  return (
-                    <button
-                      key={src.id}
-                      onClick={() => toggleSource(src)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#1c1a17] transition ${selected ? 'bg-[rgba(176,141,87,0.06)]' : ''}`}
-                    >
-                      {src.avatar_url ? (
-                        <img src={src.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
-                      ) : (
-                        <div className="w-9 h-9 rounded-full bg-[#B08D57]/30 flex items-center justify-center text-sm text-[#B08D57] font-bold shrink-0">
-                          {(src.display_name || src.handle_or_url).charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-[#F5EFE0] truncate">{src.display_name || src.handle_or_url}</p>
-                        <p className="text-xs text-[#F5EFE0]/45">@{src.handle_or_url}</p>
-                      </div>
-                      <div className={`w-5 h-5 rounded-sm border flex items-center justify-center shrink-0 transition ${
-                        selected ? 'bg-[#B08D57] border-[#B08D57]' : 'border-[rgba(176,141,87,0.35)]'
-                      }`}>
-                        {selected && <span className="text-[#080604] text-xs font-bold">✓</span>}
-                      </div>
-                    </button>
-                  );
-                })}
+          {mode === 'manual' && (
+            <div className="space-y-3">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder="Search Twitter accounts…"
+                  className="w-full px-4 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none text-sm text-[#F5EFE0]"
+                />
+                {searching && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-[#B08D57]/40 border-t-[#B08D57] rounded-full animate-spin" />
+                )}
               </div>
-            )}
-
-            {/* Selected pills */}
-            {selectedSources.length > 0 && (
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 font-mono mb-2">
-                  Your junto ({selectedSources.length})
-                </p>
-                <div className="flex flex-wrap gap-2">
+              {searchResults.length > 0 && (
+                <div className="rounded divide-y divide-[rgba(176,141,87,0.12)]" style={{ background: '#080604', border: '1px solid rgba(176,141,87,0.18)' }}>
+                  {searchResults.slice(0, 8).map(src => {
+                    const selected = selectedSources.some(s => s.id === src.id);
+                    return (
+                      <button
+                        key={src.id}
+                        onClick={() => toggleSource(src)}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-[#141210] transition"
+                        style={selected ? { background: 'rgba(176,141,87,0.06)' } : {}}
+                      >
+                        {src.avatar_url ? (
+                          <img src={src.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-[#B08D57]/30 flex items-center justify-center text-xs text-[#B08D57] font-bold shrink-0">
+                            {(src.display_name || src.handle_or_url).charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-[#F5EFE0] truncate">{src.display_name || src.handle_or_url}</p>
+                          <p className="text-xs text-[#F5EFE0]/45">@{src.handle_or_url}</p>
+                        </div>
+                        <div className={`w-4 h-4 rounded-sm border flex items-center justify-center shrink-0 ${
+                          selected ? 'bg-[#B08D57] border-[#B08D57]' : 'border-[rgba(176,141,87,0.35)]'
+                        }`}>
+                          {selected && <span className="text-[#080604] text-[10px] font-bold">✓</span>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {selectedSources.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-2">
                   {selectedSources.map(src => (
                     <button
                       key={src.id}
                       onClick={() => toggleSource(src)}
                       className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#B08D57]/15 border border-[rgba(176,141,87,0.35)] hover:border-[#e8453c]/50 hover:bg-[#e8453c]/10 transition group"
                     >
-                      {src.avatar_url && (
-                        <img src={src.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
-                      )}
                       <span className="text-xs text-[#B08D57] group-hover:text-[#e8453c]">@{src.handle_or_url}</span>
                       <span className="text-[10px] text-[#F5EFE0]/30 group-hover:text-[#e8453c]">×</span>
                     </button>
                   ))}
                 </div>
+              )}
+            </div>
+          )}
+
+          {mode === 'list' && (
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={listInput}
+                  onChange={e => setListInput(e.target.value)}
+                  placeholder="https://x.com/i/lists/… or list ID"
+                  className="flex-1 px-4 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none text-sm text-[#F5EFE0]"
+                />
+                <button
+                  onClick={handleImportList}
+                  disabled={importingList || !listInput.trim()}
+                  className="px-4 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-40 text-[#080604] rounded font-bold uppercase tracking-wide text-xs transition"
+                  style={{ fontFamily: 'var(--font-oswald)' }}
+                >
+                  {importingList ? 'Importing…' : 'Import'}
+                </button>
               </div>
-            )}
-
-            <div className="flex gap-3 pt-1">
-              <button
-                onClick={() => setStep(1)}
-                className="px-4 py-2.5 bg-[#1c1a17] hover:bg-[#141210] text-[#F5EFE0]/60 rounded text-sm transition"
-              >
-                Back
-              </button>
-              <button
-                onClick={() => setStep(3)}
-                className="flex-1 px-5 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] rounded font-bold uppercase tracking-wide font-[var(--font-oswald)] transition text-sm"
-              >
-                {selectedSources.length > 0 ? `Continue with ${selectedSources.length} account${selectedSources.length !== 1 ? 's' : ''} →` : 'Skip for now →'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 3: Done + suggestions ───────────────────────── */}
-        {step === 3 && (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="text-3xl mb-3">✓</div>
-              <h1 className="text-2xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">
-                {selectedSources.length > 0 ? "You're set" : 'Almost there'}
-              </h1>
-              <p className="text-[#F5EFE0]/60 text-sm max-w-xs mx-auto">
-                {selectedSources.length > 0
-                  ? `Your junto has ${selectedSources.length} voice${selectedSources.length !== 1 ? 's' : ''}. What do you want to do first?`
-                  : "You can always add accounts to your junto later. What's next?"}
-              </p>
-            </div>
-
-            {/* Suggested dispatches (soft, max 3) */}
-            {suggestions.length > 0 && (
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 font-mono mb-3">
-                  Dispatches covering similar voices
-                </p>
-                <div className="space-y-2">
-                  {suggestions.map(d => (
-                    <div key={d.id} className="flex items-center justify-between gap-4 px-4 py-3 bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-[#F5EFE0] truncate">{d.name}</p>
-                        {d.description && (
-                          <p className="text-xs text-[#F5EFE0]/45 truncate mt-0.5">{d.description}</p>
-                        )}
-                        <p className="text-[10px] text-[#B08D57]/60 mt-0.5 font-mono">
-                          {d.overlap} shared voice{d.overlap !== 1 ? 's' : ''} · {d.subscriber_count} subscribers
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleSubscribe(d.id)}
-                        disabled={subscribing === d.id}
-                        className="shrink-0 text-xs px-3 py-1.5 bg-[#B08D57]/15 border border-[rgba(176,141,87,0.35)] text-[#B08D57] rounded-sm hover:bg-[#B08D57]/25 transition disabled:opacity-50 font-mono"
-                      >
-                        {subscribing === d.id ? '…' : 'Subscribe'}
-                      </button>
-                    </div>
+              <p className="text-xs text-[#F5EFE0]/45">List import can take up to 60 seconds.</p>
+              {listError && <p className="text-xs text-[#e8453c]">{listError}</p>}
+              {listMembers.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {listMembers.map(m => (
+                    <button
+                      key={m.handle}
+                      onClick={() => removeListMember(m.handle)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#B08D57]/15 border border-[rgba(176,141,87,0.35)] hover:border-[#e8453c]/50 hover:bg-[#e8453c]/10 transition group"
+                    >
+                      <span className="text-xs text-[#B08D57] group-hover:text-[#e8453c]">@{m.handle}</span>
+                      <span className="text-[10px] text-[#F5EFE0]/30 group-hover:text-[#e8453c]">×</span>
+                    </button>
                   ))}
                 </div>
+              )}
+            </div>
+          )}
+
+          {mode === 'existing' && (
+            <div className="space-y-2">
+              {existingJuntos.length === 0 ? (
+                <p className="text-xs text-[#F5EFE0]/45">You don&apos;t have any juntos yet.</p>
+              ) : existingJuntos.map(j => (
+                <button
+                  key={j.id}
+                  onClick={() => setExistingJuntoId(j.id)}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded text-left transition"
+                  style={{
+                    background: existingJuntoId === j.id ? 'rgba(176,141,87,0.08)' : '#080604',
+                    border: `1px solid ${existingJuntoId === j.id ? '#B08D57' : 'rgba(176,141,87,0.18)'}`,
+                  }}
+                >
+                  <span className="text-sm text-[#F5EFE0]">{j.name}</span>
+                  {j.source_count !== undefined && (
+                    <span className="text-xs text-[#F5EFE0]/45 font-mono">{j.source_count} sources</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </Section>
+
+        {/* ── Section: Watchlist ─────────────────────────── */}
+        <Section
+          title="Watchlist"
+          summary={tickers.length === 0 ? '(empty)' : tickers.map(t => `$${t}`).join(' ')}
+          expanded={!!expanded.watchlist}
+          onToggle={() => toggle('watchlist')}
+        >
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={tickerInput}
+                onChange={e => setTickerInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTicker(); } }}
+                placeholder="Add ticker (e.g. ABCL)"
+                className="flex-1 px-4 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none text-sm text-[#F5EFE0] uppercase"
+              />
+              <button
+                onClick={addTicker}
+                disabled={!tickerInput.trim() || tickers.length >= 10}
+                className="px-4 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-40 text-[#080604] rounded font-bold uppercase text-xs transition"
+                style={{ fontFamily: 'var(--font-oswald)' }}
+              >
+                Add
+              </button>
+            </div>
+            {tickers.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {tickers.map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setTickers(prev => prev.filter(x => x !== t))}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#B08D57]/15 border border-[rgba(176,141,87,0.35)] hover:border-[#e8453c]/50 transition group"
+                  >
+                    <span className="text-xs text-[#B08D57] group-hover:text-[#e8453c]">${t}</span>
+                    <span className="text-[10px] text-[#F5EFE0]/30">×</span>
+                  </button>
+                ))}
               </div>
             )}
+            <p className="text-xs text-[#F5EFE0]/40">Up to 10. Empty is fine — leave blank to focus on signal from sources.</p>
+          </div>
+        </Section>
 
-            {error && <p className="text-[#e8453c] text-sm text-center">{error}</p>}
+        {/* ── Section: Prompt ────────────────────────────── */}
+        <Section
+          title="Prompt"
+          summary="Investment Brief (default)"
+          expanded={!!expanded.prompt}
+          onToggle={() => toggle('prompt')}
+        >
+          <p className="text-xs text-[#F5EFE0]/55">
+            Your dispatch uses the Investment Brief template — watchlist movers, signal from your junto, cross-references, and watch-today items.
+            You can switch templates from the dashboard once your dispatch is live.
+          </p>
+        </Section>
 
-            {/* CTAs */}
-            <div className="space-y-3">
-              <button
-                onClick={() => handleComplete('dashboard')}
-                disabled={saving}
-                className="w-full px-5 py-4 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-40 text-[#080604] rounded font-bold uppercase tracking-wide font-[var(--font-oswald)] transition text-sm"
-              >
-                {saving ? 'Setting up…' : 'See what they\'re discussing →'}
-              </button>
-              <button
-                onClick={() => handleComplete('create')}
-                disabled={saving}
-                className="w-full px-5 py-3 bg-[#1c1a17] hover:bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/80 rounded font-medium transition text-sm"
-              >
-                Create a dispatch
-              </button>
+        {/* ── Section: Schedule ──────────────────────────── */}
+        <Section
+          title="Schedule"
+          summary={`${scheduleDays.length === 7 ? 'Daily' : scheduleDays.length === 5 && !scheduleDays.includes('sat') && !scheduleDays.includes('sun') ? 'M–F' : scheduleDays.length + ' days'} · ${WINDOWS.find(w => w.value === sendWindow)?.label.split(' (')[0]}`}
+          expanded={!!expanded.schedule}
+          onToggle={() => toggle('schedule')}
+        >
+          <div className="space-y-4">
+            <div>
+              <div className="block text-[10px] uppercase tracking-wider text-[#F5EFE0]/60 font-mono mb-2">Days</div>
+              <div className="flex gap-1.5">
+                {DAYS.map(d => {
+                  const on = scheduleDays.includes(d.key);
+                  return (
+                    <button
+                      key={d.key}
+                      onClick={() => toggleDay(d.key)}
+                      className="w-8 h-8 rounded text-xs font-bold transition"
+                      style={{
+                        background: on ? '#B08D57' : '#080604',
+                        color: on ? '#080604' : 'rgba(245,239,224,0.45)',
+                        border: '1px solid rgba(176,141,87,0.28)',
+                      }}
+                    >{d.label}</button>
+                  );
+                })}
+              </div>
             </div>
-
-            <div className="text-center">
-              <button onClick={() => setStep(2)} className="text-[#F5EFE0]/30 hover:text-[#F5EFE0]/60 text-xs transition">
-                ← Back to account selection
-              </button>
+            <div>
+              <div className="block text-[10px] uppercase tracking-wider text-[#F5EFE0]/60 font-mono mb-2">Window</div>
+              <select
+                value={sendWindow}
+                onChange={e => setSendWindow(e.target.value)}
+                className="w-full px-4 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none text-sm text-[#F5EFE0]"
+              >
+                {WINDOWS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <div className="block text-[10px] uppercase tracking-wider text-[#F5EFE0]/60 font-mono mb-2">Timezone</div>
+              <select
+                value={timezone}
+                onChange={e => setTimezone(e.target.value)}
+                className="w-full px-4 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none text-sm text-[#F5EFE0]"
+              >
+                {TIMEZONES.map(tz => <option key={tz.value} value={tz.value}>{tz.label}</option>)}
+              </select>
             </div>
           </div>
-        )}
+        </Section>
 
-        {/* Skip */}
-        {step < 3 && (
-          <div className="text-center mt-6">
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="text-[#F5EFE0]/25 hover:text-[#F5EFE0]/50 text-xs transition"
-            >
-              Skip setup
-            </button>
+        {/* ── Section: Delivery ──────────────────────────── */}
+        <Section
+          title="Delivery"
+          summary={[
+            dispatchEmail && 'Email',
+            audioEnabled && 'Audio',
+            (dispatchTgText || (audioEnabled && dispatchTgAudio)) && 'Telegram',
+          ].filter(Boolean).join(' · ') || 'none'}
+          expanded={!!expanded.delivery}
+          onToggle={() => toggle('delivery')}
+        >
+          <div className="space-y-4">
+            <Checkbox
+              checked={dispatchEmail}
+              onChange={setDispatchEmail}
+              label="Email"
+              hint="Delivered to the address above"
+            />
+            <Checkbox
+              checked={audioEnabled}
+              onChange={setAudioEnabled}
+              label="Generate audio"
+              hint="Available via your personal podcast feed — set up the feed link from the dashboard after onboarding"
+            />
+            <div className="pl-6 space-y-3" style={{ opacity: audioEnabled ? 1 : 0.4 }}>
+              <Checkbox
+                checked={dispatchTgAudio}
+                onChange={setDispatchTgAudio}
+                disabled={!audioEnabled}
+                label="Also send audio via Telegram"
+                hint="Requires linking Telegram from the dashboard"
+              />
+            </div>
+            <Checkbox
+              checked={dispatchTgText}
+              onChange={setDispatchTgText}
+              label="Send text via Telegram"
+              hint="Requires linking Telegram from the dashboard"
+            />
           </div>
-        )}
+        </Section>
+
+        {error && <p className="mt-4 text-sm text-[#e8453c] text-center">{error}</p>}
+
+        <button
+          onClick={handleSubmit}
+          disabled={saving || (mode === 'existing' && !existingJuntoId)}
+          className="w-full mt-6 px-5 py-4 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-40 text-[#080604] rounded font-bold uppercase tracking-wide transition text-sm"
+          style={{ fontFamily: 'var(--font-oswald)' }}
+        >
+          {saving ? 'Setting up…' : sourceCount === 0 && mode !== 'existing' ? 'Save (no sources yet — add later)' : 'Save & go to dashboard →'}
+        </button>
+
+        <div className="text-center mt-4">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="text-[#F5EFE0]/25 hover:text-[#F5EFE0]/50 text-xs transition"
+          >
+            Skip setup
+          </button>
+        </div>
       </div>
     </main>
+  );
+}
+
+// ─────────────────────────────────────────────────
+function Section({
+  title,
+  summary,
+  expanded,
+  onToggle,
+  children,
+}: {
+  title: string;
+  summary: string;
+  expanded: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded mb-3" style={{ background: '#141210', border: '1px solid rgba(176,141,87,0.28)' }}>
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-5 py-4 text-left"
+      >
+        <div>
+          <div className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-mono">{title}</div>
+          <div className="text-sm text-[#F5EFE0] mt-0.5">{summary}</div>
+        </div>
+        <span className="text-[#B08D57] text-lg" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>⌄</span>
+      </button>
+      {expanded && (
+        <div className="px-5 pb-5" style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}>
+          <div className="pt-4">{children}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Checkbox({
+  checked,
+  onChange,
+  label,
+  hint,
+  disabled,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+  hint?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <label className="flex items-start gap-3 cursor-pointer" style={{ opacity: disabled ? 0.5 : 1 }}>
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={e => onChange(e.target.checked)}
+        className="mt-0.5 w-4 h-4 accent-[#B08D57]"
+      />
+      <div className="flex-1">
+        <div className="text-sm text-[#F5EFE0]">{label}</div>
+        {hint && <div className="text-xs text-[#F5EFE0]/45 mt-0.5">{hint}</div>}
+      </div>
+    </label>
   );
 }
