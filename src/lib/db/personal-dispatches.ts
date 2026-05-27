@@ -160,6 +160,71 @@ export async function listPersonalDispatchesWithAudio(
   return runs.map(r => runToPersonalDispatch(r, userId, delivery.get(r.id)));
 }
 
+export interface FeedRun {
+  id: string;
+  dispatch_date: string;
+  subject: string;
+  content: string;
+  audio_url: string;
+  audio_bytes: number | null;
+  audio_duration_sec: number | null;
+  created_at: string;
+  newsletter_name: string;
+  is_personal: boolean;
+}
+
+export async function listFeedRunsForUser(userId: string, limit = 100): Promise<FeedRun[]> {
+  const supabase = getSupabase();
+
+  // 1. Personal newsletter id (if any)
+  const personalId = await getPersonalNewsletterId(userId);
+
+  // 2. Subscribed newsletter ids with audio_enabled
+  const { data: subs } = await supabase
+    .from('subscriptions')
+    .select('newsletter_id, newsletters_v2!inner(id, audio_enabled)')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .eq('audio_enabled', true);
+
+  const subscribedIds: string[] = ((subs || []) as any[])
+    .filter(s => s.newsletters_v2?.audio_enabled)
+    .map(s => s.newsletter_id);
+
+  const allIds = Array.from(new Set([...(personalId ? [personalId] : []), ...subscribedIds]));
+  if (allIds.length === 0) return [];
+
+  // 3. Fetch newsletter names
+  const { data: nls } = await supabase
+    .from('newsletters_v2')
+    .select('id, name')
+    .in('id', allIds);
+  const nameById = new Map<string, string>(((nls || []) as any[]).map(n => [n.id, n.name]));
+
+  // 4. Audio-bearing runs from all those newsletters
+  const { data: runs, error } = await supabase
+    .from('newsletter_runs')
+    .select('id, newsletter_id, subject, content, dispatch_date, generated_at, audio_url, audio_bytes, audio_duration_sec')
+    .in('newsletter_id', allIds)
+    .not('audio_url', 'is', null)
+    .order('dispatch_date', { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error) throw error;
+
+  return ((runs || []) as any[]).map(r => ({
+    id: r.id,
+    dispatch_date: r.dispatch_date || r.generated_at.slice(0, 10),
+    subject: r.subject || '',
+    content: r.content,
+    audio_url: r.audio_url,
+    audio_bytes: r.audio_bytes,
+    audio_duration_sec: r.audio_duration_sec,
+    created_at: r.generated_at,
+    newsletter_name: nameById.get(r.newsletter_id) || 'Junto',
+    is_personal: r.newsletter_id === personalId,
+  }));
+}
+
 export async function upsertPersonalDispatch(d: {
   user_id: string;
   dispatch_date: string;

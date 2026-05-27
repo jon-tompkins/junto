@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/db/client';
-import { listPersonalDispatchesWithAudio } from '@/lib/db/personal-dispatches';
+import { listFeedRunsForUser } from '@/lib/db/personal-dispatches';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +28,7 @@ export async function GET(
     return new NextResponse('Not found', { status: 404 });
   }
 
-  const dispatches = await listPersonalDispatchesWithAudio(user.id, 50);
+  const dispatches = await listFeedRunsForUser(user.id, 100);
   const xml = buildPodcastXml({
     userName: user.display_name || 'Junto',
     feedUrl: `${SITE_URL}/api/feed/dispatches/${rawToken}.xml`,
@@ -52,6 +52,8 @@ interface DispatchRow {
   audio_bytes: number | null;
   audio_duration_sec: number | null;
   created_at: string;
+  newsletter_name?: string;
+  is_personal?: boolean;
 }
 
 function buildPodcastXml(args: {
@@ -69,8 +71,9 @@ function buildPodcastXml(args: {
     .map((d) => {
       const pubDate = new Date(d.created_at).toUTCString();
       const summary = escapeXml(stripMarkdown(d.content).slice(0, 1200));
+      const titlePrefix = d.is_personal === false && d.newsletter_name ? `[${d.newsletter_name}] ` : '';
       return `    <item>
-      <title>${escapeXml(d.subject)}</title>
+      <title>${escapeXml(titlePrefix + d.subject)}</title>
       <description><![CDATA[${markdownToHtml(d.content)}]]></description>
       <itunes:summary>${summary}</itunes:summary>
       <pubDate>${pubDate}</pubDate>

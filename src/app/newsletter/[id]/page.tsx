@@ -125,6 +125,8 @@ export default function NewsletterDetailPage() {
   const [subViaTelegram, setSubViaTelegram] = useState(false);
   const [subWithAudio, setSubWithAudio] = useState(false);
   const [tgLinked, setTgLinked] = useState<boolean | null>(null);
+  const [feedUrl, setFeedUrl] = useState<string | null>(null);
+  const [feedUrlCopied, setFeedUrlCopied] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -225,8 +227,22 @@ export default function NewsletterDetailPage() {
       });
       if (res.ok) {
         setSubscribed(true);
-        setShowSubscribeModal(false);
         if (newsletter) setNewsletter({ ...newsletter, subscriber_count: newsletter.subscriber_count + 1 });
+        if (subWithAudio) {
+          try {
+            const tokRes = await fetch('/api/v2/feed-token');
+            if (tokRes.ok) {
+              const { token } = await tokRes.json();
+              setFeedUrl(`${window.location.origin}/api/feed/dispatches/${token}.xml`);
+            } else {
+              setShowSubscribeModal(false);
+            }
+          } catch {
+            setShowSubscribeModal(false);
+          }
+        } else {
+          setShowSubscribeModal(false);
+        }
       } else {
         const data = await res.json();
         if (data.redirect) {
@@ -546,8 +562,38 @@ export default function NewsletterDetailPage() {
 
       {showSubscribeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowSubscribeModal(false)} />
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowSubscribeModal(false); setFeedUrl(null); }} />
           <div className="relative bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 max-w-sm w-full shadow-2xl space-y-5">
+            {feedUrl ? (
+              <>
+                <div>
+                  <h2 className="text-lg font-bold text-[#F5EFE0] font-[var(--font-oswald)] uppercase tracking-wide">🎧 Your podcast feed</h2>
+                  <p className="text-sm text-[#F5EFE0]/60 mt-1">Subscribed. Add this URL to your podcast app (Apple Podcasts, Overcast, Pocket Casts) to receive voice memos as episodes.</p>
+                </div>
+                <div className="bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded p-3">
+                  <code className="text-xs text-[#F5EFE0]/80 break-all font-mono">{feedUrl}</code>
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(feedUrl).then(() => {
+                      setFeedUrlCopied(true);
+                      setTimeout(() => setFeedUrlCopied(false), 2000);
+                    });
+                  }}
+                  className="w-full px-4 py-2.5 bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/80 rounded text-sm font-medium transition"
+                >
+                  {feedUrlCopied ? 'Copied!' : 'Copy feed URL'}
+                </button>
+                <p className="text-xs text-[#F5EFE0]/45">You'll also receive the audio in Telegram. The feed combines audio from all your subscribed dispatches.</p>
+                <button
+                  onClick={() => { setShowSubscribeModal(false); setFeedUrl(null); }}
+                  className="w-full px-4 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] rounded text-sm font-medium transition font-[var(--font-oswald)] uppercase tracking-wide"
+                >
+                  Done
+                </button>
+              </>
+            ) : (
+            <>
             <div>
               <h2 className="text-lg font-bold text-[#F5EFE0] font-[var(--font-oswald)] uppercase tracking-wide">Subscribe to {newsletter?.name}</h2>
               <p className="text-sm text-[#F5EFE0]/60 mt-1">Where should we send it?</p>
@@ -635,6 +681,8 @@ export default function NewsletterDetailPage() {
                 {subscribing ? 'Subscribing...' : `Subscribe — ${subWithAudio ? 4 : 2} credits/send`}
               </button>
             </div>
+            </>
+            )}
           </div>
         </div>
       )}
