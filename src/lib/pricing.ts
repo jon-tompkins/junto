@@ -40,21 +40,23 @@ const OWNER_COST_TIERS = [
  * Calculate credit cost per send for the newsletter OWNER.
  * Based on source count tier.
  */
-export function calculateOwnerCreditCost(sourceCount: number): number {
+export function calculateOwnerCreditCost(sourceCount: number, audioEnabled = false): number {
+  let credits = OWNER_COST_TIERS[OWNER_COST_TIERS.length - 1].credits;
   for (const tier of OWNER_COST_TIERS) {
     if (sourceCount <= tier.maxSources) {
-      return tier.credits;
+      credits = tier.credits;
+      break;
     }
   }
-  return OWNER_COST_TIERS[OWNER_COST_TIERS.length - 1].credits;
+  return audioEnabled ? credits * 2 : credits;
 }
 
 /**
  * Calculate credit cost per delivery for a SUBSCRIBER.
- * Flat rate regardless of source count.
+ * Flat rate; doubles when subscriber opted into audio delivery.
  */
-export function calculateSubscriberCreditCost(): number {
-  return SUBSCRIBER_COST_PER_SEND;
+export function calculateSubscriberCreditCost(audioEnabled = false): number {
+  return audioEnabled ? SUBSCRIBER_COST_PER_SEND * 2 : SUBSCRIBER_COST_PER_SEND;
 }
 
 /**
@@ -72,14 +74,15 @@ export function splitSubscriberPayment(creditCost: number): {
 // ─── Display Helpers ─────────────────────────────────
 
 /** Get the owner cost tier label for a source count */
-export function getOwnerTierLabel(sourceCount: number): string {
-  const cost = calculateOwnerCreditCost(sourceCount);
+export function getOwnerTierLabel(sourceCount: number, audioEnabled = false): string {
+  const cost = calculateOwnerCreditCost(sourceCount, audioEnabled);
   return `${cost} credits/send ($${(cost / CREDITS_PER_DOLLAR).toFixed(2)})`;
 }
 
 /** Get subscriber cost label */
-export function getSubscriberCostLabel(): string {
-  return `${SUBSCRIBER_COST_PER_SEND} credits/send ($${(SUBSCRIBER_COST_PER_SEND / CREDITS_PER_DOLLAR).toFixed(2)})`;
+export function getSubscriberCostLabel(audioEnabled = false): string {
+  const cost = calculateSubscriberCreditCost(audioEnabled);
+  return `${cost} credits/send ($${(cost / CREDITS_PER_DOLLAR).toFixed(2)})`;
 }
 
 export function creditsToDollars(credits: number): string {

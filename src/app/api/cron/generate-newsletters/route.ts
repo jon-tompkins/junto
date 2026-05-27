@@ -7,12 +7,14 @@ import { storeRun, storeSkippedRun, updateRunStatus } from '@/lib/db/newsletter-
 import { recordBulkDeliveries } from '@/lib/db/newsletter-deliveries';
 import { generateNewsletterV2 } from '@/lib/synthesis/generator-v2';
 import { sendNewsletter } from '@/lib/email/sender';
-import { sendTelegramNewsletter } from '@/lib/telegram/client';
+import { sendTelegramNewsletter, sendTelegramAudio } from '@/lib/telegram/client';
 import { chargeOwner, chargeSubscriber } from '@/lib/db/credits';
 import { calculateOwnerCreditCost, calculateSubscriberCreditCost } from '@/lib/pricing';
 import { getPromptTemplateById } from '@/lib/db/prompt-templates';
 import { NEWSLETTER_SYSTEM_PROMPT } from '@/lib/synthesis/prompts';
 import { getWatchlistTickers } from '@/lib/db/watchlists';
+import { generateDispatchAudio } from '@/lib/audio/generate';
+import { setDispatchAudio } from '@/lib/db/personal-dispatches';
 
 export const maxDuration = 300; // 5 minutes
 
@@ -161,8 +163,9 @@ export async function GET(req: NextRequest) {
 
         console.log(`[generate] Run stored: ${run.id} — "${result.subject}"`);
 
-        // 6. Charge the owner
-        const ownerCost = calculateOwnerCreditCost(sources.length);
+        // 6. Charge the owner (doubled when voice memo is enabled on the dispatch)
+        const audioEnabled = !!(newsletter as any).audio_enabled;
+        const ownerCost = calculateOwnerCreditCost(sources.length, audioEnabled);
         const ownerCharged = await chargeOwner(newsletter.admin_user_id, newsletter.name, ownerCost, run.id);
         if (!ownerCharged) {
           const errMsg = `Owner insufficient credits (needs ${ownerCost})`;
@@ -170,6 +173,39 @@ export async function GET(req: NextRequest) {
           await updateRunStatus(run.id, 'generated_not_delivered', errMsg);
           results[newsletter.name] = { status: 'generated_not_delivered', error: errMsg };
           continue;
+        }
+
+        // 6b. Generate audio once per run if the dispatch has voice enabled.
+        // Audio gets fanned out alongside text to subscribers who opted in.
+        let audioBuffer: Buffer | null = null;
+        if (audioEnabled) {
+          try {
+            const dispatchDate = endDate;
+            const dateLabel = new Date(endDate).toLocaleDateString('en-US', {
+              weekday: 'long', month: 'long', day: 'numeric',
+            });
+            const generated = await generateDispatchAudio({
+              subject: result.subject,
+              markdown: result.content,
+              displayName: newsletter.name,
+              dateLabel,
+              dispatchDate,
+              ownerUserId: newsletter.admin_user_id,
+              dispatchId: newsletter.id,
+            });
+            if (generated) {
+              audioBuffer = generated.audio;
+              await setDispatchAudio(run.id, {
+                url: generated.publicUrl,
+                bytes: generated.bytes,
+                durationSec: generated.durationSec,
+                script: generated.script,
+              });
+              console.log(`[generate] ${newsletter.name}: audio ready (${generated.bytes} bytes, ${generated.durationSec}s)`);
+            }
+          } catch (audioErr) {
+            console.error(`[generate] ${newsletter.name}: audio pipeline failed`, audioErr);
+          }
         }
 
         // 7. Fan out to subscribers — charge each, send
@@ -185,12 +221,14 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
-        const subscriberCost = calculateSubscriberCreditCost();
         const deliveredEmails: string[] = [];
         const deliveredEmailUserIds: string[] = [];
-        const telegramTargets: { chatId: string; userId: string }[] = [];
+        const telegramTargets: { chatId: string; userId: string; audio: boolean }[] = [];
 
         for (const sub of subscribers) {
+          // Subscriber pays 2x only if BOTH the dispatch has voice on AND they opted in.
+          const subAudio = audioEnabled && sub.audio_enabled;
+          const subscriberCost = calculateSubscriberCreditCost(subAudio);
           const charged = await chargeSubscriber(
             sub.user_id,
             newsletter.admin_user_id,
@@ -205,7 +243,7 @@ export async function GET(req: NextRequest) {
           }
 
           if (sub.delivery_channel === 'telegram' && sub.telegram_chat_id) {
-            telegramTargets.push({ chatId: sub.telegram_chat_id, userId: sub.user_id });
+            telegramTargets.push({ chatId: sub.telegram_chat_id, userId: sub.user_id, audio: subAudio });
           } else {
             const email = sub.delivery_email || sub.email;
             if (email) {
@@ -257,6 +295,19 @@ export async function GET(req: NextRequest) {
               contentMarkdown: result.content,
               newsletterId: newsletter.id,
             });
+            if (target.audio && audioBuffer) {
+              try {
+                await sendTelegramAudio({
+                  chatId: target.chatId,
+                  audio: audioBuffer,
+                  title: result.subject,
+                  performer: 'Junto',
+                  caption: `🎧 <b>${result.subject}</b>`,
+                });
+              } catch (audioTgErr) {
+                console.error(`[generate] Telegram audio send failed for ${newsletter.name} chat ${target.chatId}:`, audioTgErr);
+              }
+            }
             successfulTgUserIds.push(target.userId);
           } catch (tgError) {
             const msg = tgError instanceof Error ? tgError.message : 'Telegram send failed';

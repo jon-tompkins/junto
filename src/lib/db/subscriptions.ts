@@ -10,6 +10,7 @@ export async function subscribe(
   sendWindows?: string[],
   receiveDays?: string[],
   deliveryChannel?: 'email' | 'telegram' | 'both',
+  audioEnabled?: boolean,
 ): Promise<Subscription> {
   const row: Record<string, any> = { user_id: userId, newsletter_id: newsletterId, is_active: true };
   if (deliveryEmail) row.delivery_email = deliveryEmail;
@@ -19,6 +20,7 @@ export async function subscribe(
   }
   if (receiveDays) row.receive_days = receiveDays;
   if (deliveryChannel) row.delivery_channel = deliveryChannel;
+  if (audioEnabled !== undefined) row.audio_enabled = audioEnabled;
 
   const { data, error } = await supabase()
     .from('subscriptions')
@@ -69,18 +71,19 @@ export async function getNewsletterSubscribers(newsletterId: string): Promise<{
   receive_days: string[];
   delivery_channel: 'email' | 'telegram';
   telegram_chat_id: string | null;
+  audio_enabled: boolean;
 }[]> {
   const { data, error } = await supabase()
     .from('subscriptions')
     .select(
-      'user_id, delivery_email, send_windows, receive_windows, receive_days, delivery_channel, users(email, telegram_chat_id)',
+      'user_id, delivery_email, send_windows, receive_windows, receive_days, delivery_channel, audio_enabled, users(email, telegram_chat_id)',
     )
     .eq('newsletter_id', newsletterId)
     .eq('is_active', true);
 
   if (error) throw error;
 
-  type Row = { user_id: string; email: string; delivery_email: string | null; send_windows: string[]; receive_windows: string[]; receive_days: string[]; delivery_channel: 'email' | 'telegram'; telegram_chat_id: string | null };
+  type Row = { user_id: string; email: string; delivery_email: string | null; send_windows: string[]; receive_windows: string[]; receive_days: string[]; delivery_channel: 'email' | 'telegram'; telegram_chat_id: string | null; audio_enabled: boolean };
   const results: Row[] = [];
 
   for (const row of data || []) {
@@ -92,6 +95,7 @@ export async function getNewsletterSubscribers(newsletterId: string): Promise<{
       receive_windows: row.receive_windows || row.send_windows || ['morning'],
       receive_days: row.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
       telegram_chat_id: (row as any).users?.telegram_chat_id || null,
+      audio_enabled: !!(row as any).audio_enabled,
     };
     const channel = (row.delivery_channel || 'email') as 'email' | 'telegram' | 'both';
 

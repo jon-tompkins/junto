@@ -84,6 +84,7 @@ function CreatePageInner() {
   const [isPublic, setIsPublic] = useState(true);
   const [sendDays, setSendDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
   const [labels, setLabels] = useState<string[]>([]);
+  const [audioEnabled, setAudioEnabled] = useState(false);
 
   // Junto / sources
   const [juntos, setJuntos] = useState<JuntoOption[]>([]);
@@ -350,6 +351,7 @@ function CreatePageInner() {
           default_send_windows: sendWindows,
           is_public: isPublic,
           junto_id: juntoId,
+          audio_enabled: audioEnabled,
         }),
       });
 
@@ -990,6 +992,32 @@ function CreatePageInner() {
               <div className="text-xs text-[#F5EFE0]/50">Only you receive it. Personal intelligence brief.</div>
             </button>
           </div>
+
+          <div className="mt-5">
+            <button
+              type="button"
+              onClick={() => setAudioEnabled(!audioEnabled)}
+              className="w-full p-4 text-left transition"
+              style={{
+                border: `1px solid ${audioEnabled ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`,
+                background: audioEnabled ? 'rgba(176,141,87,0.06)' : '#141210',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-[#F5EFE0] mb-1" style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}>
+                    🎧 Voice memo {audioEnabled && <span className="text-[#B08D57]">— on</span>}
+                  </div>
+                  <div className="text-xs text-[#F5EFE0]/50">
+                    Adds an audio version of each dispatch (delivered via Telegram + RSS feed). Doubles per-send credit cost.
+                  </div>
+                </div>
+                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition flex-shrink-0 ${audioEnabled ? 'bg-[#B08D57] border-[#B08D57]' : 'border-[#F5EFE0]/30'}`}>
+                  {audioEnabled && <svg className="w-3 h-3 text-[#080604]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                </div>
+              </div>
+            </button>
+          </div>
         </Section>
 
         {/* ─── SUBMIT ──────────────────────────────────── */}
@@ -1002,7 +1030,7 @@ function CreatePageInner() {
 
           <div className="flex items-center justify-between">
             <p className="text-xs font-mono" style={{ color: 'rgba(245,239,224,0.35)' }}>
-              Owner cost: {calculateOwnerCreditCost(sourceCount)} credits/send · Subscribers: 2 credits/send
+              Owner cost: {calculateOwnerCreditCost(sourceCount, audioEnabled)} credits/send · Subscribers: {audioEnabled ? 'from 2 (4 with voice)' : '2'} credits/send
             </p>
             <button
               onClick={handleCreate}

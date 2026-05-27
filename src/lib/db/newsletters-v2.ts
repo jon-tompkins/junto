@@ -21,6 +21,7 @@ export async function createNewsletter(newsletter: {
   prompt_template_id?: string | null;
   junto_id: string | null;
   watchlist_id?: string | null;
+  audio_enabled?: boolean;
 }): Promise<NewsletterV2> {
   const { data, error } = await supabase()
     .from('newsletters_v2')
@@ -38,6 +39,7 @@ export async function createNewsletter(newsletter: {
       prompt_template_id: newsletter.prompt_template_id || null,
       junto_id: newsletter.junto_id || null,
       watchlist_id: newsletter.watchlist_id || null,
+      audio_enabled: newsletter.audio_enabled ?? false,
     })
     .select()
     .single();
@@ -105,7 +107,7 @@ export async function getPublicNewslettersByTwitterHandle(twitterHandle: string)
   return (data || []).filter((n: any) => n.users?.twitter_handle === handle);
 }
 
-export async function updateNewsletter(id: string, updates: Partial<Pick<NewsletterV2, 'name' | 'description' | 'prompt' | 'secondary_prompt' | 'is_public' | 'schedule_cadence' | 'credit_cost'>> & { send_days?: string[]; prompt_template_id?: string | null }): Promise<NewsletterV2> {
+export async function updateNewsletter(id: string, updates: Partial<Pick<NewsletterV2, 'name' | 'description' | 'prompt' | 'secondary_prompt' | 'is_public' | 'schedule_cadence' | 'credit_cost'>> & { send_days?: string[]; prompt_template_id?: string | null; audio_enabled?: boolean }): Promise<NewsletterV2> {
   const { data, error } = await supabase()
     .from('newsletters_v2')
     .update({ ...updates, updated_at: new Date().toISOString() })

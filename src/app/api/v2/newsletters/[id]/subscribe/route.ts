@@ -94,7 +94,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
-    const subscription = await subscribe(userId, id, deliveryEmail, ['morning'], ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], deliveryChannel);
+    const audioEnabled = body.audio_enabled === true;
+    const subscription = await subscribe(
+      userId,
+      id,
+      deliveryEmail,
+      ['morning'],
+      ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+      deliveryChannel,
+      audioEnabled,
+    );
     return NextResponse.json({ subscription, subscribed: true });
   } catch (error) {
     console.error('[POST /subscribe]', error);
