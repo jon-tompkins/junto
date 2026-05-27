@@ -397,7 +397,7 @@ export default function EditJuntoPage() {
                     </button>
                   </div>
                   <p className="text-xs text-[#F5EFE0]/50">
-                    Paste a public X list URL (e.g. https://x.com/i/lists/1497044363846635523). We&apos;ll scrape members and add them as Twitter sources (capped at the 20-source junto limit).
+                    Paste a public X list URL (e.g. https://x.com/i/lists/1497044363846635523). We only surface members who&apos;ve tweeted recently — inactive accounts won&apos;t appear and can be added manually. Capped at the 20-source junto limit.
                   </p>
                   <div className="flex gap-2">
                     <input

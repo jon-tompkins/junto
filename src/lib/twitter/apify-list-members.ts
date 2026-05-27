@@ -15,9 +15,10 @@ import { recordCost, apifyCostCents } from '../costs';
 const APIFY_BASE_URL = 'https://api.apify.com/v2';
 const APIFY_TWEET_ACTOR_ID = 'kaitoeasyapi~twitter-x-data-tweet-scraper-pay-per-result-cheapest';
 
-// Pull a fairly deep timeline so we see most members at least once. 300 tweets
-// across a 15-50 account list typically surfaces ~80-100% of active members.
-const TWEETS_PER_LIST_SCRAPE = 300;
+// Cap the tweet pull tight: 100 tweets across an active list surfaces every
+// account that's posted in the last day or two, which is what we want anyway.
+// At $0.25/1k that's ~$0.025 per list import.
+const TWEETS_PER_LIST_SCRAPE = 100;
 
 export interface ListMember {
   handle: string;

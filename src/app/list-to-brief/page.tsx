@@ -167,7 +167,7 @@ function ListToBriefInner() {
           X List → Brief
         </h1>
         <p className="text-sm text-[#F5EFE0]/55 mb-8">
-          Paste a public X list URL. We scrape the members, you review them, and we ship a recurring brief on weekday mornings.
+          Paste a public X list URL. We surface members who&apos;ve tweeted recently (inactive accounts won&apos;t appear), you review them, and we ship a recurring brief on weekday mornings.
         </p>
 
         {(stage === 'input' || stage === 'scraping') && (

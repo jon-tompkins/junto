@@ -679,7 +679,7 @@ function CreatePageInner() {
                         </button>
                       </div>
                       <p className="text-[11px] text-[#F5EFE0]/45 mb-2 leading-relaxed">
-                        Paste a public X list URL (e.g. <span className="font-mono">x.com/i/lists/12345…</span>). Scraping can take up to a minute. You&apos;ll be able to review and × any handles before creating.
+                        Paste a public X list URL (e.g. <span className="font-mono">x.com/i/lists/12345…</span>). We only surface members who&apos;ve tweeted recently — inactive accounts on the list won&apos;t appear and can be added manually. You&apos;ll review and × any handles before creating.
                       </p>
                       <div className="flex gap-2">
                         <input

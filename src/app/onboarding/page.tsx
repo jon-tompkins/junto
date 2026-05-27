@@ -397,7 +397,7 @@ export default function OnboardingPage() {
                   {importingList ? 'Importing…' : 'Import'}
                 </button>
               </div>
-              <p className="text-xs text-[#F5EFE0]/45">List import can take up to 60 seconds.</p>
+              <p className="text-xs text-[#F5EFE0]/45">List import can take up to 60 seconds. Only members who&apos;ve tweeted recently will appear — inactive accounts can be added manually.</p>
               {listError && <p className="text-xs text-[#e8453c]">{listError}</p>}
               {listMembers.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-2">
