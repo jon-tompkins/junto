@@ -81,10 +81,21 @@ export async function fetchListMembers(listId: string): Promise<ListMember[]> {
       body: JSON.stringify(input),
     },
   );
-  const runData = await runRes.json();
+  const runText = await runRes.text();
+  if (!runRes.ok) {
+    throw new Error(
+      `Apify start failed (HTTP ${runRes.status}) for actor "${APIFY_LIST_ACTOR_ID}": ${runText.slice(0, 300)}`,
+    );
+  }
+  let runData: any;
+  try {
+    runData = JSON.parse(runText);
+  } catch {
+    throw new Error(`Apify returned non-JSON on run start: ${runText.slice(0, 300)}`);
+  }
   const runId = runData.data?.id;
   if (!runId) {
-    throw new Error(`Failed to start Apify list run: ${JSON.stringify(runData).slice(0, 200)}`);
+    throw new Error(`Failed to start Apify list run: ${JSON.stringify(runData).slice(0, 300)}`);
   }
 
   const items = await pollUntilDone(runId, token);
