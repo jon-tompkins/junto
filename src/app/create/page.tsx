@@ -253,9 +253,15 @@ function CreatePageInner() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ list_url: listInput.trim() }),
       });
-      const data = await res.json();
+      const raw = await res.text();
+      let data: any = {};
+      try { data = raw ? JSON.parse(raw) : {}; }
+      catch {
+        setListImportError(`Server error (HTTP ${res.status}): ${raw.slice(0, 200) || 'no body'}`);
+        return;
+      }
       if (!res.ok) {
-        setListImportError(data.error || 'Failed to scrape list');
+        setListImportError(data.error || `Failed to scrape list (HTTP ${res.status})`);
         return;
       }
       const members: { handle: string; displayName: string | null }[] = data.members || [];
