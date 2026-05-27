@@ -54,11 +54,34 @@ async function loadFeaturedJuntoSources(juntoId: string) {
 
 async function loadWatchlistContext(userId: string) {
   const supabase = getSupabase();
-  const { data: rows } = await supabase
-    .from('user_watchlist')
-    .select('ticker')
-    .eq('user_id', userId);
-  const tickers = (rows || []).map((r: any) => r.ticker.toUpperCase());
+
+  // Prefer the per-dispatch watchlist linked to the user's personal newsletter.
+  // Fall back to legacy user_watchlist for users that haven't been migrated yet.
+  let tickers: string[] = [];
+
+  const { data: personalNl } = await supabase
+    .from('newsletters_v2')
+    .select('watchlist_id')
+    .eq('user_id', userId)
+    .eq('is_personal', true)
+    .maybeSingle();
+
+  if (personalNl?.watchlist_id) {
+    const { data: rows } = await supabase
+      .from('watchlist_tickers')
+      .select('ticker')
+      .eq('watchlist_id', personalNl.watchlist_id);
+    tickers = (rows || []).map((r: any) => r.ticker.toUpperCase());
+  }
+
+  if (tickers.length === 0) {
+    const { data: rows } = await supabase
+      .from('user_watchlist')
+      .select('ticker')
+      .eq('user_id', userId);
+    tickers = (rows || []).map((r: any) => r.ticker.toUpperCase());
+  }
+
   if (tickers.length === 0) return { tickers: [], summaries: [] as any[] };
 
   const { data: summaries } = await supabase

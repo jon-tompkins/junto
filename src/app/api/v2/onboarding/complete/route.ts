@@ -4,7 +4,6 @@ import { authOptions } from '@/lib/auth';
 import { getSupabase } from '@/lib/db/client';
 import { createJunto } from '@/lib/db/juntos';
 import { getOrCreateSource } from '@/lib/db/sources';
-import { addToWatchlist } from '@/lib/db/watchlist';
 
 interface ResolvedUser {
   id: string;
@@ -113,16 +112,7 @@ export async function POST(req: NextRequest) {
     if (typeof body.dispatchTgAudio === 'boolean') updates.dispatch_tg_audio = body.dispatchTgAudio;
     await supabase.from('users').update(updates).eq('id', user.id);
 
-    // ── 3. Watchlist ─────────────────────────────────────────────────
-    for (const ticker of body.tickers || []) {
-      try {
-        await addToWatchlist(user.id, ticker);
-      } catch (err) {
-        console.warn('[onboarding] watchlist add failed', ticker, err);
-      }
-    }
-
-    // ── 4. Personal newsletter (newsletters_v2 with is_personal=true) ─
+    // ── 3. Personal newsletter (newsletters_v2 with is_personal=true) ─
     // Upsert so subsequent edits flow through here too.
     const dispatchName = body.name?.trim()
       || `${user.twitter_handle || user.display_name || 'Your'} Daily Dispatch`;
@@ -131,10 +121,13 @@ export async function POST(req: NextRequest) {
 
     const existingPersonal = await supabase
       .from('newsletters_v2')
-      .select('id')
+      .select('id, watchlist_id')
       .eq('admin_user_id', user.id)
       .eq('is_personal', true)
       .maybeSingle();
+
+    let personalNewsletterId: string | null = existingPersonal.data?.id || null;
+    let watchlistId: string | null = existingPersonal.data?.watchlist_id || null;
 
     if (existingPersonal.data) {
       await supabase
@@ -147,7 +140,7 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', existingPersonal.data.id);
     } else {
-      await supabase.from('newsletters_v2').insert({
+      const inserted = await supabase.from('newsletters_v2').insert({
         name: dispatchName,
         prompt: '',
         admin_user_id: user.id,
@@ -157,7 +150,37 @@ export async function POST(req: NextRequest) {
         junto_id: juntoId,
         send_days: scheduleDays,
         default_send_windows: sendWindows,
-      });
+      }).select('id').single();
+      personalNewsletterId = inserted.data?.id || null;
+    }
+
+    // ── 4. Watchlist (per-dispatch) ─────────────────────────────────
+    const tickers: string[] = (body.tickers || [])
+      .map((t: string) => t.trim().toUpperCase())
+      .filter((t: string) => t.length > 0 && t.length <= 12);
+
+    if (tickers.length > 0 && personalNewsletterId) {
+      if (!watchlistId) {
+        const wl = await supabase
+          .from('watchlists')
+          .insert({ user_id: user.id, name: 'My Watchlist' })
+          .select('id')
+          .single();
+        watchlistId = wl.data?.id || null;
+        if (watchlistId) {
+          await supabase
+            .from('newsletters_v2')
+            .update({ watchlist_id: watchlistId })
+            .eq('id', personalNewsletterId);
+        }
+      }
+      if (watchlistId) {
+        await supabase
+          .from('watchlist_tickers')
+          .upsert(tickers.map((ticker) => ({ watchlist_id: watchlistId, ticker })), {
+            onConflict: 'watchlist_id,ticker',
+          });
+      }
     }
 
     return NextResponse.json({ ok: true, juntoId });

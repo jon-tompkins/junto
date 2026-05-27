@@ -54,6 +54,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       if (tpl) promptTemplate = { id: tpl.id, name: tpl.name, category: tpl.category };
     }
 
+    let tickers: string[] = [];
+    if ((newsletter as any).watchlist_id) {
+      const { data: tRows } = await getSupabase()
+        .from('watchlist_tickers')
+        .select('ticker')
+        .eq('watchlist_id', (newsletter as any).watchlist_id);
+      tickers = (tRows || []).map((r: any) => r.ticker);
+    }
+
     return NextResponse.json({
       newsletter: {
         ...newsletter,
@@ -64,6 +73,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         } : null,
         junto,
         prompt_template: promptTemplate,
+        tickers,
       },
     });
   } catch (error) {
@@ -112,8 +122,50 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       await setNewsletterLabels(id, body.labels);
     }
 
+    // Handle watchlist (tickers) update — per-dispatch watchlist
+    if (Array.isArray(body.tickers)) {
+      const cleanTickers: string[] = body.tickers
+        .map((t: string) => String(t).trim().toUpperCase())
+        .filter((t: string) => t.length > 0 && t.length <= 12);
+      const supabase = getSupabase();
+      let watchlistId: string | null = (newsletter as any).watchlist_id || null;
+      if (!watchlistId && cleanTickers.length > 0) {
+        const wl = await supabase
+          .from('watchlists')
+          .insert({ user_id: userId, name: 'My Watchlist' })
+          .select('id')
+          .single();
+        watchlistId = wl.data?.id || null;
+        if (watchlistId) {
+          await supabase.from('newsletters_v2').update({ watchlist_id: watchlistId }).eq('id', id);
+        }
+      }
+      if (watchlistId) {
+        const { data: existing } = await supabase
+          .from('watchlist_tickers')
+          .select('ticker')
+          .eq('watchlist_id', watchlistId);
+        const have = new Set((existing || []).map((r: any) => r.ticker));
+        const want = new Set(cleanTickers);
+        const toAdd = cleanTickers.filter((t) => !have.has(t));
+        const toRemove = [...have].filter((t) => !want.has(t));
+        if (toAdd.length) {
+          await supabase
+            .from('watchlist_tickers')
+            .insert(toAdd.map((ticker) => ({ watchlist_id: watchlistId, ticker })));
+        }
+        if (toRemove.length) {
+          await supabase
+            .from('watchlist_tickers')
+            .delete()
+            .eq('watchlist_id', watchlistId)
+            .in('ticker', toRemove);
+        }
+      }
+    }
+
     // Update core fields
-    const { labels, add_source, remove_source_id, ...updateFields } = body;
+    const { labels, add_source, remove_source_id, tickers, ...updateFields } = body;
     const updated = await updateNewsletter(id, updateFields);
 
     return NextResponse.json({ newsletter: updated });

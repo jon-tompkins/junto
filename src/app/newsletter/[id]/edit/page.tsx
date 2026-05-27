@@ -67,6 +67,8 @@ export default function EditNewsletterPage() {
   const [isPublic, setIsPublic] = useState(true);
   const [labelsStr, setLabelsStr] = useState('');
   const [sendDays, setSendDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
+  const [tickers, setTickers] = useState<string[]>([]);
+  const [tickerInput, setTickerInput] = useState('');
 
   // Source management
   type SourceType = 'twitter' | 'youtube' | 'newsletter';
@@ -111,6 +113,7 @@ export default function EditNewsletterPage() {
         setIsPublic(nl.is_public);
         setLabelsStr(nl.labels?.join(', ') || '');
         setSendDays(nl.send_days || ['mon', 'tue', 'wed', 'thu', 'fri']);
+        setTickers(nl.tickers || []);
         setSources(nl.sources?.map((s: any) => ({
           id: s.id,
           handle: s.handle_or_url,
@@ -147,6 +150,7 @@ export default function EditNewsletterPage() {
           is_public: isPublic,
           labels,
           send_days: sendDays,
+          tickers,
         }),
       });
 
@@ -388,6 +392,64 @@ export default function EditNewsletterPage() {
               placeholder="crypto, defi, bitcoin"
               className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-3 text-[#F5EFE0] focus:border-[#B08D57] focus:outline-none transition"
             />
+          </div>
+
+          {/* Watchlist */}
+          <div>
+            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">
+              Watchlist
+              <span className="text-[#F5EFE0]/30 font-normal ml-1">(optional — tickers included in the dispatch context)</span>
+            </label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {tickers.map((t) => (
+                <span
+                  key={t}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs bg-[#1c1a17] text-[#F5EFE0]/85 border border-[rgba(176,141,87,0.28)]"
+                >
+                  ${t}
+                  <button
+                    type="button"
+                    onClick={() => setTickers(prev => prev.filter(x => x !== t))}
+                    className="text-[#F5EFE0]/40 hover:text-[#F5EFE0]/90"
+                    aria-label={`Remove ${t}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                value={tickerInput}
+                onChange={e => setTickerInput(e.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ',' || e.key === ' ') {
+                    e.preventDefault();
+                    const t = tickerInput.trim().replace(/^\$/, '').toUpperCase();
+                    if (t && t.length <= 12 && !tickers.includes(t)) {
+                      setTickers([...tickers, t]);
+                    }
+                    setTickerInput('');
+                  }
+                }}
+                placeholder="AAPL, NVDA, BTC…"
+                className="flex-1 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-sm text-[#F5EFE0] focus:border-[#B08D57] focus:outline-none transition"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const t = tickerInput.trim().replace(/^\$/, '').toUpperCase();
+                  if (t && t.length <= 12 && !tickers.includes(t)) {
+                    setTickers([...tickers, t]);
+                  }
+                  setTickerInput('');
+                }}
+                disabled={!tickerInput.trim()}
+                className="px-4 py-2.5 rounded text-sm font-medium bg-[#1c1a17] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/80 hover:bg-[#141210] disabled:opacity-40 transition"
+              >
+                Add
+              </button>
+            </div>
           </div>
 
           {/* Cadence + Visibility */}
