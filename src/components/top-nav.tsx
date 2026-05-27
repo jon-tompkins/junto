@@ -105,6 +105,7 @@ export function TopNav() {
                     {[
                       { href: '/dashboard', label: 'Dashboard', brass: false },
                       { href: '/create', label: 'Create Dispatch', brass: false },
+                      { href: '/list-to-brief', label: 'Quick: List → Brief', brass: false },
                       { href: '/juntos', label: 'My Juntos', brass: false },
                       { href: '/history', label: 'History', brass: false },
                       { href: '/pricing', label: 'Pricing', brass: false },
@@ -202,6 +203,7 @@ export function TopNav() {
               ...(session?.user ? [
                 { href: '/dashboard', label: 'Dashboard' },
                 { href: '/create', label: 'Create Dispatch' },
+                { href: '/list-to-brief', label: 'List → Brief' },
                 { href: '/profile', label: 'Profile' },
                 { href: '/pricing', label: 'Pricing' },
               ] : [

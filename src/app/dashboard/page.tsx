@@ -266,7 +266,7 @@ export default function DashboardPage() {
       }
       if (res.status === 409) {
         const body = await res.json().catch(() => ({}));
-        setStarError(body.error || 'Watchlist limit reached (5).');
+        setStarError(body.error || 'Watchlist limit reached (10).');
         return;
       }
       if (!res.ok) {

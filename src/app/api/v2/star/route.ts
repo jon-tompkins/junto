@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { getSupabase } from '@/lib/db/client';
 import { getUserWatchlist, addToWatchlist, removeFromWatchlist } from '@/lib/db/watchlist';
 
-const WATCHLIST_CAP = 5;
+const WATCHLIST_CAP = 10;
 
 async function isUserPro(userId: string): Promise<boolean> {
   const { data } = await getSupabase().from('users').select('is_pro').eq('id', userId).single();
