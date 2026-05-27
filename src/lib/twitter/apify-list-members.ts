@@ -1,17 +1,23 @@
-// Apify "Twitter list members" scraper wrapper.
-// We use the kaitoeasyapi family that we're already paying for tweets.
-// If kaitoeasyapi doesn't have a list-members actor, swap APIFY_LIST_ACTOR_ID
-// to another actor (e.g. apidojo/twitter-list-scraper) — most accept the same
-// listId input shape.
+// Twitter list-members fetch via the same kaitoeasyapi tweet scraper we already
+// use for tweet pulls ($0.25 per 1k tweets, per-result billing).
 //
-// Result is normalized to { handle, displayName, avatarUrl } so the rest of
-// the import flow doesn't care which actor we used.
+// Strategy: run a search for `list:<id>` and deduplicate authors from the
+// returned tweets. We never get inactive members this way, but for a junto's
+// purposes "accounts that actually tweet" is the right filter anyway. The user
+// can always add inactive accounts manually.
+//
+// The previous implementation used apidojo/twitter-list-scraper, which is a
+// compute-unit actor — a single 15-account list scrape burned through ~$40 of
+// Apify credits on retries because each failed run still incurred CU charges.
 
 import { recordCost, apifyCostCents } from '../costs';
 
 const APIFY_BASE_URL = 'https://api.apify.com/v2';
-const APIFY_LIST_ACTOR_ID =
-  process.env.APIFY_LIST_ACTOR_ID || 'apidojo~twitter-list-scraper';
+const APIFY_TWEET_ACTOR_ID = 'kaitoeasyapi~twitter-x-data-tweet-scraper-pay-per-result-cheapest';
+
+// Pull a fairly deep timeline so we see most members at least once. 300 tweets
+// across a 15-50 account list typically surfaces ~80-100% of active members.
+const TWEETS_PER_LIST_SCRAPE = 300;
 
 export interface ListMember {
   handle: string;
@@ -21,14 +27,12 @@ export interface ListMember {
 
 export function parseListId(input: string): string | null {
   const trimmed = input.trim();
-  // Pure numeric id
   if (/^\d{6,}$/.test(trimmed)) return trimmed;
-  // URL form — x.com/i/lists/<id> or twitter.com/i/lists/<id>
   const match = trimmed.match(/lists\/(\d+)/);
   return match ? match[1] : null;
 }
 
-async function pollUntilDone(runId: string, token: string, maxWaitMs = 270000): Promise<any[]> {
+async function pollUntilDone(runId: string, token: string, maxWaitMs = 240000): Promise<any[]> {
   const start = Date.now();
   while (Date.now() - start < maxWaitMs) {
     const statusRes = await fetch(`${APIFY_BASE_URL}/actor-runs/${runId}?token=${token}`);
@@ -41,17 +45,10 @@ async function pollUntilDone(runId: string, token: string, maxWaitMs = 270000): 
     if (status === 'FAILED' || status === 'ABORTED' || status === 'TIMED-OUT') {
       const exitCode = statusData.data?.exitCode;
       const statusMsg = statusData.data?.statusMessage;
-      let logTail = '';
-      try {
-        const logRes = await fetch(`${APIFY_BASE_URL}/actor-runs/${runId}/log?token=${token}`);
-        const logText = await logRes.text();
-        logTail = logText.split('\n').slice(-12).join(' | ').slice(0, 400);
-      } catch {}
       throw new Error(
         `Apify list run ${status}` +
           (exitCode != null ? ` (exit ${exitCode})` : '') +
-          (statusMsg ? `: ${statusMsg}` : '') +
-          (logTail ? ` — log: ${logTail}` : ''),
+          (statusMsg ? `: ${statusMsg}` : ''),
       );
     }
     await new Promise((r) => setTimeout(r, 2000));
@@ -63,18 +60,13 @@ export async function fetchListMembers(listId: string): Promise<ListMember[]> {
   const token = process.env.APIFY_API_KEY;
   if (!token) throw new Error('APIFY_API_KEY not configured');
 
-  // apidojo/twitter-list-scraper wants startUrls (array of {url}) or listIds (plural).
-  // Send the common shapes so we work across actor variants without code changes.
-  const listUrl = `https://x.com/i/lists/${listId}`;
   const input = {
-    listIds: [listId],
-    startUrls: [{ url: listUrl }],
-    listUrls: [listUrl],
-    listId,
+    searchTerms: [`list:${listId}`],
+    tweetsDesired: TWEETS_PER_LIST_SCRAPE,
   };
 
   const runRes = await fetch(
-    `${APIFY_BASE_URL}/acts/${APIFY_LIST_ACTOR_ID}/runs?token=${token}`,
+    `${APIFY_BASE_URL}/acts/${APIFY_TWEET_ACTOR_ID}/runs?token=${token}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -84,7 +76,7 @@ export async function fetchListMembers(listId: string): Promise<ListMember[]> {
   const runText = await runRes.text();
   if (!runRes.ok) {
     throw new Error(
-      `Apify start failed (HTTP ${runRes.status}) for actor "${APIFY_LIST_ACTOR_ID}": ${runText.slice(0, 300)}`,
+      `Apify start failed (HTTP ${runRes.status}) for actor "${APIFY_TWEET_ACTOR_ID}": ${runText.slice(0, 300)}`,
     );
   }
   let runData: any;
@@ -100,26 +92,26 @@ export async function fetchListMembers(listId: string): Promise<ListMember[]> {
 
   const items = await pollUntilDone(runId, token);
 
-  // Normalize across actor schemas — different actors return slightly different
-  // shapes. We probe the most common field names.
+  // Each item is a tweet from the kaitoeasyapi scraper. Dedup by author.
   const members: ListMember[] = [];
   const seen = new Set<string>();
   for (const it of items as any[]) {
+    if (it?.type === 'mock_tweet') continue;
+    const author = it.author || it.user || {};
     const handle =
+      author.userName ||
+      author.username ||
+      author.screen_name ||
       it.userName ||
-      it.username ||
-      it.screen_name ||
-      it.handle ||
-      it.author?.userName ||
-      it.user?.screen_name;
+      it.username;
     if (!handle) continue;
     const clean = String(handle).replace('@', '').toLowerCase();
     if (seen.has(clean)) continue;
     seen.add(clean);
     members.push({
       handle: clean,
-      displayName: it.name || it.displayName || it.user?.name || null,
-      avatarUrl: it.profileImageUrl || it.profile_image_url || it.avatar || it.user?.profile_image_url || null,
+      displayName: author.name || author.displayName || null,
+      avatarUrl: author.profileImageUrl || author.profile_image_url || author.avatar || null,
     });
   }
 
@@ -128,9 +120,9 @@ export async function fetchListMembers(listId: string): Promise<ListMember[]> {
     operation: 'list_members_scrape',
     cost_cents: apifyCostCents(items.length),
     usage_amount: items.length,
-    usage_unit: 'tweets', // closest existing unit; metadata explains
+    usage_unit: 'tweets',
     external_id: runId,
-    metadata: { list_id: listId, members: members.length, actor: APIFY_LIST_ACTOR_ID },
+    metadata: { list_id: listId, members: members.length, actor: APIFY_TWEET_ACTOR_ID, mode: 'search_list' },
   });
 
   return members;
