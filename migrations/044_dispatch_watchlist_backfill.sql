@@ -10,11 +10,11 @@
 BEGIN;
 
 WITH personal_dispatches AS (
-  SELECT n.id AS newsletter_id, n.user_id
+  SELECT n.id AS newsletter_id, n.admin_user_id AS user_id
   FROM newsletters_v2 n
   WHERE n.is_personal = TRUE
     AND n.watchlist_id IS NULL
-    AND EXISTS (SELECT 1 FROM user_watchlist uw WHERE uw.user_id = n.user_id)
+    AND EXISTS (SELECT 1 FROM user_watchlist uw WHERE uw.user_id = n.admin_user_id)
 ),
 created_watchlists AS (
   INSERT INTO watchlists (user_id, name, description)
@@ -26,10 +26,10 @@ linked AS (
   UPDATE newsletters_v2 n
   SET watchlist_id = cw.id
   FROM created_watchlists cw
-  WHERE n.user_id = cw.user_id
+  WHERE n.admin_user_id = cw.user_id
     AND n.is_personal = TRUE
     AND n.watchlist_id IS NULL
-  RETURNING n.watchlist_id, n.user_id
+  RETURNING n.watchlist_id, n.admin_user_id AS user_id
 )
 INSERT INTO watchlist_tickers (watchlist_id, ticker)
 SELECT l.watchlist_id, uw.ticker

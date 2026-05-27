@@ -62,7 +62,7 @@ async function loadWatchlistContext(userId: string) {
   const { data: personalNl } = await supabase
     .from('newsletters_v2')
     .select('watchlist_id')
-    .eq('user_id', userId)
+    .eq('admin_user_id', userId)
     .eq('is_personal', true)
     .maybeSingle();
 
