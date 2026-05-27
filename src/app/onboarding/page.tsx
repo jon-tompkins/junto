@@ -46,8 +46,8 @@ interface Source {
 
 interface ListMember {
   handle: string;
-  display_name: string | null;
-  avatar_url: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
 }
 
 interface ExistingJunto {
