@@ -39,7 +39,20 @@ async function pollUntilDone(runId: string, token: string, maxWaitMs = 120000): 
       return await resultsRes.json();
     }
     if (status === 'FAILED' || status === 'ABORTED' || status === 'TIMED-OUT') {
-      throw new Error(`Apify list run ${status}`);
+      const exitCode = statusData.data?.exitCode;
+      const statusMsg = statusData.data?.statusMessage;
+      let logTail = '';
+      try {
+        const logRes = await fetch(`${APIFY_BASE_URL}/actor-runs/${runId}/log?token=${token}`);
+        const logText = await logRes.text();
+        logTail = logText.split('\n').slice(-12).join(' | ').slice(0, 400);
+      } catch {}
+      throw new Error(
+        `Apify list run ${status}` +
+          (exitCode != null ? ` (exit ${exitCode})` : '') +
+          (statusMsg ? `: ${statusMsg}` : '') +
+          (logTail ? ` — log: ${logTail}` : ''),
+      );
     }
     await new Promise((r) => setTimeout(r, 2000));
   }
