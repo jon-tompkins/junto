@@ -24,12 +24,14 @@ interface ProUser {
   featured_junto_id: string | null;
   dispatch_tg_text?: boolean;
   dispatch_tg_audio?: boolean;
+  dispatch_audio_enabled?: boolean;
+  dispatch_email?: boolean;
 }
 
 export async function getProUsersForDispatch(): Promise<ProUser[]> {
   const { data, error } = await getSupabase()
     .from('users')
-    .select('id, email, display_name, featured_junto_id, dispatch_tg_text, dispatch_tg_audio')
+    .select('id, email, display_name, featured_junto_id, dispatch_tg_text, dispatch_tg_audio, dispatch_audio_enabled, dispatch_email')
     .eq('is_pro', true)
     .not('featured_junto_id', 'is', null);
   if (error) throw error;
@@ -221,7 +223,7 @@ export async function generatePersonalDispatchForUser(
   });
 
   if (opts.deliver !== false) {
-    if (user.email) {
+    if (user.email && user.dispatch_email !== false) {
       try {
         await sendNewsletter({
           to: user.email,
@@ -236,12 +238,82 @@ export async function generatePersonalDispatchForUser(
       }
     }
 
+    // Audio pipeline — runs whenever the user opted in, independent of Telegram.
+    // Output lands on newsletter_runs.audio_url so the personal RSS feed picks it up.
+    let ttsAudio: Buffer | null = null;
+    if (user.dispatch_audio_enabled !== false && process.env.OPENAI_API_KEY) {
+      try {
+        const { script, usage: scriptUsage } = await dispatchToAudioScript({
+          subject,
+          markdown: content,
+          displayName: user.display_name,
+          dateLabel,
+        });
+
+        if (scriptUsage) {
+          const { anthropicHaikuCostCents } = await import('@/lib/costs');
+          recordCost({
+            supplier: 'anthropic',
+            operation: 'dispatch_audio_script',
+            cost_cents: anthropicHaikuCostCents(scriptUsage.input_tokens, scriptUsage.output_tokens),
+            usage_amount: scriptUsage.input_tokens + scriptUsage.output_tokens,
+            usage_unit: 'tokens',
+            input_tokens: scriptUsage.input_tokens,
+            output_tokens: scriptUsage.output_tokens,
+            user_id: user.id,
+            metadata: { dispatch_id: dispatch.id, dispatch_date: dispatchDate },
+          });
+        }
+
+        const tts = await synthesizeSpeech({ text: script, voice: 'onyx' });
+        ttsAudio = tts.audio;
+
+        recordCost({
+          supplier: 'openai',
+          operation: 'tts_dispatch',
+          cost_cents: openaiTtsCostCents(tts.chars, tts.model === 'tts-1-hd'),
+          usage_amount: tts.chars,
+          usage_unit: 'chars',
+          user_id: user.id,
+          metadata: {
+            dispatch_id: dispatch.id,
+            dispatch_date: dispatchDate,
+            model: tts.model,
+            voice: 'onyx',
+          },
+        });
+
+        const upload = await uploadDispatchAudio({
+          userId: user.id,
+          dispatchDate,
+          mp3: tts.audio,
+        });
+
+        recordCost({
+          supplier: 'supabase',
+          operation: 'audio_storage_write',
+          cost_cents: 0,
+          usage_amount: upload.bytes,
+          usage_unit: 'bytes',
+          user_id: user.id,
+          metadata: { dispatch_id: dispatch.id, path: upload.path },
+        });
+
+        const durationSec = estimateAudioDurationSec(tts.chars);
+        await setDispatchAudio(dispatch.id, {
+          url: upload.publicUrl,
+          bytes: upload.bytes,
+          durationSec,
+          script,
+        });
+      } catch (err) {
+        console.error('[personal-dispatch] audio pipeline failed', user.id, err);
+      }
+    }
+
     const chatId = await getUserTelegramChatId(user.id);
     if (chatId) {
-      const wantText = user.dispatch_tg_text !== false;
-      const wantAudio = user.dispatch_tg_audio !== false;
-
-      if (wantText) {
+      if (user.dispatch_tg_text !== false) {
         try {
           await sendTelegramNewsletter({
             chatId,
@@ -254,81 +326,18 @@ export async function generatePersonalDispatchForUser(
         }
       }
 
-      if (wantAudio && process.env.OPENAI_API_KEY) {
+      if (user.dispatch_tg_audio !== false && ttsAudio) {
         try {
-          const { script, usage: scriptUsage } = await dispatchToAudioScript({
-            subject,
-            markdown: content,
-            displayName: user.display_name,
-            dateLabel,
-          });
-
-          if (scriptUsage) {
-            const { anthropicHaikuCostCents } = await import('@/lib/costs');
-            recordCost({
-              supplier: 'anthropic',
-              operation: 'dispatch_audio_script',
-              cost_cents: anthropicHaikuCostCents(scriptUsage.input_tokens, scriptUsage.output_tokens),
-              usage_amount: scriptUsage.input_tokens + scriptUsage.output_tokens,
-              usage_unit: 'tokens',
-              input_tokens: scriptUsage.input_tokens,
-              output_tokens: scriptUsage.output_tokens,
-              user_id: user.id,
-              metadata: { dispatch_id: dispatch.id, dispatch_date: dispatchDate },
-            });
-          }
-
-          const tts = await synthesizeSpeech({ text: script, voice: 'onyx' });
-
-          recordCost({
-            supplier: 'openai',
-            operation: 'tts_dispatch',
-            cost_cents: openaiTtsCostCents(tts.chars, tts.model === 'tts-1-hd'),
-            usage_amount: tts.chars,
-            usage_unit: 'chars',
-            user_id: user.id,
-            metadata: {
-              dispatch_id: dispatch.id,
-              dispatch_date: dispatchDate,
-              model: tts.model,
-              voice: 'onyx',
-            },
-          });
-
-          const upload = await uploadDispatchAudio({
-            userId: user.id,
-            dispatchDate,
-            mp3: tts.audio,
-          });
-
-          recordCost({
-            supplier: 'supabase',
-            operation: 'audio_storage_write',
-            cost_cents: 0,
-            usage_amount: upload.bytes,
-            usage_unit: 'bytes',
-            user_id: user.id,
-            metadata: { dispatch_id: dispatch.id, path: upload.path },
-          });
-
-          const durationSec = estimateAudioDurationSec(tts.chars);
-          await setDispatchAudio(dispatch.id, {
-            url: upload.publicUrl,
-            bytes: upload.bytes,
-            durationSec,
-            script,
-          });
-
           await sendTelegramAudio({
             chatId,
-            audio: tts.audio,
+            audio: ttsAudio,
             title: subject,
             performer: 'Junto',
             caption: `🎧 <b>${subject}</b>`,
             filename: `junto-${dispatchDate}.mp3`,
           });
         } catch (err) {
-          console.error('[personal-dispatch] audio pipeline failed', user.id, err);
+          console.error('[personal-dispatch] telegram audio send failed', user.id, err);
         }
       }
     }
