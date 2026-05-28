@@ -353,22 +353,68 @@ function ratingClass(r: string | null): string {
 
 function ResearchReports({ ticker }: { ticker: string }) {
   const [reports, setReports] = useState<AilmanackReport[]>([]);
-  const [base, setBase] = useState<string>('https://ailmanack.com');
+  const [base, setBase] = useState<string>('https://www.ailmanack.com');
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [genMessage, setGenMessage] = useState<string | null>(null);
+  const [genError, setGenError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch(`/api/ailmanack/reports?ticker=${encodeURIComponent(ticker)}`)
+  function load() {
+    return fetch(`/api/ailmanack/reports?ticker=${encodeURIComponent(ticker)}`)
       .then((r) => r.json())
       .then((d) => {
         setReports(d.reports || []);
         if (d.base) setBase(d.base);
       })
-      .catch(() => setReports([]))
-      .finally(() => setLoading(false));
+      .catch(() => setReports([]));
+  }
+
+  useEffect(() => {
+    load().finally(() => setLoading(false));
   }, [ticker]);
 
+  // While a generation is in flight, poll the reports list every 30s so the
+  // new row appears as soon as Ailmanack's cron finishes.
+  useEffect(() => {
+    if (!generating) return;
+    const initialCount = reports.length;
+    const t = setInterval(async () => {
+      await load();
+      if (reports.length > initialCount) {
+        setGenerating(false);
+        setGenMessage('Report ready.');
+      }
+    }, 30_000);
+    const stop = setTimeout(() => setGenerating(false), 15 * 60_000);
+    return () => { clearInterval(t); clearTimeout(stop); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generating]);
+
+  async function handleGenerate() {
+    if (generating) return;
+    setGenError(null);
+    setGenMessage(null);
+    setGenerating(true);
+    try {
+      const res = await fetch('/api/research/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        setGenerating(false);
+        setGenError(body.error || 'Failed to queue report');
+        return;
+      }
+      setGenMessage(body.message || 'Report queued.');
+    } catch {
+      setGenerating(false);
+      setGenError('Network error');
+    }
+  }
+
   const reportPath = (r: AilmanackReport) => `${base}/research/${r.slug || r.id}`;
-  const generateUrl = `${base}/research?ticker=${encodeURIComponent(ticker)}`;
 
   return (
     <section className="mb-8">
@@ -376,16 +422,21 @@ function ResearchReports({ ticker }: { ticker: string }) {
         <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
           Research Reports
         </h2>
-        <a
-          href={generateUrl}
-          target="_blank"
-          rel="noopener"
-          className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded border border-[#B08D57] text-[#B08D57] hover:bg-[#B08D57] hover:text-[#080604] transition font-[var(--font-oswald)] uppercase tracking-wide"
+        <button
+          onClick={handleGenerate}
+          disabled={generating}
+          className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded border border-[#B08D57] text-[#B08D57] hover:bg-[#B08D57] hover:text-[#080604] disabled:opacity-50 disabled:cursor-wait transition font-[var(--font-oswald)] uppercase tracking-wide"
         >
-          + Generate Report
-          <span className="text-[10px] opacity-70 font-mono">5 credits</span>
-        </a>
+          {generating ? 'Generating…' : '+ Generate Report'}
+          {!generating && <span className="text-[10px] opacity-70 font-mono">5 credits</span>}
+        </button>
       </div>
+
+      {(genMessage || genError) && (
+        <p className={`text-xs mb-3 ${genError ? 'text-[#e8453c]' : 'text-[#F5EFE0]/60'}`}>
+          {genError || genMessage}
+        </p>
+      )}
 
       {loading ? (
         <div className="h-16 bg-[#141210] rounded animate-pulse" />
