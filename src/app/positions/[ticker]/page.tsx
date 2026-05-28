@@ -320,6 +320,7 @@ interface AilmanackReport {
   rating: string | null;
   type: string | null;
   date: string;
+  report_price: number | null;
 }
 
 const RATING_COLORS: Record<string, string> = {
@@ -386,6 +387,7 @@ function ResearchReports({ ticker }: { ticker: string }) {
             <thead>
               <tr className="border-b border-[rgba(176,141,87,0.28)] text-[10px] uppercase tracking-wider text-[#F5EFE0]/30 font-[var(--font-oswald)]">
                 <th className="py-2 px-4 text-left">Date</th>
+                <th className="py-2 px-4 text-right">Price</th>
                 <th className="py-2 px-4 text-left">Trade</th>
                 <th className="py-2 px-4 text-left">Title</th>
                 <th className="py-2 px-4 text-right" />
@@ -396,6 +398,13 @@ function ResearchReports({ ticker }: { ticker: string }) {
                 <tr key={r.id} className="border-b border-[rgba(176,141,87,0.1)] last:border-0 hover:bg-[#1c1a17] transition">
                   <td className="py-2 px-4 font-mono text-xs text-[#F5EFE0]/60 whitespace-nowrap">
                     {new Date(r.date).toLocaleDateString()}
+                  </td>
+                  <td className="py-2 px-4 font-mono text-xs text-right whitespace-nowrap">
+                    {r.report_price != null ? (
+                      <span className="text-[#F5EFE0]/80">${r.report_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    ) : (
+                      <span className="text-[#F5EFE0]/30">—</span>
+                    )}
                   </td>
                   <td className="py-2 px-4">
                     {r.rating ? (
