@@ -51,9 +51,14 @@ export async function GET() {
     let watchlistId = await getFeaturedWatchlistId(user.id);
 
     if (!watchlistId) {
-      const label = user.handle ? `${user.handle}'s Watchlist` : 'My Watchlist';
-      const wl = await createWatchlist(user.id, label, 'Your tickers to track.');
-      watchlistId = wl.id;
+      const existing = await getUserWatchlists(user.id);
+      if (existing.length > 0) {
+        watchlistId = existing[0].id;
+      } else {
+        const label = user.handle ? `${user.handle}'s Watchlist` : 'My Watchlist';
+        const wl = await createWatchlist(user.id, label, 'Your tickers to track.');
+        watchlistId = wl.id;
+      }
       await supabase
         .from('users')
         .update({ featured_watchlist_id: watchlistId })
