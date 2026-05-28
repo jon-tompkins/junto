@@ -50,6 +50,7 @@ export function TopNav() {
           { href: '/sources', label: 'Sources' },
           { href: '/positions', label: 'Positions' },
           ...(session?.user ? [{ href: '/theses', label: 'Theses' }] : []),
+          { href: '/flows', label: 'Flows' },
           { href: '/docs', label: 'Docs' },
         ].map(({ href, label }) => (
           <Link
@@ -200,6 +201,7 @@ export function TopNav() {
               { href: '/sources', label: 'Sources' },
               { href: '/positions', label: 'Positions' },
               ...(session?.user ? [{ href: '/theses', label: 'Theses' }] : []),
+              { href: '/flows', label: 'Flows' },
               { href: '/docs', label: 'Docs' },
               ...(session?.user ? [
                 { href: '/dashboard', label: 'Dashboard' },
