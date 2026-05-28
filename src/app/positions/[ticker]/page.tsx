@@ -311,6 +311,124 @@ function SocialPulse({ ticker }: { ticker: string }) {
   );
 }
 
+interface AilmanackReport {
+  id: string;
+  slug: string | null;
+  title: string;
+  ticker: string;
+  summary: string | null;
+  rating: string | null;
+  type: string | null;
+  date: string;
+}
+
+const RATING_COLORS: Record<string, string> = {
+  'strong buy': 'text-[#3ecf6a] border-[#3ecf6a]/40 bg-[#3ecf6a]/10',
+  'buy': 'text-[#3ecf6a] border-[#3ecf6a]/30 bg-[#3ecf6a]/5',
+  'hold': 'text-[#F5EFE0]/60 border-[rgba(176,141,87,0.28)] bg-[#1c1a17]',
+  'sell': 'text-[#e8453c] border-[#e8453c]/30 bg-[#e8453c]/5',
+  'strong sell': 'text-[#e8453c] border-[#e8453c]/40 bg-[#e8453c]/10',
+};
+
+function ratingClass(r: string | null): string {
+  const key = (r || '').toLowerCase().trim();
+  return RATING_COLORS[key] || 'text-[#F5EFE0]/60 border-[rgba(176,141,87,0.28)] bg-[#1c1a17]';
+}
+
+function ResearchReports({ ticker }: { ticker: string }) {
+  const [reports, setReports] = useState<AilmanackReport[]>([]);
+  const [base, setBase] = useState<string>('https://ailmanack.com');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/ailmanack/reports?ticker=${encodeURIComponent(ticker)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        setReports(d.reports || []);
+        if (d.base) setBase(d.base);
+      })
+      .catch(() => setReports([]))
+      .finally(() => setLoading(false));
+  }, [ticker]);
+
+  const reportPath = (r: AilmanackReport) => `${base}/research/${r.slug || r.id}`;
+  const generateUrl = `${base}/research?ticker=${encodeURIComponent(ticker)}`;
+
+  return (
+    <section className="mb-8">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
+          Research Reports
+        </h2>
+        <a
+          href={generateUrl}
+          target="_blank"
+          rel="noopener"
+          className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded border border-[#B08D57] text-[#B08D57] hover:bg-[#B08D57] hover:text-[#080604] transition font-[var(--font-oswald)] uppercase tracking-wide"
+        >
+          + Generate Report
+          <span className="text-[10px] opacity-70 font-mono">5 credits</span>
+        </a>
+      </div>
+
+      {loading ? (
+        <div className="h-16 bg-[#141210] rounded animate-pulse" />
+      ) : reports.length === 0 ? (
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 text-sm text-[#F5EFE0]/45">
+          No public research reports for {ticker} yet. Generate one on{' '}
+          <a href={base} target="_blank" rel="noopener" className="text-[#B08D57] hover:underline">
+            Ailmanack
+          </a>.
+        </div>
+      ) : (
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[rgba(176,141,87,0.28)] text-[10px] uppercase tracking-wider text-[#F5EFE0]/30 font-[var(--font-oswald)]">
+                <th className="py-2 px-4 text-left">Date</th>
+                <th className="py-2 px-4 text-left">Trade</th>
+                <th className="py-2 px-4 text-left">Title</th>
+                <th className="py-2 px-4 text-right" />
+              </tr>
+            </thead>
+            <tbody>
+              {reports.map((r) => (
+                <tr key={r.id} className="border-b border-[rgba(176,141,87,0.1)] last:border-0 hover:bg-[#1c1a17] transition">
+                  <td className="py-2 px-4 font-mono text-xs text-[#F5EFE0]/60 whitespace-nowrap">
+                    {new Date(r.date).toLocaleDateString()}
+                  </td>
+                  <td className="py-2 px-4">
+                    {r.rating ? (
+                      <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-sm border ${ratingClass(r.rating)}`}>
+                        {r.rating}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-[#F5EFE0]/30">—</span>
+                    )}
+                  </td>
+                  <td className="py-2 px-4 text-[#F5EFE0]/80 truncate max-w-[280px]">
+                    {r.title}
+                  </td>
+                  <td className="py-2 px-4 text-right">
+                    <a
+                      href={reportPath(r)}
+                      target="_blank"
+                      rel="noopener"
+                      className="text-xs text-[#B08D57] hover:underline whitespace-nowrap"
+                    >
+                      View →
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function PositionPage() {
   const params = useParams();
   const ticker = decodeURIComponent(params.ticker as string).toUpperCase();
@@ -475,6 +593,9 @@ export default function PositionPage() {
 
                 {/* Social Pulse (Pro + on watchlist) */}
                 {starred && session?.user && <SocialPulse ticker={ticker} />}
+
+                {/* Research reports — equities only */}
+                {!CRYPTO_TICKERS.has(ticker) && <ResearchReports ticker={ticker} />}
 
                 {/* Sources */}
                 <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide mb-3 font-[var(--font-oswald)]">
