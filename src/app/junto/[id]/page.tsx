@@ -327,9 +327,12 @@ export default function JuntoViewPage() {
               {isOwner && (
                 <Link
                   href={`/junto/${junto.id}/edit`}
-                  className="text-[#F5EFE0]/60 hover:text-[#F5EFE0] text-sm border border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.5)] rounded px-3 py-2 transition"
+                  className="inline-flex items-center gap-2 text-[#B08D57] hover:text-[#080604] hover:bg-[#B08D57] text-sm border border-[#B08D57] rounded px-4 py-2 font-[var(--font-oswald)] uppercase tracking-wide transition"
                 >
-                  Edit
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit Junto
                 </Link>
               )}
               <Link
