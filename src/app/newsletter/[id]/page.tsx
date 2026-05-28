@@ -33,6 +33,9 @@ interface NewsletterDetail {
   send_days?: string[] | null;
   default_send_windows?: string[] | null;
   audio_enabled?: boolean;
+  tickers?: string[];
+  watchlist?: { id: string; name: string } | null;
+  secondary_prompt?: string | null;
 }
 
 const CADENCE_LABELS: Record<string, string> = {
@@ -381,24 +384,50 @@ export default function NewsletterDetailPage() {
           )}
         </div>
 
+        {/* Sources — at the top with junto badge */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-[#F5EFE0]/45 uppercase tracking-wider font-[var(--font-oswald)]">
+              Sources ({newsletter.sources.length})
+            </h2>
+            {newsletter.junto ? (
+              <Link
+                href={`/junto/${newsletter.junto.id}`}
+                className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-sm bg-[#1c1a17] text-[#B08D57] hover:bg-[#1c1a17]/70 border border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)] uppercase tracking-wide"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                Junto: {newsletter.junto.name}
+              </Link>
+            ) : (
+              <span className="text-xs text-[#F5EFE0]/40">Not in a junto</span>
+            )}
+          </div>
+          {newsletter.sources.length === 0 ? (
+            <p className="text-sm text-[#F5EFE0]/45">No sources yet.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {newsletter.sources.map((src) => (
+                <Link
+                  key={src.id}
+                  href={`/sources/${src.handle_or_url}`}
+                  className="flex items-center gap-2 bg-[#141210] hover:bg-[#1c1a17] px-3 py-2 rounded text-sm border border-[rgba(176,141,87,0.18)] hover:border-[rgba(176,141,87,0.28)] transition"
+                >
+                  <div className="w-6 h-6 rounded bg-[#1c1a17] flex items-center justify-center text-xs text-[#F5EFE0]/60 font-bold shrink-0">
+                    {(src.display_name || src.handle_or_url).charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-[#F5EFE0]/80">@{src.handle_or_url}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Configuration */}
         <div className="mb-8 rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
           <table className="w-full">
             <tbody>
               <tr className="border-b border-[rgba(176,141,87,0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210] w-48">Junto</th>
-                <td className="px-4 py-3 text-sm bg-[#0e0c0a]">
-                  {newsletter.junto ? (
-                    <Link href={`/junto/${newsletter.junto.id}`} className="text-[#B08D57] hover:text-[#B08D57]/80 font-medium font-[var(--font-oswald)] uppercase tracking-wide">
-                      {newsletter.junto.name}
-                    </Link>
-                  ) : (
-                    <span className="text-[#F5EFE0]/40">No connected junto</span>
-                  )}
-                </td>
-              </tr>
-              <tr className="border-b border-[rgba(176,141,87,0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210]">Prompt</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210] w-48">Prompt</th>
                 <td className="px-4 py-3 text-sm bg-[#0e0c0a]">
                   {newsletter.prompt_template ? (
                     <div className="flex items-center gap-2">
@@ -437,7 +466,7 @@ export default function NewsletterDetailPage() {
                   </div>
                 </td>
               </tr>
-              <tr>
+              <tr className="border-b border-[rgba(176,141,87,0.18)]">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210]">Send days</th>
                 <td className="px-4 py-3 text-sm bg-[#0e0c0a]">
                   <div className="flex flex-wrap gap-1">
@@ -452,33 +481,42 @@ export default function NewsletterDetailPage() {
                   </div>
                 </td>
               </tr>
+              <tr className="border-b border-[rgba(176,141,87,0.18)]">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210]">Watchlist</th>
+                <td className="px-4 py-3 text-sm bg-[#0e0c0a]">
+                  {newsletter.tickers && newsletter.tickers.length > 0 ? (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {newsletter.watchlist && (
+                        <Link
+                          href={`/watchlists/${newsletter.watchlist.id}`}
+                          className="text-xs text-[#B08D57] hover:text-[#B08D57]/80 font-medium mr-1"
+                        >
+                          {newsletter.watchlist.name} →
+                        </Link>
+                      )}
+                      {newsletter.tickers.map((t) => (
+                        <span key={t} className="text-[11px] font-mono px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/80 border border-[rgba(176,141,87,0.18)]">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-[#F5EFE0]/40">No watchlist</span>
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210]">Voice memo</th>
+                <td className="px-4 py-3 text-sm bg-[#0e0c0a]">
+                  {newsletter.audio_enabled ? (
+                    <span className="text-[#F5EFE0]/80">🎧 Enabled · subscribers can opt in for +2 credits</span>
+                  ) : (
+                    <span className="text-[#F5EFE0]/40">Not enabled</span>
+                  )}
+                </td>
+              </tr>
             </tbody>
           </table>
-        </div>
-
-        {/* Sources */}
-        <div className="mb-8">
-          <h2 className="text-sm font-semibold mb-3 text-[#F5EFE0]/45 uppercase tracking-wider font-[var(--font-oswald)]">
-            Sources ({newsletter.sources.length})
-          </h2>
-          {newsletter.sources.length === 0 ? (
-            <p className="text-sm text-[#F5EFE0]/45">No sources yet.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {newsletter.sources.map((src) => (
-                <Link
-                  key={src.id}
-                  href={`/sources/${src.handle_or_url}`}
-                  className="flex items-center gap-2 bg-[#141210] hover:bg-[#1c1a17] px-3 py-2 rounded text-sm border border-[rgba(176,141,87,0.18)] hover:border-[rgba(176,141,87,0.28)] transition"
-                >
-                  <div className="w-6 h-6 rounded bg-[#1c1a17] flex items-center justify-center text-xs text-[#F5EFE0]/60 font-bold shrink-0">
-                    {(src.display_name || src.handle_or_url).charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-[#F5EFE0]/80">@{src.handle_or_url}</span>
-                </Link>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Latest Run — full content */}

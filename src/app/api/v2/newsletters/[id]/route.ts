@@ -55,12 +55,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     let tickers: string[] = [];
+    let watchlist: { id: string; name: string } | null = null;
     if ((newsletter as any).watchlist_id) {
-      const { data: tRows } = await getSupabase()
-        .from('watchlist_tickers')
-        .select('ticker')
-        .eq('watchlist_id', (newsletter as any).watchlist_id);
+      const wlId = (newsletter as any).watchlist_id;
+      const supabase = getSupabase();
+      const [{ data: tRows }, { data: wlRow }] = await Promise.all([
+        supabase.from('watchlist_tickers').select('ticker').eq('watchlist_id', wlId),
+        supabase.from('watchlists').select('id, name').eq('id', wlId).maybeSingle(),
+      ]);
       tickers = (tRows || []).map((r: any) => r.ticker);
+      if (wlRow) watchlist = { id: wlRow.id, name: wlRow.name };
     }
 
     return NextResponse.json({
@@ -74,6 +78,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         junto,
         prompt_template: promptTemplate,
         tickers,
+        watchlist,
       },
     });
   } catch (error) {
