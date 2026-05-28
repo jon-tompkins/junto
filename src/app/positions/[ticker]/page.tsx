@@ -38,6 +38,13 @@ const STANCE_BAR: Record<string, string> = {
   neutral: 'bg-[#F5EFE0]/30',
 };
 
+const STANCE_BAR_COLOR: Record<string, string> = {
+  bullish: '#3ecf6a',
+  bearish: '#e8453c',
+  cautious: '#d97706',
+  neutral: 'rgba(245,239,224,0.6)',
+};
+
 const STANCES = ['bullish', 'cautious', 'neutral', 'bearish'] as const;
 
 // Known crypto tickers → map to TradingView COINBASE symbols
@@ -201,20 +208,27 @@ function SocialPulse({ ticker }: { ticker: string }) {
       .catch(() => setReport(null));
   }, [openId, ticker, reports]);
 
+  const [collapsed, setCollapsed] = useState(true);
+
   if (status === 'gated') return null;
   if (status === 'error') return null;
 
   return (
     <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-8">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
+      <button
+        onClick={() => setCollapsed((c) => !c)}
+        className={`w-full flex items-center justify-between ${collapsed ? '' : 'mb-4'} text-left`}
+      >
+        <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] flex items-center gap-2">
+          <span className="text-[#F5EFE0]/45 text-[10px]">{collapsed ? '▸' : '▾'}</span>
           Social Pulse
         </h2>
         <span className="text-[10px] uppercase tracking-wide text-[#B08D57]/70 font-[var(--font-oswald)]">
           Pro · ${ticker}
         </span>
-      </div>
+      </button>
 
+      {!collapsed && <>
       {status === 'loading' && (
         <p className="text-sm text-[#F5EFE0]/45">Loading social pulse…</p>
       )}
@@ -307,6 +321,7 @@ function SocialPulse({ ticker }: { ticker: string }) {
           )}
         </>
       )}
+      </>}
     </div>
   );
 }
@@ -551,9 +566,43 @@ export default function PositionPage() {
                 )}
               </div>
               {total > 0 && (
-                <p className="text-[#F5EFE0]/60 text-sm">
-                  {total} source{total !== 1 ? 's' : ''} tracking this position
-                </p>
+                <div className="flex items-center gap-3 flex-wrap text-sm">
+                  <div className="flex -space-x-2">
+                    {analysts.slice(0, 8).map((a) => (
+                      a.avatar_url ? (
+                        <img
+                          key={a.source_id}
+                          src={a.avatar_url}
+                          alt={a.handle}
+                          title={`@${a.handle} · ${a.stance}`}
+                          className="w-7 h-7 rounded-full bg-[#1c1a17] object-cover border-2 border-[#080604]"
+                        />
+                      ) : (
+                        <div
+                          key={a.source_id}
+                          title={`@${a.handle} · ${a.stance}`}
+                          className="w-7 h-7 rounded-full bg-[#1c1a17] flex items-center justify-center text-[10px] font-medium text-[#F5EFE0]/70 border-2 border-[#080604]"
+                        >
+                          {a.handle[0]?.toUpperCase()}
+                        </div>
+                      )
+                    ))}
+                    {analysts.length > 8 && (
+                      <div className="w-7 h-7 rounded-full bg-[#1c1a17] flex items-center justify-center text-[10px] text-[#F5EFE0]/60 border-2 border-[#080604]">
+                        +{analysts.length - 8}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[#F5EFE0]/70">
+                    {STANCES.filter((s) => (breakdown[s] ?? 0) > 0).map((s, i, arr) => (
+                      <span key={s}>
+                        <span className="font-mono font-semibold" style={{ color: STANCE_BAR_COLOR[s] }}>{breakdown[s]}</span>
+                        <span className="ml-1 capitalize" style={{ color: STANCE_BAR_COLOR[s] }}>{s}</span>
+                        {i < arr.length - 1 && <span className="text-[#F5EFE0]/30 mx-1.5">·</span>}
+                      </span>
+                    ))}
+                  </p>
+                </div>
               )}
               {starError && (
                 <p className="text-[#e8453c] text-xs mt-2">{starError}</p>
@@ -570,36 +619,6 @@ export default function PositionPage() {
               </div>
             ) : (
               <>
-                {/* Aggregate breakdown */}
-                <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-8">
-                  <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide mb-4 font-[var(--font-oswald)]">
-                    Sentiment Breakdown
-                  </h2>
-                  <div className="space-y-3">
-                    {STANCES.filter((s) => (breakdown[s] ?? 0) > 0).map((s) => (
-                      <div key={s} className="flex items-center gap-3">
-                        <div className="w-16 text-right">
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-sm capitalize ${STANCE_COLORS[s]}`}>
-                            {s}
-                          </span>
-                        </div>
-                        <div className="flex-1 bg-[#080604] rounded h-2 overflow-hidden">
-                          <div
-                            className={`h-full rounded ${STANCE_BAR[s]} transition-all duration-500`}
-                            style={{ width: `${Math.round(((breakdown[s] ?? 0) / total) * 100)}%` }}
-                          />
-                        </div>
-                        <div className="w-16 flex items-center gap-1 text-xs text-[#F5EFE0]/60">
-                          <span className="font-mono">{breakdown[s]}</span>
-                          <span className="text-[#F5EFE0]/30">
-                            ({Math.round(((breakdown[s] ?? 0) / total) * 100)}%)
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Social Pulse (Pro + on watchlist) */}
                 {starred && session?.user && <SocialPulse ticker={ticker} />}
 
