@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { TopNav } from '@/components/top-nav';
@@ -52,6 +52,19 @@ export default function PositionsPage() {
   const [juntoId, setJuntoId] = useState<string>('');
   const [includeStale, setIncludeStale] = useState(false);
   const [search, setSearch] = useState('');
+
+  const heatmapRef = useRef<HTMLDivElement>(null);
+  const [heatmapWidth, setHeatmapWidth] = useState(1000);
+  const heatmapHeight = 720;
+
+  useEffect(() => {
+    if (!heatmapRef.current) return;
+    const el = heatmapRef.current;
+    const ro = new ResizeObserver(() => setHeatmapWidth(el.clientWidth));
+    ro.observe(el);
+    setHeatmapWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, [view]);
 
   useEffect(() => {
     if (!session?.user) return;
@@ -136,6 +149,16 @@ export default function PositionsPage() {
 
   // For heatmap: always sort by count desc so big tiles come first
   const heatmapItems = [...filtered].sort((a, b) => effectiveCount(b) - effectiveCount(a));
+
+  const heatmapLayout = useMemo(
+    () =>
+      squarifiedTreemap(
+        heatmapItems.map((i) => ({ value: effectiveCount(i), data: i })),
+        heatmapWidth,
+        heatmapHeight,
+      ),
+    [heatmapItems, heatmapWidth, heatmapHeight],
+  );
 
   // For table: user-controlled sort
   const tableItems = [...filtered].sort((a, b) => {
@@ -300,97 +323,100 @@ export default function PositionsPage() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 text-[#F5EFE0]/40">No positions yet.</div>
         ) : view === 'heatmap' ? (
-          // ─── Heatmap ───────────────────────────────────────────────
-          <div className="flex flex-wrap gap-2 items-start content-start">
-            {heatmapItems.map((item) => {
+          // ─── Heatmap (squarified treemap) ──────────────────────────
+          <div
+            ref={heatmapRef}
+            className="relative w-full bg-[#0a0907] border border-[rgba(176,141,87,0.18)] rounded overflow-hidden"
+            style={{ height: `${heatmapHeight}px` }}
+          >
+            {heatmapLayout.map(({ x, y, w, h, data: item }) => {
               const shownCount = effectiveCount(item);
-              const ratio = shownCount / maxCount;
-              // Tile size: min 80px, max 220px — area proportional to count
-              const size = Math.round(80 + ratio * 140);
               const bg = STANCE_BG[item.stance] ?? '#4b5563';
-              const alpha = 0.12 + ratio * 0.25; // subtle fill, stronger for bigger tiles
+              const ratio = shownCount / maxCount;
+              const alpha = 0.18 + ratio * 0.45;
+              const tileArea = w * h;
+              const showLabel = w >= 40 && h >= 28;
+              const showStance = w >= 70 && h >= 60;
+              const showAvatars = w >= 90 && h >= 80;
+              const fontSize = Math.max(
+                10,
+                Math.min(Math.floor(Math.sqrt(tileArea) / 5), 56),
+              );
+              const visibleSources = includeStale ? item.sources : item.sources.filter((s) => !s.is_stale);
+              const avatarSize = Math.max(14, Math.min(Math.floor(Math.sqrt(tileArea) / 12), 28));
 
               return (
                 <Link
                   key={`${item.ticker}-${item.stance}`}
                   href={`/positions/${encodeURIComponent(item.ticker)}`}
-                  className="rounded flex flex-col items-center justify-center gap-1 transition hover:scale-105 active:scale-100 relative overflow-hidden shrink-0"
+                  className="absolute flex flex-col items-center justify-center overflow-hidden transition group"
                   style={{
-                    width: `${size}px`,
-                    height: `${size}px`,
+                    left: `${x}px`,
+                    top: `${y}px`,
+                    width: `${w}px`,
+                    height: `${h}px`,
                     background: `rgba(${hexToRgb(bg)}, ${alpha})`,
-                    border: `1px solid ${bg}55`,
+                    boxShadow: 'inset 0 0 0 1px rgba(8,6,4,0.6)',
                   }}
                   title={`${item.ticker} · ${STANCE_LABEL[item.stance] ?? item.stance} · ${shownCount} source${shownCount !== 1 ? 's' : ''}${!includeStale && item.count > shownCount ? ` (+${item.count - shownCount} stale)` : ''}`}
                 >
-                  {session?.user && (
+                  <span
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition pointer-events-none"
+                    style={{ boxShadow: `inset 0 0 0 2px ${bg}` }}
+                  />
+                  {session?.user && w >= 50 && h >= 40 && (
                     <button
                       onClick={(e) => toggleStar(e, item.ticker)}
                       className="absolute top-1 right-1.5 text-xs leading-none transition z-10"
-                      style={{ color: starredTickers.has(item.ticker) ? '#B08D57' : 'rgba(245,239,224,0.2)' }}
+                      style={{ color: starredTickers.has(item.ticker) ? '#B08D57' : 'rgba(245,239,224,0.25)' }}
                       title={starredTickers.has(item.ticker) ? 'Unstar' : 'Star'}
                     >
                       {starredTickers.has(item.ticker) ? '★' : '☆'}
                     </button>
                   )}
-                  <span
-                    className="font-bold font-mono text-center px-2 w-full"
-                    style={{
-                      // Cap font so 3 rows fit within ~55% of tile height (rest = stance + avatars)
-                      fontSize: `${Math.min(Math.round(13 + ratio * 14), Math.floor(size * 0.55 / (3 * 1.25)))}px`,
-                      color: '#F5EFE0',
-                      lineHeight: 1.25,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 3,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    {item.ticker}
-                  </span>
-                  <span
-                    className="font-medium uppercase tracking-wider leading-none"
-                    style={{ fontSize: `${Math.round(7 + ratio * 3)}px`, color: bg }}
-                  >
-                    {STANCE_LABEL[item.stance] ?? item.stance}
-                  </span>
-                  <div className="flex items-center" style={{ gap: size > 120 ? '-6px' : '-4px' }}>
-                    {(includeStale ? item.sources : item.sources.filter((s) => !s.is_stale)).slice(0, size > 100 ? 4 : 2).map((s, i) => (
-                      <div
-                        key={s.handle}
-                        className="rounded-full border-2 overflow-hidden shrink-0"
-                        style={{
-                          width: `${Math.round(14 + ratio * 8)}px`,
-                          height: `${Math.round(14 + ratio * 8)}px`,
-                          borderColor: '#080604',
-                          marginLeft: i > 0 ? `${-Math.round(5 + ratio * 3)}px` : 0,
-                          background: '#1c1a17',
-                          zIndex: 10 - i,
-                          position: 'relative',
-                        }}
-                      >
-                        {s.avatar_url ? (
-                          <img src={s.avatar_url} alt={s.handle} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[#F5EFE0]/60" style={{ fontSize: '8px' }}>
-                            {s.handle[0]?.toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {shownCount > (size > 100 ? 4 : 2) && (
-                      <span
-                        style={{
-                          fontSize: `${Math.round(8 + ratio * 3)}px`,
-                          color: 'rgba(245,239,224,0.4)',
-                          marginLeft: '3px',
-                        }}
-                      >
-                        +{shownCount - (size > 100 ? 4 : 2)}
-                      </span>
-                    )}
-                  </div>
+                  {showLabel && (
+                    <span
+                      className="font-bold font-mono text-center leading-tight px-1"
+                      style={{ fontSize: `${fontSize}px`, color: '#F5EFE0' }}
+                    >
+                      {item.ticker}
+                    </span>
+                  )}
+                  {showStance && (
+                    <span
+                      className="font-medium uppercase tracking-wider leading-none mt-1"
+                      style={{ fontSize: `${Math.max(8, Math.floor(fontSize * 0.4))}px`, color: bg }}
+                    >
+                      {STANCE_LABEL[item.stance] ?? item.stance} · {shownCount}
+                    </span>
+                  )}
+                  {showAvatars && visibleSources.length > 0 && (
+                    <div className="flex items-center mt-1.5" style={{ marginLeft: 4 }}>
+                      {visibleSources.slice(0, w > 160 ? 4 : 2).map((s, i) => (
+                        <div
+                          key={s.handle}
+                          className="rounded-full border-2 overflow-hidden shrink-0"
+                          style={{
+                            width: `${avatarSize}px`,
+                            height: `${avatarSize}px`,
+                            borderColor: '#080604',
+                            marginLeft: i > 0 ? `-${Math.floor(avatarSize / 3)}px` : 0,
+                            background: '#1c1a17',
+                            position: 'relative',
+                            zIndex: 10 - i,
+                          }}
+                        >
+                          {s.avatar_url ? (
+                            <img src={s.avatar_url} alt={s.handle} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[#F5EFE0]/60" style={{ fontSize: '8px' }}>
+                              {s.handle[0]?.toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </Link>
               );
             })}
@@ -524,4 +550,74 @@ function hexToRgb(hex: string): string {
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `${r},${g},${b}`;
+}
+
+// ─── Squarified treemap ──────────────────────────────────
+// Standard squarified-treemap layout (Bruls, Huijsen, van Wijk 2000).
+// Tile area is proportional to value; rows are oriented along the shorter side
+// to keep tile aspect ratios near 1.
+interface TreemapTile<T> { x: number; y: number; w: number; h: number; data: T }
+
+function squarifiedTreemap<T>(items: { value: number; data: T }[], width: number, height: number): TreemapTile<T>[] {
+  if (items.length === 0 || width <= 0 || height <= 0) return [];
+  const sorted = [...items].filter((i) => i.value > 0).sort((a, b) => b.value - a.value);
+  const total = sorted.reduce((s, i) => s + i.value, 0);
+  if (total === 0) return [];
+  const scale = (width * height) / total;
+  const scaled = sorted.map((i) => ({ area: i.value * scale, data: i.data }));
+  const result: TreemapTile<T>[] = [];
+  layoutRow(scaled, 0, 0, width, height, result);
+  return result;
+}
+
+function worstAspect(areas: number[], side: number): number {
+  if (areas.length === 0 || side === 0) return Infinity;
+  const sum = areas.reduce((s, a) => s + a, 0);
+  const max = Math.max(...areas);
+  const min = Math.min(...areas);
+  if (sum === 0 || min === 0) return Infinity;
+  return Math.max((side * side * max) / (sum * sum), (sum * sum) / (side * side * min));
+}
+
+function layoutRow<T>(items: { area: number; data: T }[], x: number, y: number, w: number, h: number, out: TreemapTile<T>[]) {
+  if (items.length === 0 || w <= 0 || h <= 0) return;
+  if (items.length === 1) {
+    out.push({ x, y, w, h, data: items[0].data });
+    return;
+  }
+  const side = Math.min(w, h);
+  const row: typeof items = [];
+  let bestWorst = Infinity;
+  let i = 0;
+  while (i < items.length) {
+    const candidate = [...row.map((r) => r.area), items[i].area];
+    const candidateWorst = worstAspect(candidate, side);
+    if (row.length === 0 || candidateWorst <= bestWorst) {
+      row.push(items[i]);
+      bestWorst = candidateWorst;
+      i++;
+    } else {
+      break;
+    }
+  }
+  const rowSum = row.reduce((s, r) => s + r.area, 0);
+  if (w <= h) {
+    const rowH = rowSum / w;
+    let cx = x;
+    for (const r of row) {
+      const cw = r.area / rowH;
+      out.push({ x: cx, y, w: cw, h: rowH, data: r.data });
+      cx += cw;
+    }
+    layoutRow(items.slice(i), x, y + rowH, w, h - rowH, out);
+  } else {
+    const rowW = rowSum / h;
+    let cy = y;
+    for (const r of row) {
+      const ch = r.area / rowW;
+      out.push({ x, y: cy, w: rowW, h: ch, data: r.data });
+      cy += ch;
+    }
+    layoutRow(items.slice(i), x + rowW, y, w - rowW, h, out);
+  }
 }
