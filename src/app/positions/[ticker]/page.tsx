@@ -112,18 +112,32 @@ function TradingViewChart({ ticker }: { ticker: string }) {
     container.appendChild(widgetDiv);
 
     const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js';
     script.type = 'text/javascript';
     script.async = true;
     script.innerHTML = JSON.stringify({
-      symbol,
+      symbols: [[symbol]],
+      chartOnly: false,
       width: '100%',
-      height: 220,
+      height: 260,
       locale: 'en',
-      dateRange: '3M',
       colorTheme: 'dark',
-      isTransparent: true,
       autosize: true,
+      showVolume: false,
+      showMA: false,
+      hideDateRanges: false,
+      hideMarketStatus: false,
+      hideSymbolLogo: false,
+      scalePosition: 'right',
+      scaleMode: 'Normal',
+      fontFamily: 'inherit',
+      fontSize: '10',
+      noTimeScale: false,
+      valuesTracking: '1',
+      changeMode: 'price-and-percent',
+      chartType: 'area',
+      isTransparent: true,
+      dateRanges: ['1d|1', '1m|30', '3m|60', '12m|1D', '60m|1W', 'all|1M'],
     });
     container.appendChild(script);
   }, [symbol]);
@@ -135,7 +149,7 @@ function TradingViewChart({ ticker }: { ticker: string }) {
       <div
         ref={containerRef}
         className="tradingview-widget-container"
-        style={{ height: 220 }}
+        style={{ height: 260 }}
       />
       {/* overlay captures clicks before the widget iframe does */}
       <a
