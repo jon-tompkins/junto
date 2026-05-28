@@ -107,6 +107,7 @@ export function TopNav() {
                       { href: '/create', label: 'Create Dispatch', brass: false },
                       { href: '/list-to-brief', label: 'Quick: List → Brief', brass: false },
                       { href: '/juntos', label: 'My Juntos', brass: false },
+                      { href: '/watchlists', label: 'My Watchlists', brass: false },
                       { href: '/history', label: 'History', brass: false },
                       { href: '/pricing', label: 'Pricing', brass: false },
                       { href: '/pricing', label: 'Buy Credits', brass: true },
