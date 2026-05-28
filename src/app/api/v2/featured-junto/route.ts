@@ -103,7 +103,17 @@ export async function GET() {
     // Also return all juntos owned by this user for the "change" picker
     const allJuntos = await getUserJuntos(user.id);
 
-    return NextResponse.json({ junto, allJuntos });
+    // Plus public juntos (capped) so users can pick a community junto as primary
+    const { data: publicJuntoRows } = await supabase
+      .from('juntos')
+      .select('id, name, owner_id')
+      .eq('is_public', true)
+      .neq('owner_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    const publicJuntos = (publicJuntoRows || []).map((j: any) => ({ id: j.id, name: j.name }));
+
+    return NextResponse.json({ junto, allJuntos, publicJuntos });
   } catch (err) {
     console.error('[GET /api/v2/featured-junto]', err);
     return NextResponse.json({ error: 'Failed to load featured junto' }, { status: 500 });

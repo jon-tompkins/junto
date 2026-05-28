@@ -80,6 +80,19 @@ interface UserJunto {
   name: string;
 }
 
+interface Watchlist {
+  id: string;
+  name: string;
+  description: string | null;
+  tickers: string[];
+}
+
+interface UserWatchlist {
+  id: string;
+  name: string;
+  tickers: string[];
+}
+
 interface SubscribedNewsletter {
   id: string;
   newsletter_id: string;
@@ -96,13 +109,6 @@ interface SubscribedNewsletter {
     subscriber_count: number;
     send_days?: string[];
   };
-}
-
-interface StarredItem {
-  ticker: string;
-  summary: string | null;
-  tweet_count: number;
-  last_report_at: string | null;
 }
 
 // ─── Constants ──────────────────────────────────────
@@ -154,24 +160,34 @@ export default function DashboardPage() {
   const [subSuccess, setSubSuccess] = useState(false);
   const [featuredJunto, setFeaturedJunto] = useState<FeaturedJunto | null>(null);
   const [allJuntos, setAllJuntos] = useState<UserJunto[]>([]);
+  const [publicJuntos, setPublicJuntos] = useState<UserJunto[]>([]);
   const [juntoLoading, setJuntoLoading] = useState(true);
   const [showJuntoPicker, setShowJuntoPicker] = useState(false);
+  const [editingJuntoName, setEditingJuntoName] = useState(false);
+  const [juntoNameDraft, setJuntoNameDraft] = useState('');
+  const [savingJuntoName, setSavingJuntoName] = useState(false);
+
+  const [featuredWatchlist, setFeaturedWatchlist] = useState<Watchlist | null>(null);
+  const [allWatchlists, setAllWatchlists] = useState<UserWatchlist[]>([]);
+  const [watchlistLoading, setWatchlistLoading] = useState(true);
+  const [showWatchlistPicker, setShowWatchlistPicker] = useState(false);
+  const [editingWatchlistName, setEditingWatchlistName] = useState(false);
+  const [watchlistNameDraft, setWatchlistNameDraft] = useState('');
+  const [savingWatchlistName, setSavingWatchlistName] = useState(false);
+  const [wlTickerInput, setWlTickerInput] = useState('');
+  const [wlTickerBusy, setWlTickerBusy] = useState(false);
+  const [wlTickerError, setWlTickerError] = useState<string | null>(null);
   const [synthesizing, setSynthesizing] = useState(false);
   const [synthesis, setSynthesis] = useState<string | null>(null);
   const [synthError, setSynthError] = useState<string | null>(null);
 
   const [subscriptions, setSubscriptions] = useState<SubscribedNewsletter[]>([]);
-  const [starred, setStarred] = useState<StarredItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [emailInput, setEmailInput] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
-
-  const [tickerInput, setTickerInput] = useState('');
-  const [starBusy, setStarBusy] = useState<string | null>(null);
-  const [starError, setStarError] = useState<string | null>(null);
 
   const [editingSubId, setEditingSubId] = useState<string | null>(null);
   const [editWindows, setEditWindows] = useState<string[]>([]);
@@ -198,11 +214,13 @@ export default function DashboardPage() {
         } else {
           loadData();
           loadFeaturedJunto();
+          loadFeaturedWatchlist();
         }
       })
       .catch(() => {
         loadData();
         loadFeaturedJunto();
+        loadFeaturedWatchlist();
       });
   }, [session]);
 
@@ -214,6 +232,7 @@ export default function DashboardPage() {
         const data = await res.json();
         setFeaturedJunto(data.junto);
         setAllJuntos(data.allJuntos || []);
+        setPublicJuntos(data.publicJuntos || []);
       }
     } catch {} finally {
       setJuntoLoading(false);
@@ -232,6 +251,138 @@ export default function DashboardPage() {
     } catch {}
   }
 
+  async function handleRenameJunto() {
+    if (!featuredJunto || !juntoNameDraft.trim()) return;
+    setSavingJuntoName(true);
+    try {
+      const res = await fetch(`/api/juntos/${featuredJunto.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: juntoNameDraft.trim() }),
+      });
+      if (res.ok) {
+        setEditingJuntoName(false);
+        loadFeaturedJunto();
+      }
+    } finally {
+      setSavingJuntoName(false);
+    }
+  }
+
+  async function loadFeaturedWatchlist() {
+    setWatchlistLoading(true);
+    try {
+      const res = await fetch('/api/v2/featured-watchlist');
+      if (res.ok) {
+        const data = await res.json();
+        setFeaturedWatchlist(data.watchlist);
+        setAllWatchlists(data.allWatchlists || []);
+      }
+    } catch {} finally {
+      setWatchlistLoading(false);
+    }
+  }
+
+  async function handleChangeFeaturedWatchlist(watchlistId: string) {
+    try {
+      await fetch('/api/v2/featured-watchlist', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ watchlistId }),
+      });
+      setShowWatchlistPicker(false);
+      loadFeaturedWatchlist();
+    } catch {}
+  }
+
+  async function handleRenameWatchlist() {
+    if (!featuredWatchlist || !watchlistNameDraft.trim()) return;
+    setSavingWatchlistName(true);
+    try {
+      const res = await fetch(`/api/v2/watchlists/${featuredWatchlist.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: watchlistNameDraft.trim() }),
+      });
+      if (res.ok) {
+        setEditingWatchlistName(false);
+        loadFeaturedWatchlist();
+      }
+    } finally {
+      setSavingWatchlistName(false);
+    }
+  }
+
+  async function handleCreateWatchlist() {
+    const name = prompt('Name your new watchlist:');
+    if (!name?.trim()) return;
+    try {
+      const res = await fetch('/api/v2/watchlists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim() }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        await fetch('/api/v2/featured-watchlist', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ watchlistId: data.watchlist.id }),
+        });
+        setShowWatchlistPicker(false);
+        loadFeaturedWatchlist();
+      }
+    } catch {}
+  }
+
+  async function addWatchlistTicker(raw: string) {
+    if (!featuredWatchlist) return;
+    const parts = raw
+      .split(/[\s,]+/)
+      .map((t) => t.trim().toUpperCase().replace(/^\$/, ''))
+      .filter((t) => t.length > 0 && t.length <= 12);
+    if (parts.length === 0) return;
+    setWlTickerBusy(true);
+    setWlTickerError(null);
+    try {
+      const have = new Set(featuredWatchlist.tickers.map((t) => t.toUpperCase()));
+      for (const p of parts) have.add(p);
+      const res = await fetch(`/api/v2/watchlists/${featuredWatchlist.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tickers: [...have] }),
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setFeaturedWatchlist({ ...featuredWatchlist, tickers: d.watchlist.tickers });
+        setWlTickerInput('');
+      } else {
+        setWlTickerError('Could not add ticker.');
+      }
+    } finally {
+      setWlTickerBusy(false);
+    }
+  }
+
+  async function removeWatchlistTicker(t: string) {
+    if (!featuredWatchlist) return;
+    const next = featuredWatchlist.tickers.filter((x) => x.toUpperCase() !== t.toUpperCase());
+    setWlTickerBusy(true);
+    try {
+      const res = await fetch(`/api/v2/watchlists/${featuredWatchlist.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tickers: next }),
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setFeaturedWatchlist({ ...featuredWatchlist, tickers: d.watchlist.tickers });
+      }
+    } finally {
+      setWlTickerBusy(false);
+    }
+  }
+
   async function handleSynthesize() {
     setSynthesizing(true);
     setSynthError(null);
@@ -248,87 +399,16 @@ export default function DashboardPage() {
     }
   }
 
-  async function reloadStarred() {
-    try {
-      const res = await fetch('/api/v2/star/summaries');
-      if (res.ok) {
-        const data = await res.json();
-        setStarred(data.items || []);
-      }
-    } catch {}
-  }
-
-  async function addTicker(raw: string) {
-    const ticker = raw.trim().replace(/^\$/, '').toUpperCase();
-    if (!ticker || !/^[A-Z][A-Z0-9.\-]{0,9}$/.test(ticker)) {
-      setStarError('Enter a valid ticker (e.g. BB, BTC, AAPL).');
-      return;
-    }
-    setStarBusy(ticker);
-    setStarError(null);
-    try {
-      const res = await fetch('/api/v2/star', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker }),
-      });
-      if (res.status === 402) {
-        setStarError('Pro subscription required to add watchlist tickers.');
-        return;
-      }
-      if (res.status === 409) {
-        const body = await res.json().catch(() => ({}));
-        setStarError(body.error || 'Watchlist limit reached (10).');
-        return;
-      }
-      if (!res.ok) {
-        setStarError('Could not add ticker.');
-        return;
-      }
-      setTickerInput('');
-      await reloadStarred();
-    } finally {
-      setStarBusy(null);
-    }
-  }
-
-  async function removeTicker(ticker: string) {
-    setStarBusy(ticker);
-    setStarError(null);
-    // Optimistic
-    setStarred((prev) => prev.filter((s) => s.ticker !== ticker));
-    try {
-      const res = await fetch('/api/v2/star', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker }),
-      });
-      if (!res.ok) {
-        setStarError('Could not remove ticker.');
-        await reloadStarred();
-      }
-    } catch {
-      await reloadStarred();
-    } finally {
-      setStarBusy(null);
-    }
-  }
-
   async function loadData() {
     try {
-      const [subsRes, accountRes, starredRes] = await Promise.all([
+      const [subsRes, accountRes] = await Promise.all([
         fetch('/api/v2/dashboard/subscriptions'),
         fetch('/api/v2/account'),
-        fetch('/api/v2/star/summaries'),
       ]);
 
       if (subsRes.ok) {
         const data = await subsRes.json();
         setSubscriptions(data.subscriptions || []);
-      }
-      if (starredRes.ok) {
-        const data = await starredRes.json();
-        setStarred(data.items || []);
       }
       if (accountRes.ok) {
         const data = await accountRes.json();
@@ -507,25 +587,68 @@ export default function DashboardPage() {
         {/* ─── Featured Junto ───────────────────────────── */}
         <div className="mb-10 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(176,141,87,0.18)]">
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-[#B08D57]/70 font-mono mb-0.5">Featured Junto</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-[#B08D57]/70 font-mono mb-0.5">Your Primary Junto</p>
               {juntoLoading ? (
                 <div className="h-5 w-40 bg-[#1c1a17] rounded animate-pulse" />
+              ) : editingJuntoName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    autoFocus
+                    type="text"
+                    value={juntoNameDraft}
+                    onChange={(e) => setJuntoNameDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleRenameJunto();
+                      if (e.key === 'Escape') setEditingJuntoName(false);
+                    }}
+                    className="bg-[#080604] border border-[rgba(176,141,87,0.4)] rounded px-2 py-1 text-base font-semibold text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]"
+                  />
+                  <button
+                    onClick={handleRenameJunto}
+                    disabled={savingJuntoName || !juntoNameDraft.trim()}
+                    className="text-xs px-2 py-1 rounded-sm bg-[#B08D57] text-[#080604] disabled:opacity-40 font-[var(--font-oswald)] uppercase tracking-wide"
+                  >
+                    {savingJuntoName ? '...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => setEditingJuntoName(false)}
+                    className="text-xs px-2 py-1 rounded-sm text-[#F5EFE0]/50 hover:text-[#F5EFE0]"
+                  >
+                    Cancel
+                  </button>
+                </div>
               ) : (
-                <h2 className="text-base font-semibold text-[#F5EFE0] truncate">
-                  {featuredJunto?.name ?? 'Loading…'}
-                </h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-semibold text-[#F5EFE0] truncate">
+                    {featuredJunto?.name ?? 'Loading…'}
+                  </h2>
+                  {featuredJunto && allJuntos.some(j => j.id === featuredJunto.id) && (
+                    <button
+                      onClick={() => {
+                        setJuntoNameDraft(featuredJunto.name);
+                        setEditingJuntoName(true);
+                      }}
+                      className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/35 hover:text-[#B08D57] transition"
+                      title="Rename"
+                    >
+                      Rename
+                    </button>
+                  )}
+                </div>
               )}
             </div>
             <div className="flex items-center gap-2 shrink-0 ml-4">
               {featuredJunto && (
                 <>
-                  <Link
-                    href={`/junto/${featuredJunto.id}/edit`}
-                    className="text-xs px-3 py-1.5 rounded-sm bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/70 transition"
-                  >
-                    Edit accounts
-                  </Link>
+                  {allJuntos.some(j => j.id === featuredJunto.id) && (
+                    <Link
+                      href={`/junto/${featuredJunto.id}/edit`}
+                      className="text-xs px-3 py-1.5 rounded-sm bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/70 transition"
+                    >
+                      Edit accounts
+                    </Link>
+                  )}
                   <button
                     onClick={() => setShowJuntoPicker(p => !p)}
                     className="text-xs px-3 py-1.5 rounded-sm bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#B08D57] transition"
@@ -538,26 +661,51 @@ export default function DashboardPage() {
           </div>
 
           {showJuntoPicker && (
-            <div className="px-5 py-3 bg-[#0f0e0c] border-b border-[rgba(176,141,87,0.18)]">
-              <p className="text-xs text-[#F5EFE0]/50 mb-2">Select a junto to feature:</p>
-              <div className="flex flex-wrap gap-2">
-                {allJuntos.map(j => (
-                  <button
-                    key={j.id}
-                    onClick={() => handleChangeFeaturedJunto(j.id)}
-                    className={`text-xs px-3 py-1.5 rounded-sm transition ${
-                      j.id === featuredJunto?.id
-                        ? 'bg-[#B08D57] text-[#080604] font-semibold'
-                        : 'bg-[#1c1a17] text-[#F5EFE0]/70 hover:text-[#F5EFE0]'
-                    }`}
-                  >
-                    {j.name}
-                  </button>
-                ))}
-                {allJuntos.length === 0 && (
-                  <p className="text-xs text-[#F5EFE0]/40">No juntos yet. <Link href="/junto/new" className="text-[#B08D57]">Create one →</Link></p>
-                )}
+            <div className="px-5 py-3 bg-[#0f0e0c] border-b border-[rgba(176,141,87,0.18)] space-y-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 mb-2 font-[var(--font-oswald)]">Your juntos</p>
+                <div className="flex flex-wrap gap-2">
+                  {allJuntos.map(j => (
+                    <button
+                      key={j.id}
+                      onClick={() => handleChangeFeaturedJunto(j.id)}
+                      className={`text-xs px-3 py-1.5 rounded-sm transition ${
+                        j.id === featuredJunto?.id
+                          ? 'bg-[#B08D57] text-[#080604] font-semibold'
+                          : 'bg-[#1c1a17] text-[#F5EFE0]/70 hover:text-[#F5EFE0]'
+                      }`}
+                    >
+                      {j.name}
+                    </button>
+                  ))}
+                  <Link href="/junto/new" className="text-xs px-3 py-1.5 rounded-sm border border-dashed border-[rgba(176,141,87,0.35)] text-[#B08D57] hover:bg-[#1c1a17] transition">
+                    + New
+                  </Link>
+                </div>
               </div>
+              {publicJuntos.length > 0 && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 mb-2 font-[var(--font-oswald)]">Public juntos</p>
+                  <div className="flex flex-wrap gap-2">
+                    {publicJuntos.slice(0, 24).map(j => (
+                      <button
+                        key={j.id}
+                        onClick={() => handleChangeFeaturedJunto(j.id)}
+                        className={`text-xs px-3 py-1.5 rounded-sm transition ${
+                          j.id === featuredJunto?.id
+                            ? 'bg-[#B08D57] text-[#080604] font-semibold'
+                            : 'bg-[#1c1a17] text-[#F5EFE0]/70 hover:text-[#F5EFE0]'
+                        }`}
+                      >
+                        {j.name}
+                      </button>
+                    ))}
+                    <Link href="/juntos" className="text-xs px-3 py-1.5 text-[#B08D57] hover:underline self-center">
+                      Browse all →
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -654,88 +802,157 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* ─── Starred Positions ────────────────────────── */}
-        <section className="mb-10">
-          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
-              Starred Positions <span className="text-[#F5EFE0]/30 font-mono normal-case">({starred.length}/5)</span>
-            </h2>
-            <div className="flex items-center gap-2">
-              <form
-                onSubmit={(e) => { e.preventDefault(); addTicker(tickerInput); }}
-                className="flex items-center gap-1"
-              >
-                <input
-                  type="text"
-                  value={tickerInput}
-                  onChange={(e) => setTickerInput(e.target.value)}
-                  placeholder="+ ticker"
-                  maxLength={10}
-                  className="w-24 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-2 py-1 text-xs text-[#F5EFE0] placeholder-[#F5EFE0]/30 font-mono uppercase focus:outline-none focus:border-[#B08D57]"
-                />
-                <button
-                  type="submit"
-                  disabled={!tickerInput.trim() || !!starBusy || starred.length >= 5}
-                  className="text-xs px-2.5 py-1 rounded bg-[#B08D57] text-[#080604] font-[var(--font-oswald)] uppercase tracking-wide disabled:opacity-40"
-                >
-                  Add
-                </button>
-              </form>
-              <Link href="/positions" className="text-xs text-[#B08D57] hover:underline">
-                All →
-              </Link>
+        {/* ─── Primary Watchlist ────────────────────────── */}
+        <section className="mb-10 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(176,141,87,0.18)]">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-[#B08D57]/70 font-mono mb-0.5">Your Primary Watchlist</p>
+              {watchlistLoading ? (
+                <div className="h-5 w-40 bg-[#1c1a17] rounded animate-pulse" />
+              ) : editingWatchlistName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    autoFocus
+                    type="text"
+                    value={watchlistNameDraft}
+                    onChange={(e) => setWatchlistNameDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleRenameWatchlist();
+                      if (e.key === 'Escape') setEditingWatchlistName(false);
+                    }}
+                    className="bg-[#080604] border border-[rgba(176,141,87,0.4)] rounded px-2 py-1 text-base font-semibold text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]"
+                  />
+                  <button
+                    onClick={handleRenameWatchlist}
+                    disabled={savingWatchlistName || !watchlistNameDraft.trim()}
+                    className="text-xs px-2 py-1 rounded-sm bg-[#B08D57] text-[#080604] disabled:opacity-40 font-[var(--font-oswald)] uppercase tracking-wide"
+                  >
+                    {savingWatchlistName ? '...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => setEditingWatchlistName(false)}
+                    className="text-xs px-2 py-1 rounded-sm text-[#F5EFE0]/50 hover:text-[#F5EFE0]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-semibold text-[#F5EFE0] truncate">
+                    {featuredWatchlist?.name ?? 'Loading…'}
+                  </h2>
+                  {featuredWatchlist && (
+                    <button
+                      onClick={() => {
+                        setWatchlistNameDraft(featuredWatchlist.name);
+                        setEditingWatchlistName(true);
+                      }}
+                      className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/35 hover:text-[#B08D57] transition"
+                      title="Rename"
+                    >
+                      Rename
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0 ml-4">
+              {featuredWatchlist && (
+                <>
+                  <Link
+                    href={`/watchlists/${featuredWatchlist.id}`}
+                    className="text-xs px-3 py-1.5 rounded-sm bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/70 transition"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    onClick={() => setShowWatchlistPicker(p => !p)}
+                    className="text-xs px-3 py-1.5 rounded-sm bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#B08D57] transition"
+                  >
+                    Change
+                  </button>
+                </>
+              )}
             </div>
           </div>
-          {starError && (
-            <p className="text-xs text-[#e8453c] mb-2">{starError}</p>
-          )}
-          {loading ? (
-            <LoadingSkeleton />
-          ) : starred.length === 0 ? (
-            <p className="text-sm text-[#F5EFE0]/45 border border-dashed border-[rgba(176,141,87,0.28)] rounded p-6 text-center">
-              You haven't starred any tickers yet.{' '}
-              <Link href="/positions" className="text-[#B08D57] hover:underline">
-                Browse positions →
-              </Link>
-            </p>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {starred.map((s) => (
-                <div
-                  key={s.ticker}
-                  className="relative rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] hover:border-[#B08D57]/60 transition"
-                >
+
+          {showWatchlistPicker && (
+            <div className="px-5 py-3 bg-[#0f0e0c] border-b border-[rgba(176,141,87,0.18)]">
+              <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 mb-2 font-[var(--font-oswald)]">Your watchlists</p>
+              <div className="flex flex-wrap gap-2">
+                {allWatchlists.map((w) => (
                   <button
-                    onClick={() => removeTicker(s.ticker)}
-                    disabled={starBusy === s.ticker}
-                    title="Unstar"
-                    className="absolute top-2 right-2 w-6 h-6 rounded-sm text-xs text-[#F5EFE0]/35 hover:text-[#e8453c] hover:bg-[#1c1a17] transition disabled:opacity-40 z-10"
+                    key={w.id}
+                    onClick={() => handleChangeFeaturedWatchlist(w.id)}
+                    className={`text-xs px-3 py-1.5 rounded-sm transition ${
+                      w.id === featuredWatchlist?.id
+                        ? 'bg-[#B08D57] text-[#080604] font-semibold'
+                        : 'bg-[#1c1a17] text-[#F5EFE0]/70 hover:text-[#F5EFE0]'
+                    }`}
                   >
-                    ×
+                    {w.name} <span className="opacity-50 ml-1">({w.tickers.length})</span>
                   </button>
-                  <Link href={`/positions/${s.ticker}`} className="block p-4">
-                    <div className="flex items-baseline justify-between mb-2 pr-6">
-                      <span className="text-base font-semibold text-[#F5EFE0] font-mono">${s.ticker}</span>
-                      <span className="text-[10px] text-[#F5EFE0]/40 font-mono">
-                        {s.last_report_at
-                          ? new Date(s.last_report_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                          : 'No report yet'}
-                      </span>
-                    </div>
-                    {s.summary ? (
-                      <p className="text-xs text-[#F5EFE0]/60 line-clamp-3 leading-relaxed">
-                        {s.summary.replace(/^#+\s/gm, '').replace(/\*\*/g, '')}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-[#F5EFE0]/35 italic">
-                        Daily report pending — generates at 13:30 UTC.
-                      </p>
-                    )}
-                  </Link>
-                </div>
-              ))}
+                ))}
+                <button
+                  onClick={handleCreateWatchlist}
+                  className="text-xs px-3 py-1.5 rounded-sm border border-dashed border-[rgba(176,141,87,0.35)] text-[#B08D57] hover:bg-[#1c1a17] transition"
+                >
+                  + New
+                </button>
+              </div>
             </div>
           )}
+
+          <div className="px-5 py-4">
+            <form
+              onSubmit={(e) => { e.preventDefault(); addWatchlistTicker(wlTickerInput); }}
+              className="flex items-center gap-2 mb-3"
+            >
+              <input
+                type="text"
+                value={wlTickerInput}
+                onChange={(e) => setWlTickerInput(e.target.value)}
+                placeholder="AAPL, MSFT, NVDA"
+                disabled={!featuredWatchlist || wlTickerBusy}
+                className="flex-1 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-1.5 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 font-mono focus:outline-none focus:border-[#B08D57]"
+              />
+              <button
+                type="submit"
+                disabled={!wlTickerInput.trim() || wlTickerBusy || !featuredWatchlist}
+                className="text-xs px-3 py-1.5 rounded bg-[#B08D57] text-[#080604] font-[var(--font-oswald)] uppercase tracking-wide disabled:opacity-40"
+              >
+                Add
+              </button>
+            </form>
+            {wlTickerError && <p className="text-xs text-[#e8453c] mb-2">{wlTickerError}</p>}
+
+            {watchlistLoading ? (
+              <div className="flex gap-2">
+                {[1,2,3].map(i => <div key={i} className="w-16 h-7 rounded-sm bg-[#1c1a17] animate-pulse" />)}
+              </div>
+            ) : featuredWatchlist && featuredWatchlist.tickers.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {featuredWatchlist.tickers.map((t) => (
+                  <span
+                    key={t}
+                    className="inline-flex items-center gap-1.5 text-xs font-mono px-2 py-1 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/85 border border-[rgba(176,141,87,0.28)]"
+                  >
+                    <Link href={`/positions/${t}`} className="hover:text-[#B08D57] transition">${t}</Link>
+                    <button
+                      onClick={() => removeWatchlistTicker(t)}
+                      disabled={wlTickerBusy}
+                      className="text-[#F5EFE0]/40 hover:text-[#e8453c] transition disabled:opacity-30"
+                      aria-label={`Remove ${t}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-[#F5EFE0]/45">No tickers yet — add one above.</p>
+            )}
+          </div>
         </section>
 
         {/* ─── Subscriptions ────────────────────────────── */}
