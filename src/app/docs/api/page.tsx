@@ -1,7 +1,25 @@
-'use client';
-
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { TopNav } from '@/components/top-nav';
+
+export const metadata: Metadata = {
+  title: 'API — MyJunto',
+  description:
+    'Pay-as-you-go REST API for source profiles, ticker consensus, and public dispatches. Bearer auth, credit-debited per call.',
+  openGraph: {
+    title: 'MyJunto API',
+    description:
+      'Pay-as-you-go REST API for source profiles, ticker consensus, and public dispatches.',
+    url: 'https://www.myjunto.xyz/docs/api',
+    type: 'article',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'MyJunto API',
+    description:
+      'Pay-as-you-go REST API for source profiles, ticker consensus, and public dispatches.',
+  },
+};
 
 export default function ApiDocsPage() {
   return (

@@ -1,7 +1,25 @@
-'use client';
-
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { TopNav } from '@/components/top-nav';
+
+export const metadata: Metadata = {
+  title: 'Docs — MyJunto',
+  description:
+    'How MyJunto works: sources, juntos, watchlists, dispatches, positions, credits, and the public API.',
+  openGraph: {
+    title: 'MyJunto Docs',
+    description:
+      'How MyJunto works: sources, juntos, watchlists, dispatches, positions, credits, and the public API.',
+    url: 'https://www.myjunto.xyz/docs',
+    type: 'article',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'MyJunto Docs',
+    description:
+      'How MyJunto works: sources, juntos, watchlists, dispatches, positions, credits, and the public API.',
+  },
+};
 
 export default function DocsPage() {
   return (
