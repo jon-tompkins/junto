@@ -98,9 +98,11 @@ function markdownToHtml(markdown: string): string {
   // Ticker callouts: **$TICKER** at start of bullet → highlighted
   html = html.replace(/^- \*\*(\$[A-Z]+)\*\*/gm, '- <span style="display: inline-block; background: #eff6ff; color: #1d4ed8; padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 13px;">$1</span>');
 
-  // Bullet lists
+  // Bullet lists. Allow blank lines between items so the model's
+  // "- a\n\n- b" markdown collapses into one <ul> instead of one <ul>
+  // per bullet (which doubled vertical margin and inserted stray <p>s).
   html = html.replace(/^- (.+)$/gm, '<li style="margin: 6px 0; padding-left: 4px; line-height: 1.5;">$1</li>');
-  html = html.replace(/(<li[^>]*>.*<\/li>\n?)+/g, '<ul style="margin: 12px 0; padding-left: 20px; list-style-type: disc;">$&</ul>');
+  html = html.replace(/(<li[^>]*>.*<\/li>\s*)+/g, '<ul style="margin: 12px 0; padding-left: 20px; list-style-type: disc;">$&</ul>');
 
   // Blockquotes
   html = html.replace(/^> (.+)$/gm, '<blockquote style="border-left: 3px solid #2563eb; margin: 16px 0; padding: 12px 16px; color: #4b5563; background: #f9fafb; border-radius: 0 6px 6px 0; font-style: italic;">$1</blockquote>');
@@ -123,6 +125,10 @@ function markdownToHtml(markdown: string): string {
   html = html.replace(/(<\/div>)\s*<\/p>/g, '$1');
   html = html.replace(/<p style="[^"]*">\s*(<blockquote)/g, '$1');
   html = html.replace(/(<\/blockquote>)\s*<\/p>/g, '$1');
+
+  // Belt-and-suspenders: merge any adjacent <ul> blocks the bullet-grouping
+  // pass missed (e.g. when bullets are split by other inline elements).
+  html = html.replace(/<\/ul>\s*(?:<br\s*\/?>\s*)*<ul[^>]*>/g, '');
 
   return html;
 }
