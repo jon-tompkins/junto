@@ -331,16 +331,43 @@ export default function DocsPage() {
           </div>
         </section>
 
-        {/* API CTA */}
-        <div className="mb-12 p-5 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] flex items-center justify-between gap-4">
-          <div>
-            <h3 className="text-sm font-semibold mb-1">Building something on top of Junto?</h3>
-            <p className="text-xs text-[#F5EFE0]/55">REST API for source profiles, ticker consensus, and public dispatches. Pay-as-you-go via credits.</p>
+        {/* API access */}
+        <section className="mb-16">
+          <h2 className="text-2xl font-bold text-[#F5EFE0] mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
+            <span className="text-[#B08D57]">#</span> API Access
+          </h2>
+          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 space-y-4">
+            <p className="text-sm text-[#F5EFE0]/70">
+              Junto exposes a pay-as-you-go REST API for source profiles, ticker
+              consensus, and public dispatches. Three steps to your first call:
+            </p>
+            <ol className="space-y-3 text-sm text-[#F5EFE0]/80 list-decimal list-inside">
+              <li>
+                Generate a key at{' '}
+                <Link href="/settings/api-keys" className="text-[#B08D57] hover:underline">
+                  /settings/api-keys
+                </Link>
+                . Keys are shown once at creation — store them somewhere safe.
+              </li>
+              <li>
+                Send it as a bearer token:
+                <pre className="mt-2 bg-[#1c1a17] border border-[rgba(176,141,87,0.18)] rounded p-3 text-xs font-mono overflow-x-auto text-[#F5EFE0]/85">{`Authorization: Bearer mj_live_…`}</pre>
+              </li>
+              <li>
+                Call an endpoint. Calls debit credits from the key owner's
+                balance (1 credit for source/ticker reads, 5 for full dispatches).
+                <pre className="mt-2 bg-[#1c1a17] border border-[rgba(176,141,87,0.18)] rounded p-3 text-xs font-mono overflow-x-auto text-[#F5EFE0]/85">{`curl https://www.myjunto.xyz/api/public/v1/positions/BB \\
+  -H "Authorization: Bearer mj_live_…"`}</pre>
+              </li>
+            </ol>
+            <Link
+              href="/docs/api"
+              className="inline-block text-xs px-3 py-1.5 rounded bg-[#B08D57] text-[#080604] font-semibold uppercase tracking-wide font-[var(--font-oswald)]"
+            >
+              Full API reference →
+            </Link>
           </div>
-          <Link href="/docs/api" className="shrink-0 text-xs px-3 py-1.5 rounded bg-[#B08D57] text-[#080604] font-semibold uppercase tracking-wide font-[var(--font-oswald)]">
-            API Docs →
-          </Link>
-        </div>
+        </section>
 
         {/* Footer CTA */}
         <div className="text-center py-8 border-t border-[rgba(176,141,87,0.18)]">
