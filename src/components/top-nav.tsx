@@ -44,13 +44,11 @@ export function TopNav() {
       {/* Center nav links */}
       <div className="hidden md:flex items-center gap-6">
         {[
-          ...(session?.user ? [{ href: '/today', label: 'Today' }] : []),
+          ...(session?.user ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
           { href: '/explore', label: 'Dispatches' },
           { href: '/juntos', label: 'Juntos' },
           { href: '/sources', label: 'Sources' },
           { href: '/positions', label: 'Positions' },
-          ...(session?.user ? [{ href: '/theses', label: 'Theses' }] : []),
-          { href: '/flows', label: 'Flows' },
           { href: '/docs', label: 'Docs' },
         ].map(({ href, label }) => (
           <Link
@@ -104,16 +102,11 @@ export function TopNav() {
                       )}
                     </div>
                     {[
-                      { href: '/dashboard', label: 'Dashboard', brass: false },
-                      { href: '/create', label: 'Create Dispatch', brass: false },
-                      { href: '/list-to-brief', label: 'Quick: List → Brief', brass: false },
-                      { href: '/juntos', label: 'My Juntos', brass: false },
-                      { href: '/watchlists', label: 'My Watchlists', brass: false },
                       { href: '/history', label: 'History', brass: false },
-                      { href: '/pricing', label: 'Pricing', brass: false },
-                      { href: '/pricing', label: 'Buy Credits', brass: true },
-                      { href: '/profile', label: 'Profile', brass: false },
+                      { href: '/theses', label: 'Theses', brass: false },
+                      { href: '/flows', label: 'Flows', brass: false },
                       { href: '/settings', label: 'Settings', brass: false },
+                      { href: '/pricing', label: 'Billing', brass: true },
                     ].map(({ href, label, brass }) => (
                       <Link
                         key={href}
@@ -195,20 +188,17 @@ export function TopNav() {
             </button>
 
             {[
-              ...(session?.user ? [{ href: '/today', label: 'Today' }] : []),
+              ...(session?.user ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
               { href: '/explore', label: 'Dispatches' },
               { href: '/juntos', label: 'Juntos' },
               { href: '/sources', label: 'Sources' },
               { href: '/positions', label: 'Positions' },
-              ...(session?.user ? [{ href: '/theses', label: 'Theses' }] : []),
-              { href: '/flows', label: 'Flows' },
               { href: '/docs', label: 'Docs' },
               ...(session?.user ? [
-                { href: '/dashboard', label: 'Dashboard' },
-                { href: '/create', label: 'Create Dispatch' },
-                { href: '/list-to-brief', label: 'List → Brief' },
-                { href: '/profile', label: 'Profile' },
-                { href: '/pricing', label: 'Pricing' },
+                { href: '/history', label: 'History' },
+                { href: '/theses', label: 'Theses' },
+                { href: '/flows', label: 'Flows' },
+                { href: '/pricing', label: 'Billing' },
               ] : [
                 { href: '/pricing', label: 'Pricing' },
               ]),
