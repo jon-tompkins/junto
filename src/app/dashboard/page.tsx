@@ -152,6 +152,203 @@ const LOCAL_WINDOW_LABELS: Record<string, string> = {
   night: pacificToLocal(0),
 };
 
+// ─── Collapsible section wrapper ────────────────────
+
+function Section({
+  label,
+  badge,
+  defaultOpen = false,
+  children,
+}: {
+  label: string;
+  badge?: string | number | null;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="mb-4">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-2 py-2 text-left text-[10px] uppercase tracking-[0.18em] text-[#F5EFE0]/45 hover:text-[#F5EFE0]/75 transition font-[var(--font-oswald)]"
+      >
+        <span className="flex items-center gap-2">
+          <span className="inline-block w-3 text-[#B08D57]">{open ? '▾' : '▸'}</span>
+          <span>{label}</span>
+          {badge !== undefined && badge !== null && (
+            <span className="text-[10px] text-[#F5EFE0]/35 normal-case tracking-normal font-mono">
+              {badge}
+            </span>
+          )}
+        </span>
+      </button>
+      {open && <div className="mt-2">{children}</div>}
+    </div>
+  );
+}
+
+// ─── Latest Dispatch ────────────────────────────────
+
+interface LatestDispatchPayload {
+  latest: {
+    id: string;
+    dispatch_date: string;
+    subject: string;
+    content: string;
+    source_count: number;
+    ticker_count: number;
+  } | null;
+  has_featured_junto: boolean;
+}
+
+function LatestDispatchCard() {
+  const [data, setData] = useState<LatestDispatchPayload | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [proRequired, setProRequired] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/v2/personal-dispatch')
+      .then(async (r) => {
+        if (r.status === 402) {
+          setProRequired(true);
+          return null;
+        }
+        if (!r.ok) return null;
+        return r.json();
+      })
+      .then((d) => setData(d))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="h-24 rounded bg-[#141210] animate-pulse" />;
+
+  if (proRequired) {
+    return (
+      <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/70">
+        Personal dispatch is part of Pro.{' '}
+        <Link href="/pricing" className="text-[#B08D57] hover:underline">See plans →</Link>
+      </div>
+    );
+  }
+
+  if (!data?.latest) {
+    return (
+      <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
+        {data?.has_featured_junto
+          ? 'No dispatch yet — your first will arrive at the next cron run.'
+          : 'Pick a featured junto below to start receiving a daily personal dispatch.'}
+      </div>
+    );
+  }
+
+  const excerpt = data.latest.content.replace(/[#*_`>]/g, '').trim().slice(0, 600);
+  return (
+    <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] p-5">
+      <div className="flex items-baseline justify-between mb-2">
+        <h3 className="text-sm font-semibold text-[#F5EFE0]">{data.latest.subject}</h3>
+        <span className="text-[10px] text-[#F5EFE0]/40 font-mono">{data.latest.dispatch_date}</span>
+      </div>
+      <p className="text-xs text-[#F5EFE0]/40 mb-3">
+        {data.latest.source_count} sources · {data.latest.ticker_count} tickers
+      </p>
+      <p className="text-sm text-[#F5EFE0]/75 leading-relaxed whitespace-pre-line">
+        {excerpt}
+        {data.latest.content.length > 600 && '…'}
+      </p>
+    </div>
+  );
+}
+
+// ─── Positions snapshot ─────────────────────────────
+
+interface PositionRow {
+  ticker: string;
+  stance: string;
+  count: number;
+  fresh_count: number;
+}
+
+function PositionsSnapshotCard({ juntoId }: { juntoId: string | null | undefined }) {
+  const [rows, setRows] = useState<PositionRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!juntoId) {
+      setLoading(false);
+      return;
+    }
+    fetch(`/api/positions?junto_id=${juntoId}`)
+      .then((r) => r.json())
+      .then((d) => setRows(Array.isArray(d.positions) ? d.positions : Array.isArray(d) ? d : []))
+      .catch(() => setRows([]))
+      .finally(() => setLoading(false));
+  }, [juntoId]);
+
+  if (!juntoId) {
+    return (
+      <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
+        Pick a featured junto below to see its top tracked positions.
+      </div>
+    );
+  }
+  if (loading) return <div className="h-32 rounded bg-[#141210] animate-pulse" />;
+
+  const top = [...rows]
+    .sort((a, b) => b.fresh_count - a.fresh_count || b.count - a.count)
+    .slice(0, 12);
+
+  if (top.length === 0) {
+    return (
+      <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
+        No tracked positions yet for this junto.
+      </div>
+    );
+  }
+
+  const stanceColor = (s: string) => {
+    const k = s.toLowerCase();
+    if (k.includes('bull')) return 'text-[#3ecf6a]';
+    if (k.includes('bear')) return 'text-[#e8453c]';
+    if (k.includes('caut')) return 'text-[#B08D57]';
+    return 'text-[#F5EFE0]/60';
+  };
+
+  return (
+    <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] overflow-hidden">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-[rgba(176,141,87,0.18)] text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)]">
+            <th className="py-2 px-4 text-left">Ticker</th>
+            <th className="py-2 px-4 text-left">Stance</th>
+            <th className="py-2 px-4 text-right">Sources</th>
+            <th className="py-2 px-4 text-right">Fresh</th>
+          </tr>
+        </thead>
+        <tbody>
+          {top.map((p) => (
+            <tr key={`${p.ticker}::${p.stance}`} className="border-b border-[rgba(176,141,87,0.1)] last:border-0 hover:bg-[#1c1a17] transition">
+              <td className="py-2 px-4 font-mono text-xs">
+                <Link href={`/positions/${p.ticker}`} className="text-[#F5EFE0]/85 hover:text-[#B08D57]">
+                  ${p.ticker}
+                </Link>
+              </td>
+              <td className={`py-2 px-4 text-xs uppercase ${stanceColor(p.stance)}`}>{p.stance}</td>
+              <td className="py-2 px-4 text-xs text-right text-[#F5EFE0]/60 font-mono">{p.count}</td>
+              <td className="py-2 px-4 text-xs text-right text-[#F5EFE0]/60 font-mono">{p.fresh_count}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="px-4 py-2 border-t border-[rgba(176,141,87,0.18)] text-right">
+        <Link href={`/positions?junto_id=${juntoId}`} className="text-xs text-[#B08D57] hover:underline">
+          View all positions →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 // ─── Component ──────────────────────────────────────
 
 export default function DashboardPage() {
@@ -584,8 +781,19 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* ─── Latest Personal Dispatch ─────────────────── */}
+        <Section label="Today's Dispatch" defaultOpen>
+          <LatestDispatchCard />
+        </Section>
+
+        {/* ─── Positions snapshot ──────────────────────── */}
+        <Section label="Positions" badge={featuredJunto?.name || null}>
+          <PositionsSnapshotCard juntoId={featuredJunto?.id} />
+        </Section>
+
         {/* ─── Featured Junto ───────────────────────────── */}
-        <div className="mb-10 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
+        <Section label="Featured Junto" badge={featuredJunto?.name || null}>
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(176,141,87,0.18)]">
             <div className="min-w-0 flex-1">
               <p className="text-[10px] uppercase tracking-[0.18em] text-[#B08D57]/70 font-mono mb-0.5">Your Primary Junto</p>
@@ -802,8 +1010,11 @@ export default function DashboardPage() {
           )}
         </div>
 
+        </Section>
+
         {/* ─── Primary Watchlist ────────────────────────── */}
-        <section className="mb-10 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
+        <Section label="Watchlist" badge={featuredWatchlist?.name || null}>
+        <section className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(176,141,87,0.18)]">
             <div className="min-w-0 flex-1">
               <p className="text-[10px] uppercase tracking-[0.18em] text-[#B08D57]/70 font-mono mb-0.5">Your Primary Watchlist</p>
@@ -955,8 +1166,11 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        </Section>
+
         {/* ─── Subscriptions ────────────────────────────── */}
-        <section className="mb-12">
+        <Section label="Subscriptions" badge={subscriptions.length}>
+        <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
               My Subscriptions ({subscriptions.length})
@@ -1097,6 +1311,7 @@ export default function DashboardPage() {
             </div>
           )}
         </section>
+        </Section>
 
         <p className="text-xs text-[#F5EFE0]/35 text-center">
           Looking for your dispatches or credit history? <Link href="/profile" className="text-[#B08D57] hover:underline">Profile →</Link>
