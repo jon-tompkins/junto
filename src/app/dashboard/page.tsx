@@ -210,7 +210,7 @@ export default function DashboardPage() {
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (d && d.isOnboarded === false) {
-          router.push('/onboarding');
+          router.push('/welcome');
         } else {
           loadData();
           loadFeaturedJunto();
@@ -415,7 +415,7 @@ export default function DashboardPage() {
         setCreditBalance(data.balance ?? null);
         setAccountEmail(data.email ?? null);
         if (data.isOnboarded === false) {
-          router.push('/onboarding');
+          router.push('/welcome');
           return;
         }
       }
