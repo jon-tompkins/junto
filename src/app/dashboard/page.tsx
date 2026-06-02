@@ -189,22 +189,31 @@ function Section({
 
 // ─── Latest Dispatch ────────────────────────────────
 
+interface DispatchSummary {
+  id: string;
+  dispatch_date: string;
+  subject: string;
+  source_count: number;
+  ticker_count: number;
+}
+
+interface DispatchFull extends DispatchSummary {
+  content: string;
+}
+
 interface LatestDispatchPayload {
-  latest: {
-    id: string;
-    dispatch_date: string;
-    subject: string;
-    content: string;
-    source_count: number;
-    ticker_count: number;
-  } | null;
+  latest: DispatchFull | null;
+  history: DispatchSummary[];
   has_featured_junto: boolean;
 }
 
 function LatestDispatchCard() {
-  const [data, setData] = useState<LatestDispatchPayload | null>(null);
+  const [payload, setPayload] = useState<LatestDispatchPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [proRequired, setProRequired] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [contentCache, setContentCache] = useState<Record<string, DispatchFull>>({});
+  const [navLoading, setNavLoading] = useState(false);
 
   useEffect(() => {
     fetch('/api/v2/personal-dispatch')
@@ -216,10 +225,34 @@ function LatestDispatchCard() {
         if (!r.ok) return null;
         return r.json();
       })
-      .then((d) => setData(d))
+      .then((d: LatestDispatchPayload | null) => {
+        setPayload(d);
+        if (d?.latest) {
+          setContentCache({ [d.latest.id]: d.latest });
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const history = payload?.history || [];
+
+  async function loadByIndex(index: number) {
+    if (index < 0 || index >= history.length) return;
+    setCurrentIndex(index);
+    const entry = history[index];
+    if (contentCache[entry.id]) return;
+    setNavLoading(true);
+    try {
+      const res = await fetch(`/api/v2/personal-dispatch/${entry.id}`);
+      if (res.ok) {
+        const { dispatch } = await res.json();
+        setContentCache((c) => ({ ...c, [dispatch.id]: dispatch }));
+      }
+    } finally {
+      setNavLoading(false);
+    }
+  }
 
   if (loading) return <div className="h-24 rounded bg-[#141210] animate-pulse" />;
 
@@ -232,30 +265,115 @@ function LatestDispatchCard() {
     );
   }
 
-  if (!data?.latest) {
+  if (!payload?.latest || history.length === 0) {
     return (
       <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
-        {data?.has_featured_junto
+        {payload?.has_featured_junto
           ? 'No dispatch yet — your first will arrive at the next cron run.'
           : 'Pick a primary junto below to start receiving a daily personal dispatch.'}
       </div>
     );
   }
 
-  const excerpt = data.latest.content.replace(/[#*_`>]/g, '').trim().slice(0, 600);
+  const currentMeta = history[currentIndex] || history[0];
+  const current = contentCache[currentMeta.id];
+  const hasNewer = currentIndex > 0;
+  const hasOlder = currentIndex < history.length - 1;
+
   return (
     <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] p-5">
-      <div className="flex items-baseline justify-between mb-2">
-        <h3 className="text-sm font-semibold text-[#F5EFE0]">{data.latest.subject}</h3>
-        <span className="text-[10px] text-[#F5EFE0]/40 font-mono">{data.latest.dispatch_date}</span>
+      <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => loadByIndex(currentIndex + 1)}
+            disabled={!hasOlder}
+            aria-label="Older dispatch"
+            className="px-2 py-1 rounded text-xs bg-[#1c1a17] border border-[rgba(176,141,87,0.18)] text-[#F5EFE0]/70 hover:text-[#F5EFE0] disabled:opacity-30"
+          >‹</button>
+          <select
+            value={currentMeta.id}
+            onChange={(e) => {
+              const idx = history.findIndex((h) => h.id === e.target.value);
+              if (idx >= 0) loadByIndex(idx);
+            }}
+            className="bg-[#1c1a17] border border-[rgba(176,141,87,0.18)] rounded px-2 py-1 text-xs text-[#F5EFE0] font-mono focus:outline-none focus:border-[#B08D57]"
+          >
+            {history.map((h) => (
+              <option key={h.id} value={h.id}>{h.dispatch_date}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => loadByIndex(currentIndex - 1)}
+            disabled={!hasNewer}
+            aria-label="Newer dispatch"
+            className="px-2 py-1 rounded text-xs bg-[#1c1a17] border border-[rgba(176,141,87,0.18)] text-[#F5EFE0]/70 hover:text-[#F5EFE0] disabled:opacity-30"
+          >›</button>
+        </div>
+        <span className="text-[10px] text-[#F5EFE0]/40 font-mono">
+          {currentMeta.source_count} sources · {currentMeta.ticker_count} tickers
+        </span>
       </div>
-      <p className="text-xs text-[#F5EFE0]/40 mb-3">
-        {data.latest.source_count} sources · {data.latest.ticker_count} tickers
-      </p>
-      <p className="text-sm text-[#F5EFE0]/75 leading-relaxed whitespace-pre-line">
-        {excerpt}
-        {data.latest.content.length > 600 && '…'}
-      </p>
+      <h3 className="text-base font-semibold text-[#F5EFE0] mb-3">{currentMeta.subject}</h3>
+      {navLoading || !current ? (
+        <div className="h-32 rounded bg-[#1c1a17] animate-pulse" />
+      ) : (
+        <div className="text-sm text-[#F5EFE0]/80 leading-relaxed whitespace-pre-line">
+          {current.content}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── User manual position levels ─────────────────────
+
+interface UserPositionLevel {
+  ticker: string;
+  stop_price: number | null;
+  target_price: number | null;
+  notes: string | null;
+  updated_at: string;
+}
+
+function MyPositionLevelsCard() {
+  const [levels, setLevels] = useState<UserPositionLevel[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/positions/levels')
+      .then((r) => (r.ok ? r.json() : { levels: [] }))
+      .then((d) => setLevels(d.levels || []))
+      .catch(() => setLevels([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="h-24 rounded bg-[#141210] animate-pulse" />;
+  if (!levels || levels.length === 0) {
+    return (
+      <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
+        No manual stop/target levels set yet. Visit a position page to set one.
+      </div>
+    );
+  }
+  return (
+    <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] divide-y divide-[rgba(176,141,87,0.18)]">
+      {levels.map((l) => (
+        <Link
+          key={l.ticker}
+          href={`/positions/${encodeURIComponent(l.ticker)}`}
+          className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[#1a1815] transition"
+        >
+          <span className="text-sm font-mono text-[#F5EFE0]">{l.ticker}</span>
+          <div className="flex items-center gap-4 text-xs font-mono">
+            <span className="text-[#F5EFE0]/45">
+              stop {l.stop_price !== null ? `$${l.stop_price.toFixed(2)}` : '—'}
+            </span>
+            <span className="text-[#F5EFE0]/45">
+              target {l.target_price !== null ? `$${l.target_price.toFixed(2)}` : '—'}
+            </span>
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }
@@ -418,6 +536,15 @@ export default function DashboardPage() {
   const [subSuccess, setSubSuccess] = useState(false);
   const [featuredJunto, setFeaturedJunto] = useState<FeaturedJunto | null>(null);
   const [allJuntos, setAllJuntos] = useState<UserJunto[]>([]);
+  const [subsTab, setSubsTab] = useState<'subscriptions' | 'juntos' | 'dispatches'>('subscriptions');
+  const [subsTabHistory, setSubsTabHistory] = useState<DispatchSummary[]>([]);
+  useEffect(() => {
+    if (subsTab !== 'dispatches' || subsTabHistory.length > 0) return;
+    fetch('/api/v2/personal-dispatch')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.history) setSubsTabHistory(d.history); })
+      .catch(() => {});
+  }, [subsTab, subsTabHistory.length]);
   const [publicJuntos, setPublicJuntos] = useState<UserJunto[]>([]);
   const [juntoLoading, setJuntoLoading] = useState(true);
   const [showJuntoPicker, setShowJuntoPicker] = useState(false);
@@ -857,6 +984,11 @@ export default function DashboardPage() {
           <PositionsSnapshotCard juntoId={featuredJunto?.id} />
         </Section>
 
+        {/* ─── Manual stop/target levels ─────────────────── */}
+        <Section label="My Levels">
+          <MyPositionLevelsCard />
+        </Section>
+
         {/* ─── Primary Junto ───────────────────────────── */}
         <Section label="Primary Junto" badge={featuredJunto?.name || null}>
         <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
@@ -1234,8 +1366,77 @@ export default function DashboardPage() {
 
         </Section>
 
-        {/* ─── Subscriptions ────────────────────────────── */}
-        <Section label="Subscriptions" badge={subscriptions.length}>
+        {/* ─── Subscriptions / Juntos / Dispatches ──────── */}
+        <Section label="My Stuff" badge={
+          subsTab === 'subscriptions' ? subscriptions.length :
+          subsTab === 'juntos' ? allJuntos.length :
+          subsTabHistory.length
+        }>
+        <div className="flex gap-1 mb-4 border-b border-[rgba(176,141,87,0.18)]">
+          {(['subscriptions', 'juntos', 'dispatches'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setSubsTab(t)}
+              className={`px-3 py-1.5 text-xs font-[var(--font-oswald)] uppercase tracking-wide transition border-b-2 -mb-px ${
+                subsTab === t
+                  ? 'border-[#B08D57] text-[#F5EFE0]'
+                  : 'border-transparent text-[#F5EFE0]/40 hover:text-[#F5EFE0]/70'
+              }`}
+            >
+              {t === 'subscriptions' ? `Subscriptions (${subscriptions.length})` :
+               t === 'juntos' ? `Juntos (${allJuntos.length})` :
+               'Dispatches'}
+            </button>
+          ))}
+        </div>
+
+        {subsTab === 'juntos' && (
+          <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
+            {allJuntos.length === 0 ? (
+              <p className="text-sm text-[#F5EFE0]/45 p-4">No juntos yet.</p>
+            ) : (
+              <ul className="divide-y divide-[rgba(176,141,87,0.18)]">
+                {allJuntos.map((j) => (
+                  <li key={j.id} className="flex items-center justify-between px-4 py-3 hover:bg-[#141210] transition">
+                    <Link href={`/junto/${j.id}/edit`} className="text-sm text-[#F5EFE0] hover:text-[#B08D57] truncate">
+                      {j.name}
+                    </Link>
+                    {featuredJunto?.id === j.id && (
+                      <span className="text-[10px] text-[#B08D57] font-[var(--font-oswald)] uppercase tracking-wide">primary</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="px-4 py-2 border-t border-[rgba(176,141,87,0.18)]">
+              <Link href="/junto/new" className="text-xs text-[#B08D57] hover:underline">+ New junto</Link>
+            </div>
+          </div>
+        )}
+
+        {subsTab === 'dispatches' && (
+          <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
+            {subsTabHistory.length === 0 ? (
+              <p className="text-sm text-[#F5EFE0]/45 p-4">No dispatches yet.</p>
+            ) : (
+              <ul className="divide-y divide-[rgba(176,141,87,0.18)]">
+                {subsTabHistory.map((d) => (
+                  <li key={d.id} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[#141210] transition">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-[#F5EFE0] truncate">{d.subject || '(no subject)'}</p>
+                      <p className="text-[10px] text-[#F5EFE0]/40 mt-0.5">
+                        {d.source_count} sources · {d.ticker_count} tickers
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-[#F5EFE0]/40 font-mono">{d.dispatch_date}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {subsTab === 'subscriptions' && (
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
@@ -1377,6 +1578,7 @@ export default function DashboardPage() {
             </div>
           )}
         </section>
+        )}
         </Section>
 
         <p className="text-xs text-[#F5EFE0]/35 text-center">
