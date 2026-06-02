@@ -518,6 +518,140 @@ function ResearchReports({ ticker }: { ticker: string }) {
   );
 }
 
+interface UserLevel {
+  ticker: string;
+  stop_price: number | null;
+  target_price: number | null;
+  notes: string | null;
+}
+
+function PriceLevels({ ticker, currentPrice }: { ticker: string; currentPrice: number | null }) {
+  const { data: session } = useSession();
+  const [level, setLevel] = useState<UserLevel | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [stop, setStop] = useState('');
+  const [target, setTarget] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch(`/api/positions/levels/${encodeURIComponent(ticker)}`)
+      .then(r => r.json())
+      .then(d => {
+        setLevel(d.level);
+        setStop(d.level?.stop_price?.toString() ?? '');
+        setTarget(d.level?.target_price?.toString() ?? '');
+        setNotes(d.level?.notes ?? '');
+      })
+      .catch(() => {});
+  }, [ticker, session?.user]);
+
+  async function save() {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/positions/levels/${encodeURIComponent(ticker)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stop_price: stop, target_price: target, notes }),
+      });
+      const data = await res.json();
+      setLevel(data.level);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!session?.user) return null;
+
+  const hasLevels = level && (level.stop_price !== null || level.target_price !== null || level.notes);
+
+  function pct(price: number) {
+    if (currentPrice === null || currentPrice <= 0) return null;
+    return ((price - currentPrice) / currentPrice) * 100;
+  }
+
+  return (
+    <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4 mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
+          My Levels
+        </h2>
+        {!editing ? (
+          <button onClick={() => setEditing(true)} className="text-xs text-[#B08D57] hover:underline">
+            {hasLevels ? 'Edit' : '+ Set'}
+          </button>
+        ) : (
+          <div className="flex gap-3">
+            <button onClick={() => {
+              setEditing(false);
+              setStop(level?.stop_price?.toString() ?? '');
+              setTarget(level?.target_price?.toString() ?? '');
+              setNotes(level?.notes ?? '');
+            }} className="text-xs text-[#F5EFE0]/45">Cancel</button>
+            <button onClick={save} disabled={saving} className="text-xs text-[#B08D57]">
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {!editing ? (
+        hasLevels ? (
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/30">Stop</div>
+              <div className="font-mono text-[#e8453c]">
+                {level!.stop_price !== null ? `$${level!.stop_price.toFixed(2)}` : '—'}
+                {level!.stop_price !== null && currentPrice !== null && (
+                  <span className="text-xs text-[#F5EFE0]/40 ml-2">({pct(level!.stop_price)?.toFixed(1)}%)</span>
+                )}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/30">Target</div>
+              <div className="font-mono text-[#3ecf6a]">
+                {level!.target_price !== null ? `$${level!.target_price.toFixed(2)}` : '—'}
+                {level!.target_price !== null && currentPrice !== null && (
+                  <span className="text-xs text-[#F5EFE0]/40 ml-2">(+{pct(level!.target_price)?.toFixed(1)}%)</span>
+                )}
+              </div>
+            </div>
+            {level!.notes && (
+              <div className="col-span-2 text-xs text-[#F5EFE0]/60 whitespace-pre-wrap">{level!.notes}</div>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-[#F5EFE0]/40">No stop or target set. Tap + Set to track levels for this ticker.</p>
+        )
+      ) : (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 block mb-1">Stop price</span>
+              <input type="number" step="0.01" value={stop} onChange={e => setStop(e.target.value)} placeholder="—"
+                className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm font-mono text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]" />
+            </label>
+            <label className="block">
+              <span className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 block mb-1">Target price</span>
+              <input type="number" step="0.01" value={target} onChange={e => setTarget(e.target.value)} placeholder="—"
+                className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm font-mono text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]" />
+            </label>
+          </div>
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 block mb-1">Notes</span>
+            <textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)}
+              placeholder="e.g. trim half above 220, full stop if it breaks support"
+              className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]" />
+          </label>
+          <p className="text-[10px] text-[#F5EFE0]/30">Personal annotation — not wired to any broker. Clear all fields to remove.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PositionPage() {
   const params = useParams();
   const ticker = decodeURIComponent(params.ticker as string).toUpperCase();
@@ -676,6 +810,8 @@ export default function PositionPage() {
 
             {/* TradingView chart */}
             <TradingViewChart ticker={ticker} />
+
+            <PriceLevels ticker={ticker} currentPrice={currentPrice} />
 
             {!data || total === 0 ? (
               <div className="text-center py-20 border border-dashed border-[rgba(176,141,87,0.28)] rounded">
