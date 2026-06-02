@@ -23,6 +23,18 @@
     {
       "path": "/api/cron/personal-dispatch",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/trade-tick",
+      "schedule": "35 13 * * 1-5"
+    },
+    {
+      "path": "/api/cron/trade-tick",
+      "schedule": "30 16 * * 1-5"
+    },
+    {
+      "path": "/api/cron/trade-tick",
+      "schedule": "55 19 * * 1-5"
     }
   ]
 }
