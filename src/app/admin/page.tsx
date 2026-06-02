@@ -189,6 +189,7 @@ export default function AdminDashboard() {
             <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">Admin · Costs</h1>
             <p className="text-sm text-[#F5EFE0]/45 mt-1">
               Since {new Date(summary.since).toLocaleDateString()} · {summary.total_calls.toLocaleString()} API calls
+              {' · '}<Link href="/admin/trading" className="text-[#B08D57] hover:underline">Trading →</Link>
             </p>
           </div>
           <div className="flex gap-2">
