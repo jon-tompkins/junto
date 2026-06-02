@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { consumeLinkCode } from '@/lib/telegram/link';
-import { sendTelegramMessage } from '@/lib/telegram/client';
+import { sendTelegramMessage, answerCallbackQuery, editMessageReplyMarkup } from '@/lib/telegram/client';
+import { handleApprovalCallback } from '@/lib/trading/approval';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,27 @@ export async function POST(req: NextRequest) {
   try {
     update = (await req.json()) as TelegramUpdate;
   } catch {
+    return NextResponse.json({ ok: true });
+  }
+
+  // Callback queries — inline button presses (trade approvals, etc.)
+  if (update.callback_query) {
+    const cb = update.callback_query;
+    if (cb.data?.startsWith('trade_')) {
+      try {
+        const result = await handleApprovalCallback({ data: cb.data, chatId: cb.message?.chat?.id ?? 0 });
+        await answerCallbackQuery(cb.id, result.message);
+        if (cb.message) {
+          await editMessageReplyMarkup(cb.message.chat.id, cb.message.message_id);
+          await sendTelegramMessage(cb.message.chat.id, result.message);
+        }
+      } catch (err: any) {
+        await answerCallbackQuery(cb.id, 'Error processing.');
+        console.error('[trade approval]', err);
+      }
+    } else {
+      await answerCallbackQuery(cb.id);
+    }
     return NextResponse.json({ ok: true });
   }
 
@@ -71,5 +93,14 @@ interface TelegramUpdate {
     text?: string;
     chat?: { id: number };
     from?: { username?: string };
+  };
+  callback_query?: {
+    id: string;
+    data?: string;
+    message?: {
+      message_id: number;
+      chat: { id: number };
+    };
+    from?: { id: number; username?: string };
   };
 }

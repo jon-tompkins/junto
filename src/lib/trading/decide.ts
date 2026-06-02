@@ -1,0 +1,120 @@
+import { getAnthropic } from '@/lib/synthesis/client';
+import type { Mandate, ExtractedSignal, TradeDecision } from './types';
+import type { AlpacaPosition } from './alpaca';
+
+const SONNET_MODEL = 'claude-sonnet-4-6';
+
+export interface DecisionContext {
+  mandate: Mandate;
+  signals: ExtractedSignal[];
+  positions: AlpacaPosition[];
+  accountEquity: number;
+}
+
+export async function decideTrades(ctx: DecisionContext): Promise<TradeDecision[]> {
+  const { mandate, signals, positions, accountEquity } = ctx;
+  if (signals.length === 0) return [];
+
+  const heldSymbols = new Set(positions.map((p) => p.symbol.toUpperCase()));
+  const candidates = signals.filter((s) => {
+    if (s.direction === 'hold') return false;
+    if (s.direction === 'exit') return heldSymbols.has(s.ticker);
+    if (mandate.allowed_tickers && !mandate.allowed_tickers.includes(s.ticker)) return false;
+    if (mandate.blocked_tickers && mandate.blocked_tickers.includes(s.ticker)) return false;
+    if (heldSymbols.has(s.ticker)) return false;
+    return s.conviction >= 3;
+  });
+
+  if (candidates.length === 0) return [];
+
+  const positionsBlock = positions.length
+    ? positions
+        .map(
+          (p) =>
+            `${p.symbol} ${p.side} qty=${p.qty} entry=${p.avg_entry_price} now=${p.current_price} pnl%=${(Number(p.unrealized_plpc) * 100).toFixed(2)}`,
+        )
+        .join('\n')
+    : '(none)';
+
+  const signalsBlock = candidates
+    .map(
+      (s, i) =>
+        `[${i + 1}] ${s.ticker} ${s.direction} conviction=${s.conviction}\n  rationale: ${s.rationale}\n  sources: ${s.source_urls.join(', ')}`,
+    )
+    .join('\n\n');
+
+  const system = `You are a disciplined portfolio manager running a mandate. For each candidate signal, decide whether to open a position. You must respect the mandate's guidelines exactly.
+
+For every position you open, you write an entry thesis that captures:
+- the specific edge being expressed
+- expected holding period
+- what would invalidate the thesis
+- stop and target as percentages off entry (typical: stop 5-10%, target 15-25%, asymmetric to the upside)
+
+Use conservative position sizing. max_position_pct caps each notional as a % of equity.
+Reject low-quality signals — it is fine to return an empty list.
+
+Output strict JSON only:
+{ "decisions": [
+  { "ticker": "AAPL", "side": "long", "notional_usd": 5000, "entry_thesis": "...", "invalidation": "...", "stop_pct": 7, "target_pct": 20, "expected_hold_days": 30, "source_urls": ["..."], "conviction": 4 }
+] }`;
+
+  const user = `Mandate guidelines:
+${mandate.guidelines}
+
+Account equity: $${accountEquity.toFixed(2)}
+Max position size: ${mandate.max_position_pct}% (= $${((accountEquity * mandate.max_position_pct) / 100).toFixed(2)})
+Daily loss limit: ${mandate.daily_loss_limit_pct}%
+
+Current open positions:
+${positionsBlock}
+
+Candidate signals:
+${signalsBlock}
+
+Return JSON.`;
+
+  const anthropic = getAnthropic();
+  const res = await anthropic.messages.create({
+    model: SONNET_MODEL,
+    max_tokens: 3000,
+    system,
+    messages: [{ role: 'user', content: user }],
+  });
+
+  const text = res.content
+    .filter((b) => b.type === 'text')
+    .map((b: any) => b.text)
+    .join('');
+
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return [];
+
+  try {
+    const parsed = JSON.parse(jsonMatch[0]);
+    const decisions = Array.isArray(parsed.decisions) ? parsed.decisions : [];
+    const maxNotional = (accountEquity * mandate.max_position_pct) / 100;
+    return decisions
+      .filter(
+        (d: any) =>
+          typeof d.ticker === 'string' &&
+          ['long', 'short'].includes(d.side) &&
+          Number(d.notional_usd) > 0 &&
+          typeof d.entry_thesis === 'string',
+      )
+      .map((d: any) => ({
+        ticker: d.ticker.toUpperCase(),
+        side: d.side,
+        notional_usd: Math.min(Number(d.notional_usd), maxNotional),
+        entry_thesis: String(d.entry_thesis),
+        invalidation: String(d.invalidation || ''),
+        stop_pct: Math.max(2, Math.min(20, Number(d.stop_pct) || 7)),
+        target_pct: Math.max(5, Math.min(50, Number(d.target_pct) || 15)),
+        expected_hold_days: Math.max(1, Math.min(365, Number(d.expected_hold_days) || 14)),
+        source_urls: Array.isArray(d.source_urls) ? d.source_urls : [],
+        conviction: Number(d.conviction) || 3,
+      })) as TradeDecision[];
+  } catch {
+    return [];
+  }
+}

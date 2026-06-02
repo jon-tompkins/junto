@@ -35,17 +35,51 @@ interface TgMessage {
   chat: { id: number };
 }
 
+export interface InlineKeyboardButton {
+  text: string;
+  callback_data?: string;
+  url?: string;
+}
+
+export interface InlineKeyboardMarkup {
+  inline_keyboard: InlineKeyboardButton[][];
+}
+
 // Single message send. Content must be pre-escaped HTML (use `markdownToTelegramHtml`).
 export async function sendTelegramMessage(
   chatId: string | number,
   html: string,
-  opts: { disablePreview?: boolean } = {},
+  opts: { disablePreview?: boolean; replyMarkup?: InlineKeyboardMarkup } = {},
 ): Promise<TgMessage> {
-  return tgCall<TgMessage>('sendMessage', {
+  const body: Record<string, unknown> = {
     chat_id: chatId,
     text: html,
     parse_mode: 'HTML',
     disable_web_page_preview: opts.disablePreview ?? true,
+  };
+  if (opts.replyMarkup) body.reply_markup = opts.replyMarkup;
+  return tgCall<TgMessage>('sendMessage', body);
+}
+
+export async function answerCallbackQuery(
+  callbackQueryId: string,
+  text?: string,
+): Promise<void> {
+  await tgCall<boolean>('answerCallbackQuery', {
+    callback_query_id: callbackQueryId,
+    text: text?.slice(0, 200),
+  });
+}
+
+export async function editMessageReplyMarkup(
+  chatId: number | string,
+  messageId: number,
+  replyMarkup?: InlineKeyboardMarkup,
+): Promise<void> {
+  await tgCall<unknown>('editMessageReplyMarkup', {
+    chat_id: chatId,
+    message_id: messageId,
+    reply_markup: replyMarkup ?? { inline_keyboard: [] },
   });
 }
 
