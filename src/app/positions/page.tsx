@@ -186,15 +186,15 @@ export default function PositionsPage() {
           </div>
 
           {/* Controls */}
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full md:w-auto">
             {/* Search */}
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search ticker…"
-                className="w-40 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-1.5 pr-7 text-xs text-[#F5EFE0] placeholder-[#F5EFE0]/30 font-mono uppercase focus:outline-none focus:border-[#B08D57]"
+                className="w-full sm:w-40 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-1.5 pr-7 text-xs text-[#F5EFE0] placeholder-[#F5EFE0]/30 font-mono uppercase focus:outline-none focus:border-[#B08D57]"
               />
               {search && (
                 <button
@@ -207,7 +207,7 @@ export default function PositionsPage() {
               )}
             </div>
 
-            <div className="w-px h-5 bg-[rgba(176,141,87,0.2)]" />
+            <div className="hidden sm:block w-px h-5 bg-[rgba(176,141,87,0.2)]" />
 
             {/* Junto filter */}
             {juntos.length > 0 && (
@@ -228,7 +228,7 @@ export default function PositionsPage() {
               </select>
             )}
 
-            <div className="w-px h-5 bg-[rgba(176,141,87,0.2)]" />
+            <div className="hidden sm:block w-px h-5 bg-[rgba(176,141,87,0.2)]" />
 
             {/* Category filter */}
             <div className="flex gap-1">
@@ -255,7 +255,7 @@ export default function PositionsPage() {
               })}
             </div>
 
-            <div className="w-px h-5 bg-[rgba(176,141,87,0.2)]" />
+            <div className="hidden sm:block w-px h-5 bg-[rgba(176,141,87,0.2)]" />
 
             {/* Stance filter */}
             <div className="flex gap-1">
@@ -293,7 +293,7 @@ export default function PositionsPage() {
               {includeStale ? '✓ ' : ''}Include stale
             </button>
 
-            <div className="w-px h-5 bg-[rgba(176,141,87,0.2)]" />
+            <div className="hidden sm:block w-px h-5 bg-[rgba(176,141,87,0.2)]" />
 
             {/* View toggle */}
             <div className="flex rounded overflow-hidden border border-[rgba(176,141,87,0.28)]">

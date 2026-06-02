@@ -462,8 +462,8 @@ function ResearchReports({ ticker }: { ticker: string }) {
           </a>.
         </div>
       ) : (
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-x-auto">
+          <table className="w-full min-w-[560px] text-sm">
             <thead>
               <tr className="border-b border-[rgba(176,141,87,0.28)] text-[10px] uppercase tracking-wider text-[#F5EFE0]/30 font-[var(--font-oswald)]">
                 <th className="py-2 px-4 text-left">Date</th>

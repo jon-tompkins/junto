@@ -193,7 +193,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 
       {/* Mobile Sidebar */}
       <aside
-        className={`md:hidden fixed top-14 left-0 bottom-0 w-64 z-30 flex flex-col transform transition-transform duration-200 ${
+        className={`md:hidden fixed top-14 left-0 bottom-0 w-[78vw] max-w-[280px] z-30 flex flex-col overflow-y-auto transform transition-transform duration-200 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{ background: '#080604', borderRight: '1px solid rgba(176,141,87,0.18)' }}

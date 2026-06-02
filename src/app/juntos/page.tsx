@@ -297,8 +297,8 @@ export default function JuntosPage() {
             )}
           </div>
         ) : (
-          <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
-            <table className="w-full">
+          <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-x-auto">
+            <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="bg-[#141210] border-b border-[rgba(176,141,87,0.28)]">
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Name</th>

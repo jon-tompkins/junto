@@ -176,7 +176,7 @@ export default function PromptPage() {
               setPrompt(e.target.value);
               setSuccess('');
             }}
-            className="w-full h-96 px-4 py-3 bg-neutral-950 border border-neutral-700 focus:border-white focus:outline-none transition-colors font-mono text-sm resize-none"
+            className="w-full h-64 sm:h-96 px-4 py-3 bg-neutral-950 border border-neutral-700 focus:border-white focus:outline-none transition-colors font-mono text-sm resize-none"
             placeholder="Enter your custom prompt..."
           />
         </div>
