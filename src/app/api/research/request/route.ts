@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   const { ticker } = await req.json().catch(() => ({ ticker: null }));
   const clean = (ticker || '').toString().toUpperCase().trim();
-  if (!/^[A-Z]{1,10}$/.test(clean)) {
+  if (!/^[A-Z]{1,10}(\.[A-Z]{1,3})?$/.test(clean)) {
     return NextResponse.json({ error: 'Invalid ticker' }, { status: 400 });
   }
 
