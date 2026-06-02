@@ -34,6 +34,7 @@ export async function sendNewsletter({
   const formattedDate = formatDate(date, 'MMMM D, YYYY');
 
   const htmlContent = markdownToHtml(content);
+  const html = buildEmailHtml(htmlContent, subject, formattedDate, newsletterId);
 
   // Use newsletter-specific from address if name provided
   // e.g., "Crypto Daily Brief <crypto-daily-brief@myjunto.xyz>"
@@ -42,33 +43,42 @@ export async function sendNewsletter({
     ? `${newsletterName} <${slugifyName(newsletterName)}@myjunto.xyz>`
     : defaultFrom;
 
-  const { data, error } = await resend.emails.send({
-    from: fromAddress,
-    to: recipients,
-    subject: subject,
-    html: buildEmailHtml(htmlContent, subject, formattedDate, newsletterId),
-    text: content,
-  });
+  // Privacy: send one email per recipient so subscribers never see each other's addresses.
+  const ids: string[] = [];
+  let lastError: Error | null = null;
+  for (const recipient of recipients) {
+    const { data, error } = await resend.emails.send({
+      from: fromAddress,
+      to: recipient,
+      subject,
+      html,
+      text: content,
+    });
 
-  if (error) {
-    console.error('Error sending email:', error);
-    throw new Error(`Failed to send email: ${error.message}`);
+    if (error) {
+      console.error(`Error sending email to ${recipient}:`, error);
+      lastError = new Error(`Failed to send email: ${error.message}`);
+      continue;
+    }
+
+    if (data?.id) ids.push(data.id);
+
+    recordCost({
+      supplier: 'resend',
+      operation: 'newsletter_delivery',
+      cost_cents: resendCostCents(1),
+      usage_amount: 1,
+      usage_unit: 'emails',
+      external_id: data?.id || '',
+      newsletter_id: newsletterId || null,
+      metadata: { newsletterName },
+    });
   }
 
-  console.log(`Email sent successfully: ${data?.id}`);
+  if (ids.length === 0 && lastError) throw lastError;
 
-  recordCost({
-    supplier: 'resend',
-    operation: 'newsletter_delivery',
-    cost_cents: resendCostCents(recipients.length),
-    usage_amount: recipients.length,
-    usage_unit: 'emails',
-    external_id: data?.id || '',
-    newsletter_id: newsletterId || null,
-    metadata: { newsletterName },
-  });
-
-  return { id: data?.id || '' };
+  console.log(`Email sent to ${ids.length}/${recipients.length} recipients`);
+  return { id: ids[0] || '' };
 }
 
 function markdownToHtml(markdown: string): string {
