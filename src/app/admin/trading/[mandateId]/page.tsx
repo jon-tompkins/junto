@@ -60,6 +60,34 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const [editing, setEditing] = useState(false);
   const [draftGuidelines, setDraftGuidelines] = useState('');
   const [saving, setSaving] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
+
+  async function sendTestProposal() {
+    const ticker = prompt('Ticker for test proposal (default SPY):', 'SPY')?.toUpperCase().trim() || 'SPY';
+    setSendingTest(true);
+    setTestResult(null);
+    try {
+      const res = await fetch('/api/admin/trading/test-proposal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mandate_id: mandateId, ticker }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setTestResult(`Sent: ${data.qty} ${data.ticker} @ ~$${data.entryPrice?.toFixed(2)}. Check Telegram.`);
+        fetch(`/api/admin/trading/mandates/${mandateId}`)
+          .then(r => r.json())
+          .then(d => { setTrades(d.trades || []); setSignals(d.signals || []); });
+      } else {
+        setTestResult(`Error: ${data.error || 'unknown'}`);
+      }
+    } catch (e: any) {
+      setTestResult(`Error: ${e.message}`);
+    } finally {
+      setSendingTest(false);
+    }
+  }
 
   useEffect(() => {
     if (status !== 'authenticated') return;
@@ -127,7 +155,12 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               {mandate.junto_name || 'no junto'} · {mandate.mode} · {fmtUsd(mandate.capital_allotted_usd)} · {mandate.max_position_pct}% max position
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={sendTestProposal}
+              disabled={sendingTest}
+              className="px-2 py-1 rounded text-xs font-[var(--font-oswald)] uppercase tracking-wide bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#B08D57] hover:text-[#F5EFE0] disabled:opacity-50"
+            >{sendingTest ? 'Sending…' : 'Test proposal'}</button>
             {(['active', 'paused', 'archived'] as const).map(s => (
               <button
                 key={s}
@@ -139,6 +172,10 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             ))}
           </div>
         </div>
+
+        {testResult && (
+          <div className="mb-4 px-3 py-2 rounded text-xs bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/70">{testResult}</div>
+        )}
 
         {/* Guidelines */}
         <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-6">
