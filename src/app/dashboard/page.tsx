@@ -237,7 +237,7 @@ function LatestDispatchCard() {
       <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
         {data?.has_featured_junto
           ? 'No dispatch yet — your first will arrive at the next cron run.'
-          : 'Pick a featured junto below to start receiving a daily personal dispatch.'}
+          : 'Pick a primary junto below to start receiving a daily personal dispatch.'}
       </div>
     );
   }
@@ -256,6 +256,67 @@ function LatestDispatchCard() {
         {excerpt}
         {data.latest.content.length > 600 && '…'}
       </p>
+    </div>
+  );
+}
+
+// ─── Received dispatches feed ─────────────────────────
+
+interface ReceivedDispatchItem {
+  run_id: string;
+  newsletter_id: string;
+  newsletter_name: string;
+  is_personal: boolean;
+  subject: string;
+  dispatch_date: string | null;
+  delivered_at: string;
+  methods: string[];
+}
+
+function ReceivedDispatchesFeed() {
+  const [items, setItems] = useState<ReceivedDispatchItem[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/v2/dispatches/received')
+      .then((r) => (r.ok ? r.json() : { items: [] }))
+      .then((d) => setItems(d.items || []))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="h-24 rounded bg-[#141210] animate-pulse" />;
+  if (!items || items.length === 0) {
+    return (
+      <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
+        No dispatches received yet.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] divide-y divide-[rgba(176,141,87,0.18)]">
+      {items.map((it) => (
+        <Link
+          key={`${it.run_id}-${it.delivered_at}`}
+          href={`/newsletter/${it.newsletter_id}`}
+          className="block px-4 py-3 hover:bg-[#1a1815] transition"
+        >
+          <div className="flex items-baseline justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-[#F5EFE0] truncate">{it.subject || '(no subject)'}</p>
+              <p className="text-xs text-[#F5EFE0]/45 mt-0.5 truncate">
+                {it.newsletter_name}
+                {it.is_personal && <span className="text-[#B08D57]/80"> · personal</span>}
+                {it.methods.length > 0 && <span className="text-[#F5EFE0]/35"> · {it.methods.join(', ')}</span>}
+              </p>
+            </div>
+            <span className="text-[10px] text-[#F5EFE0]/40 font-mono whitespace-nowrap">
+              {it.dispatch_date || it.delivered_at.slice(0, 10)}
+            </span>
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }
@@ -288,7 +349,7 @@ function PositionsSnapshotCard({ juntoId }: { juntoId: string | null | undefined
   if (!juntoId) {
     return (
       <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
-        Pick a featured junto below to see its top tracked positions.
+        Pick a primary junto below to see its top tracked positions.
       </div>
     );
   }
@@ -424,7 +485,7 @@ export default function DashboardPage() {
   async function loadFeaturedJunto() {
     setJuntoLoading(true);
     try {
-      const res = await fetch('/api/v2/featured-junto');
+      const res = await fetch('/api/v2/primary-junto');
       if (res.ok) {
         const data = await res.json();
         setFeaturedJunto(data.junto);
@@ -438,7 +499,7 @@ export default function DashboardPage() {
 
   async function handleChangeFeaturedJunto(juntoId: string) {
     try {
-      await fetch('/api/v2/featured-junto', {
+      await fetch('/api/v2/primary-junto', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ juntoId }),
@@ -469,7 +530,7 @@ export default function DashboardPage() {
   async function loadFeaturedWatchlist() {
     setWatchlistLoading(true);
     try {
-      const res = await fetch('/api/v2/featured-watchlist');
+      const res = await fetch('/api/v2/primary-watchlist');
       if (res.ok) {
         const data = await res.json();
         setFeaturedWatchlist(data.watchlist);
@@ -482,7 +543,7 @@ export default function DashboardPage() {
 
   async function handleChangeFeaturedWatchlist(watchlistId: string) {
     try {
-      await fetch('/api/v2/featured-watchlist', {
+      await fetch('/api/v2/primary-watchlist', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ watchlistId }),
@@ -521,7 +582,7 @@ export default function DashboardPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        await fetch('/api/v2/featured-watchlist', {
+        await fetch('/api/v2/primary-watchlist', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ watchlistId: data.watchlist.id }),
@@ -585,7 +646,7 @@ export default function DashboardPage() {
     setSynthError(null);
     setSynthesis(null);
     try {
-      const res = await fetch('/api/v2/featured-junto/synthesize', { method: 'POST' });
+      const res = await fetch('/api/v2/primary-junto/synthesize', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Synthesis failed');
       setSynthesis(data.content);
@@ -786,13 +847,18 @@ export default function DashboardPage() {
           <LatestDispatchCard />
         </Section>
 
+        {/* ─── Received dispatches feed ──────────────────── */}
+        <Section label="Received Dispatches">
+          <ReceivedDispatchesFeed />
+        </Section>
+
         {/* ─── Positions snapshot ──────────────────────── */}
         <Section label="Positions" badge={featuredJunto?.name || null}>
           <PositionsSnapshotCard juntoId={featuredJunto?.id} />
         </Section>
 
-        {/* ─── Featured Junto ───────────────────────────── */}
-        <Section label="Featured Junto" badge={featuredJunto?.name || null}>
+        {/* ─── Primary Junto ───────────────────────────── */}
+        <Section label="Primary Junto" badge={featuredJunto?.name || null}>
         <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(176,141,87,0.18)]">
             <div className="min-w-0 flex-1">

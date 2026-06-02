@@ -37,7 +37,7 @@ async function getFeaturedWatchlistId(userId: string): Promise<string | null> {
   return data?.featured_watchlist_id ?? null;
 }
 
-// GET /api/v2/featured-watchlist
+// GET /api/v2/primary-watchlist
 // Returns the user's primary watchlist with tickers. Auto-creates one if none is set.
 export async function GET() {
   try {
@@ -71,12 +71,12 @@ export async function GET() {
     const allWatchlists = await getUserWatchlists(user.id);
     return NextResponse.json({ watchlist, allWatchlists });
   } catch (err) {
-    console.error('[GET /api/v2/featured-watchlist]', err);
+    console.error('[GET /api/v2/primary-watchlist]', err);
     return NextResponse.json({ error: 'Failed to load featured watchlist' }, { status: 500 });
   }
 }
 
-// PUT /api/v2/featured-watchlist
+// PUT /api/v2/primary-watchlist
 // Body: { watchlistId: string }
 export async function PUT(req: NextRequest) {
   try {
@@ -104,7 +104,7 @@ export async function PUT(req: NextRequest) {
     await supabase.from('users').update({ featured_watchlist_id: watchlistId }).eq('id', user.id);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[PUT /api/v2/featured-watchlist]', err);
+    console.error('[PUT /api/v2/primary-watchlist]', err);
     return NextResponse.json({ error: 'Failed to update featured watchlist' }, { status: 500 });
   }
 }

@@ -30,7 +30,7 @@ async function resolveUserId(session: any): Promise<string | null> {
   return null;
 }
 
-// POST /api/v2/featured-junto/synthesize
+// POST /api/v2/primary-junto/synthesize
 // Runs a quick dispatch over the current user's featured junto sources.
 export async function POST(req: NextRequest) {
   const limited = synthesisLimiter(req);
@@ -139,7 +139,7 @@ ${contentBlocks.join('\n\n')}`;
 
     return NextResponse.json({ content, sourceUsage, creditsUsed: CREDIT_COST });
   } catch (err) {
-    console.error('[POST /api/v2/featured-junto/synthesize]', err);
+    console.error('[POST /api/v2/primary-junto/synthesize]', err);
     return NextResponse.json({ error: 'Synthesis failed' }, { status: 500 });
   }
 }

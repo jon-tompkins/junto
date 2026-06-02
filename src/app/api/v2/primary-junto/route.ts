@@ -73,7 +73,7 @@ async function getJuntoWithSources(juntoId: string) {
   return junto;
 }
 
-// GET /api/v2/featured-junto
+// GET /api/v2/primary-junto
 // Returns the featured junto with sources. Auto-creates one if none is set.
 export async function GET() {
   try {
@@ -115,12 +115,12 @@ export async function GET() {
 
     return NextResponse.json({ junto, allJuntos, publicJuntos });
   } catch (err) {
-    console.error('[GET /api/v2/featured-junto]', err);
+    console.error('[GET /api/v2/primary-junto]', err);
     return NextResponse.json({ error: 'Failed to load featured junto' }, { status: 500 });
   }
 }
 
-// PUT /api/v2/featured-junto
+// PUT /api/v2/primary-junto
 // Body: { juntoId: string }
 export async function PUT(req: NextRequest) {
   try {
@@ -150,7 +150,7 @@ export async function PUT(req: NextRequest) {
     await supabase.from('users').update({ featured_junto_id: juntoId }).eq('id', user.id);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[PUT /api/v2/featured-junto]', err);
+    console.error('[PUT /api/v2/primary-junto]', err);
     return NextResponse.json({ error: 'Failed to update featured junto' }, { status: 500 });
   }
 }
