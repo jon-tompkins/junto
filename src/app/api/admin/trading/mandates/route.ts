@@ -3,6 +3,7 @@ import { isAdminSession } from '@/lib/admin';
 import { getSupabase } from '@/lib/db/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { getUserTelegramChatId } from '@/lib/telegram/link';
 
 export async function GET() {
   if (!(await isAdminSession())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -66,6 +67,14 @@ export async function POST(req: NextRequest) {
     userId = data?.id || null;
   }
   if (!userId) return NextResponse.json({ error: 'Could not resolve user id' }, { status: 400 });
+
+  const chatId = await getUserTelegramChatId(userId);
+  if (!chatId) {
+    return NextResponse.json({
+      error: 'Telegram not linked. Link it in Settings before creating a mandate — trade approvals are sent via Telegram.',
+      reason: 'telegram_not_linked',
+    }, { status: 400 });
+  }
 
   const body = await req.json();
 

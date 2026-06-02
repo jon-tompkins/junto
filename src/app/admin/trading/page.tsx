@@ -37,6 +37,7 @@ export default function AdminTradingPage() {
   const [creating, setCreating] = useState(false);
   const [ticking, setTicking] = useState(false);
   const [tickResult, setTickResult] = useState<string | null>(null);
+  const [telegramLinked, setTelegramLinked] = useState<boolean | null>(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -57,10 +58,12 @@ export default function AdminTradingPage() {
         return r.json();
       }),
       fetch('/api/juntos/public').then(r => r.ok ? r.json() : { juntos: [] }),
+      fetch('/api/admin/trading/telegram-status').then(r => r.ok ? r.json() : { linked: false }),
     ])
-      .then(([m, j]) => {
+      .then(([m, j, tg]) => {
         setMandates(m.mandates || []);
         setJuntos(j.juntos || []);
+        setTelegramLinked(!!tg.linked);
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
@@ -151,12 +154,28 @@ export default function AdminTradingPage() {
             </button>
             <button
               onClick={() => setShowCreate(s => !s)}
-              className="px-3 py-1.5 rounded text-sm bg-[#B08D57] text-[#080604] font-semibold hover:bg-[#B08D57]/80 transition"
+              disabled={telegramLinked === false}
+              title={telegramLinked === false ? 'Link Telegram first' : undefined}
+              className="px-3 py-1.5 rounded text-sm bg-[#B08D57] text-[#080604] font-semibold hover:bg-[#B08D57]/80 transition disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {showCreate ? 'Cancel' : '+ New mandate'}
             </button>
           </div>
         </div>
+
+        {telegramLinked === false && (
+          <div className="bg-[#e8453c]/10 border border-[#e8453c]/40 rounded p-4 mb-6 flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-semibold text-[#e8453c] mb-1">Telegram not linked</div>
+              <p className="text-xs text-[#F5EFE0]/60">
+                Trade approvals are sent to your Telegram DM. Link your account first — without it, proposed trades can't be approved and won't reach Alpaca.
+              </p>
+            </div>
+            <Link href="/settings" className="px-3 py-1.5 rounded text-xs bg-[#B08D57] text-[#080604] font-semibold whitespace-nowrap">
+              Link Telegram →
+            </Link>
+          </div>
+        )}
 
         {tickResult && (
           <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4 mb-6">
