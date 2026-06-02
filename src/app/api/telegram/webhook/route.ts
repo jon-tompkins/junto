@@ -73,5 +73,3 @@ interface TelegramUpdate {
     from?: { username?: string };
   };
 }
-</content>
-</invoke>
