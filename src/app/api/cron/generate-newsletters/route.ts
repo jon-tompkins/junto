@@ -276,6 +276,7 @@ export async function GET(req: NextRequest) {
               content: result.content,
               newsletterId: newsletter.id,
               newsletterName: newsletter.name,
+              recipientUserIds: deliveredEmailUserIds,
             });
             await recordBulkDeliveries(run.id, deliveredEmailUserIds, 'email');
           } catch (emailError) {

@@ -2,6 +2,7 @@ import { getResend } from './client';
 import { config } from '@/lib/utils/config';
 import { formatDate } from '@/lib/utils/date';
 import { recordCost, resendCostCents } from '@/lib/costs';
+import { signUnsubscribeToken } from './unsubscribe-token';
 
 interface SendNewsletterParams {
   to: string | string[];
@@ -10,7 +11,12 @@ interface SendNewsletterParams {
   date?: string;
   newsletterId?: string;
   newsletterName?: string;
+  // Aligned 1:1 with `to`. When provided, generates a per-recipient
+  // signed unsubscribe URL used in both the footer and List-Unsubscribe headers.
+  recipientUserIds?: string[];
 }
+
+const APP_BASE_URL = process.env.APP_BASE_URL || 'https://www.myjunto.xyz';
 
 function slugifyName(name: string): string {
   return name
@@ -27,6 +33,7 @@ export async function sendNewsletter({
   date = new Date().toISOString(),
   newsletterId,
   newsletterName,
+  recipientUserIds,
 }: SendNewsletterParams): Promise<{ id: string }> {
   const resend = getResend();
 
@@ -34,7 +41,6 @@ export async function sendNewsletter({
   const formattedDate = formatDate(date, 'MMMM D, YYYY');
 
   const htmlContent = markdownToHtml(content);
-  const html = buildEmailHtml(htmlContent, subject, formattedDate, newsletterId);
 
   // Use newsletter-specific from address if name provided
   // e.g., "Crypto Daily Brief <crypto-daily-brief@myjunto.xyz>"
@@ -46,13 +52,26 @@ export async function sendNewsletter({
   // Privacy: send one email per recipient so subscribers never see each other's addresses.
   const ids: string[] = [];
   let lastError: Error | null = null;
-  for (const recipient of recipients) {
+  for (let i = 0; i < recipients.length; i++) {
+    const recipient = recipients[i];
+    const userId = recipientUserIds?.[i];
+    const unsubUrl = userId && newsletterId
+      ? `${APP_BASE_URL}/api/email/unsubscribe?token=${signUnsubscribeToken(userId, newsletterId)}`
+      : `${APP_BASE_URL}/dashboard`;
+    const html = buildEmailHtml(htmlContent, subject, formattedDate, unsubUrl);
+
     const { data, error } = await resend.emails.send({
       from: fromAddress,
       to: recipient,
       subject,
       html,
       text: content,
+      headers: userId && newsletterId
+        ? {
+            'List-Unsubscribe': `<${unsubUrl}>, <mailto:unsubscribe@myjunto.xyz>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          }
+        : undefined,
     });
 
     if (error) {
@@ -143,11 +162,7 @@ function markdownToHtml(markdown: string): string {
   return html;
 }
 
-function buildEmailHtml(content: string, subject: string, date: string, newsletterId?: string): string {
-  const unsubUrl = newsletterId
-    ? `https://www.myjunto.xyz/newsletter/${newsletterId}?action=unsubscribe`
-    : 'https://www.myjunto.xyz/dashboard';
-
+function buildEmailHtml(content: string, subject: string, date: string, unsubUrl: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
