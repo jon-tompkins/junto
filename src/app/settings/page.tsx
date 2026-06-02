@@ -388,7 +388,7 @@ export default function SettingsPage() {
           <div>
             <label className="block text-sm text-[#F5EFE0]/60 mb-2">
               Default Email
-              <span className="text-[#F5EFE0]/30 ml-1">(newsletter delivery fallback)</span>
+              <span className="text-[#F5EFE0]/30 ml-1">(dispatch delivery fallback)</span>
             </label>
             <input
               type="email"

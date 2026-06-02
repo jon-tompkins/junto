@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     const sourceIds = (jsSources || []).map((r: any) => r.source_id);
     if (sourceIds.length === 0) {
       return NextResponse.json({
-        error: 'Your featured junto has no sources yet — add some accounts to it first.',
+        error: 'Your primary junto has no sources yet — add some sources to it first.',
       }, { status: 400 });
     }
 

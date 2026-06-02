@@ -351,7 +351,7 @@ export default function FlowPage() {
               <FeatureRow route="/theses/new" purpose="Create structured investment thesis (AI-generated draft)" reads="users" writes="theses, thesis_criteria, thesis_trades" note="new feature" />
               <FeatureRow route="/theses" purpose="Browse your saved theses" reads="theses" />
               <FeatureRow route="/theses/[id]" purpose="Thesis detail — criteria, trades, invalidation tracking" reads="theses, thesis_criteria, thesis_trades" />
-              <FeatureRow route="/flow" purpose="This page — system architecture map" />
+              <FeatureRow route="/docs/flow" purpose="This page — system architecture map" />
               <FeatureRow route="/admin" purpose="Platform cost dashboard (admin only)" reads="supplier_costs, credit_transactions" />
             </div>
           </div>

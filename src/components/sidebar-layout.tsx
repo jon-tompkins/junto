@@ -26,10 +26,10 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 
   const fetchCredits = async () => {
     try {
-      const res = await fetch('/api/user/credits');
+      const res = await fetch('/api/v2/account');
       if (res.ok) {
         const data = await res.json();
-        setCredits(data.credits);
+        setCredits(data.balance);
       }
     } catch (err) {
       console.error('Failed to fetch credits:', err);

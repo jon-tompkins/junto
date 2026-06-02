@@ -1052,7 +1052,7 @@ export default function DashboardPage() {
                       href={`/junto/${featuredJunto.id}/edit`}
                       className="text-xs px-3 py-1.5 rounded-sm bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/70 transition"
                     >
-                      Edit accounts
+                      Edit sources
                     </Link>
                   )}
                   <button
@@ -1367,7 +1367,7 @@ export default function DashboardPage() {
         </Section>
 
         {/* ─── Subscriptions / Juntos / Dispatches ──────── */}
-        <Section label="My Stuff" badge={
+        <Section label="My Library" badge={
           subsTab === 'subscriptions' ? subscriptions.length :
           subsTab === 'juntos' ? allJuntos.length :
           subsTabHistory.length
@@ -1453,7 +1453,7 @@ export default function DashboardPage() {
               icon="mail"
               title="No subscriptions yet"
               subtitle="Discover dispatches to subscribe to."
-              actionLabel="Explore Newsletters"
+              actionLabel="Explore Dispatches"
               actionHref="/explore"
             />
           ) : (
