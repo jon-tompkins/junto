@@ -53,6 +53,13 @@ export default function NewJuntoPage() {
   const [error, setError] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // X list import
+  const [showListImport, setShowListImport] = useState(false);
+  const [listInput, setListInput] = useState('');
+  const [importingList, setImportingList] = useState(false);
+  const [listImportError, setListImportError] = useState('');
+  const [lastImportSummary, setLastImportSummary] = useState('');
+
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (sourceType !== 'twitter') {
@@ -143,6 +150,67 @@ export default function NewJuntoPage() {
     setAdded((prev) => prev.filter((s) => s.id !== id));
   }
 
+  async function importList() {
+    if (!listInput.trim()) return;
+    setImportingList(true);
+    setListImportError('');
+    setLastImportSummary('');
+    try {
+      const res = await fetch('/api/lists/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ list_url: listInput.trim() }),
+      });
+      const raw = await res.text();
+      let data: any = {};
+      try { data = raw ? JSON.parse(raw) : {}; }
+      catch {
+        setListImportError(`Server error (HTTP ${res.status}): ${raw.slice(0, 200) || 'no body'}`);
+        return;
+      }
+      if (!res.ok) {
+        setListImportError(data.error || `Failed to scrape list (HTTP ${res.status})`);
+        return;
+      }
+      const members: { handle: string; displayName: string | null }[] = data.members || [];
+      const existing = new Set(added.filter(a => (a.type || 'twitter') === 'twitter').map(a => a.handle_or_url.toLowerCase()));
+      const toAdd = members
+        .map(m => ({ handle: m.handle.replace('@', '').toLowerCase(), name: m.displayName }))
+        .filter(m => m.handle && !existing.has(m.handle));
+
+      const settled = await Promise.allSettled(
+        toAdd.map(m =>
+          fetch('/api/sources', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ handle: m.handle }),
+          }).then(r => r.ok ? r.json() : null)
+        ),
+      );
+
+      const newSources: SearchResult[] = [];
+      let failed = 0;
+      for (const s of settled) {
+        if (s.status === 'fulfilled' && s.value) newSources.push(s.value as SearchResult);
+        else failed += 1;
+      }
+      setAdded(prev => [...prev, ...newSources]);
+      const skipped = members.length - toAdd.length;
+      setLastImportSummary(
+        `Imported ${newSources.length} from list` +
+        (skipped ? ` (${skipped} already present)` : '') +
+        (failed ? ` — ${failed} failed` : '') +
+        `. Remove any you don't want with ×.`,
+      );
+      setListInput('');
+      setShowListImport(false);
+    } catch (err: any) {
+      setListImportError(err?.message || 'Failed to scrape list');
+    } finally {
+      setImportingList(false);
+    }
+  }
+
   async function handleSubmit() {
     if (!name.trim()) {
       setError('Name is required');
@@ -230,6 +298,66 @@ export default function NewJuntoPage() {
               </button>
             ))}
           </div>
+
+          {/* X list import — twitter only */}
+          {sourceType === 'twitter' && (
+            <div className="mb-3">
+              {!showListImport ? (
+                <button
+                  type="button"
+                  onClick={() => { setShowListImport(true); setListImportError(''); }}
+                  className="text-xs text-[#B08D57] hover:text-[#B08D57]/80 transition font-[var(--font-oswald)] uppercase tracking-wider"
+                >
+                  + Import from X list
+                </button>
+              ) : (
+                <div className="p-3 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-[#F5EFE0]/60 font-[var(--font-oswald)] uppercase tracking-wider">
+                      Import from X list
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => { setShowListImport(false); setListImportError(''); setListInput(''); }}
+                      className="text-xs text-[#F5EFE0]/40 hover:text-[#F5EFE0]/80 transition"
+                    >
+                      cancel
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-[#F5EFE0]/45 mb-2 leading-relaxed">
+                    Paste a public X list URL (e.g. <span className="font-mono">x.com/i/lists/12345…</span>). We only surface members who&apos;ve tweeted recently — inactive accounts on the list won&apos;t appear and can be added manually. Review and × any handles before creating.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={listInput}
+                      onChange={e => setListInput(e.target.value)}
+                      disabled={importingList}
+                      placeholder="https://x.com/i/lists/..."
+                      className="flex-1 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-xs text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] transition disabled:opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={importList}
+                      disabled={!listInput.trim() || importingList}
+                      className="px-4 py-2 rounded text-xs font-semibold bg-[#B08D57] text-[#080604] font-[var(--font-oswald)] uppercase tracking-wide disabled:opacity-30 transition"
+                    >
+                      {importingList ? 'Scraping…' : 'Scrape'}
+                    </button>
+                  </div>
+                  {importingList && (
+                    <p className="text-[11px] text-[#B08D57]/70 mt-2">Scraping list — can take up to a minute…</p>
+                  )}
+                  {listImportError && (
+                    <p className="text-[11px] text-[#e8453c] mt-2">{listImportError}</p>
+                  )}
+                </div>
+              )}
+              {lastImportSummary && !showListImport && (
+                <p className="text-[11px] text-[#3ecf6a] mt-2">{lastImportSummary}</p>
+              )}
+            </div>
+          )}
 
           <div className="relative">
             <div className="flex gap-2">
