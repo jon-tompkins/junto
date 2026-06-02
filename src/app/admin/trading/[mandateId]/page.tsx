@@ -44,6 +44,21 @@ interface Signal {
   created_at: string;
 }
 
+interface TickRun {
+  id: string;
+  window: string;
+  tweets_reviewed: number;
+  signals_extracted: number;
+  decisions_made: number;
+  trades_proposed: number;
+  monitored_opened: number;
+  monitored_closed: number;
+  monitored_journaled: number;
+  errors: string[];
+  note: string | null;
+  created_at: string;
+}
+
 function fmtUsd(n: number | null): string {
   if (n === null || n === undefined) return '—';
   const sign = n < 0 ? '-' : '';
@@ -56,6 +71,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const [mandate, setMandate] = useState<Mandate | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [signals, setSignals] = useState<Signal[]>([]);
+  const [ticks, setTicks] = useState<TickRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [draftGuidelines, setDraftGuidelines] = useState('');
@@ -78,7 +94,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         setTestResult(`Sent: ${data.qty} ${data.ticker} @ ~$${data.entryPrice?.toFixed(2)}. Check Telegram.`);
         fetch(`/api/admin/trading/mandates/${mandateId}`)
           .then(r => r.json())
-          .then(d => { setTrades(d.trades || []); setSignals(d.signals || []); });
+          .then(d => { setTrades(d.trades || []); setSignals(d.signals || []); setTicks(d.ticks || []); });
       } else {
         setTestResult(`Error: ${data.error || 'unknown'}`);
       }
@@ -97,6 +113,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         setMandate(data.mandate);
         setTrades(data.trades || []);
         setSignals(data.signals || []);
+        setTicks(data.ticks || []);
         setDraftGuidelines(data.mandate?.guidelines || '');
       })
       .finally(() => setLoading(false));
@@ -222,6 +239,47 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             <p className="text-sm text-[#F5EFE0]/30">No closed trades.</p>
           ) : (
             <TradeTable trades={closedTrades} />
+          )}
+        </div>
+
+        {/* Tick runs */}
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-6">
+          <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] mb-3">Recent ticks</h2>
+          {ticks.length === 0 ? (
+            <p className="text-sm text-[#F5EFE0]/30">No ticks yet.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
+                <tr>
+                  <th className="py-2 pr-4">When</th>
+                  <th className="py-2 pr-4">Window</th>
+                  <th className="py-2 pr-4 text-right">Tweets</th>
+                  <th className="py-2 pr-4 text-right">Signals</th>
+                  <th className="py-2 pr-4 text-right">Decisions</th>
+                  <th className="py-2 pr-4 text-right">Proposed</th>
+                  <th className="py-2 pr-4 text-right">Mon (o/c/j)</th>
+                  <th className="py-2">Note / errors</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ticks.map(t => {
+                  const errs = t.errors && t.errors.length ? t.errors.join('; ') : '';
+                  const noteOrErr = errs || t.note || '';
+                  return (
+                    <tr key={t.id} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
+                      <td className="py-2 pr-4 text-xs text-[#F5EFE0]/45 whitespace-nowrap">{new Date(t.created_at).toLocaleString()}</td>
+                      <td className="py-2 pr-4 text-xs text-[#F5EFE0]/70">{t.window}</td>
+                      <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{t.tweets_reviewed}</td>
+                      <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{t.signals_extracted}</td>
+                      <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{t.decisions_made}</td>
+                      <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{t.trades_proposed}</td>
+                      <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/45 text-xs">{t.monitored_opened}/{t.monitored_closed}/{t.monitored_journaled}</td>
+                      <td className="py-2 text-xs" style={{ color: errs ? '#e8453c' : '#F5EFE0' }}>{noteOrErr}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
         </div>
 

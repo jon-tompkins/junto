@@ -15,7 +15,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!mandate) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const [tradesRes, signalsRes, juntoRes] = await Promise.all([
+  const [tradesRes, signalsRes, juntoRes, ticksRes] = await Promise.all([
     supabase
       .from('trades')
       .select('*')
@@ -31,12 +31,19 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     mandate.junto_id
       ? supabase.from('juntos').select('id, name').eq('id', mandate.junto_id).maybeSingle()
       : Promise.resolve({ data: null as any }),
+    supabase
+      .from('trading_tick_runs')
+      .select('id, window, tweets_reviewed, signals_extracted, decisions_made, trades_proposed, monitored_opened, monitored_closed, monitored_journaled, errors, note, created_at')
+      .eq('mandate_id', id)
+      .order('created_at', { ascending: false })
+      .limit(30),
   ]);
 
   return NextResponse.json({
     mandate: { ...mandate, junto_name: (juntoRes as any).data?.name || null },
     trades: tradesRes.data || [],
     signals: signalsRes.data || [],
+    ticks: ticksRes.data || [],
   });
 }
 

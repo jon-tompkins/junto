@@ -1,5 +1,5 @@
 import { makeAlpaca } from './alpaca';
-import { getActiveMandates, createPendingTrade, addJournalEntry, logSignal } from './db';
+import { getActiveMandates, createPendingTrade, addJournalEntry, logSignal, logTickRun } from './db';
 import { loadJuntoSnapshot, extractSignals } from './extract';
 import { decideTrades } from './decide';
 import { monitorMandate } from './monitor';
@@ -10,9 +10,11 @@ export interface TickResult {
   mandateId: string;
   mandateName: string;
   monitored: { opened: number; closed: number; journaled: number };
+  tweetsReviewed: number;
   signals: number;
   decisions: number;
   proposed: number;
+  note?: string;
   errors: string[];
 }
 
@@ -30,10 +32,30 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     mandateId: mandate.id,
     mandateName: mandate.name,
     monitored: { opened: 0, closed: 0, journaled: 0 },
+    tweetsReviewed: 0,
     signals: 0,
     decisions: 0,
     proposed: 0,
     errors: [],
+  };
+  const persist = async () => {
+    try {
+      await logTickRun({
+        mandateId: mandate.id,
+        window,
+        tweetsReviewed: result.tweetsReviewed,
+        signalsExtracted: result.signals,
+        decisionsMade: result.decisions,
+        tradesProposed: result.proposed,
+        monitoredOpened: result.monitored.opened,
+        monitoredClosed: result.monitored.closed,
+        monitoredJournaled: result.monitored.journaled,
+        errors: result.errors,
+        note: result.note,
+      });
+    } catch {
+      // swallow — tick log failures shouldn't break the tick
+    }
   };
 
   try {
@@ -43,8 +65,16 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
   }
 
   // Pre-close tick is monitor-only — no new entries.
-  if (window === 'close') return result;
-  if (!mandate.junto_id) return result;
+  if (window === 'close') {
+    result.note = 'monitor_only_close_window';
+    await persist();
+    return result;
+  }
+  if (!mandate.junto_id) {
+    result.note = 'no_junto_attached';
+    await persist();
+    return result;
+  }
 
   let accountEquity = mandate.capital_allotted_usd;
   let positions: any[] = [];
@@ -52,7 +82,8 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     const alpaca = makeAlpaca({ keyId: mandate.alpaca_key_id, secret: mandate.alpaca_secret });
     const clock = await alpaca.getClock();
     if (!clock.is_open) {
-      result.errors.push('market_closed');
+      result.note = 'market_closed';
+      await persist();
       return result;
     }
     const account = await alpaca.getAccount();
@@ -63,16 +94,19 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     positions = await alpaca.getPositions();
   } catch (err: any) {
     result.errors.push(`alpaca: ${err.message}`);
+    await persist();
     return result;
   }
 
   let signals;
   try {
     const snapshot = await loadJuntoSnapshot(mandate.junto_id);
+    result.tweetsReviewed = snapshot.tweetCount;
     signals = await extractSignals(mandate, snapshot);
     result.signals = signals.length;
   } catch (err: any) {
     result.errors.push(`extract: ${err.message}`);
+    await persist();
     return result;
   }
 
@@ -82,6 +116,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     result.decisions = decisions.length;
   } catch (err: any) {
     result.errors.push(`decide: ${err.message}`);
+    await persist();
     return result;
   }
 
@@ -146,5 +181,6 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     }
   }
 
+  await persist();
   return result;
 }

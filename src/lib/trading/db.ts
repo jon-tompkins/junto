@@ -143,6 +143,46 @@ export async function logSignal(params: {
   if (error) throw error;
 }
 
+export async function logTickRun(params: {
+  mandateId: string;
+  window: string;
+  tweetsReviewed: number;
+  signalsExtracted: number;
+  decisionsMade: number;
+  tradesProposed: number;
+  monitoredOpened: number;
+  monitoredClosed: number;
+  monitoredJournaled: number;
+  errors: string[];
+  note?: string;
+}): Promise<void> {
+  const { error } = await getSupabase().from('trading_tick_runs').insert({
+    mandate_id: params.mandateId,
+    window: params.window,
+    tweets_reviewed: params.tweetsReviewed,
+    signals_extracted: params.signalsExtracted,
+    decisions_made: params.decisionsMade,
+    trades_proposed: params.tradesProposed,
+    monitored_opened: params.monitoredOpened,
+    monitored_closed: params.monitoredClosed,
+    monitored_journaled: params.monitoredJournaled,
+    errors: params.errors,
+    note: params.note ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function getRecentTickRuns(mandateId: string, limit = 20) {
+  const { data, error } = await getSupabase()
+    .from('trading_tick_runs')
+    .select('id, window, tweets_reviewed, signals_extracted, decisions_made, trades_proposed, monitored_opened, monitored_closed, monitored_journaled, errors, note, created_at')
+    .eq('mandate_id', mandateId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+
 export async function getJuntoSourceIds(juntoId: string): Promise<string[]> {
   const { data, error } = await getSupabase()
     .from('junto_sources')
