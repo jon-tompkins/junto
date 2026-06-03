@@ -1145,6 +1145,19 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
+            {featuredWatchlist && featuredWatchlist.tickers.length > 0 && (
+              <div className="mb-2 px-3 py-2 rounded border border-[rgba(176,141,87,0.18)] bg-[#141210] flex flex-wrap gap-1.5">
+                {featuredWatchlist.tickers.map((t) => (
+                  <Link
+                    key={t}
+                    href={`/positions/${t}`}
+                    className="text-[11px] font-mono px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/80 hover:text-[#B08D57] transition"
+                  >
+                    ${t}
+                  </Link>
+                ))}
+              </div>
+            )}
             <WatchlistActivityCard watchlistId={featuredWatchlist?.id} />
           </div>
 
@@ -1194,6 +1207,34 @@ export default function DashboardPage() {
                     + New
                   </Link>
                 </div>
+              </div>
+            )}
+            {featuredJunto && featuredJunto.junto_sources.length > 0 && (
+              <div className="mb-2 px-3 py-2 rounded border border-[rgba(176,141,87,0.18)] bg-[#141210] flex flex-wrap items-center gap-1.5">
+                {featuredJunto.junto_sources.slice(0, 16).map((js) => {
+                  const src = js.source;
+                  if (!src) return null;
+                  return (
+                    <Link
+                      key={js.id}
+                      href={`/sources/${src.handle_or_url}`}
+                      title={src.display_name || src.handle_or_url}
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#1c1a17] hover:bg-[#1c1a17]/70 transition"
+                    >
+                      {src.avatar_url ? (
+                        <img src={src.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
+                      ) : (
+                        <span className="w-4 h-4 rounded-full bg-[#B08D57]/30 flex items-center justify-center text-[7px] text-[#B08D57] font-bold">
+                          {(src.display_name || src.handle_or_url).charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                      <span className="text-[11px] text-[#F5EFE0]/70">@{src.handle_or_url}</span>
+                    </Link>
+                  );
+                })}
+                {featuredJunto.junto_sources.length > 16 && (
+                  <span className="text-[11px] text-[#F5EFE0]/40">+{featuredJunto.junto_sources.length - 16}</span>
+                )}
               </div>
             )}
             <PositionsSnapshotCard juntoId={featuredJunto?.id} />
