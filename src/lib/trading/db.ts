@@ -126,6 +126,17 @@ export async function getJournalEntries(tradeId: string) {
   return data || [];
 }
 
+export async function updateSignalForTrade(
+  tradeId: string,
+  patch: { decision: SignalDecision; decisionReason?: string },
+): Promise<void> {
+  const { error } = await getSupabase()
+    .from('trading_signals')
+    .update({ decision: patch.decision, decision_reason: patch.decisionReason ?? null })
+    .eq('trade_id', tradeId);
+  if (error) throw error;
+}
+
 export async function logSignal(params: {
   mandateId: string;
   signal: ExtractedSignal | { ticker: string; direction?: string; conviction?: number; rationale?: string; source_urls?: string[] };

@@ -1,6 +1,6 @@
 import { sendTelegramMessage } from '@/lib/telegram/client';
 import { getUserTelegramChatId } from '@/lib/telegram/link';
-import { getMandateById, getTradeById, updateTrade, addJournalEntry, logSignal } from './db';
+import { getMandateById, getTradeById, updateTrade, addJournalEntry, updateSignalForTrade } from './db';
 import { makeAlpaca } from './alpaca';
 import type { TradeDecision } from './types';
 
@@ -73,13 +73,7 @@ export async function handleApprovalCallback(params: {
       kind: 'entry',
       content: '[skipped by user via Telegram]',
     });
-    await logSignal({
-      mandateId: trade.mandate_id,
-      signal: { ticker: trade.ticker },
-      decision: 'skipped_awaiting_approval',
-      decisionReason: 'user_skipped',
-      tradeId,
-    });
+    await updateSignalForTrade(tradeId, { decision: 'user_skipped', decisionReason: 'user_skipped' });
     return { message: `Skipped ${trade.ticker}.` };
   }
 
@@ -126,6 +120,7 @@ export async function handleApprovalCallback(params: {
       kind: 'entry',
       content: `[approved by user, submitted to Alpaca order_id=${order.id}]`,
     });
+    await updateSignalForTrade(tradeId, { decision: 'submitted', decisionReason: 'user_approved' });
     return { message: `✅ Submitted ${trade.ticker}.` };
   } catch (err: any) {
     await updateTrade(tradeId, { status: 'rejected' });

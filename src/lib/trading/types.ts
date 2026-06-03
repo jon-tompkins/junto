@@ -44,4 +44,5 @@ export type SignalDecision =
   | 'skipped_guideline'
   | 'skipped_duplicate'
   | 'skipped_awaiting_approval'
-  | 'skipped_market_closed';
+  | 'skipped_market_closed'
+  | 'user_skipped';
