@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
+import { markdownToHtml } from '@/lib/utils/markdown-client';
 
 // ─── Share Button ─────────────────────────────────────
 
@@ -317,9 +318,10 @@ function LatestDispatchCard() {
       {navLoading || !current ? (
         <div className="h-32 rounded bg-[#1c1a17] animate-pulse" />
       ) : (
-        <div className="text-sm text-[#F5EFE0]/80 leading-relaxed whitespace-pre-line">
-          {current.content}
-        </div>
+        <div
+          className="research-content prose prose-invert max-w-none text-sm text-[#F5EFE0]/80 leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: markdownToHtml(current.content) }}
+        />
       )}
     </div>
   );
