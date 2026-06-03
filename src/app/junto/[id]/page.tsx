@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
+import { PositionsHeatmap, HeatmapPosition } from '@/components/positions-heatmap';
 
 interface PositionEntry {
   stance: 'bullish' | 'bearish' | 'neutral' | 'cautious';
@@ -66,13 +67,6 @@ const STANCE_LABEL: Record<string, string> = {
   neutral: 'Neutral',
 };
 
-function hexToRgb(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `${r}, ${g}, ${b}`;
-}
-
 interface TickerStance {
   ticker: string;
   bullish: number;
@@ -133,7 +127,7 @@ interface Dispatch {
   subscriber_count: number;
 }
 
-function PositionsHeatmap({ tiles, maxCount }: { tiles: HeatmapTile[]; maxCount: number }) {
+function PositionsSection({ items }: { items: HeatmapPosition[] }) {
   const [view, setView] = useState<'heatmap' | 'list'>('heatmap');
 
   return (
@@ -160,54 +154,10 @@ function PositionsHeatmap({ tiles, maxCount }: { tiles: HeatmapTile[]; maxCount:
         </div>
       </div>
 
-      {tiles.length === 0 ? (
+      {items.length === 0 ? (
         <p className="text-[#F5EFE0]/45 text-sm">No tracked stances across this junto yet.</p>
       ) : view === 'heatmap' ? (
-        <div className="flex flex-wrap gap-2 items-start content-start">
-          {tiles.map((item) => {
-            const ratio = item.count / maxCount;
-            const size = Math.round(70 + ratio * 110);
-            const bg = STANCE_BG[item.stance] ?? '#4b5563';
-            const alpha = 0.12 + ratio * 0.25;
-            return (
-              <Link
-                key={`${item.ticker}-${item.stance}`}
-                href={`/positions/${encodeURIComponent(item.ticker)}`}
-                className="rounded flex flex-col items-center justify-center gap-1 transition hover:scale-105 active:scale-100 shrink-0"
-                style={{
-                  width: `${size}px`,
-                  height: `${size}px`,
-                  background: `rgba(${hexToRgb(bg)}, ${alpha})`,
-                  border: `1px solid ${bg}55`,
-                }}
-                title={`${item.ticker} · ${STANCE_LABEL[item.stance] ?? item.stance} · ${item.count} source${item.count !== 1 ? 's' : ''}`}
-              >
-                <span
-                  className="font-bold font-mono text-center px-1 w-full"
-                  style={{
-                    fontSize: `${Math.min(Math.round(11 + ratio * 12), Math.floor(size * 0.55 / (3 * 1.25)))}px`,
-                    color: '#F5EFE0',
-                    lineHeight: 1.25,
-                    display: '-webkit-box',
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                    wordBreak: 'break-word',
-                  }}
-                >
-                  {item.ticker}
-                </span>
-                <span
-                  className="font-medium uppercase tracking-wider leading-none"
-                  style={{ fontSize: `${Math.round(7 + ratio * 2)}px`, color: bg }}
-                >
-                  {STANCE_LABEL[item.stance] ?? item.stance}
-                </span>
-                <span style={{ fontSize: '11px', color: 'rgba(245,239,224,0.4)' }}>{item.count}</span>
-              </Link>
-            );
-          })}
-        </div>
+        <PositionsHeatmap items={items} height={420} />
       ) : (
         <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
           <table className="w-full text-sm">
@@ -219,8 +169,8 @@ function PositionsHeatmap({ tiles, maxCount }: { tiles: HeatmapTile[]; maxCount:
               </tr>
             </thead>
             <tbody>
-              {tiles.map(item => {
-                const bg = STANCE_BG[item.stance];
+              {items.map(item => {
+                const bg = STANCE_BG[item.stance] ?? '#4b5563';
                 return (
                   <tr key={`${item.ticker}-${item.stance}`} className="border-b border-[rgba(176,141,87,0.1)] last:border-0">
                     <td className="py-2 px-4">
@@ -250,6 +200,7 @@ export default function JuntoViewPage() {
   const id = params.id as string;
   const [junto, setJunto] = useState<JuntoData | null>(null);
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
+  const [positions, setPositions] = useState<HeatmapPosition[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -260,10 +211,12 @@ export default function JuntoViewPage() {
         return r.json();
       }),
       fetch(`/api/juntos/${id}/dispatches`).then((r) => r.json()).catch(() => ({ dispatches: [] })),
+      fetch(`/api/positions?junto_id=${id}`).then((r) => r.json()).catch(() => ({ items: [] })),
     ])
-      .then(([juntoData, dispatchData]) => {
+      .then(([juntoData, dispatchData, positionsData]) => {
         if (juntoData?.junto) setJunto(juntoData.junto);
         setDispatches(dispatchData?.dispatches || []);
+        setPositions(Array.isArray(positionsData?.items) ? positionsData.items : []);
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
@@ -299,9 +252,14 @@ export default function JuntoViewPage() {
   }
 
   const sources = junto.junto_sources || [];
-  const heatmap = aggregatePositions(sources);
-  const heatmapTiles = buildHeatmapTiles(heatmap);
-  const maxTileCount = Math.max(...heatmapTiles.map(t => t.count), 1);
+  const positionItems: HeatmapPosition[] = positions.length > 0
+    ? positions
+    : buildHeatmapTiles(aggregatePositions(sources)).map((t) => ({
+        ticker: t.ticker,
+        stance: t.stance,
+        count: t.count,
+        fresh_count: t.count,
+      }));
   const isOwner = junto.is_owner === true;
 
   return (
@@ -424,7 +382,7 @@ export default function JuntoViewPage() {
         )}
 
         {/* Stance Heatmap */}
-        <PositionsHeatmap tiles={heatmapTiles} maxCount={maxTileCount} />
+        <PositionsSection items={positionItems} />
       </div>
     </main>
   );

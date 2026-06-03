@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 import { markdownToHtml } from '@/lib/utils/markdown-client';
+import { PositionsHeatmap } from '@/components/positions-heatmap';
 
 // ─── Share Button ─────────────────────────────────────
 
@@ -564,20 +565,7 @@ interface PositionRow {
   stance: string;
   count: number;
   fresh_count: number;
-}
-
-const POSITIONS_STANCE_BG: Record<string, string> = {
-  bullish: '#3ecf6a',
-  bearish: '#e8453c',
-  cautious: '#d97706',
-  neutral: '#4b5563',
-};
-
-function positionsHexToRgb(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `${r}, ${g}, ${b}`;
+  sources?: Array<{ handle: string; display_name?: string | null; avatar_url: string | null; is_stale?: boolean }>;
 }
 
 function PositionsSnapshotCard({ juntoId }: { juntoId: string | null | undefined }) {
@@ -626,8 +614,6 @@ function PositionsSnapshotCard({ juntoId }: { juntoId: string | null | undefined
     return 'text-[#F5EFE0]/60';
   };
 
-  const maxCount = Math.max(...top.map((p) => p.count), 1);
-
   return (
     <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-[rgba(176,141,87,0.18)]">
@@ -652,45 +638,20 @@ function PositionsSnapshotCard({ juntoId }: { juntoId: string | null | undefined
       </div>
 
       {view === 'heatmap' ? (
-        <div className="p-3 flex flex-wrap gap-1.5 items-start content-start">
-          {top.map((p) => {
-            const stanceKey = p.stance.toLowerCase().includes('bull') ? 'bullish'
-              : p.stance.toLowerCase().includes('bear') ? 'bearish'
-              : p.stance.toLowerCase().includes('caut') ? 'cautious'
-              : 'neutral';
-            const ratio = p.count / maxCount;
-            const size = Math.round(54 + ratio * 56);
-            const bg = POSITIONS_STANCE_BG[stanceKey];
-            const alpha = 0.14 + ratio * 0.28;
-            return (
-              <Link
-                key={`${p.ticker}::${p.stance}`}
-                href={`/positions/${p.ticker}`}
-                className="rounded flex flex-col items-center justify-center gap-0.5 transition hover:scale-105 active:scale-100 shrink-0"
-                style={{
-                  width: `${size}px`,
-                  height: `${size}px`,
-                  background: `rgba(${positionsHexToRgb(bg)}, ${alpha})`,
-                  border: `1px solid ${bg}55`,
-                }}
-                title={`$${p.ticker} · ${p.stance} · ${p.count} source${p.count !== 1 ? 's' : ''}`}
-              >
-                <span
-                  className="font-bold font-mono text-[#F5EFE0] leading-none"
-                  style={{ fontSize: `${Math.round(10 + ratio * 5)}px` }}
-                >
-                  {p.ticker}
-                </span>
-                <span
-                  className="uppercase tracking-wider leading-none"
-                  style={{ fontSize: '8px', color: bg }}
-                >
-                  {p.stance}
-                </span>
-                <span className="text-[9px] text-[#F5EFE0]/45 font-mono leading-none">{p.count}</span>
-              </Link>
-            );
-          })}
+        <div className="p-2">
+          <PositionsHeatmap
+            items={top.map((p) => ({
+              ticker: p.ticker,
+              stance: p.stance.toLowerCase().includes('bull') ? 'bullish'
+                : p.stance.toLowerCase().includes('bear') ? 'bearish'
+                : p.stance.toLowerCase().includes('caut') ? 'cautious'
+                : 'neutral',
+              count: p.count,
+              fresh_count: p.fresh_count,
+              sources: p.sources,
+            }))}
+            height={320}
+          />
         </div>
       ) : (
         <table className="w-full text-sm">

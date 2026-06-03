@@ -193,18 +193,23 @@ export async function GET(request: NextRequest) {
     
     const supabase = getSupabase();
     
-    // Get unique tickers from all user watchlists
+    // Get unique tickers from all user watchlists (tickers is a text[] column)
     const { data, error } = await supabase
-      .from('user_watchlist')
-      .select('ticker')
-      .order('ticker');
-    
+      .from('user_watchlists')
+      .select('tickers');
+
     if (error) {
       console.error('Error fetching tickers:', error);
       return NextResponse.json({ error: 'Failed to fetch tickers' }, { status: 500 });
     }
-    
-    const tickers = Array.from(new Set(data.map(row => row.ticker)));
+
+    const tickers = Array.from(
+      new Set(
+        (data || [])
+          .flatMap((row: { tickers: string[] | null }) => row.tickers || [])
+          .map((t: string) => t.toUpperCase())
+      )
+    ).sort();
     
     return NextResponse.json({
       success: true,
