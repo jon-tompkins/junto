@@ -150,6 +150,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
         qty,
         stopPrice,
         targetPrice,
+        proposalPrice: lastPrice,
       });
 
       await addJournalEntry({

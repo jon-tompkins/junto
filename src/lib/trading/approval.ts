@@ -88,6 +88,25 @@ export async function handleApprovalCallback(params: {
 
   try {
     const alpaca = makeAlpaca({ keyId: mandate.alpaca_key_id, secret: mandate.alpaca_secret });
+
+    // 1% slippage guard: re-check live price vs proposal price.
+    const proposalPrice = trade.proposal_price ? Number(trade.proposal_price) : null;
+    if (proposalPrice && proposalPrice > 0) {
+      const livePrice = await alpaca.getLastTrade(trade.ticker).catch(() => null);
+      if (livePrice && livePrice > 0) {
+        const drift = Math.abs(livePrice - proposalPrice) / proposalPrice;
+        if (drift > 0.01) {
+          await updateTrade(tradeId, { status: 'cancelled' });
+          await addJournalEntry({
+            tradeId,
+            kind: 'entry',
+            content: `[blocked: price moved ${(drift * 100).toFixed(2)}% from proposal ($${proposalPrice.toFixed(2)} → $${livePrice.toFixed(2)}), >1% slippage limit]`,
+          });
+          return { message: `⚠️ Blocked ${trade.ticker} — price moved ${(drift * 100).toFixed(2)}% (proposal $${proposalPrice.toFixed(2)} → now $${livePrice.toFixed(2)}). Re-propose if you still want in.` };
+        }
+      }
+    }
+
     const order = await alpaca.submitBracketOrder({
       symbol: trade.ticker,
       qty: Number(trade.qty),

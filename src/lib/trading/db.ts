@@ -30,6 +30,8 @@ export interface TradeRow {
   entry_at: string | null;
   exit_price: number | null;
   exit_at: string | null;
+  proposal_price: number | null;
+  execution_price: number | null;
   stop_price: number | null;
   target_price: number | null;
   alpaca_order_id: string | null;
@@ -64,6 +66,7 @@ export async function createPendingTrade(params: {
   qty: number;
   stopPrice: number;
   targetPrice: number;
+  proposalPrice: number;
 }): Promise<string> {
   const { data, error } = await getSupabase()
     .from('trades')
@@ -74,6 +77,7 @@ export async function createPendingTrade(params: {
       qty: params.qty,
       stop_price: params.stopPrice,
       target_price: params.targetPrice,
+      proposal_price: params.proposalPrice,
       status: 'pending',
     })
     .select('id')

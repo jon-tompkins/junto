@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
     qty,
     stopPrice,
     targetPrice,
+    proposalPrice: lastPrice,
   });
 
   await addJournalEntry({

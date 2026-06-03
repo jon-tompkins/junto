@@ -43,6 +43,10 @@
     {
       "path": "/api/cron/trade-tick",
       "schedule": "55 19 * * 1-5"
+    },
+    {
+      "path": "/api/cron/trade-reconcile",
+      "schedule": "*/15 13-20 * * 1-5"
     }
   ]
 }

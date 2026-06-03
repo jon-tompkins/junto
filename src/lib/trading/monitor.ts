@@ -27,9 +27,11 @@ export async function monitorMandate(mandate: Mandate): Promise<{
       try {
         const order = await alpaca.getOrder(trade.alpaca_order_id);
         if (order.status === 'filled') {
+          const fillPrice = order.filled_avg_price ? Number(order.filled_avg_price) : null;
           await updateTrade(trade.id, {
             status: 'open',
-            entry_price: order.filled_avg_price ? Number(order.filled_avg_price) : null,
+            entry_price: fillPrice,
+            execution_price: fillPrice,
             entry_at: new Date().toISOString(),
           });
           opened++;
