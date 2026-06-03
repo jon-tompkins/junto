@@ -577,7 +577,7 @@ function PositionsSnapshotCard({ juntoId }: { juntoId: string | null | undefined
     }
     fetch(`/api/positions?junto_id=${juntoId}`)
       .then((r) => r.json())
-      .then((d) => setRows(Array.isArray(d.positions) ? d.positions : Array.isArray(d) ? d : []))
+      .then((d) => setRows(Array.isArray(d.items) ? d.items : Array.isArray(d.positions) ? d.positions : Array.isArray(d) ? d : []))
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
   }, [juntoId]);
