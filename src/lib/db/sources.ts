@@ -51,43 +51,65 @@ export async function getAllActiveSources(type?: SourceType): Promise<Source[]> 
   return data || [];
 }
 
-// Get sources attached to at least one active newsletter OR any junto (for content pulling)
+// Get sources eligible for content pulling: tracked directly (is_tracked=true)
+// OR attached to at least one active newsletter OR any junto.
 export async function getSourcesWithActiveNewsletters(type?: SourceType): Promise<Source[]> {
-  // Newsletter-linked sources
   const { data: newsletterLinked, error: linkError } = await supabase()
     .from('newsletter_sources')
     .select('source_id, newsletters_v2!inner(id)');
-
   if (linkError) throw linkError;
 
-  // Junto-linked sources (junto members need fresh tweets for stance analysis)
   const { data: juntoLinked, error: juntoError } = await supabase()
     .from('junto_sources')
     .select('source_id');
-
   if (juntoError) throw juntoError;
 
-  const allSourceIds = [
+  const linkedIds = new Set<string>([
     ...(newsletterLinked || []).map((ls: any) => ls.source_id),
     ...(juntoLinked || []).map((js: any) => js.source_id),
-  ];
+  ]);
 
-  if (!allSourceIds.length) return [];
+  // is_tracked sources don't need a join — pulled directly.
+  let trackedQuery = supabase()
+    .from('sources')
+    .select('id')
+    .eq('is_active', true)
+    .eq('is_tracked', true);
+  if (type) trackedQuery = trackedQuery.eq('type', type);
+  const { data: trackedRows, error: trackedErr } = await trackedQuery;
+  if (trackedErr) throw trackedErr;
+  for (const r of trackedRows || []) linkedIds.add(r.id);
 
-  const uniqueSourceIds = [...new Set(allSourceIds)];
+  if (linkedIds.size === 0) return [];
 
   let query = supabase()
     .from('sources')
     .select('*')
     .eq('is_active', true)
-    .in('id', uniqueSourceIds)
+    .in('id', [...linkedIds])
     .order('updated_at', { ascending: true, nullsFirst: true });
 
-  if (type) {
-    query = query.eq('type', type);
-  }
+  if (type) query = query.eq('type', type);
 
   const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+export async function setSourceTracked(id: string, tracked: boolean): Promise<void> {
+  const { error } = await supabase()
+    .from('sources')
+    .update({ is_tracked: tracked, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function listTrackedSources(): Promise<Source[]> {
+  const { data, error } = await supabase()
+    .from('sources')
+    .select('*')
+    .eq('is_tracked', true)
+    .order('updated_at', { ascending: false, nullsFirst: false });
   if (error) throw error;
   return data || [];
 }

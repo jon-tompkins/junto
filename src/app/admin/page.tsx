@@ -190,6 +190,7 @@ export default function AdminDashboard() {
             <p className="text-sm text-[#F5EFE0]/45 mt-1">
               Since {new Date(summary.since).toLocaleDateString()} · {summary.total_calls.toLocaleString()} API calls
               {' · '}<Link href="/admin/trading" className="text-[#B08D57] hover:underline">Trading →</Link>
+              {' · '}<Link href="/admin/sources" className="text-[#B08D57] hover:underline">Sources →</Link>
             </p>
           </div>
           <div className="flex gap-2">

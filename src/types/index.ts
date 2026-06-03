@@ -114,6 +114,7 @@ export interface Source {
   avatar_url: string | null;
   metadata: Record<string, unknown>;
   is_active: boolean;
+  is_tracked?: boolean;
   created_at: string;
   updated_at: string;
 }
