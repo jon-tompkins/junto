@@ -46,6 +46,25 @@ export async function monitorMandate(mandate: Mandate): Promise<{
 
     if (trade.status !== 'open') continue;
 
+    // Backfill entry/execution price if the order filled but we never captured it
+    // (e.g. trades from before approval kept them in 'pending' through fill).
+    if (!trade.entry_price && trade.alpaca_order_id) {
+      try {
+        const order = await alpaca.getOrder(trade.alpaca_order_id);
+        if (order.status === 'filled' && order.filled_avg_price) {
+          const fillPrice = Number(order.filled_avg_price);
+          await updateTrade(trade.id, {
+            entry_price: fillPrice,
+            execution_price: fillPrice,
+            entry_at: trade.entry_at ?? new Date().toISOString(),
+          });
+          trade.entry_price = fillPrice;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     const livePosition = positionsBySymbol.get(trade.ticker.toUpperCase());
 
     // Position disappeared = closed (stop/target hit, manual close, etc.)

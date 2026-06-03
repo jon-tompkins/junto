@@ -111,17 +111,15 @@ export async function handleApprovalCallback(params: {
     });
 
     await updateTrade(tradeId, {
-      status: 'open',
       alpaca_order_id: order.id,
-      entry_at: new Date().toISOString(),
     });
     await addJournalEntry({
       tradeId,
       kind: 'entry',
-      content: `[approved by user, submitted to Alpaca order_id=${order.id}]`,
+      content: `[approved by user, submitted to Alpaca order_id=${order.id}, awaiting fill]`,
     });
     await updateSignalForTrade(tradeId, { decision: 'submitted', decisionReason: 'user_approved' });
-    return { message: `✅ Submitted ${trade.ticker}.` };
+    return { message: `✅ Submitted ${trade.ticker} — awaiting fill.` };
   } catch (err: any) {
     await updateTrade(tradeId, { status: 'rejected' });
     await addJournalEntry({
