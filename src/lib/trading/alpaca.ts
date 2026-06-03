@@ -17,7 +17,7 @@ function getCreds(override?: { keyId?: string | null; secret?: string | null }):
 
 async function call<T>(
   creds: AlpacaCreds,
-  method: 'GET' | 'POST' | 'DELETE',
+  method: 'GET' | 'POST' | 'DELETE' | 'PATCH',
   path: string,
   body?: unknown,
 ): Promise<T> {
@@ -128,6 +128,18 @@ export function makeAlpaca(override?: { keyId?: string | null; secret?: string |
         take_profit: { limit_price: params.targetPrice.toFixed(2) },
         client_order_id: params.clientOrderId,
       });
+    },
+
+    replaceOrder(id: string, patch: { stop_price?: number; limit_price?: number; qty?: number }) {
+      const body: Record<string, string> = {};
+      if (patch.stop_price !== undefined) body.stop_price = patch.stop_price.toFixed(2);
+      if (patch.limit_price !== undefined) body.limit_price = patch.limit_price.toFixed(2);
+      if (patch.qty !== undefined) body.qty = String(patch.qty);
+      return call<AlpacaOrder>(creds, 'PATCH', `/v2/orders/${id}`, body);
+    },
+
+    closePosition(symbol: string) {
+      return call<AlpacaOrder>(creds, 'DELETE', `/v2/positions/${symbol}`);
     },
 
     submitMarketOrder(params: {

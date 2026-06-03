@@ -1,9 +1,20 @@
 import { makeAlpaca } from './alpaca';
-import { getActiveMandates, createPendingTrade, addJournalEntry, logSignal, logTickRun } from './db';
+import {
+  getActiveMandates,
+  createPendingTrade,
+  addJournalEntry,
+  logSignal,
+  logTickRun,
+  getOpenTrades,
+  createPendingAmendment,
+  getPendingAmendmentsForTrade,
+} from './db';
 import { loadJuntoSnapshot, extractSignals } from './extract';
 import { decideTrades } from './decide';
+import { decideAmendments } from './decide-amendments';
 import { monitorMandate } from './monitor';
 import { requestApproval } from './approval';
+import { requestAmendmentApproval } from './amendment';
 import type { Mandate, TickWindow } from './types';
 
 export interface TickResult {
@@ -14,6 +25,7 @@ export interface TickResult {
   signals: number;
   decisions: number;
   proposed: number;
+  amendments_proposed: number;
   note?: string;
   errors: string[];
 }
@@ -36,6 +48,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     signals: 0,
     decisions: 0,
     proposed: 0,
+    amendments_proposed: 0,
     errors: [],
   };
   const persist = async () => {
@@ -180,6 +193,62 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     } catch (err: any) {
       result.errors.push(`propose ${decision.ticker}: ${err.message}`);
     }
+  }
+
+  // Position amendments: for any open trade with a fresh signal, ask the
+  // decider whether to amend stop/target or close.
+  try {
+    const openTrades = await getOpenTrades(mandate.id);
+    if (openTrades.length > 0) {
+      const amendments = await decideAmendments({
+        mandate,
+        signals,
+        openTrades,
+        positions,
+      });
+      for (const amend of amendments) {
+        try {
+          const trade = openTrades.find((t) => t.id === amend.trade_id);
+          if (!trade) continue;
+          // Avoid stacking duplicate pending amendments
+          const pending = await getPendingAmendmentsForTrade(trade.id);
+          if (pending.some((p) => p.kind === amend.kind)) continue;
+
+          const oldValue =
+            amend.kind === 'stop_move' ? trade.stop_price
+            : amend.kind === 'target_move' ? trade.target_price
+            : null;
+          // Skip if the proposed value is essentially unchanged
+          if (oldValue != null && amend.new_value != null && Math.abs(oldValue - amend.new_value) / oldValue < 0.005) continue;
+
+          const amendmentId = await createPendingAmendment({
+            tradeId: trade.id,
+            kind: amend.kind,
+            oldValue,
+            newValue: amend.new_value,
+            rationale: amend.rationale,
+            sourceUrls: amend.source_urls,
+          });
+
+          await requestAmendmentApproval({
+            userId: mandate.user_id,
+            mandateName: mandate.name,
+            ticker: trade.ticker,
+            amendmentId,
+            kind: amend.kind,
+            oldValue,
+            newValue: amend.new_value,
+            rationale: amend.rationale,
+          });
+
+          result.amendments_proposed++;
+        } catch (err: any) {
+          result.errors.push(`amend ${amend.ticker}: ${err.message}`);
+        }
+      }
+    }
+  } catch (err: any) {
+    result.errors.push(`amend: ${err.message}`);
   }
 
   await persist();

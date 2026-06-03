@@ -28,11 +28,16 @@ export async function monitorMandate(mandate: Mandate): Promise<{
         const order = await alpaca.getOrder(trade.alpaca_order_id);
         if (order.status === 'filled') {
           const fillPrice = order.filled_avg_price ? Number(order.filled_avg_price) : null;
+          const legs = order.legs || [];
+          const stopLeg = legs.find((l: any) => l.order_type === 'stop' || l.type === 'stop');
+          const targetLeg = legs.find((l: any) => l.order_type === 'limit' || l.type === 'limit');
           await updateTrade(trade.id, {
             status: 'open',
             entry_price: fillPrice,
             execution_price: fillPrice,
             entry_at: new Date().toISOString(),
+            stop_order_id: stopLeg?.id ?? null,
+            target_order_id: targetLeg?.id ?? null,
           });
           opened++;
         } else if (['canceled', 'rejected', 'expired'].includes(order.status)) {
@@ -48,17 +53,24 @@ export async function monitorMandate(mandate: Mandate): Promise<{
 
     // Backfill entry/execution price if the order filled but we never captured it
     // (e.g. trades from before approval kept them in 'pending' through fill).
-    if (!trade.entry_price && trade.alpaca_order_id) {
+    if ((!trade.entry_price || !trade.stop_order_id || !trade.target_order_id) && trade.alpaca_order_id) {
       try {
         const order = await alpaca.getOrder(trade.alpaca_order_id);
-        if (order.status === 'filled' && order.filled_avg_price) {
-          const fillPrice = Number(order.filled_avg_price);
-          await updateTrade(trade.id, {
-            entry_price: fillPrice,
-            execution_price: fillPrice,
-            entry_at: trade.entry_at ?? new Date().toISOString(),
-          });
-          trade.entry_price = fillPrice;
+        if (order.status === 'filled') {
+          const fillPrice = order.filled_avg_price ? Number(order.filled_avg_price) : null;
+          const legs = order.legs || [];
+          const stopLeg = legs.find((l: any) => l.order_type === 'stop' || l.type === 'stop');
+          const targetLeg = legs.find((l: any) => l.order_type === 'limit' || l.type === 'limit');
+          const patch: any = {};
+          if (!trade.entry_price && fillPrice) {
+            patch.entry_price = fillPrice;
+            patch.execution_price = fillPrice;
+            patch.entry_at = trade.entry_at ?? new Date().toISOString();
+            trade.entry_price = fillPrice;
+          }
+          if (!trade.stop_order_id && stopLeg?.id) patch.stop_order_id = stopLeg.id;
+          if (!trade.target_order_id && targetLeg?.id) patch.target_order_id = targetLeg.id;
+          if (Object.keys(patch).length > 0) await updateTrade(trade.id, patch);
         }
       } catch {
         // ignore

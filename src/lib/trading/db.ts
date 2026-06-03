@@ -1,5 +1,5 @@
 import { getSupabase } from '@/lib/db/client';
-import type { Mandate, ExtractedSignal, TradeDecision, SignalDecision } from './types';
+import type { Mandate, ExtractedSignal, TradeDecision, SignalDecision, AmendmentKind } from './types';
 
 export async function getActiveMandates(): Promise<Mandate[]> {
   const { data, error } = await getSupabase()
@@ -35,8 +35,24 @@ export interface TradeRow {
   stop_price: number | null;
   target_price: number | null;
   alpaca_order_id: string | null;
+  stop_order_id: string | null;
+  target_order_id: string | null;
   status: 'pending' | 'open' | 'closed' | 'cancelled' | 'rejected';
   realized_pnl_usd: number | null;
+}
+
+export interface AmendmentRow {
+  id: string;
+  trade_id: string;
+  kind: AmendmentKind;
+  old_value: number | null;
+  new_value: number | null;
+  rationale: string;
+  source_urls: string[] | null;
+  status: 'pending' | 'applied' | 'skipped' | 'rejected';
+  applied_at: string | null;
+  applied_note: string | null;
+  created_at: string;
 }
 
 export async function getOpenTrades(mandateId: string): Promise<TradeRow[]> {
@@ -196,6 +212,62 @@ export async function getRecentTickRuns(mandateId: string, limit = 20) {
     .limit(limit);
   if (error) throw error;
   return data || [];
+}
+
+export async function createPendingAmendment(params: {
+  tradeId: string;
+  kind: AmendmentKind;
+  oldValue: number | null;
+  newValue: number | null;
+  rationale: string;
+  sourceUrls: string[];
+}): Promise<string> {
+  const { data, error } = await getSupabase()
+    .from('trade_amendments')
+    .insert({
+      trade_id: params.tradeId,
+      kind: params.kind,
+      old_value: params.oldValue,
+      new_value: params.newValue,
+      rationale: params.rationale,
+      source_urls: params.sourceUrls,
+      status: 'pending',
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+export async function getAmendmentById(id: string): Promise<AmendmentRow | null> {
+  const { data, error } = await getSupabase()
+    .from('trade_amendments')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as AmendmentRow) || null;
+}
+
+export async function updateAmendment(
+  id: string,
+  patch: Partial<AmendmentRow>,
+): Promise<void> {
+  const { error } = await getSupabase()
+    .from('trade_amendments')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function getPendingAmendmentsForTrade(tradeId: string): Promise<AmendmentRow[]> {
+  const { data, error } = await getSupabase()
+    .from('trade_amendments')
+    .select('*')
+    .eq('trade_id', tradeId)
+    .eq('status', 'pending');
+  if (error) throw error;
+  return (data || []) as AmendmentRow[];
 }
 
 export async function getJuntoSourceIds(juntoId: string): Promise<string[]> {

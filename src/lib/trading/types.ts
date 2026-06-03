@@ -39,6 +39,17 @@ export interface TradeDecision {
 
 export type TickWindow = 'open' | 'midday' | 'close';
 
+export type AmendmentKind = 'stop_move' | 'target_move' | 'close';
+
+export interface AmendmentDecision {
+  trade_id: string;
+  ticker: string;
+  kind: AmendmentKind;
+  new_value: number | null;
+  rationale: string;
+  source_urls: string[];
+}
+
 export type SignalDecision =
   | 'submitted'
   | 'skipped_guideline'

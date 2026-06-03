@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { consumeLinkCode } from '@/lib/telegram/link';
 import { sendTelegramMessage, answerCallbackQuery, editMessageReplyMarkup } from '@/lib/telegram/client';
 import { handleApprovalCallback } from '@/lib/trading/approval';
+import { handleAmendmentCallback } from '@/lib/trading/amendment';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +42,18 @@ export async function POST(req: NextRequest) {
       } catch (err: any) {
         await answerCallbackQuery(cb.id, 'Error processing.');
         console.error('[trade approval]', err);
+      }
+    } else if (cb.data?.startsWith('amend_')) {
+      try {
+        const result = await handleAmendmentCallback({ data: cb.data });
+        await answerCallbackQuery(cb.id, result.message);
+        if (cb.message) {
+          await editMessageReplyMarkup(cb.message.chat.id, cb.message.message_id);
+          await sendTelegramMessage(cb.message.chat.id, result.message);
+        }
+      } catch (err: any) {
+        await answerCallbackQuery(cb.id, 'Error processing.');
+        console.error('[amend approval]', err);
       }
     } else {
       await answerCallbackQuery(cb.id);
