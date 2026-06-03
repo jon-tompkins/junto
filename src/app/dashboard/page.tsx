@@ -485,75 +485,135 @@ function ReceivedDispatchesFeed() {
   );
 }
 
-// ─── Watchlist activity feed ──────────────────────────
+// ─── Watchlist tickers card ───────────────────────────
 
-interface WatchlistTweet {
-  ticker: string;
-  tweet_id: string;
-  author_handle: string;
-  author_name: string | null;
-  content: string;
-  posted_at: string;
-  likes: number | null;
-  retweets: number | null;
+interface Quote {
+  price: number | null;
+  change: number | null;
+  changePercent: number | null;
 }
 
-function WatchlistActivityCard({ watchlistId }: { watchlistId: string | null | undefined }) {
-  const [tweets, setTweets] = useState<WatchlistTweet[] | null>(null);
-  const [loading, setLoading] = useState(true);
+function WatchlistTickersCard({
+  watchlistId,
+  tickers,
+  onAdd,
+  onRemove,
+  busy,
+  error,
+}: {
+  watchlistId: string | null | undefined;
+  tickers: string[];
+  onAdd: (raw: string) => Promise<void> | void;
+  onRemove: (t: string) => Promise<void> | void;
+  busy: boolean;
+  error: string | null;
+}) {
+  const [quotes, setQuotes] = useState<Record<string, Quote>>({});
+  const [input, setInput] = useState('');
 
   useEffect(() => {
-    if (!watchlistId) {
-      setLoading(false);
-      setTweets([]);
-      return;
-    }
-    setLoading(true);
-    fetch(`/api/v2/watchlist-activity?watchlist_id=${watchlistId}`)
-      .then((r) => (r.ok ? r.json() : { tweets: [] }))
-      .then((d) => setTweets(d.tweets || []))
-      .catch(() => setTweets([]))
-      .finally(() => setLoading(false));
-  }, [watchlistId]);
+    if (tickers.length === 0) return;
+    let cancelled = false;
+    Promise.all(
+      tickers.map((t) =>
+        fetch(`/api/quote?symbol=${encodeURIComponent(t)}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => ({
+            t,
+            q: d && d.valid
+              ? { price: d.price, change: d.change, changePercent: d.changePercent }
+              : { price: null, change: null, changePercent: null },
+          }))
+          .catch(() => ({ t, q: { price: null, change: null, changePercent: null } }))
+      )
+    ).then((results) => {
+      if (cancelled) return;
+      const next: Record<string, Quote> = {};
+      for (const { t, q } of results) next[t.toUpperCase()] = q;
+      setQuotes(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tickers.join(',')]);
 
   if (!watchlistId) {
     return (
       <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
-        Pick a primary watchlist above to see tracked position updates.
-      </div>
-    );
-  }
-  if (loading) return <div className="h-32 rounded bg-[#141210] animate-pulse" />;
-  if (!tweets || tweets.length === 0) {
-    return (
-      <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
-        No recent tracked position updates.
+        Pick a primary watchlist above to track tickers.
       </div>
     );
   }
 
   return (
-    <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] divide-y divide-[rgba(176,141,87,0.18)] max-h-[24rem] overflow-y-auto">
-      {tweets.slice(0, 20).map((t) => (
-        <a
-          key={t.tweet_id}
-          href={`https://x.com/${t.author_handle}/status/${t.tweet_id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block px-4 py-3 hover:bg-[#1a1815] transition"
+    <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] overflow-hidden">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!input.trim()) return;
+          Promise.resolve(onAdd(input)).then(() => setInput(''));
+        }}
+        className="flex gap-2 px-3 py-2 border-b border-[rgba(176,141,87,0.18)]"
+      >
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Add ticker (e.g. NVDA)"
+          disabled={busy}
+          className="flex-1 bg-[#1c1a17] border border-[rgba(176,141,87,0.18)] rounded px-2 py-1 text-xs font-mono uppercase text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
+        />
+        <button
+          type="submit"
+          disabled={!input.trim() || busy}
+          className="px-3 py-1 text-xs font-medium rounded bg-[#B08D57] text-[#080604] disabled:opacity-40 hover:opacity-90 transition"
         >
-          <div className="flex items-baseline justify-between gap-2 mb-1">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-xs font-mono text-[#B08D57]">${t.ticker}</span>
-              <span className="text-xs text-[#F5EFE0]/55 truncate">@{t.author_handle}</span>
-            </div>
-            <span className="text-[10px] text-[#F5EFE0]/35 font-mono whitespace-nowrap">
-              {new Date(t.posted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </span>
-          </div>
-          <p className="text-xs text-[#F5EFE0]/75 line-clamp-2">{t.content}</p>
-        </a>
-      ))}
+          Add
+        </button>
+      </form>
+      {error && <p className="text-xs text-[#e8453c] px-3 py-1">{error}</p>}
+      {tickers.length === 0 ? (
+        <div className="px-4 py-6 text-sm text-[#F5EFE0]/45 text-center">
+          No tickers yet. Add one above.
+        </div>
+      ) : (
+        <ul className="divide-y divide-[rgba(176,141,87,0.12)] max-h-[24rem] overflow-y-auto">
+          {tickers.map((t) => {
+            const q = quotes[t.toUpperCase()];
+            const pct = q?.changePercent;
+            const pctColor = pct == null
+              ? 'text-[#F5EFE0]/35'
+              : pct > 0 ? 'text-[#3ecf6a]' : pct < 0 ? 'text-[#e8453c]' : 'text-[#F5EFE0]/45';
+            return (
+              <li key={t} className="flex items-center gap-3 px-3 py-2 hover:bg-[#1a1815] transition group">
+                <Link
+                  href={`/positions/${t}`}
+                  className="flex-1 flex items-center gap-3 min-w-0"
+                >
+                  <span className="font-mono font-bold text-sm text-[#F5EFE0] w-16 shrink-0">${t}</span>
+                  <span className="font-mono text-sm text-[#F5EFE0]/85 w-20 shrink-0 text-right">
+                    {q?.price != null ? `$${q.price.toFixed(2)}` : '—'}
+                  </span>
+                  <span className={`font-mono text-xs w-16 shrink-0 text-right ${pctColor}`}>
+                    {pct != null ? `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%` : ''}
+                  </span>
+                  <span className="text-[10px] uppercase tracking-wider text-[#B08D57]/60 group-hover:text-[#B08D57] transition ml-auto">
+                    Details →
+                  </span>
+                </Link>
+                <button
+                  onClick={() => onRemove(t)}
+                  disabled={busy}
+                  title="Remove from watchlist"
+                  className="text-[#F5EFE0]/30 hover:text-[#e8453c] transition text-lg leading-none px-1 disabled:opacity-40"
+                  aria-label={`Remove ${t}`}
+                >
+                  ×
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }
@@ -1195,20 +1255,14 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-            {featuredWatchlist && featuredWatchlist.tickers.length > 0 && (
-              <div className="mb-2 px-3 py-2 rounded border border-[rgba(176,141,87,0.18)] bg-[#141210] flex flex-wrap gap-1.5">
-                {featuredWatchlist.tickers.map((t) => (
-                  <Link
-                    key={t}
-                    href={`/positions/${t}`}
-                    className="text-[11px] font-mono px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/80 hover:text-[#B08D57] transition"
-                  >
-                    ${t}
-                  </Link>
-                ))}
-              </div>
-            )}
-            <WatchlistActivityCard watchlistId={featuredWatchlist?.id} />
+            <WatchlistTickersCard
+              watchlistId={featuredWatchlist?.id}
+              tickers={featuredWatchlist?.tickers ?? []}
+              onAdd={addWatchlistTicker}
+              onRemove={removeWatchlistTicker}
+              busy={wlTickerBusy}
+              error={wlTickerError}
+            />
           </div>
 
           {/* Junto column */}
