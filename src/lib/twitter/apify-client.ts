@@ -345,23 +345,30 @@ export async function fetchTweetsForMultipleProfiles(
 
 export async function searchTweets(
   query: string,
-  maxTweets = 30
+  maxTweets = 30,
+  sinceDate?: string,
 ): Promise<FetchedTweet[]> {
   const token = process.env.APIFY_API_KEY;
   if (!token) {
     throw new Error('APIFY_API_KEY not configured');
   }
 
-  console.log(`[Apify] Searching for "${query}"...`);
-  
+  let searchQuery = query;
+  if (sinceDate) {
+    const sinceUnix = Math.floor(new Date(sinceDate).getTime() / 1000);
+    searchQuery = `${query} since_time:${sinceUnix}`;
+  }
+
+  console.log(`[Apify] Searching for "${searchQuery}"...`);
+
   const runRes = await fetch(
     `${APIFY_BASE_URL}/acts/${APIFY_ACTOR_ID}/runs?token=${token}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        searchTerms: [query],
-        tweetsDesired: maxTweets
+        searchTerms: [searchQuery],
+        tweetsDesired: maxTweets,
       })
     }
   );

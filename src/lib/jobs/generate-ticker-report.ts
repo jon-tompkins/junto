@@ -106,7 +106,8 @@ export async function generateTickerReport(
   const upper = ticker.toUpperCase();
   const reportDate = opts.date || new Date().toISOString().slice(0, 10);
 
-  const fetched = await searchTweets(`$${upper}`, MAX_TWEETS_FETCH);
+  const sinceDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const fetched = await searchTweets(`$${upper}`, MAX_TWEETS_FETCH, sinceDate);
   if (fetched.length === 0) {
     throw new Error(`No tweets found for $${upper}`);
   }
