@@ -566,9 +566,24 @@ interface PositionRow {
   fresh_count: number;
 }
 
+const POSITIONS_STANCE_BG: Record<string, string> = {
+  bullish: '#3ecf6a',
+  bearish: '#e8453c',
+  cautious: '#d97706',
+  neutral: '#4b5563',
+};
+
+function positionsHexToRgb(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `${r}, ${g}, ${b}`;
+}
+
 function PositionsSnapshotCard({ juntoId }: { juntoId: string | null | undefined }) {
   const [rows, setRows] = useState<PositionRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<'heatmap' | 'table'>('heatmap');
 
   useEffect(() => {
     if (!juntoId) {
@@ -611,32 +626,99 @@ function PositionsSnapshotCard({ juntoId }: { juntoId: string | null | undefined
     return 'text-[#F5EFE0]/60';
   };
 
+  const maxCount = Math.max(...top.map((p) => p.count), 1);
+
   return (
     <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] overflow-hidden">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-[rgba(176,141,87,0.18)] text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)]">
-            <th className="py-2 px-4 text-left">Ticker</th>
-            <th className="py-2 px-4 text-left">Stance</th>
-            <th className="py-2 px-4 text-right">Sources</th>
-            <th className="py-2 px-4 text-right">Fresh</th>
-          </tr>
-        </thead>
-        <tbody>
-          {top.map((p) => (
-            <tr key={`${p.ticker}::${p.stance}`} className="border-b border-[rgba(176,141,87,0.1)] last:border-0 hover:bg-[#1c1a17] transition">
-              <td className="py-2 px-4 font-mono text-xs">
-                <Link href={`/positions/${p.ticker}`} className="text-[#F5EFE0]/85 hover:text-[#B08D57]">
-                  ${p.ticker}
-                </Link>
-              </td>
-              <td className={`py-2 px-4 text-xs uppercase ${stanceColor(p.stance)}`}>{p.stance}</td>
-              <td className="py-2 px-4 text-xs text-right text-[#F5EFE0]/60 font-mono">{p.count}</td>
-              <td className="py-2 px-4 text-xs text-right text-[#F5EFE0]/60 font-mono">{p.fresh_count}</td>
-            </tr>
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[rgba(176,141,87,0.18)]">
+        <span className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)]">
+          Top {top.length}
+        </span>
+        <div className="flex rounded overflow-hidden border border-[rgba(176,141,87,0.28)]">
+          {(['heatmap', 'table'] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className="px-2 py-0.5 text-[10px] uppercase tracking-wider transition font-[var(--font-oswald)]"
+              style={{
+                background: view === v ? '#B08D57' : '#141210',
+                color: view === v ? '#080604' : 'rgba(245,239,224,0.5)',
+              }}
+            >
+              {v === 'heatmap' ? '⊞ Heatmap' : '≡ Table'}
+            </button>
           ))}
-        </tbody>
-      </table>
+        </div>
+      </div>
+
+      {view === 'heatmap' ? (
+        <div className="p-3 flex flex-wrap gap-1.5 items-start content-start">
+          {top.map((p) => {
+            const stanceKey = p.stance.toLowerCase().includes('bull') ? 'bullish'
+              : p.stance.toLowerCase().includes('bear') ? 'bearish'
+              : p.stance.toLowerCase().includes('caut') ? 'cautious'
+              : 'neutral';
+            const ratio = p.count / maxCount;
+            const size = Math.round(54 + ratio * 56);
+            const bg = POSITIONS_STANCE_BG[stanceKey];
+            const alpha = 0.14 + ratio * 0.28;
+            return (
+              <Link
+                key={`${p.ticker}::${p.stance}`}
+                href={`/positions/${p.ticker}`}
+                className="rounded flex flex-col items-center justify-center gap-0.5 transition hover:scale-105 active:scale-100 shrink-0"
+                style={{
+                  width: `${size}px`,
+                  height: `${size}px`,
+                  background: `rgba(${positionsHexToRgb(bg)}, ${alpha})`,
+                  border: `1px solid ${bg}55`,
+                }}
+                title={`$${p.ticker} · ${p.stance} · ${p.count} source${p.count !== 1 ? 's' : ''}`}
+              >
+                <span
+                  className="font-bold font-mono text-[#F5EFE0] leading-none"
+                  style={{ fontSize: `${Math.round(10 + ratio * 5)}px` }}
+                >
+                  {p.ticker}
+                </span>
+                <span
+                  className="uppercase tracking-wider leading-none"
+                  style={{ fontSize: '8px', color: bg }}
+                >
+                  {p.stance}
+                </span>
+                <span className="text-[9px] text-[#F5EFE0]/45 font-mono leading-none">{p.count}</span>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-[rgba(176,141,87,0.18)] text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)]">
+              <th className="py-2 px-4 text-left">Ticker</th>
+              <th className="py-2 px-4 text-left">Stance</th>
+              <th className="py-2 px-4 text-right">Sources</th>
+              <th className="py-2 px-4 text-right">Fresh</th>
+            </tr>
+          </thead>
+          <tbody>
+            {top.map((p) => (
+              <tr key={`${p.ticker}::${p.stance}`} className="border-b border-[rgba(176,141,87,0.1)] last:border-0 hover:bg-[#1c1a17] transition">
+                <td className="py-2 px-4 font-mono text-xs">
+                  <Link href={`/positions/${p.ticker}`} className="text-[#F5EFE0]/85 hover:text-[#B08D57]">
+                    ${p.ticker}
+                  </Link>
+                </td>
+                <td className={`py-2 px-4 text-xs uppercase ${stanceColor(p.stance)}`}>{p.stance}</td>
+                <td className="py-2 px-4 text-xs text-right text-[#F5EFE0]/60 font-mono">{p.count}</td>
+                <td className="py-2 px-4 text-xs text-right text-[#F5EFE0]/60 font-mono">{p.fresh_count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
       <div className="px-4 py-2 border-t border-[rgba(176,141,87,0.18)] text-right">
         <Link href={`/positions?junto_id=${juntoId}`} className="text-xs text-[#B08D57] hover:underline">
           View all positions →
