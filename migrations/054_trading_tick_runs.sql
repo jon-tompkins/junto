@@ -1,7 +1,7 @@
 create table if not exists trading_tick_runs (
   id uuid primary key default gen_random_uuid(),
   mandate_id uuid not null references trading_mandates(id) on delete cascade,
-  window text not null,
+  "window" text not null,
   tweets_reviewed integer not null default 0,
   signals_extracted integer not null default 0,
   decisions_made integer not null default 0,
