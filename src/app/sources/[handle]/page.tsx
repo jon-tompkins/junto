@@ -240,10 +240,14 @@ export default function SourceProfilePage() {
                 const days = daysHeld(pos.since);
                 const pct = Math.max(4, Math.round((days / maxDays) * 100));
                 const quote = quotes[ticker];
+                const isBearish = pos.stance === 'bearish';
+                const stanceSign = isBearish ? -1 : 1;
                 const upside =
                   quote?.price && pos.target_price
-                    ? ((pos.target_price - quote.price) / quote.price) * 100
+                    ? ((pos.target_price - quote.price) / quote.price) * 100 * stanceSign
                     : null;
+                const adjChange =
+                  quote?.changePercent != null ? quote.changePercent * stanceSign : null;
                 return (
                   <Link key={ticker} href={`/positions/${ticker}`} className="block bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 hover:border-[rgba(176,141,87,0.4)] transition">
                     {/* Top row: ticker + badges */}
@@ -261,9 +265,9 @@ export default function SourceProfilePage() {
                     {quote?.price != null && (
                       <div className="flex items-baseline gap-3 mb-3 flex-wrap">
                         <span className="text-[#F5EFE0] font-semibold">${quote.price.toFixed(2)}</span>
-                        {quote.changePercent != null && (
-                          <span className={`text-xs font-medium ${quote.changePercent >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
-                            {quote.changePercent >= 0 ? '+' : ''}{quote.changePercent.toFixed(2)}% today
+                        {adjChange != null && (
+                          <span className={`text-xs font-medium ${adjChange >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
+                            {adjChange >= 0 ? '+' : ''}{adjChange.toFixed(2)}% today
                           </span>
                         )}
                         {pos.target_price != null && (
