@@ -5,6 +5,8 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 
+type Tab = 'costs' | 'data' | 'trading';
+
 interface UserRow {
   user_id: string;
   email: string;
@@ -12,6 +14,7 @@ interface UserRow {
   active: number;
   joined_at: string;
   is_pro?: boolean;
+  credit_balance?: number;
 }
 
 interface PromoCode {
@@ -45,6 +48,14 @@ interface CostSummary {
   }>;
 }
 
+interface SourceRow {
+  id: string;
+  type: string;
+  handle_or_url: string;
+  display_name: string | null;
+  updated_at: string;
+}
+
 const SUPPLIER_COLORS: Record<string, string> = {
   grok: 'bg-[#B08D57]',
   apify: 'bg-[#3ecf6a]',
@@ -58,17 +69,22 @@ function fmtUsd(cents: number): string {
 
 export default function AdminDashboard() {
   const { status } = useSession();
+  const [tab, setTab] = useState<Tab>('costs');
   const [summary, setSummary] = useState<CostSummary | null>(null);
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+  const [sources, setSources] = useState<SourceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [windowDays, setWindowDays] = useState<number>(30);
   const [togglingPro, setTogglingPro] = useState<string | null>(null);
-  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+  const [adjustingCredits, setAdjustingCredits] = useState<string | null>(null);
   const [newCode, setNewCode] = useState('');
   const [newCodeDesc, setNewCodeDesc] = useState('');
   const [newCodeMaxUses, setNewCodeMaxUses] = useState('1');
   const [creatingCode, setCreatingCode] = useState(false);
+  const [newHandle, setNewHandle] = useState('');
+  const [addingSource, setAddingSource] = useState(false);
 
   useEffect(() => {
     if (status !== 'authenticated') return;
@@ -80,23 +96,27 @@ export default function AdminDashboard() {
         if (!r.ok) throw new Error(`Failed (${r.status})`);
         return r.json() as Promise<CostSummary>;
       }),
-      fetch('/api/admin/users').then(async (r) => {
-        if (!r.ok) return { users: [] };
-        return r.json() as Promise<{ users: UserRow[] }>;
-      }),
-      fetch('/api/admin/promo').then(async (r) => {
-        if (!r.ok) return { codes: [] };
-        return r.json() as Promise<{ codes: PromoCode[] }>;
-      }),
+      fetch('/api/admin/users').then(async (r) => (r.ok ? r.json() : { users: [] })),
+      fetch('/api/admin/promo').then(async (r) => (r.ok ? r.json() : { codes: [] })),
+      fetch('/api/admin/sources').then(async (r) => (r.ok ? r.json() : { sources: [] })),
     ])
-      .then(([costs, usersData, promoData]) => {
-        setSummary(costs);
-        setUsers(usersData.users);
-        setPromoCodes(promoData.codes);
+      .then(([costs, usersData, promoData, sourcesData]) => {
+        setSummary(costs as CostSummary);
+        setUsers((usersData as any).users);
+        setPromoCodes((promoData as any).codes);
+        setSources((sourcesData as any).sources);
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [status, windowDays]);
+
+  async function reloadSources() {
+    const r = await fetch('/api/admin/sources');
+    if (r.ok) {
+      const data = await r.json();
+      setSources(data.sources || []);
+    }
+  }
 
   async function togglePro(userId: string, currentlyPro: boolean) {
     setTogglingPro(userId);
@@ -106,9 +126,30 @@ export default function AdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_pro: !currentlyPro }),
       });
-      setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, is_pro: !currentlyPro } : u));
+      setUsers((prev) => prev.map((u) => (u.user_id === userId ? { ...u, is_pro: !currentlyPro } : u)));
     } finally {
       setTogglingPro(null);
+    }
+  }
+
+  async function adjustCredits(userId: string) {
+    const input = window.prompt('Credit adjustment (positive to add, negative to remove):', '1000');
+    if (!input) return;
+    const delta = parseInt(input, 10);
+    if (!Number.isFinite(delta) || delta === 0) return;
+    setAdjustingCredits(userId);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/credits`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delta, note: 'admin_adjustment' }),
+      });
+      const data = await res.json();
+      if (typeof data.credit_balance === 'number') {
+        setUsers((prev) => prev.map((u) => (u.user_id === userId ? { ...u, credit_balance: data.credit_balance } : u)));
+      }
+    } finally {
+      setAdjustingCredits(null);
     }
   }
 
@@ -128,7 +169,7 @@ export default function AdminDashboard() {
       });
       const data = await res.json();
       if (data.code) {
-        setPromoCodes(prev => [data.code, ...prev]);
+        setPromoCodes((prev) => [data.code, ...prev]);
         setNewCode('');
         setNewCodeDesc('');
         setNewCodeMaxUses('1');
@@ -140,7 +181,30 @@ export default function AdminDashboard() {
 
   async function deletePromoCode(id: string) {
     await fetch(`/api/admin/promo?id=${id}`, { method: 'DELETE' });
-    setPromoCodes(prev => prev.filter(c => c.id !== id));
+    setPromoCodes((prev) => prev.filter((c) => c.id !== id));
+  }
+
+  async function addSource(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newHandle.trim()) return;
+    setAddingSource(true);
+    try {
+      await fetch('/api/admin/sources', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handle: newHandle, type: 'twitter' }),
+      });
+      setNewHandle('');
+      await reloadSources();
+    } finally {
+      setAddingSource(false);
+    }
+  }
+
+  async function untrackSource(id: string) {
+    if (!confirm('Untrack this source? It will stop being pulled.')) return;
+    await fetch(`/api/admin/sources?id=${id}`, { method: 'DELETE' });
+    await reloadSources();
   }
 
   if (status === 'loading' || loading) {
@@ -169,292 +233,438 @@ export default function AdminDashboard() {
       <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
         <TopNav />
         <div className="max-w-6xl mx-auto px-6 py-12">
-          <h1 className="text-2xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Admin — Costs</h1>
+          <h1 className="text-2xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Admin</h1>
           <p className="text-[#e8453c]">{error || 'No data.'}</p>
         </div>
       </main>
     );
   }
 
-  const suppliers = Object.entries(summary.by_supplier).sort((a, b) => b[1].cost_cents - a[1].cost_cents);
-  const operations = Object.entries(summary.by_operation).sort((a, b) => b[1].cost_cents - a[1].cost_cents);
-  const maxDailyTotal = Math.max(...summary.daily.map((d) => Number(d.total) || 0), 1);
-
   return (
     <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
       <div className="max-w-6xl mx-auto px-6 py-10">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">Admin · Costs</h1>
-            <p className="text-sm text-[#F5EFE0]/45 mt-1">
-              Since {new Date(summary.since).toLocaleDateString()} · {summary.total_calls.toLocaleString()} API calls
-              {' · '}<Link href="/admin/trading" className="text-[#B08D57] hover:underline">Trading →</Link>
-              {' · '}<Link href="/admin/sources" className="text-[#B08D57] hover:underline">Sources →</Link>
-            </p>
-          </div>
-          <div className="flex gap-2">
-            {[7, 30, 90].map((d) => (
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-4">Admin</h1>
+          <div className="flex gap-1 border-b border-[rgba(176,141,87,0.28)]">
+            {(['costs', 'data', 'trading'] as Tab[]).map((t) => (
               <button
-                key={d}
-                onClick={() => setWindowDays(d)}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition ${
-                  windowDays === d
-                    ? 'bg-[#B08D57] text-[#080604] font-semibold'
-                    : 'bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/60 hover:text-[#F5EFE0]'
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-4 py-2 text-sm font-medium uppercase tracking-wider font-[var(--font-oswald)] transition border-b-2 -mb-px ${
+                  tab === t
+                    ? 'border-[#B08D57] text-[#F5EFE0]'
+                    : 'border-transparent text-[#F5EFE0]/40 hover:text-[#F5EFE0]/70'
                 }`}
               >
-                {d}d
+                {t}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Big number */}
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-8 mb-8">
-          <div className="text-sm text-[#F5EFE0]/45 uppercase tracking-wider mb-1 font-[var(--font-oswald)]">Total platform spend</div>
-          <div className="text-5xl font-bold mb-2 text-[#F5EFE0]">{fmtUsd(summary.total_cents)}</div>
-          <div className="text-sm text-[#F5EFE0]/45">
-            {summary.total_calls.toLocaleString()} calls · avg {fmtUsd(summary.total_cents / Math.max(summary.total_calls, 1))} per call
-          </div>
-        </div>
-
-        {/* Suppliers grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {suppliers.map(([supplier, stats]) => (
-            <div key={supplier} className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <div className={`w-2 h-2 rounded-full ${SUPPLIER_COLORS[supplier] || 'bg-[#F5EFE0]/30'}`} />
-                <div className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">{supplier}</div>
-              </div>
-              <div className="text-2xl font-bold text-[#F5EFE0]">{fmtUsd(stats.cost_cents)}</div>
-              <div className="text-xs text-[#F5EFE0]/30 mt-1">
-                {stats.calls.toLocaleString()} calls · {stats.usage_amount.toLocaleString()} units
-              </div>
-            </div>
-          ))}
-          {suppliers.length === 0 && (
-            <div className="col-span-4 text-[#F5EFE0]/45 text-sm text-center py-6">
-              No cost events recorded yet. Costs start tracking after the next API call.
-            </div>
-          )}
-        </div>
-
-        {/* Daily chart */}
-        {summary.daily.length > 0 && (
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-8">
-            <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">Daily Spend</h2>
-            <div className="flex items-stretch gap-1 h-32">
-              {summary.daily.map((d) => {
-                const total = Number(d.total) || 0;
-                const heightPct = (total / maxDailyTotal) * 100;
-                return (
-                  <div key={d.day as string} className="flex-1 flex flex-col justify-end group relative">
-                    <div
-                      className="w-full bg-[#B08D57] hover:bg-[#B08D57]/80 rounded-t transition"
-                      style={{ height: `${Math.max(heightPct, 2)}%` }}
-                    />
-                    <div className="opacity-0 group-hover:opacity-100 transition absolute -top-8 left-1/2 -translate-x-1/2 text-xs bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-2 py-1 whitespace-nowrap z-10 text-[#F5EFE0]">
-                      {d.day}: {fmtUsd(total)}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex justify-between text-xs text-[#F5EFE0]/30 mt-2">
-              <span>{summary.daily[0]?.day}</span>
-              <span>{summary.daily[summary.daily.length - 1]?.day}</span>
-            </div>
-          </div>
+        {tab === 'costs' && (
+          <CostsTab
+            summary={summary}
+            windowDays={windowDays}
+            setWindowDays={setWindowDays}
+          />
         )}
 
-        {/* Operation breakdown */}
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-8">
-          <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">By Operation</h2>
-          <div className="space-y-2">
-            {operations.map(([op, stats]) => (
-              <div key={op} className="flex items-center justify-between py-2 border-b border-[rgba(176,141,87,0.18)] last:border-0">
-                <div>
-                  <div className="font-mono text-sm text-[#F5EFE0]/80">{op}</div>
-                  <div className="text-xs text-[#F5EFE0]/30">{stats.calls} calls</div>
-                </div>
-                <div className="text-sm font-semibold text-[#F5EFE0]">{fmtUsd(stats.cost_cents)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+        {tab === 'data' && (
+          <DataTab
+            users={users}
+            togglePro={togglePro}
+            togglingPro={togglingPro}
+            adjustCredits={adjustCredits}
+            adjustingCredits={adjustingCredits}
+            promoCodes={promoCodes}
+            newCode={newCode}
+            setNewCode={setNewCode}
+            newCodeDesc={newCodeDesc}
+            setNewCodeDesc={setNewCodeDesc}
+            newCodeMaxUses={newCodeMaxUses}
+            setNewCodeMaxUses={setNewCodeMaxUses}
+            creatingCode={creatingCode}
+            createPromoCode={createPromoCode}
+            deletePromoCode={deletePromoCode}
+            sources={sources}
+            newHandle={newHandle}
+            setNewHandle={setNewHandle}
+            addingSource={addingSource}
+            addSource={addSource}
+            untrackSource={untrackSource}
+          />
+        )}
 
-        {/* Users table */}
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-8">
-          <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">
-            Users · {users.length} total
-          </h2>
-          {users.length === 0 ? (
-            <p className="text-[#F5EFE0]/45 text-sm">No subscribers yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
-                  <tr>
-                    <th className="py-2 pr-6">Email / ID</th>
-                    <th className="py-2 pr-6 text-right">Plan</th>
-                    <th className="py-2 pr-6 text-right">Active subs</th>
-                    <th className="py-2 pr-6 text-right">Total subs</th>
-                    <th className="py-2 text-right">Joined</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u) => (
-                    <tr key={u.user_id} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
-                      <td className="py-2 pr-6 text-[#F5EFE0]/80 font-mono text-xs truncate max-w-[200px]">{u.email}</td>
-                      <td className="py-2 pr-6 text-right">
-                        <button
-                          onClick={() => togglePro(u.user_id, !!u.is_pro)}
-                          disabled={togglingPro === u.user_id}
-                          className={`text-xs px-2 py-0.5 rounded font-bold font-[var(--font-oswald)] uppercase tracking-wide transition ${
-                            u.is_pro
-                              ? 'bg-[#B08D57] text-[#080604] hover:bg-[#B08D57]/70'
-                              : 'bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/40 hover:text-[#F5EFE0]/70'
-                          } disabled:opacity-50`}
-                        >
-                          {togglingPro === u.user_id ? '…' : u.is_pro ? 'Pro ✓' : 'Free'}
-                        </button>
-                      </td>
-                      <td className="py-2 pr-6 text-right">
-                        <span className={`font-semibold ${u.active > 0 ? 'text-[#3ecf6a]' : 'text-[#F5EFE0]/30'}`}>
-                          {u.active}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-6 text-right text-[#F5EFE0]/45">{u.total}</td>
-                      <td className="py-2 text-right text-[#F5EFE0]/30 text-xs whitespace-nowrap">
-                        {u.joined_at ? new Date(u.joined_at).toLocaleDateString() : '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        {tab === 'trading' && <TradingTab />}
+      </div>
+    </main>
+  );
+}
 
-        {/* Promo Codes */}
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-8">
-          <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">Promo Codes</h2>
+function CostsTab({
+  summary,
+  windowDays,
+  setWindowDays,
+}: {
+  summary: CostSummary;
+  windowDays: number;
+  setWindowDays: (n: number) => void;
+}) {
+  const suppliers = Object.entries(summary.by_supplier).sort((a, b) => b[1].cost_cents - a[1].cost_cents);
+  const operations = Object.entries(summary.by_operation).sort((a, b) => b[1].cost_cents - a[1].cost_cents);
+  const maxDailyTotal = Math.max(...summary.daily.map((d) => Number(d.total) || 0), 1);
 
-          {/* Create form */}
-          <div className="flex flex-wrap gap-2 mb-5">
-            <input
-              type="text"
-              value={newCode}
-              onChange={e => setNewCode(e.target.value.toUpperCase())}
-              placeholder="CODE (auto if blank)"
-              className="flex-1 min-w-[140px] bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] font-mono placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
-            />
-            <input
-              type="text"
-              value={newCodeDesc}
-              onChange={e => setNewCodeDesc(e.target.value)}
-              placeholder="Description (optional)"
-              className="flex-1 min-w-[160px] bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
-            />
-            <input
-              type="number"
-              value={newCodeMaxUses}
-              onChange={e => setNewCodeMaxUses(e.target.value)}
-              min="1"
-              placeholder="Max uses"
-              className="w-24 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]"
-            />
+  return (
+    <>
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-sm text-[#F5EFE0]/45">
+          Since {new Date(summary.since).toLocaleDateString()} · {summary.total_calls.toLocaleString()} API calls
+        </p>
+        <div className="flex gap-2">
+          {[7, 30, 90].map((d) => (
             <button
-              onClick={createPromoCode}
-              disabled={creatingCode}
-              className="px-4 py-2 rounded bg-[#B08D57] text-[#080604] text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide hover:bg-[#B08D57]/80 transition disabled:opacity-50"
+              key={d}
+              onClick={() => setWindowDays(d)}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition ${
+                windowDays === d
+                  ? 'bg-[#B08D57] text-[#080604] font-semibold'
+                  : 'bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/60 hover:text-[#F5EFE0]'
+              }`}
             >
-              {creatingCode ? 'Creating…' : '+ Create'}
+              {d}d
             </button>
-          </div>
-
-          {/* Code list */}
-          {promoCodes.length === 0 ? (
-            <p className="text-sm text-[#F5EFE0]/30">No promo codes yet.</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
-                <tr>
-                  <th className="py-2 pr-6">Code</th>
-                  <th className="py-2 pr-6">Description</th>
-                  <th className="py-2 pr-6 text-center">Grants Pro</th>
-                  <th className="py-2 pr-6 text-right">Uses</th>
-                  <th className="py-2 text-right">Created</th>
-                  <th className="py-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {promoCodes.map(c => (
-                  <tr key={c.id} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
-                    <td className="py-2 pr-6 font-mono text-[#B08D57] font-bold">{c.code}</td>
-                    <td className="py-2 pr-6 text-[#F5EFE0]/60 text-xs">{c.description || '—'}</td>
-                    <td className="py-2 pr-6 text-center">{c.grants_pro ? '✓' : '—'}</td>
-                    <td className="py-2 pr-6 text-right text-[#F5EFE0]/60">{c.uses_count}/{c.max_uses}</td>
-                    <td className="py-2 text-right text-[#F5EFE0]/30 text-xs whitespace-nowrap">
-                      {new Date(c.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="py-2 pl-4">
-                      <button
-                        onClick={() => deletePromoCode(c.id)}
-                        className="text-xs text-[#e8453c]/60 hover:text-[#e8453c] transition"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          ))}
         </div>
+      </div>
 
-        {/* Recent events */}
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6">
-          <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">Recent events (last 100)</h2>
+      <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-8 mb-8">
+        <div className="text-sm text-[#F5EFE0]/45 uppercase tracking-wider mb-1 font-[var(--font-oswald)]">Total platform spend</div>
+        <div className="text-5xl font-bold mb-2 text-[#F5EFE0]">{fmtUsd(summary.total_cents)}</div>
+        <div className="text-sm text-[#F5EFE0]/45">
+          {summary.total_calls.toLocaleString()} calls · avg {fmtUsd(summary.total_cents / Math.max(summary.total_calls, 1))} per call
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {suppliers.map(([supplier, stats]) => (
+          <div key={supplier} className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-2 h-2 rounded-full ${SUPPLIER_COLORS[supplier] || 'bg-[#F5EFE0]/30'}`} />
+              <div className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">{supplier}</div>
+            </div>
+            <div className="text-2xl font-bold text-[#F5EFE0]">{fmtUsd(stats.cost_cents)}</div>
+            <div className="text-xs text-[#F5EFE0]/30 mt-1">
+              {stats.calls.toLocaleString()} calls · {stats.usage_amount.toLocaleString()} units
+            </div>
+          </div>
+        ))}
+        {suppliers.length === 0 && (
+          <div className="col-span-4 text-[#F5EFE0]/45 text-sm text-center py-6">No cost events recorded yet.</div>
+        )}
+      </div>
+
+      {summary.daily.length > 0 && (
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-8">
+          <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">Daily Spend</h2>
+          <div className="flex items-stretch gap-1 h-32">
+            {summary.daily.map((d) => {
+              const total = Number(d.total) || 0;
+              const heightPct = (total / maxDailyTotal) * 100;
+              return (
+                <div key={d.day as string} className="flex-1 flex flex-col justify-end group relative">
+                  <div className="w-full bg-[#B08D57] hover:bg-[#B08D57]/80 rounded-t transition" style={{ height: `${Math.max(heightPct, 2)}%` }} />
+                  <div className="opacity-0 group-hover:opacity-100 transition absolute -top-8 left-1/2 -translate-x-1/2 text-xs bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-2 py-1 whitespace-nowrap z-10 text-[#F5EFE0]">
+                    {d.day}: {fmtUsd(total)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex justify-between text-xs text-[#F5EFE0]/30 mt-2">
+            <span>{summary.daily[0]?.day}</span>
+            <span>{summary.daily[summary.daily.length - 1]?.day}</span>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-8">
+        <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">By Operation</h2>
+        <div className="space-y-2">
+          {operations.map(([op, stats]) => (
+            <div key={op} className="flex items-center justify-between py-2 border-b border-[rgba(176,141,87,0.18)] last:border-0">
+              <div>
+                <div className="font-mono text-sm text-[#F5EFE0]/80">{op}</div>
+                <div className="text-xs text-[#F5EFE0]/30">{stats.calls} calls</div>
+              </div>
+              <div className="text-sm font-semibold text-[#F5EFE0]">{fmtUsd(stats.cost_cents)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6">
+        <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">Recent events</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
+              <tr>
+                <th className="py-2 pr-4">When</th>
+                <th className="py-2 pr-4">Supplier</th>
+                <th className="py-2 pr-4">Operation</th>
+                <th className="py-2 pr-4">Usage</th>
+                <th className="py-2 pr-4 text-right">Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.recent_events.map((e, i) => (
+                <tr key={i} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
+                  <td className="py-2 pr-4 text-[#F5EFE0]/45 whitespace-nowrap">{new Date(e.created_at).toLocaleString()}</td>
+                  <td className="py-2 pr-4 text-[#F5EFE0]/80">
+                    <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${SUPPLIER_COLORS[e.supplier] || 'bg-[#F5EFE0]/30'}`} />
+                    {e.supplier}
+                  </td>
+                  <td className="py-2 pr-4 font-mono text-xs text-[#F5EFE0]/60">{e.operation}</td>
+                  <td className="py-2 pr-4 text-[#F5EFE0]/45">
+                    {e.usage_amount.toLocaleString()} {e.usage_unit}
+                    {e.input_tokens !== null && (
+                      <span className="text-[#F5EFE0]/30 ml-2 text-xs">({e.input_tokens} in / {e.output_tokens} out)</span>
+                    )}
+                  </td>
+                  <td className="py-2 pr-4 text-right font-semibold text-[#F5EFE0]">{fmtUsd(e.cost_cents)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function DataTab(props: {
+  users: UserRow[];
+  togglePro: (id: string, pro: boolean) => void;
+  togglingPro: string | null;
+  adjustCredits: (id: string) => void;
+  adjustingCredits: string | null;
+  promoCodes: PromoCode[];
+  newCode: string;
+  setNewCode: (s: string) => void;
+  newCodeDesc: string;
+  setNewCodeDesc: (s: string) => void;
+  newCodeMaxUses: string;
+  setNewCodeMaxUses: (s: string) => void;
+  creatingCode: boolean;
+  createPromoCode: () => void;
+  deletePromoCode: (id: string) => void;
+  sources: SourceRow[];
+  newHandle: string;
+  setNewHandle: (s: string) => void;
+  addingSource: boolean;
+  addSource: (e: React.FormEvent) => void;
+  untrackSource: (id: string) => void;
+}) {
+  const {
+    users, togglePro, togglingPro, adjustCredits, adjustingCredits,
+    promoCodes, newCode, setNewCode, newCodeDesc, setNewCodeDesc, newCodeMaxUses, setNewCodeMaxUses,
+    creatingCode, createPromoCode, deletePromoCode,
+    sources, newHandle, setNewHandle, addingSource, addSource, untrackSource,
+  } = props;
+
+  return (
+    <>
+      {/* Users */}
+      <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-8">
+        <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">Users · {users.length}</h2>
+        {users.length === 0 ? (
+          <p className="text-[#F5EFE0]/45 text-sm">No users yet.</p>
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
                 <tr>
-                  <th className="py-2 pr-4">When</th>
-                  <th className="py-2 pr-4">Supplier</th>
-                  <th className="py-2 pr-4">Operation</th>
-                  <th className="py-2 pr-4">Usage</th>
-                  <th className="py-2 pr-4 text-right">Cost</th>
+                  <th className="py-2 pr-6">Email</th>
+                  <th className="py-2 pr-6 text-right">Plan</th>
+                  <th className="py-2 pr-6 text-right">Credits</th>
+                  <th className="py-2 pr-6 text-right">Active</th>
+                  <th className="py-2 pr-6 text-right">Total</th>
+                  <th className="py-2 text-right">Joined</th>
                 </tr>
               </thead>
               <tbody>
-                {summary.recent_events.map((e, i) => (
-                  <tr key={i} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
-                    <td className="py-2 pr-4 text-[#F5EFE0]/45 whitespace-nowrap">
-                      {new Date(e.created_at).toLocaleString()}
+                {users.map((u) => (
+                  <tr key={u.user_id} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
+                    <td className="py-2 pr-6 text-[#F5EFE0]/80 font-mono text-xs truncate max-w-[200px]">{u.email}</td>
+                    <td className="py-2 pr-6 text-right">
+                      <button
+                        onClick={() => togglePro(u.user_id, !!u.is_pro)}
+                        disabled={togglingPro === u.user_id}
+                        className={`text-xs px-2 py-0.5 rounded font-bold font-[var(--font-oswald)] uppercase tracking-wide transition ${
+                          u.is_pro
+                            ? 'bg-[#B08D57] text-[#080604] hover:bg-[#B08D57]/70'
+                            : 'bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/40 hover:text-[#F5EFE0]/70'
+                        } disabled:opacity-50`}
+                      >
+                        {togglingPro === u.user_id ? '…' : u.is_pro ? 'Pro ✓' : 'Free'}
+                      </button>
                     </td>
-                    <td className="py-2 pr-4 text-[#F5EFE0]/80">
-                      <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${SUPPLIER_COLORS[e.supplier] || 'bg-[#F5EFE0]/30'}`} />
-                      {e.supplier}
+                    <td className="py-2 pr-6 text-right">
+                      <button
+                        onClick={() => adjustCredits(u.user_id)}
+                        disabled={adjustingCredits === u.user_id}
+                        className="text-xs font-mono text-[#F5EFE0]/70 hover:text-[#B08D57] disabled:opacity-50 transition"
+                        title="Adjust credits"
+                      >
+                        {adjustingCredits === u.user_id ? '…' : (u.credit_balance ?? 0).toLocaleString()}
+                      </button>
                     </td>
-                    <td className="py-2 pr-4 font-mono text-xs text-[#F5EFE0]/60">{e.operation}</td>
-                    <td className="py-2 pr-4 text-[#F5EFE0]/45">
-                      {e.usage_amount.toLocaleString()} {e.usage_unit}
-                      {e.input_tokens !== null && (
-                        <span className="text-[#F5EFE0]/30 ml-2 text-xs">
-                          ({e.input_tokens} in / {e.output_tokens} out)
-                        </span>
-                      )}
+                    <td className="py-2 pr-6 text-right">
+                      <span className={`font-semibold ${u.active > 0 ? 'text-[#3ecf6a]' : 'text-[#F5EFE0]/30'}`}>{u.active}</span>
                     </td>
-                    <td className="py-2 pr-4 text-right font-semibold text-[#F5EFE0]">{fmtUsd(e.cost_cents)}</td>
+                    <td className="py-2 pr-6 text-right text-[#F5EFE0]/45">{u.total}</td>
+                    <td className="py-2 text-right text-[#F5EFE0]/30 text-xs whitespace-nowrap">
+                      {u.joined_at ? new Date(u.joined_at).toLocaleDateString() : '—'}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        )}
       </div>
-    </main>
+
+      {/* Tracked sources */}
+      <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-8">
+        <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-2 font-[var(--font-oswald)]">Tracked sources · {sources.length}</h2>
+        <p className="text-xs text-[#F5EFE0]/30 mb-4">Pulled regardless of junto/newsletter membership.</p>
+        <form onSubmit={addSource} className="flex gap-2 mb-4">
+          <input
+            type="text"
+            value={newHandle}
+            onChange={(e) => setNewHandle(e.target.value)}
+            placeholder="twitter handle (no @)"
+            className="flex-1 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 font-mono focus:outline-none focus:border-[#B08D57]"
+          />
+          <button
+            type="submit"
+            disabled={addingSource || !newHandle.trim()}
+            className="px-4 py-2 bg-[#B08D57] text-[#080604] rounded text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide disabled:opacity-50"
+          >
+            {addingSource ? '…' : 'Track'}
+          </button>
+        </form>
+        {sources.length === 0 ? (
+          <p className="text-sm text-[#F5EFE0]/30">No tracked sources yet.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
+              <tr>
+                <th className="py-2 pr-4">Handle</th>
+                <th className="py-2 pr-4">Type</th>
+                <th className="py-2 pr-4">Last pulled</th>
+                <th className="py-2 pr-4" />
+              </tr>
+            </thead>
+            <tbody>
+              {sources.map((s) => (
+                <tr key={s.id} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
+                  <td className="py-2 pr-4 font-mono text-[#F5EFE0]">@{s.handle_or_url}</td>
+                  <td className="py-2 pr-4 text-[#F5EFE0]/60">{s.type}</td>
+                  <td className="py-2 pr-4 text-[#F5EFE0]/45 text-xs">{s.updated_at ? new Date(s.updated_at).toLocaleString() : '—'}</td>
+                  <td className="py-2 pr-4 text-right">
+                    <button onClick={() => untrackSource(s.id)} className="text-xs text-[#F5EFE0]/40 hover:text-[#e8453c] transition">untrack</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Promo codes */}
+      <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6">
+        <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">Promo codes</h2>
+        <div className="flex flex-wrap gap-2 mb-5">
+          <input
+            type="text"
+            value={newCode}
+            onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+            placeholder="CODE (auto if blank)"
+            className="flex-1 min-w-[140px] bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] font-mono placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
+          />
+          <input
+            type="text"
+            value={newCodeDesc}
+            onChange={(e) => setNewCodeDesc(e.target.value)}
+            placeholder="Description (optional)"
+            className="flex-1 min-w-[160px] bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
+          />
+          <input
+            type="number"
+            value={newCodeMaxUses}
+            onChange={(e) => setNewCodeMaxUses(e.target.value)}
+            min="1"
+            placeholder="Max uses"
+            className="w-24 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]"
+          />
+          <button
+            onClick={createPromoCode}
+            disabled={creatingCode}
+            className="px-4 py-2 rounded bg-[#B08D57] text-[#080604] text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide hover:bg-[#B08D57]/80 transition disabled:opacity-50"
+          >
+            {creatingCode ? '…' : '+ Create'}
+          </button>
+        </div>
+        {promoCodes.length === 0 ? (
+          <p className="text-sm text-[#F5EFE0]/30">No promo codes yet.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
+              <tr>
+                <th className="py-2 pr-6">Code</th>
+                <th className="py-2 pr-6">Description</th>
+                <th className="py-2 pr-6 text-center">Pro</th>
+                <th className="py-2 pr-6 text-right">Uses</th>
+                <th className="py-2 text-right">Created</th>
+                <th className="py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {promoCodes.map((c) => (
+                <tr key={c.id} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
+                  <td className="py-2 pr-6 font-mono text-[#B08D57] font-bold">{c.code}</td>
+                  <td className="py-2 pr-6 text-[#F5EFE0]/60 text-xs">{c.description || '—'}</td>
+                  <td className="py-2 pr-6 text-center">{c.grants_pro ? '✓' : '—'}</td>
+                  <td className="py-2 pr-6 text-right text-[#F5EFE0]/60">{c.uses_count}/{c.max_uses}</td>
+                  <td className="py-2 text-right text-[#F5EFE0]/30 text-xs whitespace-nowrap">{new Date(c.created_at).toLocaleDateString()}</td>
+                  <td className="py-2 pl-4">
+                    <button onClick={() => deletePromoCode(c.id)} className="text-xs text-[#e8453c]/60 hover:text-[#e8453c] transition">Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </>
+  );
+}
+
+function TradingTab() {
+  return (
+    <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-8">
+      <h2 className="text-lg font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-2">Trading</h2>
+      <p className="text-sm text-[#F5EFE0]/45 mb-6">
+        Mandates, proposals, monitoring, and ticks.
+      </p>
+      <Link
+        href="/admin/trading"
+        className="inline-block px-4 py-2 bg-[#B08D57] text-[#080604] rounded text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide hover:bg-[#B08D57]/80 transition"
+      >
+        Open trading dashboard →
+      </Link>
+    </div>
   );
 }

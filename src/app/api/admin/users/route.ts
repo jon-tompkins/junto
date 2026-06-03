@@ -20,17 +20,17 @@ export async function GET() {
     return NextResponse.json({ error: 'Query failed' }, { status: 500 });
   }
 
-  // Get pro status for all users
+  // Get pro status + credit balance for all users
   const { data: proUsers } = await supabase
     .from('users')
-    .select('id, is_pro, email');
+    .select('id, is_pro, email, credit_balance');
 
-  const proById: Record<string, { is_pro: boolean; email: string }> = {};
+  const proById: Record<string, { is_pro: boolean; email: string; credit_balance: number }> = {};
   for (const u of proUsers || []) {
-    proById[u.id] = { is_pro: u.is_pro ?? false, email: u.email || '' };
+    proById[u.id] = { is_pro: u.is_pro ?? false, email: u.email || '', credit_balance: u.credit_balance ?? 0 };
   }
 
-  const byUser = new Map<string, { email: string; total: number; active: number; joined_at: string; is_pro: boolean }>();
+  const byUser = new Map<string, { email: string; total: number; active: number; joined_at: string; is_pro: boolean; credit_balance: number }>();
   for (const row of rows || []) {
     const existing = byUser.get(row.user_id);
     const proInfo = proById[row.user_id];
@@ -41,6 +41,7 @@ export async function GET() {
         active: row.is_active ? 1 : 0,
         joined_at: row.created_at,
         is_pro: proInfo?.is_pro ?? false,
+        credit_balance: proInfo?.credit_balance ?? 0,
       });
     } else {
       existing.total += 1;
@@ -52,7 +53,7 @@ export async function GET() {
   // Also include pro users who may not have subscriptions
   for (const [id, info] of Object.entries(proById)) {
     if (!byUser.has(id) && info.is_pro) {
-      byUser.set(id, { email: info.email || id, total: 0, active: 0, joined_at: '', is_pro: true });
+      byUser.set(id, { email: info.email || id, total: 0, active: 0, joined_at: '', is_pro: true, credit_balance: info.credit_balance });
     }
   }
 
