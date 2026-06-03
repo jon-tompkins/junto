@@ -215,6 +215,7 @@ function LatestDispatchCard() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [contentCache, setContentCache] = useState<Record<string, DispatchFull>>({});
   const [navLoading, setNavLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     fetch('/api/v2/personal-dispatch')
@@ -314,14 +315,23 @@ function LatestDispatchCard() {
           {currentMeta.source_count} sources · {currentMeta.ticker_count} tickers
         </span>
       </div>
-      <h3 className="text-base font-semibold text-[#F5EFE0] mb-3">{currentMeta.subject}</h3>
       {navLoading || !current ? (
         <div className="h-32 rounded bg-[#1c1a17] animate-pulse" />
       ) : (
-        <div
-          className="research-content prose prose-invert max-w-none text-sm text-[#F5EFE0]/80 leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: markdownToHtml(current.content) }}
-        />
+        <>
+          <div
+            className={`research-content prose prose-invert max-w-none text-sm text-[#F5EFE0]/80 leading-relaxed ${expanded ? '' : 'max-h-[24rem] overflow-y-auto pr-1'}`}
+            dangerouslySetInnerHTML={{ __html: markdownToHtml(current.content) }}
+          />
+          <div className="mt-3 pt-3 border-t border-[rgba(176,141,87,0.18)] flex justify-end">
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="text-[10px] uppercase tracking-wider text-[#B08D57] hover:text-[#F5EFE0] transition font-[var(--font-oswald)]"
+            >
+              {expanded ? 'Collapse' : 'Expand full'}
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
@@ -393,9 +403,12 @@ interface ReceivedDispatchItem {
   methods: string[];
 }
 
+const RECEIVED_PAGE_SIZE = 10;
+
 function ReceivedDispatchesFeed() {
   const [items, setItems] = useState<ReceivedDispatchItem[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [visible, setVisible] = useState(RECEIVED_PAGE_SIZE);
 
   useEffect(() => {
     fetch('/api/v2/dispatches/received')
@@ -414,28 +427,131 @@ function ReceivedDispatchesFeed() {
     );
   }
 
+  const shown = items.slice(0, visible);
+  const hasMore = visible < items.length;
+
   return (
-    <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] divide-y divide-[rgba(176,141,87,0.18)]">
-      {items.map((it) => (
-        <Link
-          key={`${it.run_id}-${it.delivered_at}`}
-          href={`/newsletter/${it.newsletter_id}`}
+    <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210]">
+      <div className="divide-y divide-[rgba(176,141,87,0.18)]">
+        {shown.map((it) => (
+          <Link
+            key={`${it.run_id}-${it.delivered_at}`}
+            href={`/newsletter/${it.newsletter_id}`}
+            className="block px-4 py-3 hover:bg-[#1a1815] transition"
+          >
+            <div className="flex items-baseline justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-[#F5EFE0] truncate">{it.subject || '(no subject)'}</p>
+                <p className="text-xs text-[#F5EFE0]/45 mt-0.5 truncate">
+                  {it.newsletter_name}
+                  {it.is_personal && <span className="text-[#B08D57]/80"> · personal</span>}
+                  {it.methods.length > 0 && <span className="text-[#F5EFE0]/35"> · {it.methods.join(', ')}</span>}
+                </p>
+              </div>
+              <span className="text-[10px] text-[#F5EFE0]/40 font-mono whitespace-nowrap">
+                {it.dispatch_date || it.delivered_at.slice(0, 10)}
+              </span>
+            </div>
+          </Link>
+        ))}
+      </div>
+      {(hasMore || visible > RECEIVED_PAGE_SIZE) && (
+        <div className="px-4 py-2 border-t border-[rgba(176,141,87,0.18)] flex items-center justify-between">
+          <span className="text-[10px] text-[#F5EFE0]/35 font-mono">
+            Showing {shown.length} of {items.length}
+          </span>
+          <div className="flex items-center gap-3">
+            {visible > RECEIVED_PAGE_SIZE && (
+              <button
+                onClick={() => setVisible(RECEIVED_PAGE_SIZE)}
+                className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 hover:text-[#F5EFE0] transition font-[var(--font-oswald)]"
+              >
+                Show less
+              </button>
+            )}
+            {hasMore && (
+              <button
+                onClick={() => setVisible((v) => v + RECEIVED_PAGE_SIZE)}
+                className="text-[10px] uppercase tracking-wider text-[#B08D57] hover:text-[#F5EFE0] transition font-[var(--font-oswald)]"
+              >
+                Load more
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Watchlist activity feed ──────────────────────────
+
+interface WatchlistTweet {
+  ticker: string;
+  tweet_id: string;
+  author_handle: string;
+  author_name: string | null;
+  content: string;
+  posted_at: string;
+  likes: number | null;
+  retweets: number | null;
+}
+
+function WatchlistActivityCard({ watchlistId }: { watchlistId: string | null | undefined }) {
+  const [tweets, setTweets] = useState<WatchlistTweet[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!watchlistId) {
+      setLoading(false);
+      setTweets([]);
+      return;
+    }
+    setLoading(true);
+    fetch(`/api/v2/watchlist-activity?watchlist_id=${watchlistId}`)
+      .then((r) => (r.ok ? r.json() : { tweets: [] }))
+      .then((d) => setTweets(d.tweets || []))
+      .catch(() => setTweets([]))
+      .finally(() => setLoading(false));
+  }, [watchlistId]);
+
+  if (!watchlistId) {
+    return (
+      <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
+        Pick a primary watchlist above to see tracked position updates.
+      </div>
+    );
+  }
+  if (loading) return <div className="h-32 rounded bg-[#141210] animate-pulse" />;
+  if (!tweets || tweets.length === 0) {
+    return (
+      <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
+        No recent tracked position updates.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] divide-y divide-[rgba(176,141,87,0.18)] max-h-[24rem] overflow-y-auto">
+      {tweets.slice(0, 20).map((t) => (
+        <a
+          key={t.tweet_id}
+          href={`https://x.com/${t.author_handle}/status/${t.tweet_id}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="block px-4 py-3 hover:bg-[#1a1815] transition"
         >
-          <div className="flex items-baseline justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-sm text-[#F5EFE0] truncate">{it.subject || '(no subject)'}</p>
-              <p className="text-xs text-[#F5EFE0]/45 mt-0.5 truncate">
-                {it.newsletter_name}
-                {it.is_personal && <span className="text-[#B08D57]/80"> · personal</span>}
-                {it.methods.length > 0 && <span className="text-[#F5EFE0]/35"> · {it.methods.join(', ')}</span>}
-              </p>
+          <div className="flex items-baseline justify-between gap-2 mb-1">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xs font-mono text-[#B08D57]">${t.ticker}</span>
+              <span className="text-xs text-[#F5EFE0]/55 truncate">@{t.author_handle}</span>
             </div>
-            <span className="text-[10px] text-[#F5EFE0]/40 font-mono whitespace-nowrap">
-              {it.dispatch_date || it.delivered_at.slice(0, 10)}
+            <span className="text-[10px] text-[#F5EFE0]/35 font-mono whitespace-nowrap">
+              {new Date(t.posted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
           </div>
-        </Link>
+          <p className="text-xs text-[#F5EFE0]/75 line-clamp-2">{t.content}</p>
+        </a>
       ))}
     </div>
   );
@@ -971,28 +1087,129 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ─── Latest Personal Dispatch ─────────────────── */}
-        <Section label="Today's Dispatch" defaultOpen>
+        {/* ─── Today's Dispatch (focal point) ──────────── */}
+        <div className="mb-8">
+          <h2 className="text-[10px] uppercase tracking-[0.18em] text-[#F5EFE0]/45 font-[var(--font-oswald)] mb-2 px-1">
+            Today&apos;s Dispatch
+          </h2>
           <LatestDispatchCard />
-        </Section>
+        </div>
 
-        {/* ─── Received dispatches feed ──────────────────── */}
-        <Section label="Received Dispatches">
+        {/* ─── Watchlist | Junto side-by-side ──────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+          {/* Watchlist column */}
+          <div>
+            <div className="flex items-center justify-between mb-2 px-1">
+              <h2 className="text-[10px] uppercase tracking-[0.18em] text-[#F5EFE0]/45 font-[var(--font-oswald)]">
+                Watchlist{featuredWatchlist?.name ? ` · ${featuredWatchlist.name}` : ''}
+              </h2>
+              <div className="flex items-center gap-2">
+                {featuredWatchlist && (
+                  <Link
+                    href={`/watchlists/${featuredWatchlist.id}`}
+                    className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 hover:text-[#F5EFE0] transition font-[var(--font-oswald)]"
+                  >
+                    Edit
+                  </Link>
+                )}
+                <button
+                  onClick={() => setShowWatchlistPicker((p) => !p)}
+                  className="text-[10px] uppercase tracking-wider text-[#B08D57] hover:text-[#F5EFE0] transition font-[var(--font-oswald)]"
+                >
+                  Change
+                </button>
+              </div>
+            </div>
+            {showWatchlistPicker && (
+              <div className="mb-2 px-3 py-2 rounded border border-[rgba(176,141,87,0.18)] bg-[#0f0e0c]">
+                <div className="flex flex-wrap gap-1.5">
+                  {allWatchlists.map((w) => (
+                    <button
+                      key={w.id}
+                      onClick={() => handleChangeFeaturedWatchlist(w.id)}
+                      className={`text-xs px-2.5 py-1 rounded-sm transition ${
+                        w.id === featuredWatchlist?.id
+                          ? 'bg-[#B08D57] text-[#080604] font-semibold'
+                          : 'bg-[#1c1a17] text-[#F5EFE0]/70 hover:text-[#F5EFE0]'
+                      }`}
+                    >
+                      {w.name} <span className="opacity-50 ml-1">({w.tickers.length})</span>
+                    </button>
+                  ))}
+                  <button
+                    onClick={handleCreateWatchlist}
+                    className="text-xs px-2.5 py-1 rounded-sm border border-dashed border-[rgba(176,141,87,0.35)] text-[#B08D57] hover:bg-[#1c1a17] transition"
+                  >
+                    + New
+                  </button>
+                </div>
+              </div>
+            )}
+            <WatchlistActivityCard watchlistId={featuredWatchlist?.id} />
+          </div>
+
+          {/* Junto column */}
+          <div>
+            <div className="flex items-center justify-between mb-2 px-1">
+              <h2 className="text-[10px] uppercase tracking-[0.18em] text-[#F5EFE0]/45 font-[var(--font-oswald)]">
+                Junto{featuredJunto?.name ? ` · ${featuredJunto.name}` : ''}
+              </h2>
+              <div className="flex items-center gap-2">
+                {featuredJunto && allJuntos.some((j) => j.id === featuredJunto.id) && (
+                  <Link
+                    href={`/junto/${featuredJunto.id}/edit`}
+                    className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 hover:text-[#F5EFE0] transition font-[var(--font-oswald)]"
+                  >
+                    Edit
+                  </Link>
+                )}
+                <button
+                  onClick={() => setShowJuntoPicker((p) => !p)}
+                  className="text-[10px] uppercase tracking-wider text-[#B08D57] hover:text-[#F5EFE0] transition font-[var(--font-oswald)]"
+                >
+                  Change
+                </button>
+              </div>
+            </div>
+            {showJuntoPicker && (
+              <div className="mb-2 px-3 py-2 rounded border border-[rgba(176,141,87,0.18)] bg-[#0f0e0c]">
+                <div className="flex flex-wrap gap-1.5">
+                  {allJuntos.map((j) => (
+                    <button
+                      key={j.id}
+                      onClick={() => handleChangeFeaturedJunto(j.id)}
+                      className={`text-xs px-2.5 py-1 rounded-sm transition ${
+                        j.id === featuredJunto?.id
+                          ? 'bg-[#B08D57] text-[#080604] font-semibold'
+                          : 'bg-[#1c1a17] text-[#F5EFE0]/70 hover:text-[#F5EFE0]'
+                      }`}
+                    >
+                      {j.name}
+                    </button>
+                  ))}
+                  <Link
+                    href="/junto/new"
+                    className="text-xs px-2.5 py-1 rounded-sm border border-dashed border-[rgba(176,141,87,0.35)] text-[#B08D57] hover:bg-[#1c1a17] transition"
+                  >
+                    + New
+                  </Link>
+                </div>
+              </div>
+            )}
+            <PositionsSnapshotCard juntoId={featuredJunto?.id} />
+          </div>
+        </div>
+
+        {/* ─── Received dispatches feed ─────────────────── */}
+        <div className="mb-8">
+          <h2 className="text-[10px] uppercase tracking-[0.18em] text-[#F5EFE0]/45 font-[var(--font-oswald)] mb-2 px-1">
+            Received Dispatches
+          </h2>
           <ReceivedDispatchesFeed />
-        </Section>
+        </div>
 
-        {/* ─── Positions snapshot ──────────────────────── */}
-        <Section label="Positions" badge={featuredJunto?.name || null}>
-          <PositionsSnapshotCard juntoId={featuredJunto?.id} />
-        </Section>
-
-        {/* ─── Manual stop/target levels ─────────────────── */}
-        <Section label="My Levels">
-          <MyPositionLevelsCard />
-        </Section>
-
-        {/* ─── Primary Junto ───────────────────────────── */}
-        <Section label="Primary Junto" badge={featuredJunto?.name || null}>
+        {/* ─── Legacy primary-junto detail panel (hidden) ── */}
+        <div className="hidden">
         <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(176,141,87,0.18)]">
             <div className="min-w-0 flex-1">
@@ -1210,10 +1427,10 @@ export default function DashboardPage() {
           )}
         </div>
 
-        </Section>
+        </div>
 
-        {/* ─── Primary Watchlist ────────────────────────── */}
-        <Section label="Watchlist" badge={featuredWatchlist?.name || null}>
+        {/* ─── Legacy watchlist editor (hidden) ─────────── */}
+        <div className="hidden">
         <section className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(176,141,87,0.18)]">
             <div className="min-w-0 flex-1">
@@ -1366,16 +1583,19 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        </Section>
+        </div>
 
-        {/* ─── Subscriptions / Juntos / Dispatches ──────── */}
-        <Section label="My Library" badge={
-          subsTab === 'subscriptions' ? subscriptions.length :
+        {/* ─── My Library: Subscriptions / Dispatches / Juntos ── */}
+        {(() => {
+          const activeSubscriptions = subscriptions.filter((s) => s.is_active);
+          return (
+        <Section label="My Library" defaultOpen badge={
+          subsTab === 'subscriptions' ? activeSubscriptions.length :
           subsTab === 'juntos' ? allJuntos.length :
           subsTabHistory.length
         }>
         <div className="flex gap-1 mb-4 border-b border-[rgba(176,141,87,0.18)]">
-          {(['subscriptions', 'juntos', 'dispatches'] as const).map((t) => (
+          {(['subscriptions', 'dispatches', 'juntos'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setSubsTab(t)}
@@ -1385,9 +1605,9 @@ export default function DashboardPage() {
                   : 'border-transparent text-[#F5EFE0]/40 hover:text-[#F5EFE0]/70'
               }`}
             >
-              {t === 'subscriptions' ? `Subscriptions (${subscriptions.length})` :
+              {t === 'subscriptions' ? `Subscriptions (${activeSubscriptions.length})` :
                t === 'juntos' ? `Juntos (${allJuntos.length})` :
-               'Dispatches'}
+               `Dispatches${subsTabHistory.length ? ` (${subsTabHistory.length})` : ''}`}
             </button>
           ))}
         </div>
@@ -1442,7 +1662,7 @@ export default function DashboardPage() {
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
-              My Subscriptions ({subscriptions.length})
+              Active Subscriptions ({activeSubscriptions.length})
             </h2>
             <Link href="/explore" className="text-xs text-[#B08D57] hover:underline">
               Explore →
@@ -1450,10 +1670,10 @@ export default function DashboardPage() {
           </div>
           {loading ? (
             <LoadingSkeleton />
-          ) : subscriptions.length === 0 ? (
+          ) : activeSubscriptions.length === 0 ? (
             <EmptyState
               icon="mail"
-              title="No subscriptions yet"
+              title="No active subscriptions"
               subtitle="Discover dispatches to subscribe to."
               actionLabel="Explore Dispatches"
               actionHref="/explore"
@@ -1470,7 +1690,7 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {subscriptions.map((sub) => (
+                  {activeSubscriptions.map((sub) => (
                     <React.Fragment key={sub.id}>
                       <tr className={`border-b border-[rgba(176,141,87,0.18)] hover:bg-[#141210] transition-colors ${sub.is_active ? '' : 'opacity-60'}`}>
                         <td className="px-4 py-3">
@@ -1582,6 +1802,8 @@ export default function DashboardPage() {
         </section>
         )}
         </Section>
+          );
+        })()}
 
         <p className="text-xs text-[#F5EFE0]/35 text-center">
           Looking for your dispatches or credit history? <Link href="/profile" className="text-[#B08D57] hover:underline">Profile →</Link>
