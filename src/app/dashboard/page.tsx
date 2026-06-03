@@ -737,14 +737,21 @@ export default function DashboardPage() {
   const [featuredJunto, setFeaturedJunto] = useState<FeaturedJunto | null>(null);
   const [allJuntos, setAllJuntos] = useState<UserJunto[]>([]);
   const [subsTab, setSubsTab] = useState<'subscriptions' | 'juntos' | 'dispatches'>('subscriptions');
-  const [subsTabHistory, setSubsTabHistory] = useState<DispatchSummary[]>([]);
+  const [ownedDispatches, setOwnedDispatches] = useState<Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    is_public: boolean;
+    schedule_cadence: string;
+    subscriber_count: number | null;
+  }>>([]);
   useEffect(() => {
-    if (subsTab !== 'dispatches' || subsTabHistory.length > 0) return;
-    fetch('/api/v2/personal-dispatch')
+    if (subsTab !== 'dispatches' || ownedDispatches.length > 0) return;
+    fetch('/api/v2/dashboard/created')
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d?.history) setSubsTabHistory(d.history); })
+      .then((d) => { if (d?.newsletters) setOwnedDispatches(d.newsletters); })
       .catch(() => {});
-  }, [subsTab, subsTabHistory.length]);
+  }, [subsTab, ownedDispatches.length]);
   const [publicJuntos, setPublicJuntos] = useState<UserJunto[]>([]);
   const [juntoLoading, setJuntoLoading] = useState(true);
   const [showJuntoPicker, setShowJuntoPicker] = useState(false);
@@ -1715,7 +1722,7 @@ export default function DashboardPage() {
         <Section label="My Library" defaultOpen badge={
           subsTab === 'subscriptions' ? activeSubscriptions.length :
           subsTab === 'juntos' ? allJuntos.length :
-          subsTabHistory.length
+          ownedDispatches.length
         }>
         <div className="flex gap-1 mb-4 border-b border-[rgba(176,141,87,0.18)]">
           {(['subscriptions', 'dispatches', 'juntos'] as const).map((t) => (
@@ -1730,7 +1737,7 @@ export default function DashboardPage() {
             >
               {t === 'subscriptions' ? `Subscriptions (${activeSubscriptions.length})` :
                t === 'juntos' ? `Juntos (${allJuntos.length})` :
-               `Dispatches${subsTabHistory.length ? ` (${subsTabHistory.length})` : ''}`}
+               `Dispatches${ownedDispatches.length ? ` (${ownedDispatches.length})` : ''}`}
             </button>
           ))}
         </div>
@@ -1761,23 +1768,37 @@ export default function DashboardPage() {
 
         {subsTab === 'dispatches' && (
           <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
-            {subsTabHistory.length === 0 ? (
-              <p className="text-sm text-[#F5EFE0]/45 p-4">No dispatches yet.</p>
+            {ownedDispatches.length === 0 ? (
+              <p className="text-sm text-[#F5EFE0]/45 p-4">You don&apos;t own any dispatches yet.</p>
             ) : (
               <ul className="divide-y divide-[rgba(176,141,87,0.18)]">
-                {subsTabHistory.map((d) => (
+                {ownedDispatches.map((d) => (
                   <li key={d.id} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[#141210] transition">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm text-[#F5EFE0] truncate">{d.subject || '(no subject)'}</p>
+                      <Link href={`/newsletter/${d.id}`} className="text-sm text-[#F5EFE0] hover:text-[#B08D57] truncate block">
+                        {d.name}
+                      </Link>
                       <p className="text-[10px] text-[#F5EFE0]/40 mt-0.5">
-                        {d.source_count} sources · {d.ticker_count} tickers
+                        {d.schedule_cadence}
+                        {' · '}
+                        {d.subscriber_count ?? 0} subscriber{(d.subscriber_count ?? 0) === 1 ? '' : 's'}
+                        {' · '}
+                        {d.is_public ? 'Public' : 'Private'}
                       </p>
                     </div>
-                    <span className="text-[10px] text-[#F5EFE0]/40 font-mono">{d.dispatch_date}</span>
+                    <Link
+                      href={`/newsletter/${d.id}/edit`}
+                      className="text-[10px] uppercase tracking-wider text-[#B08D57] hover:text-[#F5EFE0] transition font-[var(--font-oswald)]"
+                    >
+                      Edit
+                    </Link>
                   </li>
                 ))}
               </ul>
             )}
+            <div className="px-4 py-2 border-t border-[rgba(176,141,87,0.18)]">
+              <Link href="/create" className="text-xs text-[#B08D57] hover:underline">+ New dispatch</Link>
+            </div>
           </div>
         )}
 
