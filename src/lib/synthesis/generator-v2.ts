@@ -19,6 +19,7 @@ interface GenerateV2Params {
   endDate: string;
   newsletterName?: string;      // For subject line fallback
   watchlistTickers?: string[];  // Tickers to uprank in synthesis
+  recentDispatches?: { subject: string | null; content: string | null; generated_at: string }[]; // Anti-repeat context
 }
 
 interface GenerateV2Result {
@@ -40,6 +41,7 @@ export async function generateNewsletterV2({
   endDate,
   newsletterName,
   watchlistTickers,
+  recentDispatches,
 }: GenerateV2Params): Promise<GenerateV2Result> {
   const client = getAnthropic();
 
@@ -52,6 +54,7 @@ export async function generateNewsletterV2({
     recentNewsletterContent,
     contextNewsletterContent,
     watchlistTickers,
+    recentDispatches,
   );
 
   const response = await client.messages.create({
@@ -111,6 +114,7 @@ function buildSourceContentPrompt(
   recentNewsletterContent?: Record<string, { subject: string | null; content: string; received_at: string }[]>,
   contextNewsletterContent?: Record<string, { subject: string | null; content: string; received_at: string }[]>,
   watchlistTickers?: string[],
+  recentDispatches?: { subject: string | null; content: string | null; generated_at: string }[],
 ): string {
   const sections: string[] = [];
 
@@ -123,6 +127,20 @@ function buildSourceContentPrompt(
   // Inject watchlist tickers into the prompt so Claude knows what to focus on
   if (watchlistTickers?.length) {
     sections.push(`WATCHLIST: ${watchlistTickers.map(t => `$${t}`).join(', ')} — prioritize content relevant to these positions`);
+  }
+
+  // Anti-repeat: show the last N dispatches so the LLM avoids re-surfacing the same
+  // canonical quotes / desk-note lines that readers already saw.
+  if (recentDispatches?.length) {
+    sections.push(`\n## RECENTLY SENT DISPATCHES (you wrote these — do NOT repeat the same quotes, desk notes, or framings unless there's a genuinely new angle or development)`);
+    for (const r of recentDispatches) {
+      if (!r.content) continue;
+      const when = new Date(r.generated_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+      const subj = r.subject || '(no subject)';
+      const snippet = r.content.slice(0, 2000);
+      sections.push(`\n### Sent ${when} — "${subj}"\n<prior_dispatch>${snippet}</prior_dispatch>`);
+    }
+    sections.push(`\n→ If a tweet below echoes a theme above, either skip it or advance it with new info. Rotate which sources/themes lead. Reader fatigue from repetition is the #1 thing to avoid.`);
   }
 
   // Sort each handle's tweets by engagement in place — extractTweetReferences sees the same order

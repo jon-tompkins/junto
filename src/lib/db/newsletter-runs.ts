@@ -105,6 +105,28 @@ export async function getRunById(id: string): Promise<NewsletterRun | null> {
   return data;
 }
 
+// Returns the last N delivered runs for a newsletter — used as anti-repeat context
+// when generating the next dispatch (so the LLM avoids re-surfacing the same quotes).
+export async function getRecentDeliveredRuns(
+  newsletterId: string,
+  limit: number = 3,
+): Promise<Pick<NewsletterRun, 'id' | 'subject' | 'content' | 'generated_at'>[]> {
+  const { data, error } = await supabase()
+    .from('newsletter_runs')
+    .select('id, subject, content, generated_at')
+    .eq('newsletter_id', newsletterId)
+    .in('status', ['delivered', 'partial_delivered', 'generated', 'generated_not_delivered'])
+    .not('content', 'is', null)
+    .order('generated_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('[newsletter-runs] Failed to fetch recent delivered runs:', error);
+    return [];
+  }
+  return data || [];
+}
+
 // Returns the last N runs across ALL newsletters — useful for admin health checks.
 export async function getRecentRuns(limit: number = 50): Promise<NewsletterRun[]> {
   const { data, error } = await supabase()

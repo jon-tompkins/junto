@@ -3,7 +3,7 @@ import { getNewslettersDueForGeneration, getNewslettersForForcedGeneration, getN
 import { getRecentContentForSources, getContextContentForSources, groupContentByHandle } from '@/lib/db/content-twitter';
 import { getRecentContentForNewsletterSources, getContextContentForNewsletterSources, groupNewsletterContentBySlug } from '@/lib/db/content-newsletter';
 import { getNewsletterSubscribers } from '@/lib/db/subscriptions';
-import { storeRun, storeSkippedRun, updateRunStatus } from '@/lib/db/newsletter-runs';
+import { storeRun, storeSkippedRun, updateRunStatus, getRecentDeliveredRuns } from '@/lib/db/newsletter-runs';
 import { recordBulkDeliveries } from '@/lib/db/newsletter-deliveries';
 import { generateNewsletterV2 } from '@/lib/synthesis/generator-v2';
 import { sendNewsletter } from '@/lib/email/sender';
@@ -131,6 +131,9 @@ export async function GET(req: NextRequest) {
           console.log(`[generate] ${newsletter.name}: watchlist tickers — ${watchlistTickers.join(', ')}`);
         }
 
+        // Pull last 3 delivered runs so the LLM can avoid repeating quotes/themes
+        const recentDispatches = await getRecentDeliveredRuns(newsletter.id, 3);
+
         const result = await generateNewsletterV2({
           prompt: resolvedPrompt,
           secondaryPrompt: newsletter.secondary_prompt,
@@ -142,6 +145,7 @@ export async function GET(req: NextRequest) {
           endDate,
           newsletterName: newsletter.name,
           watchlistTickers,
+          recentDispatches,
         });
 
         // 5. Store the run (status updated after delivery)
