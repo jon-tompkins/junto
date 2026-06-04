@@ -4,6 +4,7 @@ import { getSupabase } from '@/lib/db/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getUserTelegramChatId } from '@/lib/telegram/link';
+import { alpacaForMandate } from '@/lib/trading/client';
 
 export async function GET() {
   if (!(await isAdminSession())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -30,9 +31,9 @@ export async function GET() {
   const juntoNameById = new Map<string, string>();
   for (const j of (juntosRes as any).data || []) juntoNameById.set(j.id, j.name);
 
-  const statsByMandate = new Map<string, { open: number; closed: number; pnl: number }>();
+  const statsByMandate = new Map<string, { open: number; closed: number; pnl: number; unrealized: number | null }>();
   for (const t of (tradesRes as any).data || []) {
-    const s = statsByMandate.get(t.mandate_id) || { open: 0, closed: 0, pnl: 0 };
+    const s = statsByMandate.get(t.mandate_id) || { open: 0, closed: 0, pnl: 0, unrealized: null };
     if (t.status === 'open' || t.status === 'pending') s.open++;
     if (t.status === 'closed') {
       s.closed++;
@@ -41,11 +42,27 @@ export async function GET() {
     statsByMandate.set(t.mandate_id, s);
   }
 
+  // Pull live unrealized P&L from Alpaca for each mandate that has open positions.
+  // getPositions() returns Alpaca-side current_price + unrealized_pl so we don't
+  // need to compute it ourselves. Failures (bad keys, broker down) leave it null.
+  await Promise.all(
+    (mandates || []).map(async (m: any) => {
+      const s = statsByMandate.get(m.id);
+      if (!s || s.open === 0) return;
+      try {
+        const positions = await alpacaForMandate(m).getPositions();
+        s.unrealized = positions.reduce((sum, p) => sum + (Number(p.unrealized_pl) || 0), 0);
+      } catch {
+        s.unrealized = null;
+      }
+    }),
+  );
+
   return NextResponse.json({
     mandates: (mandates || []).map((m: any) => ({
       ...m,
       junto_name: m.junto_id ? juntoNameById.get(m.junto_id) || null : null,
-      stats: statsByMandate.get(m.id) || { open: 0, closed: 0, pnl: 0 },
+      stats: statsByMandate.get(m.id) || { open: 0, closed: 0, pnl: 0, unrealized: null },
     })),
   });
 }

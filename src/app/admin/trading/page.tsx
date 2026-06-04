@@ -14,7 +14,7 @@ interface MandateRow {
   max_position_pct: number;
   status: string;
   mode: string;
-  stats: { open: number; closed: number; pnl: number };
+  stats: { open: number; closed: number; pnl: number; unrealized: number | null };
 }
 
 interface Junto {
@@ -85,7 +85,7 @@ export default function AdminTradingPage() {
       });
       const data = await res.json();
       if (data.mandate) {
-        setMandates(prev => [{ ...data.mandate, stats: { open: 0, closed: 0, pnl: 0 } }, ...prev]);
+        setMandates(prev => [{ ...data.mandate, stats: { open: 0, closed: 0, pnl: 0, unrealized: null } }, ...prev]);
         setShowCreate(false);
         setForm({ name: '', junto_id: '', capital_allotted_usd: '1000', max_position_pct: '10', daily_loss_limit_pct: '3', guidelines: '', account_kind: 'byo_keys', alpaca_key_id: '', alpaca_secret: '' });
       } else {
@@ -306,11 +306,22 @@ export default function AdminTradingPage() {
                     'bg-[#F5EFE0]/10 text-[#F5EFE0]/40'
                   }`}>{m.status}</span>
                 </div>
-                <div className="grid grid-cols-4 gap-3 mt-4 text-xs">
+                <div className="grid grid-cols-5 gap-3 mt-4 text-xs">
                   <Stat label="Capital" value={fmtUsd(m.capital_allotted_usd)} />
                   <Stat label="Open" value={String(m.stats.open)} />
                   <Stat label="Closed" value={String(m.stats.closed)} />
                   <Stat label="Realized" value={fmtUsd(m.stats.pnl)} accent={m.stats.pnl >= 0 ? '#3ecf6a' : '#e8453c'} />
+                  <Stat
+                    label="Unrealized"
+                    value={m.stats.unrealized == null ? '—' : fmtUsd(m.stats.unrealized)}
+                    accent={
+                      m.stats.unrealized == null
+                        ? undefined
+                        : m.stats.unrealized >= 0
+                          ? '#3ecf6a'
+                          : '#e8453c'
+                    }
+                  />
                 </div>
               </Link>
             ))}
