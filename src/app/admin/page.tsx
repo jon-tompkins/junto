@@ -245,7 +245,18 @@ export default function AdminDashboard() {
       <TopNav />
       <div className="max-w-6xl mx-auto px-6 py-10">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-4">Admin</h1>
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">Admin</h1>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-[#F5EFE0]/35 uppercase tracking-wider font-[var(--font-oswald)]">Tools</span>
+              <Link
+                href="/onboarding"
+                className="px-3 py-1.5 rounded border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/80 hover:text-[#B08D57] hover:border-[#B08D57] transition"
+              >
+                Onboarding wizard →
+              </Link>
+            </div>
+          </div>
           <div className="flex gap-1 border-b border-[rgba(176,141,87,0.28)]">
             {(['costs', 'data', 'trading'] as Tab[]).map((t) => (
               <button
