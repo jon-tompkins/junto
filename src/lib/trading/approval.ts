@@ -1,7 +1,7 @@
 import { sendTelegramMessage } from '@/lib/telegram/client';
 import { getUserTelegramChatId } from '@/lib/telegram/link';
 import { getMandateById, getTradeById, updateTrade, addJournalEntry, updateSignalForTrade } from './db';
-import { makeAlpaca } from './alpaca';
+import { alpacaForMandate } from './client';
 import type { TradeDecision } from './types';
 
 export async function requestApproval(params: {
@@ -81,7 +81,7 @@ export async function handleApprovalCallback(params: {
   if (!mandate) return { message: 'Mandate missing.' };
 
   try {
-    const alpaca = makeAlpaca({ keyId: mandate.alpaca_key_id, secret: mandate.alpaca_secret });
+    const alpaca = alpacaForMandate(mandate);
 
     // 1% slippage guard: re-check live price vs proposal price.
     const proposalPrice = trade.proposal_price ? Number(trade.proposal_price) : null;

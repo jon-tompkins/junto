@@ -1,5 +1,5 @@
 import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
-import { makeAlpaca, type AlpacaClient } from './alpaca';
+import { alpacaForMandate } from './client';
 import { getOpenTrades, updateTrade, addJournalEntry, getJournalEntries } from './db';
 import type { Mandate } from './types';
 
@@ -12,7 +12,7 @@ export async function monitorMandate(mandate: Mandate): Promise<{
   closed: number;
   journaled: number;
 }> {
-  const alpaca = makeAlpaca({ keyId: mandate.alpaca_key_id, secret: mandate.alpaca_secret });
+  const alpaca = alpacaForMandate(mandate);
   const trades = await getOpenTrades(mandate.id);
   let opened = 0;
   let closed = 0;

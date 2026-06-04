@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdminSession } from '@/lib/admin';
 import { getMandateById, createPendingTrade, addJournalEntry, logSignal } from '@/lib/trading/db';
-import { makeAlpaca } from '@/lib/trading/alpaca';
+import { alpacaForMandate } from '@/lib/trading/client';
 import { requestApproval } from '@/lib/trading/approval';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   let lastPrice: number;
   try {
-    const alpaca = makeAlpaca({ keyId: mandate.alpaca_key_id, secret: mandate.alpaca_secret });
+    const alpaca = alpacaForMandate(mandate);
     const price = await alpaca.getLastTrade(ticker);
     if (!price || price <= 0) throw new Error(`No quote for ${ticker}`);
     lastPrice = price;

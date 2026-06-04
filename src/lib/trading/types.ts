@@ -13,6 +13,8 @@ export interface Mandate {
   mode: 'paper' | 'live';
   alpaca_key_id: string | null;
   alpaca_secret: string | null;
+  account_kind: 'byo_keys' | 'managed';
+  alpaca_account_id: string | null;
   status: 'active' | 'paused' | 'archived';
 }
 

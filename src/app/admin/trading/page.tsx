@@ -46,7 +46,11 @@ export default function AdminTradingPage() {
     max_position_pct: '10',
     daily_loss_limit_pct: '3',
     guidelines: '',
+    account_kind: 'byo_keys' as 'byo_keys' | 'managed',
+    alpaca_key_id: '',
+    alpaca_secret: '',
   });
+  const [managedAccount, setManagedAccount] = useState<{ id: string; status: string } | null>(null);
 
   useEffect(() => {
     if (status !== 'authenticated') return;
@@ -59,11 +63,13 @@ export default function AdminTradingPage() {
       }),
       fetch('/api/juntos/public').then(r => r.ok ? r.json() : { juntos: [] }),
       fetch('/api/admin/trading/telegram-status').then(r => r.ok ? r.json() : { linked: false }),
+      fetch('/api/broker/accounts').then(r => r.ok ? r.json() : { account: null }),
     ])
-      .then(([m, j, tg]) => {
+      .then(([m, j, tg, ba]) => {
         setMandates(m.mandates || []);
         setJuntos(j.juntos || []);
         setTelegramLinked(!!tg.linked);
+        setManagedAccount(ba.account || null);
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
@@ -81,7 +87,7 @@ export default function AdminTradingPage() {
       if (data.mandate) {
         setMandates(prev => [{ ...data.mandate, stats: { open: 0, closed: 0, pnl: 0 } }, ...prev]);
         setShowCreate(false);
-        setForm({ name: '', junto_id: '', capital_allotted_usd: '1000', max_position_pct: '10', daily_loss_limit_pct: '3', guidelines: '' });
+        setForm({ name: '', junto_id: '', capital_allotted_usd: '1000', max_position_pct: '10', daily_loss_limit_pct: '3', guidelines: '', account_kind: 'byo_keys', alpaca_key_id: '', alpaca_secret: '' });
       } else {
         setError(data.error || 'Failed to create');
       }
@@ -187,6 +193,47 @@ export default function AdminTradingPage() {
         {showCreate && (
           <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-8 space-y-3">
             <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-2 font-[var(--font-oswald)]">New mandate</h2>
+
+            <div>
+              <span className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] block mb-2">Brokerage account</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, account_kind: 'managed' })}
+                  disabled={!managedAccount}
+                  title={!managedAccount ? 'Open a managed account first' : undefined}
+                  className="flex-1 px-3 py-2 rounded text-xs uppercase tracking-wider transition disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: form.account_kind === 'managed' ? '#B08D57' : '#080604',
+                    color: form.account_kind === 'managed' ? '#080604' : 'rgba(245,239,224,0.65)',
+                    border: '1px solid rgba(176,141,87,0.28)',
+                    fontFamily: 'var(--font-oswald)',
+                  }}
+                >
+                  Managed (myjunto){managedAccount ? ` · ${managedAccount.status}` : ''}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, account_kind: 'byo_keys' })}
+                  className="flex-1 px-3 py-2 rounded text-xs uppercase tracking-wider transition"
+                  style={{
+                    background: form.account_kind === 'byo_keys' ? '#B08D57' : '#080604',
+                    color: form.account_kind === 'byo_keys' ? '#080604' : 'rgba(245,239,224,0.65)',
+                    border: '1px solid rgba(176,141,87,0.28)',
+                    fontFamily: 'var(--font-oswald)',
+                  }}
+                >
+                  My own Alpaca keys
+                </button>
+              </div>
+              {!managedAccount && (
+                <p className="text-[11px] text-[#F5EFE0]/45 mt-2">
+                  Don&apos;t have a managed account?{' '}
+                  <Link href="/account/open" className="text-[#B08D57] hover:underline">Open one →</Link>
+                </p>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <Field label="Name">
                 <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={inputCls} placeholder="e.g. Wolfe Tactical" />
@@ -207,6 +254,16 @@ export default function AdminTradingPage() {
                 <input type="number" value={form.daily_loss_limit_pct} onChange={e => setForm({ ...form, daily_loss_limit_pct: e.target.value })} className={inputCls} />
               </Field>
             </div>
+            {form.account_kind === 'byo_keys' && (
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Alpaca key ID">
+                  <input value={form.alpaca_key_id} onChange={e => setForm({ ...form, alpaca_key_id: e.target.value })} className={inputCls} placeholder="PK..." />
+                </Field>
+                <Field label="Alpaca secret">
+                  <input type="password" value={form.alpaca_secret} onChange={e => setForm({ ...form, alpaca_secret: e.target.value })} className={inputCls} />
+                </Field>
+              </div>
+            )}
             <Field label="Guidelines (natural language)">
               <textarea
                 value={form.guidelines}

@@ -1,4 +1,4 @@
-import { makeAlpaca } from './alpaca';
+import { alpacaForMandate } from './client';
 import {
   getActiveMandates,
   createPendingTrade,
@@ -92,7 +92,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
   let accountEquity = mandate.capital_allotted_usd;
   let positions: any[] = [];
   try {
-    const alpaca = makeAlpaca({ keyId: mandate.alpaca_key_id, secret: mandate.alpaca_secret });
+    const alpaca = alpacaForMandate(mandate);
     const clock = await alpaca.getClock();
     if (!clock.is_open) {
       result.note = 'market_closed';
@@ -133,7 +133,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     return result;
   }
 
-  const alpaca = makeAlpaca({ keyId: mandate.alpaca_key_id, secret: mandate.alpaca_secret });
+  const alpaca = alpacaForMandate(mandate);
 
   for (const decision of decisions) {
     try {

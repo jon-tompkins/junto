@@ -78,6 +78,23 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
+  const accountKind: 'byo_keys' | 'managed' = body.account_kind === 'managed' ? 'managed' : 'byo_keys';
+  let alpacaAccountId: string | null = null;
+  if (accountKind === 'managed') {
+    const { data: u } = await supabase
+      .from('users')
+      .select('alpaca_account_id')
+      .eq('id', userId)
+      .single();
+    if (!u?.alpaca_account_id) {
+      return NextResponse.json({
+        error: 'Open a managed brokerage account first',
+        reason: 'no_managed_account',
+      }, { status: 400 });
+    }
+    alpacaAccountId = u.alpaca_account_id;
+  }
+
   const { data, error } = await supabase
     .from('trading_mandates')
     .insert({
@@ -92,6 +109,10 @@ export async function POST(req: NextRequest) {
       blocked_tickers: body.blocked_tickers || null,
       broker: body.broker || 'alpaca',
       mode: body.mode || 'paper',
+      account_kind: accountKind,
+      alpaca_account_id: alpacaAccountId,
+      alpaca_key_id: accountKind === 'byo_keys' ? (body.alpaca_key_id || null) : null,
+      alpaca_secret: accountKind === 'byo_keys' ? (body.alpaca_secret || null) : null,
       status: 'active',
     })
     .select('*')

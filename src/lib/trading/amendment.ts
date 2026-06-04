@@ -8,7 +8,7 @@ import {
   updateTrade,
   addJournalEntry,
 } from './db';
-import { makeAlpaca } from './alpaca';
+import { alpacaForMandate } from './client';
 import type { AmendmentKind } from './types';
 
 const KIND_LABEL: Record<AmendmentKind, string> = {
@@ -87,7 +87,7 @@ export async function handleAmendmentCallback(params: {
   if (!mandate) return { message: 'Mandate missing.' };
 
   try {
-    const alpaca = makeAlpaca({ keyId: mandate.alpaca_key_id, secret: mandate.alpaca_secret });
+    const alpaca = alpacaForMandate(mandate);
 
     if (amendment.kind === 'close') {
       await alpaca.closePosition(trade.ticker);
