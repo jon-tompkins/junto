@@ -37,7 +37,7 @@ Hold: ~${params.decision.expected_hold_days}d  Conviction: ${params.decision.con
 
 <b>Thesis:</b> ${escapeHtml(params.decision.entry_thesis)}
 
-<b>Invalidation:</b> ${escapeHtml(params.decision.invalidation)}`;
+<b>Invalidation:</b> ${escapeHtml(params.decision.invalidation)}${formatSources(params.decision.source_urls)}`;
 
   await sendTelegramMessage(chatId, body, {
     replyMarkup: {
@@ -133,4 +133,15 @@ export async function handleApprovalCallback(params: {
 
 function escapeHtml(s: string): string {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function formatSources(urls?: string[]): string {
+  if (!urls || urls.length === 0) return '';
+  const links = urls.slice(0, 5).map((url, i) => {
+    const safe = escapeHtml(url);
+    const m = /(?:x|twitter)\.com\/([^/?#]+)/i.exec(url);
+    const label = m ? `@${escapeHtml(m[1])}` : `source ${i + 1}`;
+    return `<a href="${safe}">${label}</a>`;
+  });
+  return `\n\n<b>Sources:</b> ${links.join(' · ')}`;
 }
