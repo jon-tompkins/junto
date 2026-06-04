@@ -239,6 +239,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
             oldValue,
             newValue: amend.new_value,
             rationale: amend.rationale,
+            sourceUrls: amend.source_urls,
           });
 
           result.amendments_proposed++;

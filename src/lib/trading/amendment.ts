@@ -26,6 +26,7 @@ export async function requestAmendmentApproval(params: {
   oldValue: number | null;
   newValue: number | null;
   rationale: string;
+  sourceUrls?: string[];
 }): Promise<void> {
   const chatId = await getUserTelegramChatId(params.userId);
   if (!chatId) {
@@ -44,7 +45,7 @@ export async function requestAmendmentApproval(params: {
 
 ${movement}
 
-<b>Why:</b> ${escapeHtml(params.rationale)}`;
+<b>Why:</b> ${escapeHtml(params.rationale)}${formatSources(params.sourceUrls)}`;
 
   const base = (process.env.NEXTAUTH_URL || 'https://myjunto.com').replace(/\/$/, '');
   const positionUrl = `${base}/positions/${encodeURIComponent(params.ticker)}`;
@@ -147,4 +148,15 @@ export async function handleAmendmentCallback(params: {
 
 function escapeHtml(s: string): string {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function formatSources(urls?: string[]): string {
+  if (!urls || urls.length === 0) return '';
+  const links = urls.slice(0, 5).map((url, i) => {
+    const safe = escapeHtml(url);
+    const m = /(?:x|twitter)\.com\/([^/?#]+)/i.exec(url);
+    const label = m ? `@${escapeHtml(m[1])}` : `source ${i + 1}`;
+    return `<a href="${safe}">${label}</a>`;
+  });
+  return `\n\n<b>Sources:</b> ${links.join(' · ')}`;
 }
