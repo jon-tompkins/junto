@@ -70,6 +70,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const { status } = useSession();
   const [mandate, setMandate] = useState<Mandate | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [positions, setPositions] = useState<Record<string, { current_price: number; unrealized_pl: number }>>({});
   const [signals, setSignals] = useState<Signal[]>([]);
   const [ticks, setTicks] = useState<TickRun[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +95,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         setTestResult(`Sent: ${data.qty} ${data.ticker} @ ~$${data.entryPrice?.toFixed(2)}. Check Telegram.`);
         fetch(`/api/admin/trading/mandates/${mandateId}`)
           .then(r => r.json())
-          .then(d => { setTrades(d.trades || []); setSignals(d.signals || []); setTicks(d.ticks || []); });
+          .then(d => { setTrades(d.trades || []); setPositions(d.positions || {}); setSignals(d.signals || []); setTicks(d.ticks || []); });
       } else {
         setTestResult(`Error: ${data.error || 'unknown'}`);
       }
@@ -112,6 +113,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
       .then(data => {
         setMandate(data.mandate);
         setTrades(data.trades || []);
+        setPositions(data.positions || {});
         setSignals(data.signals || []);
         setTicks(data.ticks || []);
         setDraftGuidelines(data.mandate?.guidelines || '');
@@ -227,7 +229,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
           {openTrades.length === 0 ? (
             <p className="text-sm text-[#F5EFE0]/30">No open trades.</p>
           ) : (
-            <TradeTable trades={openTrades} />
+            <TradeTable trades={openTrades} positions={positions} showLive />
           )}
         </div>
 
@@ -238,7 +240,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
           {closedTrades.length === 0 ? (
             <p className="text-sm text-[#F5EFE0]/30">No closed trades.</p>
           ) : (
-            <TradeTable trades={closedTrades} />
+            <TradeTable trades={closedTrades} positions={positions} />
           )}
         </div>
 
@@ -320,7 +322,15 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   );
 }
 
-function TradeTable({ trades }: { trades: Trade[] }) {
+function TradeTable({
+  trades,
+  positions,
+  showLive,
+}: {
+  trades: Trade[];
+  positions: Record<string, { current_price: number; unrealized_pl: number }>;
+  showLive?: boolean;
+}) {
   return (
     <table className="w-full text-sm">
       <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
@@ -329,31 +339,49 @@ function TradeTable({ trades }: { trades: Trade[] }) {
           <th className="py-2 pr-4">Side</th>
           <th className="py-2 pr-4 text-right">Qty</th>
           <th className="py-2 pr-4 text-right">Entry</th>
+          {showLive && <th className="py-2 pr-4 text-right">Last</th>}
           <th className="py-2 pr-4 text-right">Stop</th>
           <th className="py-2 pr-4 text-right">Target</th>
           <th className="py-2 pr-4 text-right">Exit</th>
+          {showLive && <th className="py-2 pr-4 text-right">Unrealized</th>}
           <th className="py-2 pr-4 text-right">PnL</th>
           <th className="py-2 pr-4">Status</th>
         </tr>
       </thead>
       <tbody>
-        {trades.map(t => (
-          <tr key={t.id} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
-            <td className="py-2 pr-4">
-              <Link href={`/admin/trading/trades/${t.id}`} className="font-mono text-[#B08D57] hover:underline">{t.ticker}</Link>
-            </td>
-            <td className="py-2 pr-4 text-[#F5EFE0]/60">{t.side}</td>
-            <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{t.qty}</td>
-            <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{t.entry_price ? `$${t.entry_price.toFixed(2)}` : '—'}</td>
-            <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/45">{t.stop_price ? `$${t.stop_price.toFixed(2)}` : '—'}</td>
-            <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/45">{t.target_price ? `$${t.target_price.toFixed(2)}` : '—'}</td>
-            <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{t.exit_price ? `$${t.exit_price.toFixed(2)}` : '—'}</td>
-            <td className="py-2 pr-4 text-right font-mono" style={{ color: t.realized_pnl_usd === null ? '#F5EFE0' : t.realized_pnl_usd >= 0 ? '#3ecf6a' : '#e8453c' }}>
-              {t.realized_pnl_usd !== null ? `$${t.realized_pnl_usd.toFixed(2)}` : '—'}
-            </td>
-            <td className="py-2 pr-4 text-xs text-[#F5EFE0]/60">{t.status}</td>
-          </tr>
-        ))}
+        {trades.map(t => {
+          const pos = positions[t.ticker?.toUpperCase()];
+          return (
+            <tr key={t.id} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
+              <td className="py-2 pr-4">
+                <Link href={`/admin/trading/trades/${t.id}`} className="font-mono text-[#B08D57] hover:underline">{t.ticker}</Link>
+              </td>
+              <td className="py-2 pr-4 text-[#F5EFE0]/60">{t.side}</td>
+              <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{t.qty}</td>
+              <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{t.entry_price ? `$${t.entry_price.toFixed(2)}` : '—'}</td>
+              {showLive && (
+                <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]">
+                  {pos ? `$${pos.current_price.toFixed(2)}` : '—'}
+                </td>
+              )}
+              <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/45">{t.stop_price ? `$${t.stop_price.toFixed(2)}` : '—'}</td>
+              <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/45">{t.target_price ? `$${t.target_price.toFixed(2)}` : '—'}</td>
+              <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{t.exit_price ? `$${t.exit_price.toFixed(2)}` : '—'}</td>
+              {showLive && (
+                <td
+                  className="py-2 pr-4 text-right font-mono"
+                  style={{ color: !pos ? '#F5EFE0' : pos.unrealized_pl >= 0 ? '#3ecf6a' : '#e8453c' }}
+                >
+                  {pos ? `${pos.unrealized_pl < 0 ? '-' : ''}$${Math.abs(pos.unrealized_pl).toFixed(2)}` : '—'}
+                </td>
+              )}
+              <td className="py-2 pr-4 text-right font-mono" style={{ color: t.realized_pnl_usd === null ? '#F5EFE0' : t.realized_pnl_usd >= 0 ? '#3ecf6a' : '#e8453c' }}>
+                {t.realized_pnl_usd !== null ? `$${t.realized_pnl_usd.toFixed(2)}` : '—'}
+              </td>
+              <td className="py-2 pr-4 text-xs text-[#F5EFE0]/60">{t.status}</td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );

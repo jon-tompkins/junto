@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdminSession } from '@/lib/admin';
 import { getSupabase } from '@/lib/db/client';
+import { alpacaForMandate } from '@/lib/trading/client';
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   if (!(await isAdminSession())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -39,11 +40,28 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .limit(30),
   ]);
 
+  // Pull live positions from Alpaca so the trade table can show last price +
+  // unrealized P&L per open ticker. Failure leaves positions empty — UI degrades
+  // to em-dashes rather than blowing up the whole page.
+  const positions: Record<string, { current_price: number; unrealized_pl: number }> = {};
+  try {
+    const live = await alpacaForMandate(mandate).getPositions();
+    for (const p of live) {
+      positions[p.symbol.toUpperCase()] = {
+        current_price: Number(p.current_price) || 0,
+        unrealized_pl: Number(p.unrealized_pl) || 0,
+      };
+    }
+  } catch {
+    // leave positions empty
+  }
+
   return NextResponse.json({
     mandate: { ...mandate, junto_name: (juntoRes as any).data?.name || null },
     trades: tradesRes.data || [],
     signals: signalsRes.data || [],
     ticks: ticksRes.data || [],
+    positions,
   });
 }
 
