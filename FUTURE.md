@@ -56,6 +56,22 @@ Parking lot for ideas we want to come back to. Add a date when shelving so we kn
 - WhatsApp channel card in onboarding delivery section
 - Reuse SMS verification infra for phone capture
 
+## Subreddit source ingestion
+
+**Shelved:** 2026-06-04
+**Status:** Twitter/X handles + lists are the only ingestion surface today.
+
+**Idea:** Let users add subreddits as a source alongside X handles. Reddit is free, has strong investing/news/industry coverage (r/wallstreetbets, r/stocks, r/ValueInvesting, niche industry subs), and the public JSON API is rate-limited but workable (60 req/min unauth).
+
+**Why not now:** Source model + extract pipeline are X-shaped (handle, tweets, author meta). Adding Reddit means a second source-type with different shape (post + top comments + score), a second extractor prompt, and a UI for picking subreddits. Worth doing once X path is fully stable and we know what people are pasting in.
+
+**What we'd need when we revisit:**
+- `sources.kind` column (`twitter` | `subreddit`); migrate existing rows to `twitter`
+- Reddit fetcher: `https://www.reddit.com/r/{sub}/top.json?t=day` (no auth) or OAuth app for higher limits
+- Normalize Reddit posts into the same `Signal` shape the extractor consumes (treat post title+selftext+top-comments as the "tweet")
+- Subreddit search/picker in onboarding source step (parallel to handle search)
+- Display card for subreddit sources (icon, subscriber count) in junto edit + dispatch surfaces
+
 ## Alpaca Broker API: production agreement + Plaid ACH funding
 
 **Shelved:** 2026-06-04
