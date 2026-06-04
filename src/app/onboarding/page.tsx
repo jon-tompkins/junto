@@ -54,6 +54,13 @@ interface ExistingJunto {
   id: string;
   name: string;
   source_count?: number;
+  sources?: Array<{
+    id: string;
+    handle_or_url: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    type?: string;
+  }>;
 }
 
 type JuntoMode = 'manual' | 'list' | 'existing';
@@ -83,6 +90,7 @@ export default function OnboardingPage() {
 
   const [existingJuntos, setExistingJuntos] = useState<ExistingJunto[]>([]);
   const [existingJuntoId, setExistingJuntoId] = useState<string | null>(null);
+  const [membersModalJunto, setMembersModalJunto] = useState<ExistingJunto | null>(null);
 
   // Collapsibles
   const [tickers, setTickers] = useState<string[]>([]);
@@ -420,22 +428,64 @@ export default function OnboardingPage() {
             <div className="space-y-2">
               {existingJuntos.length === 0 ? (
                 <p className="text-xs text-[#F5EFE0]/45">You don&apos;t have any juntos yet.</p>
-              ) : existingJuntos.map(j => (
-                <button
-                  key={j.id}
-                  onClick={() => setExistingJuntoId(j.id)}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded text-left transition"
-                  style={{
-                    background: existingJuntoId === j.id ? 'rgba(176,141,87,0.08)' : '#080604',
-                    border: `1px solid ${existingJuntoId === j.id ? '#B08D57' : 'rgba(176,141,87,0.18)'}`,
-                  }}
-                >
-                  <span className="text-sm text-[#F5EFE0]">{j.name}</span>
-                  {j.source_count !== undefined && (
-                    <span className="text-xs text-[#F5EFE0]/45 font-mono">{j.source_count} sources</span>
-                  )}
-                </button>
-              ))}
+              ) : existingJuntos.map(j => {
+                const sources = j.sources ?? [];
+                const total = j.source_count ?? sources.length;
+                const previewed = sources.slice(0, 5);
+                return (
+                  <div
+                    key={j.id}
+                    onClick={() => setExistingJuntoId(j.id)}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded text-left transition cursor-pointer"
+                    style={{
+                      background: existingJuntoId === j.id ? 'rgba(176,141,87,0.08)' : '#080604',
+                      border: `1px solid ${existingJuntoId === j.id ? '#B08D57' : 'rgba(176,141,87,0.18)'}`,
+                    }}
+                  >
+                    <span className="text-sm text-[#F5EFE0] shrink-0">{j.name}</span>
+                    <div className="flex items-center gap-2 ml-auto">
+                      {previewed.length > 0 && (
+                        <div className="flex items-center">
+                          {previewed.map((s, i) => (
+                            <div
+                              key={s.id}
+                              className="rounded-full border-2 overflow-hidden shrink-0"
+                              style={{
+                                width: 22,
+                                height: 22,
+                                borderColor: '#080604',
+                                marginLeft: i > 0 ? -8 : 0,
+                                background: '#1c1a17',
+                                zIndex: 10 - i,
+                                position: 'relative',
+                              }}
+                              title={s.display_name || s.handle_or_url}
+                            >
+                              {s.avatar_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={s.avatar_url} alt={s.handle_or_url} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[#F5EFE0]/60 text-[9px]">
+                                  {s.handle_or_url[0]?.toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {total > 0 && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setMembersModalJunto(j); }}
+                          className="text-xs font-mono text-[#F5EFE0]/45 hover:text-[#B08D57] transition px-2 py-0.5 rounded border border-transparent hover:border-[rgba(176,141,87,0.4)]"
+                        >
+                          {total} {total === 1 ? 'member' : 'members'} →
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </Section>
@@ -610,6 +660,73 @@ export default function OnboardingPage() {
           </button>
         </div>
       </div>
+
+      {membersModalJunto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => setMembersModalJunto(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg max-h-[80vh] flex flex-col rounded-lg border border-[rgba(176,141,87,0.32)] bg-[#141210] shadow-2xl"
+          >
+            <div className="flex items-center justify-between px-5 py-3 border-b border-[rgba(176,141,87,0.18)]">
+              <div>
+                <h3 className="text-sm font-bold text-[#F5EFE0] font-[var(--font-oswald)] uppercase tracking-wider">
+                  {membersModalJunto.name}
+                </h3>
+                <p className="text-xs text-[#F5EFE0]/40 mt-0.5">
+                  {(membersModalJunto.sources?.length ?? membersModalJunto.source_count ?? 0)} members
+                </p>
+              </div>
+              <button
+                onClick={() => setMembersModalJunto(null)}
+                className="text-[#F5EFE0]/50 hover:text-[#F5EFE0] text-xl leading-none px-2"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <ul className="overflow-y-auto divide-y divide-[rgba(176,141,87,0.12)]">
+              {(membersModalJunto.sources ?? []).length === 0 ? (
+                <li className="px-5 py-6 text-sm text-[#F5EFE0]/45 text-center">No members.</li>
+              ) : (
+                (membersModalJunto.sources ?? []).map((s) => (
+                  <li key={s.id} className="flex items-center gap-3 px-5 py-2.5">
+                    <div
+                      className="rounded-full overflow-hidden shrink-0 bg-[#1c1a17]"
+                      style={{ width: 32, height: 32 }}
+                    >
+                      {s.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={s.avatar_url} alt={s.handle_or_url} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[#F5EFE0]/60 text-xs">
+                          {s.handle_or_url[0]?.toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-[#F5EFE0] truncate">
+                        {s.display_name || s.handle_or_url}
+                      </div>
+                      <a
+                        href={`https://x.com/${s.handle_or_url}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-xs font-mono text-[#F5EFE0]/45 hover:text-[#B08D57] transition"
+                      >
+                        @{s.handle_or_url}
+                      </a>
+                    </div>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
