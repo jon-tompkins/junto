@@ -57,7 +57,7 @@ Hold: ~${params.decision.expected_hold_days}d  Conviction: ${params.decision.con
 }
 
 function positionPageUrl(ticker: string): string {
-  const base = process.env.NEXTAUTH_URL || 'https://myjunto.com';
+  const base = process.env.NEXTAUTH_URL || 'https://myjunto.xyz';
   return `${base.replace(/\/$/, '')}/positions/${encodeURIComponent(ticker)}`;
 }
 

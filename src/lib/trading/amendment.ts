@@ -47,7 +47,7 @@ ${movement}
 
 <b>Why:</b> ${escapeHtml(params.rationale)}${formatSources(params.sourceUrls)}`;
 
-  const base = (process.env.NEXTAUTH_URL || 'https://myjunto.com').replace(/\/$/, '');
+  const base = (process.env.NEXTAUTH_URL || 'https://myjunto.xyz').replace(/\/$/, '');
   const positionUrl = `${base}/positions/${encodeURIComponent(params.ticker)}`;
 
   await sendTelegramMessage(chatId, body, {
