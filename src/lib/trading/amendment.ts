@@ -46,12 +46,18 @@ ${movement}
 
 <b>Why:</b> ${escapeHtml(params.rationale)}`;
 
+  const base = (process.env.NEXTAUTH_URL || 'https://myjunto.com').replace(/\/$/, '');
+  const positionUrl = `${base}/positions/${encodeURIComponent(params.ticker)}`;
+
   await sendTelegramMessage(chatId, body, {
     replyMarkup: {
       inline_keyboard: [
         [
           { text: '✅ Apply', callback_data: `amend_approve:${params.amendmentId}` },
           { text: '❌ Skip', callback_data: `amend_skip:${params.amendmentId}` },
+        ],
+        [
+          { text: `📊 ${params.ticker} on myjunto`, url: positionUrl },
         ],
       ],
     },

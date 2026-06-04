@@ -39,6 +39,8 @@ Hold: ~${params.decision.expected_hold_days}d  Conviction: ${params.decision.con
 
 <b>Invalidation:</b> ${escapeHtml(params.decision.invalidation)}${formatSources(params.decision.source_urls)}`;
 
+  const positionUrl = positionPageUrl(params.decision.ticker);
+
   await sendTelegramMessage(chatId, body, {
     replyMarkup: {
       inline_keyboard: [
@@ -46,9 +48,17 @@ Hold: ~${params.decision.expected_hold_days}d  Conviction: ${params.decision.con
           { text: '✅ Approve', callback_data: `trade_approve:${params.tradeId}` },
           { text: '❌ Skip', callback_data: `trade_skip:${params.tradeId}` },
         ],
+        [
+          { text: `📊 ${params.decision.ticker} on myjunto`, url: positionUrl },
+        ],
       ],
     },
   });
+}
+
+function positionPageUrl(ticker: string): string {
+  const base = process.env.NEXTAUTH_URL || 'https://myjunto.com';
+  return `${base.replace(/\/$/, '')}/positions/${encodeURIComponent(ticker)}`;
 }
 
 // Called from the Telegram webhook callback_query handler.
