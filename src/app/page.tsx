@@ -184,11 +184,11 @@ export default function LandingPage() {
 
           <div className="flex flex-col sm:flex-row gap-3 mt-10 justify-center">
             <Link
-              href="/create"
+              href="/onboarding"
               className="inline-flex items-center justify-center px-8 py-4 rounded font-semibold transition text-base uppercase tracking-wide"
               style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}
             >
-              Build your junto
+              Get started
             </Link>
             <Link
               href="/explore"

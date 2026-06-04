@@ -11,6 +11,14 @@ interface FeaturedSource {
   bio: string | null;
 }
 
+interface TrackedSource {
+  id: string;
+  handle: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  junto_name: string;
+}
+
 interface ConsensusPosition {
   ticker: string;
   stance: 'bullish' | 'bearish';
@@ -29,6 +37,7 @@ const MAX_SELECT = 5;
 export function QuickDispatch() {
   const { data: session } = useSession();
   const [sources, setSources] = useState<FeaturedSource[]>([]);
+  const [tracked, setTracked] = useState<TrackedSource[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loadingSources, setLoadingSources] = useState(true);
   const [usedToday, setUsedToday] = useState(false);
@@ -53,6 +62,44 @@ export function QuickDispatch() {
         if (!cancelled) setSources([]);
       } finally {
         if (!cancelled) setLoadingSources(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
+
+  // Load the user's tracked accounts (across their juntos) when signed in.
+  useEffect(() => {
+    if (!session?.user) {
+      setTracked([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/juntos');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        const seen = new Set<string>();
+        const out: TrackedSource[] = [];
+        for (const j of (data.juntos || []) as Array<{ name: string; sources?: Array<{ id: string; handle_or_url: string; display_name: string | null; avatar_url: string | null }> }>) {
+          for (const s of j.sources || []) {
+            if (seen.has(s.id)) continue;
+            seen.add(s.id);
+            out.push({
+              id: s.id,
+              handle: s.handle_or_url,
+              display_name: s.display_name,
+              avatar_url: s.avatar_url,
+              junto_name: j.name,
+            });
+          }
+        }
+        setTracked(out);
+      } catch {
+        // ignore — tracked list is optional
       }
     })();
     return () => {
@@ -136,7 +183,7 @@ export function QuickDispatch() {
     return (
       <section className="container mx-auto px-4 py-20">
         <div className="max-w-5xl mx-auto">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>Quick Dispatch</p>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>Quick Synthesis</p>
           <p className="text-sm" style={{ color: 'rgba(245,239,224,0.4)' }}>Loading primary analysts…</p>
         </div>
       </section>
@@ -147,7 +194,7 @@ export function QuickDispatch() {
     return (
       <section className="container mx-auto px-4 py-20">
         <div className="max-w-5xl mx-auto">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>Quick Dispatch</p>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>Quick Synthesis</p>
           <p className="text-sm" style={{ color: 'rgba(245,239,224,0.4)' }}>Primary analysts coming soon.</p>
         </div>
       </section>
@@ -164,7 +211,11 @@ export function QuickDispatch() {
         ? 'Synthesizing…'
         : selected.size === 0
           ? 'Select at least one analyst'
-          : `What are they talking about? (${selected.size})`;
+          : `Synthesize (${selected.size})`;
+
+  // Hide tracked accounts that are already in the featured pool so we don't list them twice.
+  const featuredIds = new Set(sources.map((s) => s.id));
+  const trackedOnly = tracked.filter((t) => !featuredIds.has(t.id));
 
   return (
     <section className="container mx-auto px-4 py-20">
@@ -174,17 +225,20 @@ export function QuickDispatch() {
             <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>
               Quick Dispatch
             </p>
-            <h2 className="text-3xl font-bold">What are they on about today?</h2>
+            <h2 className="text-3xl font-bold">Quick Synthesis</h2>
           </div>
           <span className="text-xs hidden md:block" style={{ color: 'rgba(245,239,224,0.4)', fontFamily: 'var(--font-mono)' }}>
             Pick up to {MAX_SELECT} · 1 free run/day
           </span>
         </div>
         <p className="text-sm mb-8 max-w-2xl" style={{ color: 'rgba(245,239,224,0.5)' }}>
-          Hand-picked analysts. Tap a few, get a tight read on what they&apos;re focused on right now and where they actually agree.
+          Hand-picked analysts{isAuthed && trackedOnly.length > 0 ? ' plus your tracked accounts' : ''}. Tap up to {MAX_SELECT}, get a tight read on what they&apos;re focused on right now and where they actually agree.
         </p>
 
-        {/* Source cards */}
+        {/* Featured analyst grid */}
+        <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: 'rgba(245,239,224,0.4)', fontFamily: 'var(--font-oswald)' }}>
+          Featured analysts
+        </p>
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2.5 mb-6">
           {sources.map((s) => {
             const isSelected = selected.has(s.id);
@@ -232,6 +286,60 @@ export function QuickDispatch() {
             );
           })}
         </div>
+
+        {/* Your tracked accounts (logged-in only) */}
+        {isAuthed && trackedOnly.length > 0 && (
+          <>
+            <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: 'rgba(245,239,224,0.4)', fontFamily: 'var(--font-oswald)' }}>
+              Your tracked accounts
+            </p>
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2.5 mb-6">
+              {trackedOnly.map((s) => {
+                const isSelected = selected.has(s.id);
+                const atLimit = !isSelected && selected.size >= MAX_SELECT;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => toggle(s.id)}
+                    disabled={atLimit}
+                    className="text-left p-4 rounded-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{
+                      background: isSelected ? 'rgba(176,141,87,0.12)' : 'transparent',
+                      border: isSelected ? '1px solid #B08D57' : '1px solid rgba(176,141,87,0.18)',
+                    }}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      {s.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={s.avatar_url} alt="" className="w-8 h-8 rounded-sm" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-sm flex items-center justify-center" style={{ background: '#1c1a17' }}>
+                          <span className="text-xs" style={{ color: '#B08D57' }}>@</span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold truncate" style={{ color: '#F5EFE0' }}>
+                          {s.display_name || `@${s.handle}`}
+                        </div>
+                        <div className="text-xs truncate" style={{ color: 'rgba(245,239,224,0.4)', fontFamily: 'var(--font-mono)' }}>
+                          @{s.handle}
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <span className="text-xs px-2 py-0.5 rounded-sm font-medium" style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}>
+                          ✓
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] uppercase tracking-wider" style={{ color: 'rgba(176,141,87,0.55)', fontFamily: 'var(--font-oswald)' }}>
+                      from {s.junto_name}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         {/* Action button */}
         <div className="flex items-center gap-4">
