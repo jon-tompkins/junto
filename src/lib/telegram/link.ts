@@ -66,6 +66,16 @@ export async function consumeLinkCode(params: {
   return { success: true, userId: row.user_id };
 }
 
+export async function getUserIdByTelegramChatId(chatId: number | string): Promise<string | null> {
+  const supabase = getSupabase();
+  const { data } = await supabase
+    .from('users')
+    .select('id')
+    .eq('telegram_chat_id', String(chatId))
+    .maybeSingle();
+  return data?.id ?? null;
+}
+
 export async function getUserTelegramChatId(userId: string): Promise<string | null> {
   const supabase = getSupabase();
   const { data } = await supabase

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { consumeLinkCode } from '@/lib/telegram/link';
+import { consumeLinkCode, getUserIdByTelegramChatId } from '@/lib/telegram/link';
 import { sendTelegramMessage, answerCallbackQuery, editMessageReplyMarkup } from '@/lib/telegram/client';
 import { handleApprovalCallback } from '@/lib/trading/approval';
 import { handleAmendmentCallback } from '@/lib/trading/amendment';
+import { buildPositionsMessage } from '@/lib/trading/positions-command';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
         await answerCallbackQuery(cb.id, result.message);
         if (cb.message) {
           await editMessageReplyMarkup(cb.message.chat.id, cb.message.message_id);
-          await sendTelegramMessage(cb.message.chat.id, result.message);
+          await sendTelegramMessage(cb.message.chat.id, result.message, { replyMarkup: result.replyMarkup });
         }
       } catch (err: any) {
         await answerCallbackQuery(cb.id, 'Error processing.');
@@ -86,6 +87,25 @@ export async function POST(req: NextRequest) {
         update_user_failed: '⚠️ Couldn\'t link your account. Try again or contact support.',
       };
       await sendTelegramMessage(chatId, msgByReason[result.reason] ?? msgByReason.lookup_error);
+    }
+    return NextResponse.json({ ok: true });
+  }
+
+  if (/^\/positions(?:@\w+)?\s*$/i.test(text)) {
+    const userId = await getUserIdByTelegramChatId(chatId);
+    if (!userId) {
+      await sendTelegramMessage(
+        chatId,
+        '⚠️ This chat isn\'t linked to a Junto account yet. Open <a href="https://myjunto.xyz">myjunto.xyz</a> → Settings → Link Telegram.',
+      );
+      return NextResponse.json({ ok: true });
+    }
+    try {
+      const body = await buildPositionsMessage(userId);
+      await sendTelegramMessage(chatId, body);
+    } catch (err: any) {
+      console.error('[positions cmd]', err);
+      await sendTelegramMessage(chatId, '⚠️ Failed to load positions. Try again in a minute.');
     }
     return NextResponse.json({ ok: true });
   }

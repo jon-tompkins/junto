@@ -1,4 +1,4 @@
-import { sendTelegramMessage } from '@/lib/telegram/client';
+import { sendTelegramMessage, type InlineKeyboardMarkup } from '@/lib/telegram/client';
 import { getUserTelegramChatId } from '@/lib/telegram/link';
 import { getMandateById, getTradeById, updateTrade, addJournalEntry, updateSignalForTrade } from './db';
 import { alpacaForMandate } from './client';
@@ -65,7 +65,16 @@ function positionPageUrl(ticker: string): string {
 export async function handleApprovalCallback(params: {
   data: string;
   chatId: number;
-}): Promise<{ message: string }> {
+}): Promise<{ message: string; replyMarkup?: InlineKeyboardMarkup }> {
+  // Re-propose: spin up a fresh proposal at current price using the original thesis.
+  const repMatch = /^trade_repropose:([0-9a-f-]+)$/i.exec(params.data);
+  if (repMatch) {
+    const { reproposeTrade } = await import('./repropose');
+    const result = await reproposeTrade(repMatch[1]);
+    if (!result.ok) return { message: `❌ ${result.error}` };
+    return { message: `🔄 Re-proposed ${result.ticker} at $${result.proposalPrice.toFixed(2)} (${result.qty} sh). Check the new proposal above.` };
+  }
+
   const match = /^trade_(approve|skip):([0-9a-f-]+)$/i.exec(params.data);
   if (!match) return { message: 'Unknown action.' };
 
@@ -106,7 +115,14 @@ export async function handleApprovalCallback(params: {
             kind: 'entry',
             content: `[blocked: price moved ${(drift * 100).toFixed(2)}% from proposal ($${proposalPrice.toFixed(2)} → $${livePrice.toFixed(2)}), >1% slippage limit]`,
           });
-          return { message: `⚠️ Blocked ${trade.ticker} — price moved ${(drift * 100).toFixed(2)}% (proposal $${proposalPrice.toFixed(2)} → now $${livePrice.toFixed(2)}). Re-propose if you still want in.` };
+          return {
+            message: `⚠️ Blocked ${trade.ticker} — price moved ${(drift * 100).toFixed(2)}% (proposal $${proposalPrice.toFixed(2)} → now $${livePrice.toFixed(2)}). Re-propose if you still want in.`,
+            replyMarkup: {
+              inline_keyboard: [[
+                { text: '🔄 Re-propose now', callback_data: `trade_repropose:${tradeId}` },
+              ]],
+            },
+          };
         }
       }
     }
