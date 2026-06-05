@@ -83,6 +83,13 @@ export async function editMessageReplyMarkup(
   });
 }
 
+// Register the slash-command menu shown in the Telegram client (the "/" autocomplete
+// and the menu button next to the input). Call once after deploys when commands change.
+export async function setBotCommands(commands: { command: string; description: string }[]): Promise<void> {
+  await tgCall<boolean>('setMyCommands', { commands });
+  await tgCall<boolean>('setChatMenuButton', { menu_button: { type: 'commands' } });
+}
+
 // Send an MP3 audio file. Uses sendAudio so Telegram shows playable audio player + duration.
 export async function sendTelegramAudio(params: {
   chatId: string | number;

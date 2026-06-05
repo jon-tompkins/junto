@@ -1,6 +1,7 @@
 import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
 import { getRecentContentForSources } from '@/lib/db/content-twitter';
 import { getJuntoSourceIds } from './db';
+import { getSupabase } from '@/lib/db/client';
 import type { Mandate, ExtractedSignal } from './types';
 
 const LOOKBACK_HOURS = 24;
@@ -22,8 +23,25 @@ export async function loadJuntoSnapshot(juntoId: string): Promise<JuntoSnapshot>
     .sort((a: any, b: any) => (b.likes + b.retweets * 2) - (a.likes + a.retweets * 2))
     .slice(0, MAX_TWEETS_FOR_PROMPT);
 
+  // Resolve real author handles per source so the URL is /<handle>/status/<id>
+  // instead of /i/web/status/<id> — keeps the source label legible downstream.
+  const handleBySourceId = new Map<string, string>();
+  const rankedSourceIds = Array.from(new Set(ranked.map((t: any) => t.source_id).filter(Boolean)));
+  if (rankedSourceIds.length) {
+    const { data } = await getSupabase()
+      .from('sources')
+      .select('id, handle_or_url')
+      .in('id', rankedSourceIds);
+    for (const s of (data || []) as any[]) {
+      if (s.handle_or_url) handleBySourceId.set(s.id, String(s.handle_or_url).replace(/^@/, ''));
+    }
+  }
+
   const lines = ranked.map((t: any) => {
-    const url = `https://x.com/i/web/status/${t.twitter_id}`;
+    const handle = handleBySourceId.get(t.source_id);
+    const url = handle
+      ? `https://x.com/${handle}/status/${t.twitter_id}`
+      : `https://x.com/i/web/status/${t.twitter_id}`;
     return `[${t.posted_at?.slice(0, 16)} | ${url}]\n${t.content}`;
   });
   return { contentBlock: lines.join('\n\n---\n\n'), tweetCount: ranked.length, urlsBySymbol: {} };

@@ -91,6 +91,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  if (/^\/help(?:@\w+)?\s*$/i.test(text)) {
+    await sendTelegramMessage(
+      chatId,
+      `<b>Junto bot commands</b>\n\n` +
+      `/positions — show active positions + unrealized P&L\n` +
+      `/help — this menu\n` +
+      `/start — link your Junto account\n\n` +
+      `Trade proposals arrive here automatically. Tap ✅ Approve, ❌ Skip, or 🔄 Re-propose on the message itself.`,
+    );
+    return NextResponse.json({ ok: true });
+  }
+
   if (/^\/positions(?:@\w+)?\s*$/i.test(text)) {
     const userId = await getUserIdByTelegramChatId(chatId);
     if (!userId) {

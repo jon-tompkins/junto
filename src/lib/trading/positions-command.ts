@@ -120,11 +120,8 @@ export async function buildPositionsMessage(userId: string): Promise<string> {
 
       const srcs = sourcesByTrade.get(t.id);
       if (srcs && srcs.length) {
-        const links = srcs.slice(0, 3).map((url, i) => {
-          const m2 = /(?:x|twitter)\.com\/([^/?#]+)/i.exec(url);
-          const label = m2 ? `@${escapeHtml(m2[1])}` : `src ${i + 1}`;
-          return `<a href="${escapeHtml(url)}">${label}</a>`;
-        });
+        const resolved = await resolveSourceLabels(srcs.slice(0, 3));
+        const links = resolved.map(r => `<a href="${escapeHtml(r.url)}">${escapeHtml(r.label)}</a>`);
         lines.push(`  Source: ${links.join(' · ')}`);
       }
     }
@@ -138,4 +135,43 @@ export async function buildPositionsMessage(userId: string): Promise<string> {
 
 function escapeHtml(s: string): string {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Tweet URLs are stored as either x.com/<handle>/status/<id> or the
+// pseudonymous x.com/i/web/status/<id>. For the latter, resolve the real
+// handle by looking up the tweet's source so the link label shows @handle
+// instead of "@i".
+async function resolveSourceLabels(urls: string[]): Promise<Array<{ url: string; label: string }>> {
+  const tweetIds: string[] = [];
+  for (const u of urls) {
+    const m = /\/status\/(\d+)/i.exec(u);
+    if (m) tweetIds.push(m[1]);
+  }
+
+  const handleByTid = new Map<string, string>();
+  if (tweetIds.length) {
+    const { data } = await getSupabase()
+      .from('content_twitter')
+      .select('twitter_id, sources(handle_or_url)')
+      .in('twitter_id', tweetIds);
+    for (const row of (data || []) as any[]) {
+      const handle = row.sources?.handle_or_url;
+      if (handle) handleByTid.set(row.twitter_id, String(handle).replace(/^@/, ''));
+    }
+  }
+
+  return urls.map((url, i) => {
+    const named = /(?:x|twitter)\.com\/([^/?#]+)\/status\/(\d+)/i.exec(url);
+    if (named && named[1].toLowerCase() !== 'i' && named[1].toLowerCase() !== 'web') {
+      return { url, label: `@${named[1]}` };
+    }
+    const tidMatch = /\/status\/(\d+)/i.exec(url);
+    if (tidMatch) {
+      const handle = handleByTid.get(tidMatch[1]);
+      if (handle) {
+        return { url: `https://x.com/${handle}/status/${tidMatch[1]}`, label: `@${handle}` };
+      }
+    }
+    return { url, label: `src ${i + 1}` };
+  });
 }
