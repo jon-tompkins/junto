@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
 
 interface Trade {
@@ -51,10 +52,32 @@ function quadrant(p: number | null, o: number | null): string {
 export default function TradeDetailPage({ params }: { params: Promise<{ tradeId: string }> }) {
   const { tradeId } = use(params);
   const { status } = useSession();
+  const router = useRouter();
   const [trade, setTrade] = useState<Trade | null>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [mandate, setMandate] = useState<{ id: string; name: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reproposing, setReproposing] = useState(false);
+  const [reproposeMsg, setReproposeMsg] = useState<string | null>(null);
+
+  async function handleRepropose() {
+    setReproposing(true);
+    setReproposeMsg(null);
+    try {
+      const res = await fetch(`/api/admin/trading/trades/${tradeId}/repropose`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        setReproposeMsg(data.error || 'Failed to re-propose');
+        return;
+      }
+      setReproposeMsg(`Proposed at $${Number(data.proposalPrice).toFixed(2)} (${data.qty} sh) — check Telegram`);
+      router.push(`/admin/trading/trades/${data.tradeId}`);
+    } catch (err: any) {
+      setReproposeMsg(err?.message || 'Re-propose failed');
+    } finally {
+      setReproposing(false);
+    }
+  }
 
   useEffect(() => {
     if (status !== 'authenticated') return;
@@ -108,6 +131,20 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
             {trade.realized_pnl_usd !== null && (
               <div className="text-xl font-bold font-mono mt-2" style={{ color: trade.realized_pnl_usd >= 0 ? '#3ecf6a' : '#e8453c' }}>
                 ${trade.realized_pnl_usd.toFixed(2)}
+              </div>
+            )}
+            {(trade.status === 'cancelled' || trade.status === 'rejected') && (
+              <div className="mt-3 flex flex-col items-end gap-1">
+                <button
+                  onClick={handleRepropose}
+                  disabled={reproposing}
+                  className="text-xs px-3 py-1.5 rounded font-[var(--font-oswald)] uppercase tracking-wide bg-[#B08D57] text-[#080604] hover:bg-[#c9a36a] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {reproposing ? 'Re-proposing…' : 'Re-propose at current price'}
+                </button>
+                {reproposeMsg && (
+                  <div className="text-[10px] text-[#F5EFE0]/60 max-w-[220px] text-right">{reproposeMsg}</div>
+                )}
               </div>
             )}
           </div>
