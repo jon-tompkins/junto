@@ -4,6 +4,13 @@ import { sendTelegramMessage, answerCallbackQuery, editMessageReplyMarkup } from
 import { handleApprovalCallback } from '@/lib/trading/approval';
 import { handleAmendmentCallback } from '@/lib/trading/amendment';
 import { buildPositionsMessage } from '@/lib/trading/positions-command';
+import {
+  buildPnlMessage,
+  buildMandatesMessage,
+  setMandateStatus,
+  closeTickerCommand,
+  buildTicksMessage,
+} from '@/lib/trading/telegram-commands';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,7 +102,13 @@ export async function POST(req: NextRequest) {
     await sendTelegramMessage(
       chatId,
       `<b>Junto bot commands</b>\n\n` +
-      `/positions — show active positions + unrealized P&L\n` +
+      `/positions — open positions + unrealized P&amp;L\n` +
+      `/pnl — realized today/7d/all-time + equity\n` +
+      `/mandates — list your mandates\n` +
+      `/ticks — recent tick-run activity\n` +
+      `/pause &lt;name&gt; — pause a mandate\n` +
+      `/resume &lt;name&gt; — resume a mandate\n` +
+      `/close &lt;ticker&gt; — market-close any open position\n` +
       `/help — this menu\n` +
       `/start — link your Junto account\n\n` +
       `Trade proposals arrive here automatically. Tap ✅ Approve, ❌ Skip, or 🔄 Re-propose on the message itself.`,
@@ -103,7 +116,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  if (/^\/positions(?:@\w+)?\s*$/i.test(text)) {
+  const tradingCmdMatch = /^\/(positions|pnl|mandates|ticks|pause|resume|close)(?:@\w+)?(?:\s+(.+))?$/i.exec(text);
+  if (tradingCmdMatch) {
+    const cmd = tradingCmdMatch[1].toLowerCase();
+    const arg = (tradingCmdMatch[2] || '').trim();
     const userId = await getUserIdByTelegramChatId(chatId);
     if (!userId) {
       await sendTelegramMessage(
@@ -113,11 +129,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
     try {
-      const body = await buildPositionsMessage(userId);
+      let body: string;
+      switch (cmd) {
+        case 'positions': body = await buildPositionsMessage(userId); break;
+        case 'pnl':       body = await buildPnlMessage(userId); break;
+        case 'mandates':  body = await buildMandatesMessage(userId); break;
+        case 'ticks':     body = await buildTicksMessage(userId); break;
+        case 'pause':     body = await setMandateStatus(userId, arg, 'paused'); break;
+        case 'resume':    body = await setMandateStatus(userId, arg, 'active'); break;
+        case 'close':     body = await closeTickerCommand(userId, arg); break;
+        default:          body = 'Unknown command.';
+      }
       await sendTelegramMessage(chatId, body);
     } catch (err: any) {
-      console.error('[positions cmd]', err);
-      await sendTelegramMessage(chatId, '⚠️ Failed to load positions. Try again in a minute.');
+      console.error(`[/${cmd}]`, err);
+      await sendTelegramMessage(chatId, `⚠️ Command failed: ${err?.message?.slice(0, 200) || 'unknown'}`);
     }
     return NextResponse.json({ ok: true });
   }
