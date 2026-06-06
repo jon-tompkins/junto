@@ -158,6 +158,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     );
   }
 
+  const pendingTrades = trades.filter(t => t.status === 'pending');
   const openTrades = trades.filter(t => t.status === 'open' || t.status === 'pending');
   const closedTrades = trades.filter(t => t.status === 'closed');
 
@@ -194,6 +195,30 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
 
         {testResult && (
           <div className="mb-4 px-3 py-2 rounded text-xs bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/70">{testResult}</div>
+        )}
+
+        {pendingTrades.length > 0 && (
+          <div className="bg-[#B08D57]/10 border border-[#B08D57]/50 rounded p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-[#B08D57] mb-0.5">
+                {pendingTrades.length} trade{pendingTrades.length === 1 ? '' : 's'} awaiting approval
+              </div>
+              <p className="text-xs text-[#F5EFE0]/60">
+                {pendingTrades.map(t => `${t.ticker}`).join(', ')}
+              </p>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {pendingTrades.slice(0, 3).map(t => (
+                <Link
+                  key={t.id}
+                  href={`/admin/trading/trades/${t.id}`}
+                  className="px-3 py-1.5 rounded text-xs font-[var(--font-oswald)] uppercase tracking-wide bg-[#B08D57] text-[#080604] hover:bg-[#c9a36a]"
+                >
+                  Review {t.ticker} →
+                </Link>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Guidelines */}

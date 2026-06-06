@@ -59,6 +59,29 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
   const [loading, setLoading] = useState(true);
   const [reproposing, setReproposing] = useState(false);
   const [reproposeMsg, setReproposeMsg] = useState<string | null>(null);
+  const [acting, setActing] = useState<null | 'approve' | 'skip'>(null);
+  const [actMsg, setActMsg] = useState<string | null>(null);
+
+  async function refreshTrade() {
+    const data = await fetch(`/api/admin/trading/trades/${tradeId}`).then(r => r.json());
+    setTrade(data.trade);
+    setEntries(data.entries || []);
+  }
+
+  async function handleAction(kind: 'approve' | 'skip') {
+    setActing(kind);
+    setActMsg(null);
+    try {
+      const res = await fetch(`/api/admin/trading/trades/${tradeId}/${kind}`, { method: 'POST' });
+      const data = await res.json();
+      setActMsg(data.message || (res.ok ? 'Done' : 'Failed'));
+      await refreshTrade();
+    } catch (err: any) {
+      setActMsg(err?.message || 'Action failed');
+    } finally {
+      setActing(null);
+    }
+  }
 
   async function handleRepropose() {
     setReproposing(true);
@@ -131,6 +154,29 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
             {trade.realized_pnl_usd !== null && (
               <div className="text-xl font-bold font-mono mt-2" style={{ color: trade.realized_pnl_usd >= 0 ? '#3ecf6a' : '#e8453c' }}>
                 ${trade.realized_pnl_usd.toFixed(2)}
+              </div>
+            )}
+            {trade.status === 'pending' && (
+              <div className="mt-3 flex flex-col items-end gap-1">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleAction('approve')}
+                    disabled={!!acting}
+                    className="text-xs px-3 py-1.5 rounded font-[var(--font-oswald)] uppercase tracking-wide bg-[#3ecf6a] text-[#080604] hover:bg-[#5fdb84] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {acting === 'approve' ? 'Approving…' : '✅ Approve'}
+                  </button>
+                  <button
+                    onClick={() => handleAction('skip')}
+                    disabled={!!acting}
+                    className="text-xs px-3 py-1.5 rounded font-[var(--font-oswald)] uppercase tracking-wide bg-[#141210] border border-[rgba(232,69,60,0.4)] text-[#e8453c] hover:bg-[#e8453c]/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {acting === 'skip' ? 'Skipping…' : '❌ Skip'}
+                  </button>
+                </div>
+                {actMsg && (
+                  <div className="text-[10px] text-[#F5EFE0]/60 max-w-[260px] text-right">{actMsg}</div>
+                )}
               </div>
             )}
             {(trade.status === 'cancelled' || trade.status === 'rejected') && (

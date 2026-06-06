@@ -79,30 +79,58 @@ export async function handleApprovalCallback(params: {
   if (!match) return { message: 'Unknown action.' };
 
   const [, action, tradeId] = match;
-  const trade = await getTradeById(tradeId);
-  if (!trade) return { message: 'Trade not found.' };
-  if (trade.status !== 'pending') {
-    return { message: `Trade already ${trade.status}.` };
-  }
+  const result = action === 'skip'
+    ? await skipTrade(tradeId, 'telegram')
+    : await approveTrade(tradeId, 'telegram');
 
-  if (action === 'skip') {
-    await updateTrade(tradeId, { status: 'cancelled' });
-    await addJournalEntry({
-      tradeId,
-      kind: 'entry',
-      content: '[skipped by user via Telegram]',
-    });
-    await updateSignalForTrade(tradeId, { decision: 'user_skipped', decisionReason: 'user_skipped' });
-    return { message: `Skipped ${trade.ticker}.` };
+  if (result.slippageBlocked) {
+    return {
+      message: result.message,
+      replyMarkup: {
+        inline_keyboard: [[
+          { text: '🔄 Re-propose now', callback_data: `trade_repropose:${tradeId}` },
+        ]],
+      },
+    };
   }
+  return { message: result.message };
+}
+
+export interface ActionResult {
+  ok: boolean;
+  message: string;
+  slippageBlocked?: boolean;
+}
+
+// Cancel a pending trade. Shared by Telegram callback and web button.
+export async function skipTrade(tradeId: string, source: 'telegram' | 'web'): Promise<ActionResult> {
+  const trade = await getTradeById(tradeId);
+  if (!trade) return { ok: false, message: 'Trade not found.' };
+  if (trade.status !== 'pending') return { ok: false, message: `Trade already ${trade.status}.` };
+
+  await updateTrade(tradeId, { status: 'cancelled' });
+  await addJournalEntry({
+    tradeId,
+    kind: 'entry',
+    content: `[skipped by user via ${source}]`,
+  });
+  await updateSignalForTrade(tradeId, { decision: 'user_skipped', decisionReason: 'user_skipped' });
+  return { ok: true, message: `Skipped ${trade.ticker}.` };
+}
+
+// Approve + submit a pending trade. Shared by Telegram callback and web button.
+// Runs the 1% slippage guard against live price before submitting to Alpaca.
+export async function approveTrade(tradeId: string, source: 'telegram' | 'web'): Promise<ActionResult> {
+  const trade = await getTradeById(tradeId);
+  if (!trade) return { ok: false, message: 'Trade not found.' };
+  if (trade.status !== 'pending') return { ok: false, message: `Trade already ${trade.status}.` };
 
   const mandate = await getMandateById(trade.mandate_id);
-  if (!mandate) return { message: 'Mandate missing.' };
+  if (!mandate) return { ok: false, message: 'Mandate missing.' };
 
   try {
     const alpaca = alpacaForMandate(mandate);
 
-    // 1% slippage guard: re-check live price vs proposal price.
     const proposalPrice = trade.proposal_price ? Number(trade.proposal_price) : null;
     if (proposalPrice && proposalPrice > 0) {
       const livePrice = await alpaca.getLastTrade(trade.ticker).catch(() => null);
@@ -116,12 +144,9 @@ export async function handleApprovalCallback(params: {
             content: `[blocked: price moved ${(drift * 100).toFixed(2)}% from proposal ($${proposalPrice.toFixed(2)} → $${livePrice.toFixed(2)}), >1% slippage limit]`,
           });
           return {
+            ok: false,
+            slippageBlocked: true,
             message: `⚠️ Blocked ${trade.ticker} — price moved ${(drift * 100).toFixed(2)}% (proposal $${proposalPrice.toFixed(2)} → now $${livePrice.toFixed(2)}). Re-propose if you still want in.`,
-            replyMarkup: {
-              inline_keyboard: [[
-                { text: '🔄 Re-propose now', callback_data: `trade_repropose:${tradeId}` },
-              ]],
-            },
           };
         }
       }
@@ -136,16 +161,14 @@ export async function handleApprovalCallback(params: {
       clientOrderId: `junto-${tradeId}`,
     });
 
-    await updateTrade(tradeId, {
-      alpaca_order_id: order.id,
-    });
+    await updateTrade(tradeId, { alpaca_order_id: order.id });
     await addJournalEntry({
       tradeId,
       kind: 'entry',
-      content: `[approved by user, submitted to Alpaca order_id=${order.id}, awaiting fill]`,
+      content: `[approved by user via ${source}, submitted to Alpaca order_id=${order.id}, awaiting fill]`,
     });
     await updateSignalForTrade(tradeId, { decision: 'submitted', decisionReason: 'user_approved' });
-    return { message: `✅ Submitted ${trade.ticker} — awaiting fill.` };
+    return { ok: true, message: `✅ Submitted ${trade.ticker} — awaiting fill.` };
   } catch (err: any) {
     await updateTrade(tradeId, { status: 'rejected' });
     await addJournalEntry({
@@ -153,7 +176,7 @@ export async function handleApprovalCallback(params: {
       kind: 'entry',
       content: `[approval submitted but broker rejected: ${err.message}]`,
     });
-    return { message: `❌ Broker rejected: ${err.message?.slice(0, 200)}` };
+    return { ok: false, message: `❌ Broker rejected: ${err.message?.slice(0, 200)}` };
   }
 }
 
