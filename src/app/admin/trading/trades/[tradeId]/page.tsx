@@ -105,12 +105,12 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
   return (
     <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
-      <div className="max-w-4xl mx-auto px-6 py-10">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {mandate && (
           <Link href={`/admin/trading/${mandate.id}`} className="text-xs text-[#F5EFE0]/45 hover:text-[#F5EFE0]">← {mandate.name}</Link>
         )}
 
-        <div className="flex items-start justify-between mt-3 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-3 mb-6 sm:mb-8">
           <div>
             <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">
               {trade.ticker} <span className="text-sm text-[#F5EFE0]/45">{trade.side} · {trade.qty}</span>

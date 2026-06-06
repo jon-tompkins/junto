@@ -164,17 +164,17 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   return (
     <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
-      <div className="max-w-6xl mx-auto px-6 py-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <Link href="/admin/trading" className="text-xs text-[#F5EFE0]/45 hover:text-[#F5EFE0]">← All mandates</Link>
 
-        <div className="flex items-start justify-between mt-3 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-3 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">{mandate.name}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">{mandate.name}</h1>
             <p className="text-sm text-[#F5EFE0]/45 mt-1">
               {mandate.junto_name || 'no junto'} · {mandate.mode} · {fmtUsd(mandate.capital_allotted_usd)} · {mandate.max_position_pct}% max position
             </p>
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center flex-wrap">
             <button
               onClick={sendTestProposal}
               disabled={sendingTest}
@@ -229,7 +229,9 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
           {openTrades.length === 0 ? (
             <p className="text-sm text-[#F5EFE0]/30">No open trades.</p>
           ) : (
-            <TradeTable trades={openTrades} positions={positions} showLive />
+            <div className="overflow-x-auto -mx-5 px-5">
+              <TradeTable trades={openTrades} positions={positions} showLive />
+            </div>
           )}
         </div>
 
@@ -240,7 +242,9 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
           {closedTrades.length === 0 ? (
             <p className="text-sm text-[#F5EFE0]/30">No closed trades.</p>
           ) : (
-            <TradeTable trades={closedTrades} positions={positions} />
+            <div className="overflow-x-auto -mx-5 px-5">
+              <TradeTable trades={closedTrades} positions={positions} />
+            </div>
           )}
         </div>
 
@@ -250,7 +254,8 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
           {ticks.length === 0 ? (
             <p className="text-sm text-[#F5EFE0]/30">No ticks yet.</p>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto -mx-5 px-5">
+            <table className="w-full text-sm min-w-[640px]">
               <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
                 <tr>
                   <th className="py-2 pr-4">When</th>
@@ -282,6 +287,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 
@@ -291,7 +297,8 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
           {signals.length === 0 ? (
             <p className="text-sm text-[#F5EFE0]/30">No signals yet.</p>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto -mx-5 px-5">
+            <table className="w-full text-sm min-w-[560px]">
               <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
                 <tr>
                   <th className="py-2 pr-4">When</th>
@@ -315,6 +322,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>
@@ -332,7 +340,7 @@ function TradeTable({
   showLive?: boolean;
 }) {
   return (
-    <table className="w-full text-sm">
+    <table className="w-full text-sm min-w-[720px]">
       <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
         <tr>
           <th className="py-2 pr-4">Ticker</th>

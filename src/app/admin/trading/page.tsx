@@ -144,13 +144,13 @@ export default function AdminTradingPage() {
   return (
     <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        <div className="flex items-center justify-between mb-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">Admin · Trading</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">Admin · Trading</h1>
             <p className="text-sm text-[#F5EFE0]/45 mt-1">{mandates.length} mandates</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => runTick('midday')}
               disabled={ticking}
@@ -170,14 +170,14 @@ export default function AdminTradingPage() {
         </div>
 
         {telegramLinked === false && (
-          <div className="bg-[#e8453c]/10 border border-[#e8453c]/40 rounded p-4 mb-6 flex items-center justify-between gap-4">
+          <div className="bg-[#e8453c]/10 border border-[#e8453c]/40 rounded p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <div className="text-sm font-semibold text-[#e8453c] mb-1">Telegram not linked</div>
               <p className="text-xs text-[#F5EFE0]/60">
                 Trade approvals are sent to your Telegram DM. Link your account first — without it, proposed trades can't be approved and won't reach Alpaca.
               </p>
             </div>
-            <Link href="/settings" className="px-3 py-1.5 rounded text-xs bg-[#B08D57] text-[#080604] font-semibold whitespace-nowrap">
+            <Link href="/settings" className="self-start sm:self-auto px-3 py-1.5 rounded text-xs bg-[#B08D57] text-[#080604] font-semibold whitespace-nowrap">
               Link Telegram →
             </Link>
           </div>
@@ -234,7 +234,7 @@ export default function AdminTradingPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Name">
                 <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={inputCls} placeholder="e.g. Wolfe Tactical" />
               </Field>
@@ -255,7 +255,7 @@ export default function AdminTradingPage() {
               </Field>
             </div>
             {form.account_kind === 'byo_keys' && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Alpaca key ID">
                   <input value={form.alpaca_key_id} onChange={e => setForm({ ...form, alpaca_key_id: e.target.value })} className={inputCls} placeholder="PK..." />
                 </Field>
@@ -306,7 +306,7 @@ export default function AdminTradingPage() {
                     'bg-[#F5EFE0]/10 text-[#F5EFE0]/40'
                   }`}>{m.status}</span>
                 </div>
-                <div className="grid grid-cols-5 gap-3 mt-4 text-xs">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mt-4 text-xs">
                   <Stat label="Capital" value={fmtUsd(m.capital_allotted_usd)} />
                   <Stat label="Open" value={String(m.stats.open)} />
                   <Stat label="Closed" value={String(m.stats.closed)} />
