@@ -22,6 +22,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: #080604;
   color: #F5EFE0;
+  /* Honor iOS notch / home indicator when running as a standalone PWA */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-tap-highlight-color: transparent;
 }
 
 h1, h2, h3, h4 {
