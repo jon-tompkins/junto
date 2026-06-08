@@ -7,6 +7,8 @@ import { TopNav } from '@/components/top-nav';
 
 type Tab = 'costs' | 'data' | 'trading';
 
+type UserTier = 'free' | 'pro' | 'operator';
+
 interface UserRow {
   user_id: string;
   email: string;
@@ -14,6 +16,7 @@ interface UserRow {
   active: number;
   joined_at: string;
   is_pro?: boolean;
+  tier?: UserTier;
   credit_balance?: number;
 }
 
@@ -118,15 +121,18 @@ export default function AdminDashboard() {
     }
   }
 
-  async function togglePro(userId: string, currentlyPro: boolean) {
+  async function cycleTier(userId: string, currentTier: UserTier) {
+    const next: UserTier = currentTier === 'free' ? 'pro' : currentTier === 'pro' ? 'operator' : 'free';
     setTogglingPro(userId);
     try {
-      await fetch(`/api/admin/users/${userId}/pro`, {
+      const res = await fetch(`/api/admin/users/${userId}/tier`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_pro: !currentlyPro }),
+        body: JSON.stringify({ tier: next }),
       });
-      setUsers((prev) => prev.map((u) => (u.user_id === userId ? { ...u, is_pro: !currentlyPro } : u)));
+      if (res.ok) {
+        setUsers((prev) => prev.map((u) => (u.user_id === userId ? { ...u, tier: next, is_pro: next !== 'free' } : u)));
+      }
     } finally {
       setTogglingPro(null);
     }
@@ -285,7 +291,7 @@ export default function AdminDashboard() {
         {tab === 'data' && (
           <DataTab
             users={users}
-            togglePro={togglePro}
+            cycleTier={cycleTier}
             togglingPro={togglingPro}
             adjustCredits={adjustCredits}
             adjustingCredits={adjustingCredits}
@@ -456,7 +462,7 @@ function CostsTab({
 
 function DataTab(props: {
   users: UserRow[];
-  togglePro: (id: string, pro: boolean) => void;
+  cycleTier: (id: string, current: UserTier) => void;
   togglingPro: string | null;
   adjustCredits: (id: string) => void;
   adjustingCredits: string | null;
@@ -478,7 +484,7 @@ function DataTab(props: {
   untrackSource: (id: string) => void;
 }) {
   const {
-    users, togglePro, togglingPro, adjustCredits, adjustingCredits,
+    users, cycleTier, togglingPro, adjustCredits, adjustingCredits,
     promoCodes, newCode, setNewCode, newCodeDesc, setNewCodeDesc, newCodeMaxUses, setNewCodeMaxUses,
     creatingCode, createPromoCode, deletePromoCode,
     sources, newHandle, setNewHandle, addingSource, addSource, untrackSource,
@@ -509,17 +515,26 @@ function DataTab(props: {
                   <tr key={u.user_id} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
                     <td className="py-2 pr-6 text-[#F5EFE0]/80 font-mono text-xs truncate max-w-[200px]">{u.email}</td>
                     <td className="py-2 pr-6 text-right">
-                      <button
-                        onClick={() => togglePro(u.user_id, !!u.is_pro)}
-                        disabled={togglingPro === u.user_id}
-                        className={`text-xs px-2 py-0.5 rounded font-bold font-[var(--font-oswald)] uppercase tracking-wide transition ${
-                          u.is_pro
-                            ? 'bg-[#B08D57] text-[#080604] hover:bg-[#B08D57]/70'
-                            : 'bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/40 hover:text-[#F5EFE0]/70'
-                        } disabled:opacity-50`}
-                      >
-                        {togglingPro === u.user_id ? '…' : u.is_pro ? 'Pro ✓' : 'Free'}
-                      </button>
+                      {(() => {
+                        const tier: UserTier = u.tier || (u.is_pro ? 'pro' : 'free');
+                        const cls =
+                          tier === 'operator'
+                            ? 'bg-[#e8453c] text-[#F5EFE0] hover:bg-[#e8453c]/80'
+                            : tier === 'pro'
+                              ? 'bg-[#B08D57] text-[#080604] hover:bg-[#B08D57]/70'
+                              : 'bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/40 hover:text-[#F5EFE0]/70';
+                        const label = tier === 'operator' ? 'Operator' : tier === 'pro' ? 'Pro' : 'Free';
+                        return (
+                          <button
+                            onClick={() => cycleTier(u.user_id, tier)}
+                            disabled={togglingPro === u.user_id}
+                            title="Click to cycle Free → Pro → Operator"
+                            className={`text-xs px-2 py-0.5 rounded font-bold font-[var(--font-oswald)] uppercase tracking-wide transition ${cls} disabled:opacity-50`}
+                          >
+                            {togglingPro === u.user_id ? '…' : label}
+                          </button>
+                        );
+                      })()}
                     </td>
                     <td className="py-2 pr-6 text-right">
                       <button
