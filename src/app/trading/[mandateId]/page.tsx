@@ -94,6 +94,8 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   });
   const [sendingTest, setSendingTest] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [protecting, setProtecting] = useState(false);
+  const [protectResult, setProtectResult] = useState<string | null>(null);
   const [account, setAccount] = useState<{ equity: number | null; cash: number | null }>({ equity: null, cash: null });
   const [lastTickAt, setLastTickAt] = useState<string | null>(null);
   const [livePulse, setLivePulse] = useState(false);
@@ -121,6 +123,29 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
       setTestResult(`Error: ${e.message}`);
     } finally {
       setSendingTest(false);
+    }
+  }
+
+  async function reattachProtection() {
+    if (!confirm('Re-attach GTC stop+target OCO for every open position whose protective legs have expired?')) return;
+    setProtecting(true);
+    setProtectResult(null);
+    try {
+      const res = await fetch(`/api/admin/trading/mandates/${mandateId}/protect`, { method: 'POST' });
+      const data = await res.json();
+      if (data.results) {
+        const counts: Record<string, number> = {};
+        for (const r of data.results) counts[r.action] = (counts[r.action] || 0) + 1;
+        const summary = Object.entries(counts).map(([k, v]) => `${v} ${k}`).join(', ');
+        const errors = data.results.filter((r: any) => r.action === 'error');
+        setProtectResult(summary + (errors.length ? ` — errors: ${errors.map((e: any) => `${e.ticker}: ${e.detail}`).join('; ')}` : ''));
+      } else {
+        setProtectResult(`Error: ${data.error || 'unknown'}`);
+      }
+    } catch (e: any) {
+      setProtectResult(`Error: ${e.message}`);
+    } finally {
+      setProtecting(false);
     }
   }
 
@@ -282,6 +307,12 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               disabled={sendingTest}
               className="px-2 py-1 rounded text-xs font-[var(--font-oswald)] uppercase tracking-wide bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#B08D57] hover:text-[#F5EFE0] disabled:opacity-50"
             >{sendingTest ? 'Sending…' : 'Test proposal'}</button>
+            <button
+              onClick={reattachProtection}
+              disabled={protecting}
+              title="Re-attach GTC stop+target for any naked position whose bracket day-legs expired"
+              className="px-2 py-1 rounded text-xs font-[var(--font-oswald)] uppercase tracking-wide bg-[#141210] border border-[#e8453c]/40 text-[#e8453c] hover:bg-[#e8453c]/10 disabled:opacity-50"
+            >{protecting ? 'Protecting…' : 'Re-attach stops'}</button>
             {(['active', 'paused', 'archived'] as const).map(s => (
               <button
                 key={s}
@@ -296,6 +327,9 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
 
         {testResult && (
           <div className="mb-4 px-3 py-2 rounded text-xs bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/70">{testResult}</div>
+        )}
+        {protectResult && (
+          <div className="mb-4 px-3 py-2 rounded text-xs bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/70">{protectResult}</div>
         )}
 
         <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4 sm:p-5 mb-6">

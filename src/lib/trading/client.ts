@@ -100,6 +100,26 @@ export function makeManagedAlpaca(accountId: string): AlpacaClient {
         client_order_id: params.clientOrderId,
       });
     },
+
+    listOpenOrders(symbol?: string) {
+      const qs = symbol ? `?status=open&symbols=${encodeURIComponent(symbol)}` : '?status=open';
+      return brokerFetch<AlpacaOrder[]>('GET', `${acct}/orders${qs}`);
+    },
+
+    submitOcoExit(params) {
+      return brokerFetch<AlpacaOrder>('POST', `${acct}/orders`, {
+        symbol: params.symbol,
+        qty: String(params.qty),
+        side: params.side,
+        type: 'limit',
+        time_in_force: 'gtc',
+        order_class: 'oco',
+        limit_price: params.limitPrice.toFixed(2),
+        stop_loss: { stop_price: params.stopPrice.toFixed(2) },
+        take_profit: { limit_price: params.limitPrice.toFixed(2) },
+        client_order_id: params.clientOrderId,
+      });
+    },
   };
 }
 

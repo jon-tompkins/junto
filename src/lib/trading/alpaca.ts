@@ -65,7 +65,13 @@ export interface AlpacaOrder {
   filled_qty: string;
   side: 'buy' | 'sell';
   status: string;
+  order_type?: string;
+  type?: string;
+  time_in_force?: string;
+  stop_price?: string | null;
+  limit_price?: string | null;
   filled_avg_price: string | null;
+  order_class?: string;
   legs?: AlpacaOrder[];
 }
 
@@ -154,6 +160,38 @@ export function makeAlpaca(override?: { keyId?: string | null; secret?: string |
         side: params.side,
         type: 'market',
         time_in_force: 'day',
+        client_order_id: params.clientOrderId,
+      });
+    },
+
+    // Returns open orders, optionally filtered by symbol. Used by the
+    // protection reconciler to detect naked positions.
+    listOpenOrders(symbol?: string) {
+      const qs = symbol ? `?status=open&symbols=${encodeURIComponent(symbol)}` : '?status=open';
+      return call<AlpacaOrder[]>(creds, 'GET', `/v2/orders${qs}`);
+    },
+
+    // Submit an OCO exit pair (stop + limit, both GTC) for an already-open
+    // position. Used to re-attach protection after the original bracket's
+    // day-TIF legs expired overnight.
+    submitOcoExit(params: {
+      symbol: string;
+      qty: number;
+      side: 'buy' | 'sell';
+      stopPrice: number;
+      limitPrice: number;
+      clientOrderId?: string;
+    }) {
+      return call<AlpacaOrder>(creds, 'POST', '/v2/orders', {
+        symbol: params.symbol,
+        qty: String(params.qty),
+        side: params.side,
+        type: 'limit',
+        time_in_force: 'gtc',
+        order_class: 'oco',
+        limit_price: params.limitPrice.toFixed(2),
+        stop_loss: { stop_price: params.stopPrice.toFixed(2) },
+        take_profit: { limit_price: params.limitPrice.toFixed(2) },
         client_order_id: params.clientOrderId,
       });
     },
