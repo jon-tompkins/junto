@@ -41,6 +41,8 @@ export default function AdminTradingPage() {
   const { status } = useSession();
   const [mandates, setMandates] = useState<MandateRow[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
+  const [lastTickAt, setLastTickAt] = useState<string | null>(null);
+  const [livePulse, setLivePulse] = useState(false);
   const [juntos, setJuntos] = useState<Junto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +87,50 @@ export default function AdminTradingPage() {
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
+  }, [status]);
+
+  // Live polling: refresh portfolio + per-mandate equity/cash/unrealized every
+  // 15s while the tab is visible. Lightweight endpoint — just Alpaca account +
+  // positions, no DB joins. Pauses when the tab is hidden so we don't burn rate
+  // limits while the user is away.
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    let cancelled = false;
+    const poll = async () => {
+      if (document.hidden) return;
+      try {
+        const res = await fetch('/api/admin/trading/portfolio-snapshot');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        setPortfolio(prev => prev ? {
+          ...prev,
+          total_capital: data.portfolio.total_capital,
+          total_equity: data.portfolio.total_equity,
+          total_cash: data.portfolio.total_cash,
+          cash_pct: data.portfolio.cash_pct,
+          total_unrealized_pnl: data.portfolio.total_unrealized_pnl,
+        } : prev);
+        setMandates(prev => prev.map(m => {
+          const snap = data.mandates[m.id];
+          if (!snap) return m;
+          return { ...m, stats: { ...m.stats, unrealized: snap.unrealized } };
+        }));
+        setLastTickAt(data.fetched_at);
+        setLivePulse(true);
+        setTimeout(() => setLivePulse(false), 600);
+      } catch {
+        // network blip — try again next interval
+      }
+    };
+    const id = setInterval(poll, 15000);
+    const onVis = () => { if (!document.hidden) poll(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVis);
+    };
   }, [status]);
 
   async function createMandate() {
@@ -183,6 +229,21 @@ export default function AdminTradingPage() {
 
         {portfolio && portfolio.mandate_count > 0 && (
           <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4 sm:p-5 mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">
+                Portfolio
+              </div>
+              <div className="flex items-center gap-1.5 text-[10px] text-[#F5EFE0]/45 font-mono">
+                <span
+                  className="inline-block w-1.5 h-1.5 rounded-full transition-all"
+                  style={{
+                    background: livePulse ? '#3ecf6a' : 'rgba(62,207,106,0.45)',
+                    boxShadow: livePulse ? '0 0 6px #3ecf6a' : 'none',
+                  }}
+                />
+                {lastTickAt ? `live · ${new Date(lastTickAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : 'live'}
+              </div>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
               <SummaryStat
                 label="Equity"
