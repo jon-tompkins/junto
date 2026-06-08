@@ -152,23 +152,45 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
       }
     }
 
-    const order = await alpaca.submitBracketOrder({
+    // Entry first (market, day — Alpaca requires day on market orders).
+    // We deliberately do NOT submit a bracket here: bracket child legs
+    // inherit the parent's TIF=day and expire at market close, leaving the
+    // position naked overnight. Instead, after the entry fills we attach a
+    // GTC OCO stop+limit so protection survives across sessions.
+    const order = await alpaca.submitMarketOrder({
       symbol: trade.ticker,
       qty: Number(trade.qty),
       side: trade.side === 'long' ? 'buy' : 'sell',
-      stopPrice: Number(trade.stop_price),
-      targetPrice: Number(trade.target_price),
       clientOrderId: `junto-${tradeId}`,
     });
 
     await updateTrade(tradeId, { alpaca_order_id: order.id });
+
+    // Best-effort: poll up to ~8s for the entry to fill, then attach GTC OCO
+    // protection. If still unfilled, the next tick's protector sweep catches it.
+    const { protectMandate } = await import('./protection');
+    let protectedNow = false;
+    for (let i = 0; i < 8; i++) {
+      await new Promise((r) => setTimeout(r, 1000));
+      try {
+        const status = await alpaca.getOrder(order.id);
+        if (status.status === 'filled' || (Number(status.filled_qty) || 0) > 0) {
+          await protectMandate(mandate.id).catch(() => null);
+          protectedNow = true;
+          break;
+        }
+      } catch {
+        // ignore poll errors
+      }
+    }
+
     await addJournalEntry({
       tradeId,
       kind: 'entry',
-      content: `[approved by user via ${source}, submitted to Alpaca order_id=${order.id}, awaiting fill]`,
+      content: `[approved by user via ${source}, submitted market order_id=${order.id}${protectedNow ? ', GTC OCO protection attached' : ', awaiting fill — protector will attach GTC OCO on next tick'}]`,
     });
     await updateSignalForTrade(tradeId, { decision: 'submitted', decisionReason: 'user_approved' });
-    return { ok: true, message: `✅ Submitted ${trade.ticker} — awaiting fill.` };
+    return { ok: true, message: `✅ Submitted ${trade.ticker}${protectedNow ? ' — filled + protected.' : ' — awaiting fill.'}` };
   } catch (err: any) {
     await updateTrade(tradeId, { status: 'rejected' });
     await addJournalEntry({

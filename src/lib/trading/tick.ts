@@ -14,6 +14,7 @@ import { loadJuntoSnapshot, extractSignals } from './extract';
 import { decideTrades } from './decide';
 import { decideAmendments } from './decide-amendments';
 import { monitorMandate } from './monitor';
+import { protectMandate } from './protection';
 import { requestApproval } from './approval';
 import { requestAmendmentApproval } from './amendment';
 import type { Mandate, TickWindow } from './types';
@@ -255,6 +256,15 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     }
   } catch (err: any) {
     result.errors.push(`amend: ${err.message}`);
+  }
+
+  // Ensure every open position carries live GTC OCO protection. Catches
+  // newly-filled entries from this tick, and re-attaches stops for any
+  // position whose legs have expired or were canceled out-of-band.
+  try {
+    await protectMandate(mandate.id);
+  } catch (err: any) {
+    result.errors.push(`protect: ${err.message}`);
   }
 
   // Mark every tweet we just showed the extractor as processed for this
