@@ -96,6 +96,8 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const [testResult, setTestResult] = useState<string | null>(null);
   const [protecting, setProtecting] = useState(false);
   const [protectResult, setProtectResult] = useState<string | null>(null);
+  const [reconciling, setReconciling] = useState(false);
+  const [reconcileResult, setReconcileResult] = useState<string | null>(null);
   const [account, setAccount] = useState<{ equity: number | null; cash: number | null }>({ equity: null, cash: null });
   const [lastTickAt, setLastTickAt] = useState<string | null>(null);
   const [livePulse, setLivePulse] = useState(false);
@@ -123,6 +125,31 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
       setTestResult(`Error: ${e.message}`);
     } finally {
       setSendingTest(false);
+    }
+  }
+
+  async function syncFromAlpaca() {
+    setReconciling(true);
+    setReconcileResult(null);
+    try {
+      const res = await fetch(`/api/admin/trading/mandates/${mandateId}/reconcile`, { method: 'POST' });
+      const data = await res.json();
+      if (data.results) {
+        const counts: Record<string, number> = {};
+        for (const r of data.results) counts[r.action] = (counts[r.action] || 0) + 1;
+        const summary = Object.entries(counts).map(([k, v]) => `${v} ${k}`).join(', ');
+        const notable = data.results.filter((r: any) => r.action === 'untracked_position' || r.action === 'error');
+        setReconcileResult(summary + (notable.length ? ` — ${notable.map((n: any) => `${n.ticker}: ${n.detail}`).join('; ')}` : ''));
+        fetch(`/api/admin/trading/mandates/${mandateId}`)
+          .then(r => r.json())
+          .then(d => { setTrades(d.trades || []); setPositions(d.positions || {}); });
+      } else {
+        setReconcileResult(`Error: ${data.error || 'unknown'}`);
+      }
+    } catch (e: any) {
+      setReconcileResult(`Error: ${e.message}`);
+    } finally {
+      setReconciling(false);
     }
   }
 
@@ -308,6 +335,12 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               className="px-2 py-1 rounded text-xs font-[var(--font-oswald)] uppercase tracking-wide bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#B08D57] hover:text-[#F5EFE0] disabled:opacity-50"
             >{sendingTest ? 'Sending…' : 'Test proposal'}</button>
             <button
+              onClick={syncFromAlpaca}
+              disabled={reconciling}
+              title="Pull live qty + stop/target from Alpaca and overwrite drifted DB values"
+              className="px-2 py-1 rounded text-xs font-[var(--font-oswald)] uppercase tracking-wide bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#B08D57] hover:text-[#F5EFE0] disabled:opacity-50"
+            >{reconciling ? 'Syncing…' : 'Sync from Alpaca'}</button>
+            <button
               onClick={reattachProtection}
               disabled={protecting}
               title="Re-attach GTC stop+target for any naked position whose bracket day-legs expired"
@@ -330,6 +363,9 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         )}
         {protectResult && (
           <div className="mb-4 px-3 py-2 rounded text-xs bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/70">{protectResult}</div>
+        )}
+        {reconcileResult && (
+          <div className="mb-4 px-3 py-2 rounded text-xs bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/70">{reconcileResult}</div>
         )}
 
         <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4 sm:p-5 mb-6">

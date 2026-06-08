@@ -15,6 +15,7 @@ import { decideTrades } from './decide';
 import { decideAmendments } from './decide-amendments';
 import { monitorMandate } from './monitor';
 import { protectMandate } from './protection';
+import { reconcileMandate } from './reconcile';
 import { requestApproval } from './approval';
 import { requestAmendmentApproval } from './amendment';
 import type { Mandate, TickWindow } from './types';
@@ -77,6 +78,15 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     result.monitored = await monitorMandate(mandate);
   } catch (err: any) {
     result.errors.push(`monitor: ${err.message}`);
+  }
+
+  // Alpaca → DB drift correction. Runs after monitor (so trades it just
+  // closed are no longer 'open') and before protect (so the protector sees
+  // corrected qty/levels). Failures are non-fatal.
+  try {
+    await reconcileMandate(mandate.id);
+  } catch (err: any) {
+    result.errors.push(`reconcile: ${err.message}`);
   }
 
   if (!mandate.junto_id) {
