@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { isAdminSession } from '@/lib/admin';
 import { getSupabase } from '@/lib/db/client';
 import { alpacaForMandate } from '@/lib/trading/client';
@@ -16,6 +18,21 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!mandate) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  // Resolve viewer's user_id so we can flag junto ownership (Edit button gating).
+  const session = await getServerSession(authOptions);
+  let viewerUserId: string | null = null;
+  if (session?.user) {
+    const tw = (session.user as any).twitterId;
+    const gg = (session.user as any).googleId;
+    if (tw) {
+      const { data } = await supabase.from('users').select('id').eq('twitter_id', tw).single();
+      viewerUserId = data?.id || null;
+    } else if (gg) {
+      const { data } = await supabase.from('users').select('id').eq('google_id', gg).single();
+      viewerUserId = data?.id || null;
+    }
+  }
+
   const [tradesRes, signalsRes, juntoRes, ticksRes] = await Promise.all([
     supabase
       .from('trades')
@@ -30,7 +47,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .order('created_at', { ascending: false })
       .limit(50),
     mandate.junto_id
-      ? supabase.from('juntos').select('id, name').eq('id', mandate.junto_id).maybeSingle()
+      ? supabase.from('juntos').select('id, name, owner_id, is_public, description').eq('id', mandate.junto_id).maybeSingle()
       : Promise.resolve({ data: null as any }),
     supabase
       .from('trading_tick_runs')
@@ -56,8 +73,30 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     // leave positions empty
   }
 
+  const juntoRow = (juntoRes as any).data;
+  const junto = juntoRow
+    ? {
+        id: juntoRow.id,
+        name: juntoRow.name,
+        is_public: !!juntoRow.is_public,
+        description: juntoRow.description ?? null,
+        is_owner: !!viewerUserId && viewerUserId === juntoRow.owner_id,
+      }
+    : null;
+
+  const broker = {
+    account_kind: mandate.account_kind,
+    mode: mandate.mode,
+    broker: mandate.broker,
+    alpaca_account_id: mandate.alpaca_account_id || null,
+    // Never expose the key ID directly — last 4 is enough for identification.
+    alpaca_key_id_last4: mandate.alpaca_key_id ? String(mandate.alpaca_key_id).slice(-4) : null,
+  };
+
   return NextResponse.json({
-    mandate: { ...mandate, junto_name: (juntoRes as any).data?.name || null },
+    mandate: { ...mandate, junto_name: juntoRow?.name || null, alpaca_key_id: undefined, alpaca_secret: undefined },
+    junto,
+    broker,
     trades: tradesRes.data || [],
     signals: signalsRes.data || [],
     ticks: ticksRes.data || [],

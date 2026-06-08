@@ -69,6 +69,8 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const { mandateId } = use(params);
   const { status } = useSession();
   const [mandate, setMandate] = useState<Mandate | null>(null);
+  const [junto, setJunto] = useState<{ id: string; name: string; is_public: boolean; description: string | null; is_owner: boolean } | null>(null);
+  const [broker, setBroker] = useState<{ account_kind: string; mode: string; broker: string; alpaca_account_id: string | null; alpaca_key_id_last4: string | null } | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [positions, setPositions] = useState<Record<string, { current_price: number; unrealized_pl: number }>>({});
   const [signals, setSignals] = useState<Signal[]>([]);
@@ -115,6 +117,8 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
       .then(r => r.json())
       .then(data => {
         setMandate(data.mandate);
+        setJunto(data.junto || null);
+        setBroker(data.broker || null);
         setTrades(data.trades || []);
         setPositions(data.positions || {});
         setSignals(data.signals || []);
@@ -307,6 +311,62 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             </div>
           </div>
         )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">Junto</h2>
+              {junto && (
+                <div className="flex gap-3 text-xs">
+                  <Link href={`/junto/${junto.id}`} className="text-[#B08D57] hover:underline">View</Link>
+                  {junto.is_owner && (
+                    <Link href={`/junto/${junto.id}/edit`} className="text-[#B08D57] hover:underline">Edit</Link>
+                  )}
+                </div>
+              )}
+            </div>
+            {junto ? (
+              <>
+                <div className="text-base font-bold text-[#F5EFE0] mb-1">{junto.name}</div>
+                <div className="text-xs text-[#F5EFE0]/45 mb-2">
+                  {junto.is_public ? 'Public' : 'Private'}
+                  {junto.is_owner ? ' · you own this' : ''}
+                </div>
+                {junto.description && (
+                  <p className="text-xs text-[#F5EFE0]/60 line-clamp-3">{junto.description}</p>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-[#F5EFE0]/30">No junto attached.</p>
+            )}
+          </div>
+
+          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
+            <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] mb-2">Account</h2>
+            {broker ? (
+              <>
+                <div className="text-base font-bold text-[#F5EFE0] mb-1">
+                  {broker.account_kind === 'managed' ? 'Managed (MyJunto)' : 'BYO Alpaca keys'}
+                </div>
+                <div className="text-xs text-[#F5EFE0]/45 mb-2">
+                  {broker.broker} · {broker.mode}
+                </div>
+                <div className="text-xs text-[#F5EFE0]/60 font-mono break-all">
+                  {broker.account_kind === 'managed'
+                    ? (broker.alpaca_account_id ? `acct ${broker.alpaca_account_id}` : '(no account id)')
+                    : (broker.alpaca_key_id_last4 ? `key …${broker.alpaca_key_id_last4}` : '(no key)')}
+                </div>
+                {broker.account_kind === 'managed' && (
+                  <Link href="/account/open" className="inline-block mt-3 text-xs text-[#B08D57] hover:underline">
+                    Manage account →
+                  </Link>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-[#F5EFE0]/30">No broker info.</p>
+            )}
+          </div>
+        </div>
 
         {/* Guidelines */}
         <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-6">
