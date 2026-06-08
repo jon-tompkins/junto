@@ -1,6 +1,6 @@
 import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
 import { getRecentContentForSources } from '@/lib/db/content-twitter';
-import { getJuntoSourceIds } from './db';
+import { getJuntoSourceIds, getProcessedTweetIds } from './db';
 import { getSupabase } from '@/lib/db/client';
 import type { Mandate, ExtractedSignal } from './types';
 
@@ -10,16 +10,31 @@ const MAX_TWEETS_FOR_PROMPT = 50;
 export interface JuntoSnapshot {
   contentBlock: string;
   tweetCount: number;
+  reviewedTwitterIds: string[];
   urlsBySymbol: Record<string, string[]>;
 }
 
-export async function loadJuntoSnapshot(juntoId: string): Promise<JuntoSnapshot> {
+export async function loadJuntoSnapshot(
+  juntoId: string,
+  mandateId?: string,
+): Promise<JuntoSnapshot> {
   const sourceIds = await getJuntoSourceIds(juntoId);
   if (sourceIds.length === 0) {
-    return { contentBlock: '', tweetCount: 0, urlsBySymbol: {} };
+    return { contentBlock: '', tweetCount: 0, reviewedTwitterIds: [], urlsBySymbol: {} };
   }
   const tweets = await getRecentContentForSources(sourceIds, LOOKBACK_HOURS);
-  const ranked = tweets
+
+  // Drop tweets this mandate has already extracted from in a previous tick.
+  // Newsletter / dispatch paths call getRecentContentForSources directly and
+  // are unaffected — dedup only kicks in here, scoped per-mandate.
+  let candidates = tweets;
+  if (mandateId) {
+    const ids = tweets.map((t: any) => t.twitter_id).filter(Boolean);
+    const processed = await getProcessedTweetIds(mandateId, ids);
+    candidates = tweets.filter((t: any) => !processed.has(t.twitter_id));
+  }
+
+  const ranked = candidates
     .sort((a: any, b: any) => (b.likes + b.retweets * 2) - (a.likes + a.retweets * 2))
     .slice(0, MAX_TWEETS_FOR_PROMPT);
 
@@ -44,7 +59,12 @@ export async function loadJuntoSnapshot(juntoId: string): Promise<JuntoSnapshot>
       : `https://x.com/i/web/status/${t.twitter_id}`;
     return `[${t.posted_at?.slice(0, 16)} | ${url}]\n${t.content}`;
   });
-  return { contentBlock: lines.join('\n\n---\n\n'), tweetCount: ranked.length, urlsBySymbol: {} };
+  return {
+    contentBlock: lines.join('\n\n---\n\n'),
+    tweetCount: ranked.length,
+    reviewedTwitterIds: ranked.map((t: any) => t.twitter_id).filter(Boolean),
+    urlsBySymbol: {},
+  };
 }
 
 export async function extractSignals(

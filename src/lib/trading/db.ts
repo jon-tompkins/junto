@@ -270,6 +270,32 @@ export async function getPendingAmendmentsForTrade(tradeId: string): Promise<Ame
   return (data || []) as AmendmentRow[];
 }
 
+export async function getProcessedTweetIds(
+  mandateId: string,
+  twitterIds: string[],
+): Promise<Set<string>> {
+  if (twitterIds.length === 0) return new Set();
+  const { data, error } = await getSupabase()
+    .from('trading_processed_tweets')
+    .select('twitter_id')
+    .eq('mandate_id', mandateId)
+    .in('twitter_id', twitterIds);
+  if (error) throw error;
+  return new Set((data || []).map((r: any) => r.twitter_id));
+}
+
+export async function markTweetsProcessed(
+  mandateId: string,
+  twitterIds: string[],
+): Promise<void> {
+  if (twitterIds.length === 0) return;
+  const rows = twitterIds.map((twitter_id) => ({ mandate_id: mandateId, twitter_id }));
+  const { error } = await getSupabase()
+    .from('trading_processed_tweets')
+    .upsert(rows, { onConflict: 'mandate_id,twitter_id' });
+  if (error) throw error;
+}
+
 export async function getJuntoSourceIds(juntoId: string): Promise<string[]> {
   const { data, error } = await getSupabase()
     .from('junto_sources')

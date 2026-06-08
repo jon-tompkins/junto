@@ -38,7 +38,15 @@
     },
     {
       "path": "/api/cron/trade-tick",
+      "schedule": "0 15 * * 1-5"
+    },
+    {
+      "path": "/api/cron/trade-tick",
       "schedule": "30 16 * * 1-5"
+    },
+    {
+      "path": "/api/cron/trade-tick",
+      "schedule": "0 18 * * 1-5"
     },
     {
       "path": "/api/cron/trade-tick",

@@ -39,7 +39,7 @@ export interface TradeDecision {
   conviction: number;
 }
 
-export type TickWindow = 'open' | 'midday' | 'close';
+export type TickWindow = 'open' | 'mid_morning' | 'midday' | 'mid_afternoon' | 'close';
 
 export type AmendmentKind = 'stop_move' | 'target_move' | 'close';
 

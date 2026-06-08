@@ -8,6 +8,7 @@ import {
   getOpenTrades,
   createPendingAmendment,
   getPendingAmendmentsForTrade,
+  markTweetsProcessed,
 } from './db';
 import { loadJuntoSnapshot, extractSignals } from './extract';
 import { decideTrades } from './decide';
@@ -77,12 +78,6 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     result.errors.push(`monitor: ${err.message}`);
   }
 
-  // Pre-close tick is monitor-only — no new entries.
-  if (window === 'close') {
-    result.note = 'monitor_only_close_window';
-    await persist();
-    return result;
-  }
   if (!mandate.junto_id) {
     result.note = 'no_junto_attached';
     await persist();
@@ -112,9 +107,11 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
   }
 
   let signals;
+  let reviewedTwitterIds: string[] = [];
   try {
-    const snapshot = await loadJuntoSnapshot(mandate.junto_id);
+    const snapshot = await loadJuntoSnapshot(mandate.junto_id, mandate.id);
     result.tweetsReviewed = snapshot.tweetCount;
+    reviewedTwitterIds = snapshot.reviewedTwitterIds;
     signals = await extractSignals(mandate, snapshot);
     result.signals = signals.length;
   } catch (err: any) {
@@ -123,14 +120,22 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     return result;
   }
 
-  let decisions;
-  try {
-    decisions = await decideTrades({ mandate, signals, positions, accountEquity });
-    result.decisions = decisions.length;
-  } catch (err: any) {
-    result.errors.push(`decide: ${err.message}`);
-    await persist();
-    return result;
+  // Close-window ticks still extract + monitor + amend (so exit/flip signals
+  // get acted on) but skip opening fresh entries — no time for thesis to play
+  // out and overnight gap risk is real.
+  const allowNewEntries = window !== 'close';
+  let decisions: import('./types').TradeDecision[] = [];
+  if (allowNewEntries) {
+    try {
+      decisions = await decideTrades({ mandate, signals, positions, accountEquity });
+      result.decisions = decisions.length;
+    } catch (err: any) {
+      result.errors.push(`decide: ${err.message}`);
+      await persist();
+      return result;
+    }
+  } else {
+    result.note = 'close_window_amendments_only';
   }
 
   const alpaca = alpacaForMandate(mandate);
@@ -250,6 +255,17 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     }
   } catch (err: any) {
     result.errors.push(`amend: ${err.message}`);
+  }
+
+  // Mark every tweet we just showed the extractor as processed for this
+  // mandate, so the next tick within the 24h lookback window doesn't re-run
+  // the LLM over the same posts. Idempotent upsert.
+  if (reviewedTwitterIds.length > 0) {
+    try {
+      await markTweetsProcessed(mandate.id, reviewedTwitterIds);
+    } catch (err: any) {
+      result.errors.push(`mark_processed: ${err.message}`);
+    }
   }
 
   await persist();

@@ -5,12 +5,16 @@ import type { TickWindow } from '@/lib/trading/types';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-// Trade tick — runs 3x per US trading day:
+// Trade tick — runs 5x per US trading day:
 //   13:35 UTC (09:35 ET) — post-open
+//   15:00 UTC (11:00 ET) — mid-morning
 //   16:30 UTC (12:30 ET) — midday
-//   19:55 UTC (15:55 ET) — pre-close (monitor-only, no new entries)
+//   18:00 UTC (14:00 ET) — mid-afternoon
+//   19:55 UTC (15:55 ET) — close (monitor + amend only, no fresh entries)
 //
-// UTC offsets above are EDT. Update vercel.json before the DST flip in Nov 2026.
+// Per-mandate tweet dedup (trading_processed_tweets) prevents the same tweet
+// from re-firing across ticks. UTC offsets above are EDT — update vercel.json
+// before the DST flip in Nov 2026.
 export async function POST(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
@@ -31,10 +35,18 @@ export async function GET(req: NextRequest) {
 }
 
 function inferWindowFromEt(): TickWindow {
-  const etHour = Number(
-    new Intl.DateTimeFormat('en-US', { hour: '2-digit', hour12: false, timeZone: 'America/New_York' }).format(new Date()),
-  );
-  if (etHour < 11) return 'open';
-  if (etHour < 14) return 'midday';
-  return 'close';
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'America/New_York',
+  }).formatToParts(new Date());
+  const hour = Number(fmt.find((p) => p.type === 'hour')?.value ?? '0');
+  const minute = Number(fmt.find((p) => p.type === 'minute')?.value ?? '0');
+  const etMin = hour * 60 + minute;
+  if (etMin < 10 * 60) return 'open';            // before 10:00 ET
+  if (etMin < 12 * 60) return 'mid_morning';     // 10:00–12:00
+  if (etMin < 13 * 60 + 30) return 'midday';     // 12:00–13:30
+  if (etMin < 15 * 60) return 'mid_afternoon';   // 13:30–15:00
+  return 'close';                                // 15:00+
 }
