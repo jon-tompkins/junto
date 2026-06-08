@@ -22,6 +22,16 @@ interface Junto {
   name: string;
 }
 
+interface PortfolioSummary {
+  total_capital: number;
+  total_equity: number | null;
+  total_cash: number | null;
+  cash_pct: number | null;
+  total_realized_pnl: number;
+  total_unrealized_pnl: number;
+  mandate_count: number;
+}
+
 function fmtUsd(n: number): string {
   const sign = n < 0 ? '-' : '';
   return `${sign}$${Math.abs(n).toFixed(2)}`;
@@ -30,6 +40,7 @@ function fmtUsd(n: number): string {
 export default function AdminTradingPage() {
   const { status } = useSession();
   const [mandates, setMandates] = useState<MandateRow[]>([]);
+  const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const [juntos, setJuntos] = useState<Junto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +78,7 @@ export default function AdminTradingPage() {
     ])
       .then(([m, j, tg, ba]) => {
         setMandates(m.mandates || []);
+        setPortfolio(m.portfolio || null);
         setJuntos(j.juntos || []);
         setTelegramLinked(!!tg.linked);
         setManagedAccount(ba.account || null);
@@ -168,6 +180,42 @@ export default function AdminTradingPage() {
             </button>
           </div>
         </div>
+
+        {portfolio && portfolio.mandate_count > 0 && (
+          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4 sm:p-5 mb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              <SummaryStat
+                label="Equity"
+                value={portfolio.total_equity == null ? '—' : fmtUsd(portfolio.total_equity)}
+                sub={`capital ${fmtUsd(portfolio.total_capital)}`}
+              />
+              <SummaryStat
+                label="Cash"
+                value={portfolio.total_cash == null ? '—' : fmtUsd(portfolio.total_cash)}
+                sub={portfolio.cash_pct == null ? undefined : `${portfolio.cash_pct.toFixed(1)}% of equity`}
+              />
+              <SummaryStat
+                label="Unrealized P/L"
+                value={fmtUsd(portfolio.total_unrealized_pnl)}
+                accent={portfolio.total_unrealized_pnl >= 0 ? '#3ecf6a' : '#e8453c'}
+              />
+              <SummaryStat
+                label="Realized P/L"
+                value={fmtUsd(portfolio.total_realized_pnl)}
+                accent={portfolio.total_realized_pnl >= 0 ? '#3ecf6a' : '#e8453c'}
+              />
+              <SummaryStat
+                label="Total P/L"
+                value={fmtUsd(portfolio.total_realized_pnl + portfolio.total_unrealized_pnl)}
+                accent={(portfolio.total_realized_pnl + portfolio.total_unrealized_pnl) >= 0 ? '#3ecf6a' : '#e8453c'}
+              />
+              <SummaryStat
+                label="Mandates"
+                value={String(portfolio.mandate_count)}
+              />
+            </div>
+          </div>
+        )}
 
         {telegramLinked === false && (
           <div className="bg-[#e8453c]/10 border border-[#e8453c]/40 rounded p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -340,6 +388,30 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] block mb-1">{label}</span>
       {children}
     </label>
+  );
+}
+
+function SummaryStat({
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  accent?: string;
+}) {
+  return (
+    <div>
+      <div className="text-[#F5EFE0]/45 uppercase tracking-wider text-[10px] font-[var(--font-oswald)] mb-1">
+        {label}
+      </div>
+      <div className="font-mono text-base sm:text-lg leading-tight" style={{ color: accent || '#F5EFE0' }}>
+        {value}
+      </div>
+      {sub && <div className="text-[10px] text-[#F5EFE0]/40 font-mono mt-0.5">{sub}</div>}
+    </div>
   );
 }
 

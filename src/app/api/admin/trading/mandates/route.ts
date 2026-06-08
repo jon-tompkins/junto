@@ -42,23 +42,64 @@ export async function GET() {
     statsByMandate.set(t.mandate_id, s);
   }
 
-  // Pull live unrealized P&L from Alpaca for each mandate that has open positions.
-  // getPositions() returns Alpaca-side current_price + unrealized_pl so we don't
-  // need to compute it ourselves. Failures (bad keys, broker down) leave it null.
+  // Pull live unrealized P&L + account snapshot (equity, cash) from Alpaca per
+  // mandate. One getAccount + one getPositions call each — done in parallel.
+  // Failures (bad keys, broker down) leave the fields null so the UI degrades.
+  const accountByMandate = new Map<string, { equity: number | null; cash: number | null }>();
   await Promise.all(
     (mandates || []).map(async (m: any) => {
-      const s = statsByMandate.get(m.id);
-      if (!s || s.open === 0) return;
+      const s = statsByMandate.get(m.id) || { open: 0, closed: 0, pnl: 0, unrealized: null };
+      statsByMandate.set(m.id, s);
       try {
-        const positions = await alpacaForMandate(m).getPositions();
-        s.unrealized = positions.reduce((sum, p) => sum + (Number(p.unrealized_pl) || 0), 0);
+        const alp = alpacaForMandate(m);
+        const [account, positions] = await Promise.all([
+          alp.getAccount().catch(() => null),
+          s.open > 0 ? alp.getPositions().catch(() => []) : Promise.resolve([]),
+        ]);
+        if (positions.length > 0) {
+          s.unrealized = positions.reduce((sum, p) => sum + (Number(p.unrealized_pl) || 0), 0);
+        }
+        accountByMandate.set(m.id, {
+          equity: account ? Number(account.equity) || null : null,
+          cash: account ? Number(account.cash) || null : null,
+        });
       } catch {
-        s.unrealized = null;
+        accountByMandate.set(m.id, { equity: null, cash: null });
       }
     }),
   );
 
+  // Portfolio rollup across all mandates. Cash % uses summed equity as the base
+  // (the only sensible denominator when mandates can sit in different accounts).
+  let totalCapital = 0;
+  let totalRealized = 0;
+  let totalUnrealized = 0;
+  let totalEquity = 0;
+  let totalCash = 0;
+  let hasAnyEquity = false;
+  for (const m of mandates || []) {
+    totalCapital += Number(m.capital_allotted_usd) || 0;
+    const s = statsByMandate.get(m.id);
+    if (s) {
+      totalRealized += s.pnl;
+      if (s.unrealized != null) totalUnrealized += s.unrealized;
+    }
+    const a = accountByMandate.get(m.id);
+    if (a?.equity != null) { totalEquity += a.equity; hasAnyEquity = true; }
+    if (a?.cash != null) totalCash += a.cash;
+  }
+  const cashPct = hasAnyEquity && totalEquity > 0 ? (totalCash / totalEquity) * 100 : null;
+
   return NextResponse.json({
+    portfolio: {
+      total_capital: totalCapital,
+      total_equity: hasAnyEquity ? totalEquity : null,
+      total_cash: hasAnyEquity ? totalCash : null,
+      cash_pct: cashPct,
+      total_realized_pnl: totalRealized,
+      total_unrealized_pnl: totalUnrealized,
+      mandate_count: (mandates || []).length,
+    },
     mandates: (mandates || []).map((m: any) => ({
       ...m,
       junto_name: m.junto_id ? juntoNameById.get(m.junto_id) || null : null,
