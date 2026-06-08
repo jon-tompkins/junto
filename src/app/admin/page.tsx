@@ -671,7 +671,7 @@ function TradingTab() {
         Mandates, proposals, monitoring, and ticks.
       </p>
       <Link
-        href="/admin/trading"
+        href="/trading"
         className="inline-block px-4 py-2 bg-[#B08D57] text-[#080604] rounded text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide hover:bg-[#B08D57]/80 transition"
       >
         Open trading dashboard →

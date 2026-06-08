@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAdminSession } from '@/lib/admin';
+import { getTradingAccess } from '@/lib/trading/access';
 import { getMandateById, createPendingTrade, addJournalEntry, logSignal } from '@/lib/trading/db';
 import { alpacaForMandate } from '@/lib/trading/client';
 import { requestApproval } from '@/lib/trading/approval';
@@ -9,7 +9,8 @@ export const dynamic = 'force-dynamic';
 // Synthetic trade proposal — bypasses signal extraction and decision LLMs to
 // test the end-to-end approval + broker submission flow.
 export async function POST(req: NextRequest) {
-  if (!(await isAdminSession())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const access = await getTradingAccess();
+  if (!access) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const body = await req.json();
   const mandateId = body.mandate_id as string;
@@ -18,6 +19,9 @@ export async function POST(req: NextRequest) {
 
   const mandate = await getMandateById(mandateId);
   if (!mandate) return NextResponse.json({ error: 'Mandate not found' }, { status: 404 });
+  if (!access.isAdmin && mandate.user_id !== access.userId) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   let lastPrice: number;
   try {

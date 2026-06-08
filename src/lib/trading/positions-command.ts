@@ -26,7 +26,7 @@ export async function buildPositionsMessage(userId: string): Promise<string> {
     .eq('status', 'active');
 
   if (!mandates || mandates.length === 0) {
-    return '<b>No active trading mandates.</b>\n\nCreate one at <a href="https://myjunto.xyz/admin/trading">myjunto.xyz/admin/trading</a>.';
+    return '<b>No active trading mandates.</b>\n\nCreate one at <a href="https://myjunto.xyz/trading">myjunto.xyz/trading</a>.';
   }
 
   const mandateIds = mandates.map((m: any) => m.id);

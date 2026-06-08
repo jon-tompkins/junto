@@ -41,7 +41,7 @@ export async function GET() {
 
     const { data: user } = await supabase
       .from('users')
-      .select('timezone, is_onboarded, is_pro, dispatch_tg_text, dispatch_tg_audio')
+      .select('timezone, is_onboarded, is_pro, subscription_tier, dispatch_tg_text, dispatch_tg_audio')
       .eq('id', userId)
       .single();
 
@@ -52,6 +52,7 @@ export async function GET() {
       timezone: user?.timezone || 'America/New_York',
       isOnboarded: user?.is_onboarded ?? false,
       isPro: user?.is_pro ?? false,
+      subscriptionTier: (user?.subscription_tier as 'free' | 'pro' | 'operator') || (user?.is_pro ? 'pro' : 'free'),
       dispatchTgText: user?.dispatch_tg_text ?? true,
       dispatchTgAudio: user?.dispatch_tg_audio ?? true,
     });
@@ -112,7 +113,7 @@ export async function PUT(req: NextRequest) {
 
     const { data: user } = await supabase
       .from('users')
-      .select('timezone, is_onboarded, is_pro, dispatch_tg_text, dispatch_tg_audio')
+      .select('timezone, is_onboarded, is_pro, subscription_tier, dispatch_tg_text, dispatch_tg_audio')
       .eq('id', userId)
       .single();
 
@@ -123,6 +124,7 @@ export async function PUT(req: NextRequest) {
       timezone: user?.timezone || 'America/New_York',
       isOnboarded: user?.is_onboarded ?? false,
       isPro: user?.is_pro ?? false,
+      subscriptionTier: (user?.subscription_tier as 'free' | 'pro' | 'operator') || (user?.is_pro ? 'pro' : 'free'),
       dispatchTgText: user?.dispatch_tg_text ?? true,
       dispatchTgAudio: user?.dispatch_tg_audio ?? true,
     });

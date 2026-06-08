@@ -9,6 +9,7 @@ export function TopNav() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [tier, setTier] = useState<'free' | 'pro' | 'operator' | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -18,10 +19,13 @@ export function TopNav() {
         .then((r) => r.json())
         .then((data) => {
           if (data.balance !== undefined) setCreditBalance(data.balance);
+          if (data.subscriptionTier) setTier(data.subscriptionTier);
         })
         .catch(() => {});
     }
   }, [session]);
+
+  const tradingUnlocked = tier === 'operator';
 
   const creditColor =
     creditBalance !== null && creditBalance <= 50
@@ -63,6 +67,32 @@ export function TopNav() {
             {label}
           </Link>
         ))}
+        {session?.user && (
+          tradingUnlocked ? (
+            <Link
+              href="/trading"
+              className="text-sm transition"
+              style={{
+                color: isActive('/trading') ? '#F5EFE0' : 'rgba(245,239,224,0.5)',
+                fontWeight: isActive('/trading') ? 500 : undefined,
+              }}
+            >
+              Trading
+            </Link>
+          ) : (
+            <Link
+              href="/pricing"
+              title="Upgrade to Operator to unlock trading"
+              className="text-sm transition flex items-center gap-1.5"
+              style={{ color: 'rgba(245,239,224,0.3)' }}
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c1.105 0 2 .895 2 2s-.895 2-2 2-2-.895-2-2 .895-2 2-2zm6-3V6a6 6 0 10-12 0v2a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2zM8 8V6a4 4 0 118 0v2H8z" />
+              </svg>
+              Trading
+            </Link>
+          )
+        )}
       </div>
 
       {/* Right side: account */}
@@ -194,6 +224,7 @@ export function TopNav() {
               { href: '/sources', label: 'Sources' },
               { href: '/positions', label: 'Positions' },
               { href: '/docs', label: 'Docs' },
+              ...(session?.user ? [{ href: tradingUnlocked ? '/trading' : '/pricing', label: tradingUnlocked ? 'Trading' : 'Trading (Operator)' }] : []),
               ...(session?.user ? [
                 { href: '/history', label: 'History' },
                 { href: '/theses', label: 'Theses' },

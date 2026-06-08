@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAdminSession } from '@/lib/admin';
+import { getTradingAccess } from '@/lib/trading/access';
 import { getSupabase } from '@/lib/db/client';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { getUserTelegramChatId } from '@/lib/telegram/link';
 import { alpacaForMandate } from '@/lib/trading/client';
 
 export async function GET() {
-  if (!(await isAdminSession())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const access = await getTradingAccess();
+  if (!access) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const supabase = getSupabase();
 
-  const { data: mandates, error } = await supabase
+  let query = supabase
     .from('trading_mandates')
     .select('*')
     .order('created_at', { ascending: false });
+  if (!access.isAdmin) query = query.eq('user_id', access.userId);
+  const { data: mandates, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const ids = (mandates || []).map((m: any) => m.id);
@@ -109,22 +110,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await isAdminSession())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const access = await getTradingAccess();
+  if (!access) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const session = await getServerSession(authOptions);
   const supabase = getSupabase();
-
-  let userId: string | null = null;
-  const twitterId = (session?.user as any)?.twitterId;
-  const googleId = (session?.user as any)?.googleId;
-  if (twitterId) {
-    const { data } = await supabase.from('users').select('id').eq('twitter_id', twitterId).single();
-    userId = data?.id || null;
-  } else if (googleId) {
-    const { data } = await supabase.from('users').select('id').eq('google_id', googleId).single();
-    userId = data?.id || null;
-  }
-  if (!userId) return NextResponse.json({ error: 'Could not resolve user id' }, { status: 400 });
+  const userId = access.userId;
 
   const chatId = await getUserTelegramChatId(userId);
   if (!chatId) {

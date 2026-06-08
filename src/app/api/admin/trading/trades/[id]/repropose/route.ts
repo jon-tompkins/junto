@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAdminSession } from '@/lib/admin';
+import { getTradingAccess, canAccessTrade } from '@/lib/trading/access';
 import { reproposeTrade } from '@/lib/trading/repropose';
 
 export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  if (!(await isAdminSession())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const access = await getTradingAccess();
+  if (!access) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { id } = await ctx.params;
+  if (!(await canAccessTrade(id, access))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const result = await reproposeTrade(id);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });

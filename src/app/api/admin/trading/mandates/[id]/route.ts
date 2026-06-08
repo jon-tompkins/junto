@@ -1,37 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { isAdminSession } from '@/lib/admin';
+import { getTradingAccess, getAccessibleMandate } from '@/lib/trading/access';
 import { getSupabase } from '@/lib/db/client';
 import { alpacaForMandate } from '@/lib/trading/client';
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  if (!(await isAdminSession())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const access = await getTradingAccess();
+  if (!access) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { id } = await ctx.params;
-  const supabase = getSupabase();
-
-  const { data: mandate, error } = await supabase
-    .from('trading_mandates')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const mandate = await getAccessibleMandate(id, access);
   if (!mandate) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-
-  // Resolve viewer's user_id so we can flag junto ownership (Edit button gating).
-  const session = await getServerSession(authOptions);
-  let viewerUserId: string | null = null;
-  if (session?.user) {
-    const tw = (session.user as any).twitterId;
-    const gg = (session.user as any).googleId;
-    if (tw) {
-      const { data } = await supabase.from('users').select('id').eq('twitter_id', tw).single();
-      viewerUserId = data?.id || null;
-    } else if (gg) {
-      const { data } = await supabase.from('users').select('id').eq('google_id', gg).single();
-      viewerUserId = data?.id || null;
-    }
-  }
+  const supabase = getSupabase();
+  const viewerUserId = access.userId;
 
   const [tradesRes, signalsRes, juntoRes, ticksRes] = await Promise.all([
     supabase
@@ -105,8 +84,11 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
 }
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  if (!(await isAdminSession())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const access = await getTradingAccess();
+  if (!access) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { id } = await ctx.params;
+  const mandate = await getAccessibleMandate(id, access);
+  if (!mandate) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const body = await req.json();
   const supabase = getSupabase();
 

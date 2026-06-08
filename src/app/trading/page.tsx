@@ -399,7 +399,7 @@ export default function AdminTradingPage() {
             {mandates.map(m => (
               <Link
                 key={m.id}
-                href={`/admin/trading/${m.id}`}
+                href={`/trading/${m.id}`}
                 className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 hover:border-[#B08D57] transition block"
               >
                 <div className="flex items-start justify-between mb-2">

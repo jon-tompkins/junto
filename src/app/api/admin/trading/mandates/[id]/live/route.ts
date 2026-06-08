@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAdminSession } from '@/lib/admin';
-import { getSupabase } from '@/lib/db/client';
+import { getTradingAccess, getAccessibleMandate } from '@/lib/trading/access';
 import { alpacaForMandate } from '@/lib/trading/client';
 
 export const dynamic = 'force-dynamic';
@@ -9,16 +8,10 @@ export const dynamic = 'force-dynamic';
 // P/L per symbol) + account (equity, cash). Safe to poll every 10-15s; no DB
 // joins beyond the mandate lookup.
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  if (!(await isAdminSession())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const access = await getTradingAccess();
+  if (!access) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { id } = await ctx.params;
-  const supabase = getSupabase();
-
-  const { data: mandate, error } = await supabase
-    .from('trading_mandates')
-    .select('id, capital_allotted_usd, account_kind, alpaca_account_id, alpaca_key_id, alpaca_secret, mode, broker')
-    .eq('id', id)
-    .maybeSingle();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const mandate = await getAccessibleMandate(id, access);
   if (!mandate) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const positions: Record<string, { current_price: number; unrealized_pl: number }> = {};

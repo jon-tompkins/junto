@@ -267,7 +267,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        <Link href="/admin/trading" className="text-xs text-[#F5EFE0]/45 hover:text-[#F5EFE0]">← All mandates</Link>
+        <Link href="/trading" className="text-xs text-[#F5EFE0]/45 hover:text-[#F5EFE0]">← All mandates</Link>
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-3 mb-6 sm:mb-8">
           <div>
@@ -359,7 +359,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               {pendingTrades.slice(0, 3).map(t => (
                 <Link
                   key={t.id}
-                  href={`/admin/trading/trades/${t.id}`}
+                  href={`/trading/trades/${t.id}`}
                   className="px-3 py-1.5 rounded text-xs font-[var(--font-oswald)] uppercase tracking-wide bg-[#B08D57] text-[#080604] hover:bg-[#c9a36a]"
                 >
                   Review {t.ticker} →
@@ -730,7 +730,7 @@ function TradeTable({
           return (
             <tr key={t.id} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
               <td className="py-2 pr-4">
-                <Link href={`/admin/trading/trades/${t.id}`} className="font-mono text-[#B08D57] hover:underline">{t.ticker}</Link>
+                <Link href={`/trading/trades/${t.id}`} className="font-mono text-[#B08D57] hover:underline">{t.ticker}</Link>
               </td>
               <td className="py-2 pr-4 text-[#F5EFE0]/60">{t.side}</td>
               <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{t.qty}</td>

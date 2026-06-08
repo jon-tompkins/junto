@@ -94,7 +94,7 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
         return;
       }
       setReproposeMsg(`Proposed at $${Number(data.proposalPrice).toFixed(2)} (${data.qty} sh) — check Telegram`);
-      router.push(`/admin/trading/trades/${data.tradeId}`);
+      router.push(`/trading/trades/${data.tradeId}`);
     } catch (err: any) {
       setReproposeMsg(err?.message || 'Re-propose failed');
     } finally {
@@ -130,7 +130,7 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
       <TopNav />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {mandate && (
-          <Link href={`/admin/trading/${mandate.id}`} className="text-xs text-[#F5EFE0]/45 hover:text-[#F5EFE0]">← {mandate.name}</Link>
+          <Link href={`/trading/${mandate.id}`} className="text-xs text-[#F5EFE0]/45 hover:text-[#F5EFE0]">← {mandate.name}</Link>
         )}
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-3 mb-6 sm:mb-8">

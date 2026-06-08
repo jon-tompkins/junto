@@ -69,6 +69,9 @@ function PricingPageInner() {
       setBanner({ kind: 'success', text: `You're on ${label}. Welcome.` });
     }
     else if (sub === 'cancelled') setBanner({ kind: 'cancelled', text: 'Subscription cancelled.' });
+    else if (searchParams.get('upgrade') === 'operator') {
+      setBanner({ kind: 'cancelled', text: 'Trading is an Operator-tier feature. Upgrade below to unlock.' });
+    }
     if (purchase === 'success' || sub === 'success') {
       fetch('/api/v2/account').then(r => r.json()).then(d => setCreditBalance(d.balance ?? null)).catch(() => {});
     }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { isAdminSession } from '@/lib/admin';
+import { getTradingAccess } from '@/lib/trading/access';
 import { getSupabase } from '@/lib/db/client';
 import { alpacaForMandate } from '@/lib/trading/client';
 
@@ -9,12 +9,15 @@ export const dynamic = 'force-dynamic';
 // Only pulls Alpaca account + positions per mandate — no trades / juntos joins.
 // Safe to poll every 10-15s.
 export async function GET() {
-  if (!(await isAdminSession())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const access = await getTradingAccess();
+  if (!access) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const supabase = getSupabase();
 
-  const { data: mandates, error } = await supabase
+  let query = supabase
     .from('trading_mandates')
-    .select('id, capital_allotted_usd, account_kind, alpaca_account_id, alpaca_key_id, alpaca_secret, mode, broker');
+    .select('id, user_id, capital_allotted_usd, account_kind, alpaca_account_id, alpaca_key_id, alpaca_secret, mode, broker');
+  if (!access.isAdmin) query = query.eq('user_id', access.userId);
+  const { data: mandates, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const snapByMandate = new Map<string, { equity: number | null; cash: number | null; unrealized: number | null }>();
