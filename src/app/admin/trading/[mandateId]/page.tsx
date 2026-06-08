@@ -79,6 +79,9 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const [saving, setSaving] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [account, setAccount] = useState<{ equity: number | null; cash: number | null }>({ equity: null, cash: null });
+  const [lastTickAt, setLastTickAt] = useState<string | null>(null);
+  const [livePulse, setLivePulse] = useState(false);
 
   async function sendTestProposal() {
     const ticker = prompt('Ticker for test proposal (default SPY):', 'SPY')?.toUpperCase().trim() || 'SPY';
@@ -121,6 +124,38 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
       .finally(() => setLoading(false));
   }, [status, mandateId]);
 
+  // Live polling — refresh positions + account every 15s while tab is visible.
+  // Cheap endpoint (one Alpaca getAccount + getPositions, no DB joins).
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    let cancelled = false;
+    const poll = async () => {
+      if (document.hidden) return;
+      try {
+        const res = await fetch(`/api/admin/trading/mandates/${mandateId}/live`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        setPositions(data.positions || {});
+        setAccount(data.account || { equity: null, cash: null });
+        setLastTickAt(data.fetched_at);
+        setLivePulse(true);
+        setTimeout(() => setLivePulse(false), 600);
+      } catch {
+        // network blip — retry next interval
+      }
+    };
+    poll();
+    const id = setInterval(poll, 15000);
+    const onVis = () => { if (!document.hidden) poll(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [status, mandateId]);
+
   async function saveGuidelines() {
     setSaving(true);
     try {
@@ -161,6 +196,11 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const pendingTrades = trades.filter(t => t.status === 'pending');
   const openTrades = trades.filter(t => t.status === 'open' || t.status === 'pending');
   const closedTrades = trades.filter(t => t.status === 'closed');
+  const totalUnrealized = Object.values(positions).reduce((sum, p) => sum + (p.unrealized_pl || 0), 0);
+  const realizedTotal = closedTrades.reduce((sum, t) => sum + (Number(t.realized_pnl_usd) || 0), 0);
+  const cashPct = account.equity && account.equity > 0 && account.cash != null
+    ? (account.cash / account.equity) * 100
+    : null;
 
   return (
     <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
@@ -196,6 +236,53 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         {testResult && (
           <div className="mb-4 px-3 py-2 rounded text-xs bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/70">{testResult}</div>
         )}
+
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4 sm:p-5 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">
+              Live snapshot
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] text-[#F5EFE0]/45 font-mono">
+              <span
+                className="inline-block w-1.5 h-1.5 rounded-full transition-all"
+                style={{
+                  background: livePulse ? '#3ecf6a' : 'rgba(62,207,106,0.45)',
+                  boxShadow: livePulse ? '0 0 6px #3ecf6a' : 'none',
+                }}
+              />
+              {lastTickAt
+                ? `live · ${new Date(lastTickAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+                : 'live'}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <SnapStat
+              label="Equity"
+              value={account.equity == null ? '—' : fmtUsd(account.equity)}
+              sub={`capital ${fmtUsd(mandate.capital_allotted_usd)}`}
+            />
+            <SnapStat
+              label="Cash"
+              value={account.cash == null ? '—' : fmtUsd(account.cash)}
+              sub={cashPct == null ? undefined : `${cashPct.toFixed(1)}% of equity`}
+            />
+            <SnapStat
+              label="Unrealized"
+              value={fmtUsd(totalUnrealized)}
+              accent={totalUnrealized >= 0 ? '#3ecf6a' : '#e8453c'}
+            />
+            <SnapStat
+              label="Realized"
+              value={fmtUsd(realizedTotal)}
+              accent={realizedTotal >= 0 ? '#3ecf6a' : '#e8453c'}
+            />
+            <SnapStat
+              label="Total P/L"
+              value={fmtUsd(totalUnrealized + realizedTotal)}
+              accent={(totalUnrealized + realizedTotal) >= 0 ? '#3ecf6a' : '#e8453c'}
+            />
+          </div>
+        </div>
 
         {pendingTrades.length > 0 && (
           <div className="bg-[#B08D57]/10 border border-[#B08D57]/50 rounded p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -352,6 +439,30 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         </div>
       </div>
     </main>
+  );
+}
+
+function SnapStat({
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  accent?: string;
+}) {
+  return (
+    <div>
+      <div className="text-[#F5EFE0]/45 uppercase tracking-wider text-[10px] font-[var(--font-oswald)] mb-1">
+        {label}
+      </div>
+      <div className="font-mono text-base sm:text-lg leading-tight" style={{ color: accent || '#F5EFE0' }}>
+        {value}
+      </div>
+      {sub && <div className="text-[10px] text-[#F5EFE0]/40 font-mono mt-0.5">{sub}</div>}
+    </div>
   );
 }
 

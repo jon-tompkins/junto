@@ -1,0 +1,48 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { isAdminSession } from '@/lib/admin';
+import { getSupabase } from '@/lib/db/client';
+import { alpacaForMandate } from '@/lib/trading/client';
+
+export const dynamic = 'force-dynamic';
+
+// Live Alpaca snapshot for a single mandate — positions (last price + unrealized
+// P/L per symbol) + account (equity, cash). Safe to poll every 10-15s; no DB
+// joins beyond the mandate lookup.
+export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  if (!(await isAdminSession())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const { id } = await ctx.params;
+  const supabase = getSupabase();
+
+  const { data: mandate, error } = await supabase
+    .from('trading_mandates')
+    .select('id, capital_allotted_usd, account_kind, alpaca_account_id, alpaca_key_id, alpaca_secret, mode, broker')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!mandate) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  const positions: Record<string, { current_price: number; unrealized_pl: number }> = {};
+  let account: { equity: number | null; cash: number | null } = { equity: null, cash: null };
+  try {
+    const alp = alpacaForMandate(mandate as any);
+    const [acc, live] = await Promise.all([
+      alp.getAccount().catch(() => null),
+      alp.getPositions().catch(() => [] as any[]),
+    ]);
+    if (acc) account = { equity: Number(acc.equity) || null, cash: Number(acc.cash) || null };
+    for (const p of live) {
+      positions[p.symbol.toUpperCase()] = {
+        current_price: Number(p.current_price) || 0,
+        unrealized_pl: Number(p.unrealized_pl) || 0,
+      };
+    }
+  } catch {
+    // leave defaults
+  }
+
+  return NextResponse.json({
+    positions,
+    account,
+    fetched_at: new Date().toISOString(),
+  });
+}
