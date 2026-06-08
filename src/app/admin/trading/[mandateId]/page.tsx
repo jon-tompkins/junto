@@ -14,6 +14,8 @@ interface Mandate {
   capital_allotted_usd: number;
   max_position_pct: number;
   daily_loss_limit_pct: number;
+  allowed_tickers: string[] | null;
+  blocked_tickers: string[] | null;
   status: string;
   mode: string;
 }
@@ -79,6 +81,17 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const [editing, setEditing] = useState(false);
   const [draftGuidelines, setDraftGuidelines] = useState('');
   const [saving, setSaving] = useState(false);
+  const [editingSettings, setEditingSettings] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsDraft, setSettingsDraft] = useState({
+    name: '',
+    capital_allotted_usd: '',
+    max_position_pct: '',
+    daily_loss_limit_pct: '',
+    mode: 'paper' as 'paper' | 'live',
+    allowed_tickers: '',
+    blocked_tickers: '',
+  });
   const [sendingTest, setSendingTest] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [account, setAccount] = useState<{ equity: number | null; cash: number | null }>({ equity: null, cash: null });
@@ -175,6 +188,50 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
       }
     } finally {
       setSaving(false);
+    }
+  }
+
+  function openSettingsEditor() {
+    if (!mandate) return;
+    setSettingsDraft({
+      name: mandate.name,
+      capital_allotted_usd: String(mandate.capital_allotted_usd),
+      max_position_pct: String(mandate.max_position_pct),
+      daily_loss_limit_pct: String(mandate.daily_loss_limit_pct),
+      mode: (mandate.mode === 'live' ? 'live' : 'paper'),
+      allowed_tickers: (mandate.allowed_tickers || []).join(', '),
+      blocked_tickers: (mandate.blocked_tickers || []).join(', '),
+    });
+    setEditingSettings(true);
+  }
+
+  async function saveSettings() {
+    const parseTickers = (s: string) => {
+      const arr = s.split(/[\s,]+/).map(t => t.trim().toUpperCase()).filter(Boolean);
+      return arr.length ? arr : null;
+    };
+    setSavingSettings(true);
+    try {
+      const res = await fetch(`/api/admin/trading/mandates/${mandateId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: settingsDraft.name.trim(),
+          capital_allotted_usd: Number(settingsDraft.capital_allotted_usd) || 0,
+          max_position_pct: Number(settingsDraft.max_position_pct) || 0,
+          daily_loss_limit_pct: Number(settingsDraft.daily_loss_limit_pct) || 0,
+          mode: settingsDraft.mode,
+          allowed_tickers: parseTickers(settingsDraft.allowed_tickers),
+          blocked_tickers: parseTickers(settingsDraft.blocked_tickers),
+        }),
+      });
+      const data = await res.json();
+      if (data.mandate) {
+        setMandate(m => m ? { ...m, ...data.mandate } : data.mandate);
+        setEditingSettings(false);
+      }
+    } finally {
+      setSavingSettings(false);
     }
   }
 
@@ -368,6 +425,101 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
           </div>
         </div>
 
+        {/* Settings */}
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">Settings</h2>
+            {!editingSettings ? (
+              <button onClick={openSettingsEditor} className="text-xs text-[#B08D57] hover:underline">Edit</button>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={() => setEditingSettings(false)} className="text-xs text-[#F5EFE0]/45">Cancel</button>
+                <button onClick={saveSettings} disabled={savingSettings} className="text-xs text-[#B08D57]">{savingSettings ? 'Saving…' : 'Save'}</button>
+              </div>
+            )}
+          </div>
+          {!editingSettings ? (
+            <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 text-sm">
+              <SettingRow label="Name" value={mandate.name} />
+              <SettingRow label="Mode" value={mandate.mode} />
+              <SettingRow label="Status" value={mandate.status} />
+              <SettingRow label="Capital" value={fmtUsd(mandate.capital_allotted_usd)} />
+              <SettingRow label="Max position" value={`${mandate.max_position_pct}%`} />
+              <SettingRow label="Daily loss limit" value={`${mandate.daily_loss_limit_pct}%`} />
+              <SettingRow
+                label="Allowed tickers"
+                value={mandate.allowed_tickers?.length ? mandate.allowed_tickers.join(', ') : '— any —'}
+                wide
+              />
+              <SettingRow
+                label="Blocked tickers"
+                value={mandate.blocked_tickers?.length ? mandate.blocked_tickers.join(', ') : '— none —'}
+                wide
+              />
+            </dl>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <SettingField label="Name">
+                <input
+                  value={settingsDraft.name}
+                  onChange={e => setSettingsDraft({ ...settingsDraft, name: e.target.value })}
+                  className={settingInputCls}
+                />
+              </SettingField>
+              <SettingField label="Mode">
+                <select
+                  value={settingsDraft.mode}
+                  onChange={e => setSettingsDraft({ ...settingsDraft, mode: e.target.value as 'paper' | 'live' })}
+                  className={settingInputCls}
+                >
+                  <option value="paper">Paper</option>
+                  <option value="live">Live</option>
+                </select>
+              </SettingField>
+              <SettingField label="Capital (USD)">
+                <input
+                  type="number"
+                  value={settingsDraft.capital_allotted_usd}
+                  onChange={e => setSettingsDraft({ ...settingsDraft, capital_allotted_usd: e.target.value })}
+                  className={settingInputCls}
+                />
+              </SettingField>
+              <SettingField label="Max position %">
+                <input
+                  type="number"
+                  value={settingsDraft.max_position_pct}
+                  onChange={e => setSettingsDraft({ ...settingsDraft, max_position_pct: e.target.value })}
+                  className={settingInputCls}
+                />
+              </SettingField>
+              <SettingField label="Daily loss limit %">
+                <input
+                  type="number"
+                  value={settingsDraft.daily_loss_limit_pct}
+                  onChange={e => setSettingsDraft({ ...settingsDraft, daily_loss_limit_pct: e.target.value })}
+                  className={settingInputCls}
+                />
+              </SettingField>
+              <SettingField label="Allowed tickers (comma-sep, blank = any)">
+                <input
+                  value={settingsDraft.allowed_tickers}
+                  onChange={e => setSettingsDraft({ ...settingsDraft, allowed_tickers: e.target.value })}
+                  placeholder="AAPL, MSFT, NVDA"
+                  className={settingInputCls}
+                />
+              </SettingField>
+              <SettingField label="Blocked tickers (comma-sep)">
+                <input
+                  value={settingsDraft.blocked_tickers}
+                  onChange={e => setSettingsDraft({ ...settingsDraft, blocked_tickers: e.target.value })}
+                  placeholder="TSLA, GME"
+                  className={settingInputCls}
+                />
+              </SettingField>
+            </div>
+          )}
+        </div>
+
         {/* Guidelines */}
         <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-6">
           <div className="flex items-center justify-between mb-3">
@@ -499,6 +651,26 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         </div>
       </div>
     </main>
+  );
+}
+
+const settingInputCls = 'w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]';
+
+function SettingField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] block mb-1">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function SettingRow({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
+  return (
+    <div className={wide ? 'col-span-2 sm:col-span-3' : ''}>
+      <dt className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] mb-0.5">{label}</dt>
+      <dd className="font-mono text-sm text-[#F5EFE0] break-all">{value}</dd>
+    </div>
   );
 }
 
