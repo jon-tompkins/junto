@@ -46,6 +46,7 @@ function PricingPageInner() {
   const searchParams = useSearchParams();
   const [topUpLoading, setTopUpLoading] = useState<string | null>(null);
   const [proLoading, setProLoading] = useState<'monthly' | 'annual' | null>(null);
+  const [operatorLoading, setOperatorLoading] = useState<'monthly' | 'annual' | null>(null);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [banner, setBanner] = useState<{ kind: 'success' | 'cancelled'; text: string } | null>(null);
 
@@ -62,7 +63,11 @@ function PricingPageInner() {
     const sub = searchParams.get('sub');
     if (purchase === 'success') setBanner({ kind: 'success', text: 'Credits added. Balance updated.' });
     else if (purchase === 'cancelled') setBanner({ kind: 'cancelled', text: 'Purchase cancelled.' });
-    else if (sub === 'success') setBanner({ kind: 'success', text: "You're on Pro. Welcome." });
+    else if (sub === 'success') {
+      const tier = searchParams.get('tier');
+      const label = tier === 'operator' ? 'Operator' : 'Pro';
+      setBanner({ kind: 'success', text: `You're on ${label}. Welcome.` });
+    }
     else if (sub === 'cancelled') setBanner({ kind: 'cancelled', text: 'Subscription cancelled.' });
     if (purchase === 'success' || sub === 'success') {
       fetch('/api/v2/account').then(r => r.json()).then(d => setCreditBalance(d.balance ?? null)).catch(() => {});
@@ -76,12 +81,28 @@ function PricingPageInner() {
       const res = await fetch('/api/v2/billing/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ tier: 'pro', plan }),
       });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
     } catch {
       setProLoading(null);
+    }
+  }
+
+  async function handleOperatorSubscribe(plan: 'monthly' | 'annual') {
+    if (!session?.user) { router.push('/login'); return; }
+    setOperatorLoading(plan);
+    try {
+      const res = await fetch('/api/v2/billing/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier: 'operator', plan }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch {
+      setOperatorLoading(null);
     }
   }
 
@@ -136,7 +157,7 @@ function PricingPageInner() {
         </div>
 
         {/* Plan cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-14">
 
           {/* Free */}
           <div className="flex flex-col p-6 rounded border border-[rgba(176,141,87,0.2)] bg-[#0d0b09]">
@@ -227,6 +248,57 @@ function PricingPageInner() {
                 className="w-full px-4 py-2.5 rounded border border-[#B08D57] text-[#B08D57] hover:bg-[#B08D57]/10 text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide transition disabled:opacity-60 disabled:cursor-wait"
               >
                 {proLoading === 'annual' ? 'Redirecting…' : 'Or pay $50/year'}
+              </button>
+            </div>
+          </div>
+
+          {/* Operator */}
+          <div className="relative flex flex-col p-6 rounded border border-[#e8453c]/50 bg-[#e8453c]/5">
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] px-3 py-1 rounded-sm bg-[#e8453c] text-[#F5EFE0] font-bold font-[var(--font-oswald)] uppercase tracking-wider whitespace-nowrap">
+              New
+            </span>
+
+            <div className="mb-5">
+              <div className="text-xs font-[var(--font-oswald)] uppercase tracking-widest text-[#e8453c]/90 mb-2">Operator</div>
+              <div className="flex items-baseline gap-2">
+                <div className="text-4xl font-bold font-[var(--font-oswald)] text-[#e8453c]">$20</div>
+                <div className="text-[#F5EFE0]/40 text-sm">/ month</div>
+              </div>
+              <div className="text-[#F5EFE0]/55 text-sm mt-2">
+                or <span className="text-[#e8453c] font-bold">$200/year</span>
+                <span className="text-[#3ecf6a] text-xs ml-1.5">save $40</span>
+              </div>
+            </div>
+
+            <ul className="space-y-2.5 flex-1 mb-6">
+              {[
+                'Everything in Pro',
+                '2,000 fresh credits each month',
+                'Algorithmic trading mandates',
+                'Telegram approval flow',
+                'Live position monitoring',
+                'Realtime P/L dashboard',
+              ].map(f => (
+                <li key={f} className="flex items-start gap-2 text-sm text-[#F5EFE0]/85">
+                  <CHECK />{f}
+                </li>
+              ))}
+            </ul>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => handleOperatorSubscribe('monthly')}
+                disabled={operatorLoading !== null}
+                className="w-full px-4 py-2.5 rounded bg-[#e8453c] hover:bg-[#e8453c]/85 text-[#F5EFE0] text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide transition disabled:opacity-60 disabled:cursor-wait"
+              >
+                {operatorLoading === 'monthly' ? 'Redirecting…' : 'Subscribe — $20/mo'}
+              </button>
+              <button
+                onClick={() => handleOperatorSubscribe('annual')}
+                disabled={operatorLoading !== null}
+                className="w-full px-4 py-2.5 rounded border border-[#e8453c] text-[#e8453c] hover:bg-[#e8453c]/10 text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide transition disabled:opacity-60 disabled:cursor-wait"
+              >
+                {operatorLoading === 'annual' ? 'Redirecting…' : 'Or pay $200/year'}
               </button>
             </div>
           </div>

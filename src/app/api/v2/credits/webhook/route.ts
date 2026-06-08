@@ -1,19 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe/client';
 import { getSupabase } from '@/lib/db/client';
+import { TIER_MONTHLY_CREDITS, tierForPriceId, type Tier } from '@/lib/tiers';
 
-const PRO_MONTHLY_CREDITS = 500;
-const PRO_ANNUAL_CREDITS = PRO_MONTHLY_CREDITS * 12;
+// Fallback for subscriptions whose price ID we can't map (legacy / mis-config).
+const FALLBACK_MONTHLY_CREDITS = TIER_MONTHLY_CREDITS.pro;
 
-async function creditsForSubscription(subscriptionId: string): Promise<{ amount: number; interval: 'month' | 'year' }> {
+async function detailsForSubscription(
+  subscriptionId: string,
+): Promise<{ amount: number; interval: 'month' | 'year'; tier: Exclude<Tier, 'free'> }> {
   try {
     const sub = await getStripe().subscriptions.retrieve(subscriptionId);
-    const interval = (sub.items.data[0]?.price?.recurring?.interval ?? 'month') as 'month' | 'year';
-    return interval === 'year'
-      ? { amount: PRO_ANNUAL_CREDITS, interval }
-      : { amount: PRO_MONTHLY_CREDITS, interval };
+    const price = sub.items.data[0]?.price;
+    const interval = (price?.recurring?.interval ?? 'month') as 'month' | 'year';
+    const mapped = price?.id ? tierForPriceId(price.id) : null;
+    const tier = mapped?.tier ?? 'pro';
+    const monthly = TIER_MONTHLY_CREDITS[tier];
+    const amount = interval === 'year' ? monthly * 12 : monthly;
+    return { amount, interval, tier };
   } catch {
-    return { amount: PRO_MONTHLY_CREDITS, interval: 'month' };
+    return { amount: FALLBACK_MONTHLY_CREDITS, interval: 'month', tier: 'pro' };
   }
 }
 
@@ -36,12 +42,22 @@ async function addCredits(userId: string, amount: number, description: string, r
   });
 }
 
-async function setProStatus(userId: string, isPro: boolean, customerId?: string, subscriptionId?: string) {
+async function setSubscriptionStatus(
+  userId: string,
+  tier: Tier,
+  customerId?: string,
+  subscriptionId?: string,
+) {
   const supabase = getSupabase();
-  const updates: Record<string, any> = { is_pro: isPro };
+  const active = tier !== 'free';
+  const updates: Record<string, any> = {
+    subscription_tier: tier,
+    // Keep is_pro in sync — operator implies pro privileges.
+    is_pro: active,
+  };
   if (customerId) updates.stripe_customer_id = customerId;
-  if (subscriptionId) updates.stripe_subscription_id = isPro ? subscriptionId : null;
-  if (!isPro) updates.pro_expires_at = new Date().toISOString();
+  if (subscriptionId) updates.stripe_subscription_id = active ? subscriptionId : null;
+  if (!active) updates.pro_expires_at = new Date().toISOString();
   await supabase.from('users').update(updates).eq('id', userId);
 }
 
@@ -95,11 +111,12 @@ export async function POST(req: NextRequest) {
           if (!userId) break;
           const customerId = session.customer as string;
           const subscriptionId = session.subscription as string;
-          await setProStatus(userId, true, customerId, subscriptionId);
-          const { amount, interval } = await creditsForSubscription(subscriptionId);
-          const label = interval === 'year' ? 'Pro subscription — annual credits' : 'Pro subscription — monthly credits';
+          const { amount, interval, tier } = await detailsForSubscription(subscriptionId);
+          await setSubscriptionStatus(userId, tier, customerId, subscriptionId);
+          const tierLabel = tier === 'operator' ? 'Operator' : 'Pro';
+          const label = `${tierLabel} subscription — ${interval === 'year' ? 'annual' : 'monthly'} credits`;
           await addCredits(userId, amount, label, session.id);
-          console.log(`[webhook] Pro activated (${interval}) for user ${userId}, +${amount} credits`);
+          console.log(`[webhook] ${tierLabel} activated (${interval}) for user ${userId}, +${amount} credits`);
         }
         break;
       }
@@ -117,12 +134,13 @@ export async function POST(req: NextRequest) {
         }
         if (!userId) break;
         const subId = invoice.subscription as string | undefined;
-        const { amount, interval } = subId
-          ? await creditsForSubscription(subId)
-          : { amount: PRO_MONTHLY_CREDITS, interval: 'month' as const };
-        const label = interval === 'year' ? 'Pro subscription — annual credits' : 'Pro subscription — monthly credits';
+        const { amount, interval, tier } = subId
+          ? await detailsForSubscription(subId)
+          : { amount: FALLBACK_MONTHLY_CREDITS, interval: 'month' as const, tier: 'pro' as const };
+        const tierLabel = tier === 'operator' ? 'Operator' : 'Pro';
+        const label = `${tierLabel} subscription — ${interval === 'year' ? 'annual' : 'monthly'} credits`;
         await addCredits(userId, amount, label, invoice.id);
-        console.log(`[webhook] Renewal credits (${interval}) +${amount} for user ${userId}`);
+        console.log(`[webhook] Renewal credits ${tierLabel}/${interval} +${amount} for user ${userId}`);
         break;
       }
 
@@ -133,12 +151,12 @@ export async function POST(req: NextRequest) {
           sub.metadata?.userId ||
           (await resolveUserByCustomerId(sub.customer as string));
         if (!userId) break;
-        await setProStatus(userId, false);
-        console.log(`[webhook] Pro revoked for user ${userId}`);
+        await setSubscriptionStatus(userId, 'free');
+        console.log(`[webhook] Subscription revoked for user ${userId}`);
         break;
       }
 
-      // ── Subscription reactivated (e.g. un-cancelled) ──────────────────────
+      // ── Subscription reactivated or tier changed ──────────────────────────
       case 'customer.subscription.updated': {
         const sub = event.data.object as any;
         if (sub.status !== 'active') break;
@@ -146,11 +164,11 @@ export async function POST(req: NextRequest) {
           sub.metadata?.userId ||
           (await resolveUserByCustomerId(sub.customer as string));
         if (!userId) break;
-        await supabase
-          .from('users')
-          .update({ is_pro: true, stripe_subscription_id: sub.id })
-          .eq('id', userId);
-        console.log(`[webhook] Pro reactivated for user ${userId}`);
+        const priceId = sub.items?.data?.[0]?.price?.id as string | undefined;
+        const mapped = priceId ? tierForPriceId(priceId) : null;
+        const tier: Tier = mapped?.tier ?? 'pro';
+        await setSubscriptionStatus(userId, tier, undefined, sub.id);
+        console.log(`[webhook] Subscription updated → ${tier} for user ${userId}`);
         break;
       }
 
