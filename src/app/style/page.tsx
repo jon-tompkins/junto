@@ -430,6 +430,41 @@ export default function StylePage() {
           <SectionLabel>05 / Logo &amp; Nav</SectionLabel>
           <div className="p-6 space-y-6" style={{ border: '1px solid rgba(176,141,87,0.32)' }}>
             <div>
+              <Label>App icon / favicon — “mj” mark</Label>
+              <div className="flex items-center gap-6 flex-wrap">
+                {[96, 64, 32, 16].map((size) => (
+                  <div key={size} className="flex flex-col items-center gap-2">
+                    {/* Inline copy of /app/icon.svg so this stays in sync visually */}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 32 32"
+                      width={size}
+                      height={size}
+                      style={{ display: 'block' }}
+                    >
+                      <rect width="32" height="32" rx="5" fill="#0D0B08" />
+                      <text
+                        x="16"
+                        y="23"
+                        fontFamily="Georgia, 'Times New Roman', serif"
+                        fontSize="17"
+                        fontWeight="bold"
+                        fill={BRASS}
+                        textAnchor="middle"
+                        letterSpacing="-0.5"
+                      >
+                        mj
+                      </text>
+                    </svg>
+                    <p className="text-[10px] font-mono" style={{ color: `${PARCHMENT}60` }}>{size}px</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs mt-4" style={{ color: `${PARCHMENT}60`, fontFamily: 'var(--font-mono)' }}>
+                Source: <a href="/icon.svg" style={{ color: BRASS }}>/icon.svg</a> — rendered as the tab favicon. Ink background, brass mark, Georgia serif.
+              </p>
+            </div>
+            <div>
               <Label>Option A — Oswald, brass accent</Label>
               <span className="text-3xl font-bold uppercase tracking-tight" style={{ fontFamily: 'var(--font-oswald), sans-serif' }}>
                 <span style={{ color: PARCHMENT }}>MY</span>
