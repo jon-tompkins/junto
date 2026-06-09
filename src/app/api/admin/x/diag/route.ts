@@ -1,12 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { isAdminSession } from '@/lib/admin';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/admin/x/diag — reports which X env vars are present without
-// leaking values. Admin-only.
-export async function GET() {
-  if (!(await isAdminSession())) {
+// leaking values. Admin session OR CRON_SECRET bearer.
+export async function GET(req: NextRequest) {
+  const bearer = req.headers.get('authorization');
+  const cronSecret = process.env.CRON_SECRET;
+  const bearerOk = bearer && cronSecret && bearer === `Bearer ${cronSecret}`;
+  if (!bearerOk && !(await isAdminSession())) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   return NextResponse.json({
