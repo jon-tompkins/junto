@@ -72,11 +72,15 @@ export interface PostTweetResult {
 }
 
 export async function postTweet(text: string, opts?: { replyToId?: string }): Promise<PostTweetResult> {
-  if (!text || text.length > 280) throw new Error(`Tweet text must be 1–280 chars (got ${text.length})`);
+  // Auto-tag every agent-posted tweet with 🤖 so the feed makes it obvious
+  // which posts came from automation vs. a human at the keyboard. Skipped if
+  // the caller already included the emoji.
+  const tagged = /🤖/.test(text) ? text : `${text.trimEnd()} 🤖`;
+  if (!tagged || tagged.length > 280) throw new Error(`Tweet text must be 1–280 chars (got ${tagged.length})`);
   const creds = getCreds();
   const url = 'https://api.x.com/2/tweets';
 
-  const body: Record<string, any> = { text };
+  const body: Record<string, any> = { text: tagged };
   if (opts?.replyToId) body.reply = { in_reply_to_tweet_id: opts.replyToId };
 
   const authHeader = signRequest('POST', url, creds);
