@@ -26,7 +26,11 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .order('created_at', { ascending: false })
       .limit(50),
     mandate.junto_id
-      ? supabase.from('juntos').select('id, name, owner_id, is_public, description').eq('id', mandate.junto_id).maybeSingle()
+      ? supabase
+          .from('juntos')
+          .select('id, name, owner_id, is_public, description, junto_sources(source:sources(id, handle_or_url, display_name, avatar_url, type))')
+          .eq('id', mandate.junto_id)
+          .maybeSingle()
       : Promise.resolve({ data: null as any }),
     supabase
       .from('trading_tick_runs')
@@ -60,6 +64,16 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         is_public: !!juntoRow.is_public,
         description: juntoRow.description ?? null,
         is_owner: !!viewerUserId && viewerUserId === juntoRow.owner_id,
+        sources: ((juntoRow.junto_sources as any[]) || [])
+          .map((js) => js.source)
+          .filter(Boolean)
+          .map((s: any) => ({
+            id: s.id,
+            handle_or_url: s.handle_or_url,
+            display_name: s.display_name,
+            avatar_url: s.avatar_url,
+            type: s.type,
+          })),
       }
     : null;
 

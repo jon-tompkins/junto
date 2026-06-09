@@ -71,7 +71,15 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const { mandateId } = use(params);
   const { status } = useSession();
   const [mandate, setMandate] = useState<Mandate | null>(null);
-  const [junto, setJunto] = useState<{ id: string; name: string; is_public: boolean; description: string | null; is_owner: boolean } | null>(null);
+  const [junto, setJunto] = useState<{
+    id: string;
+    name: string;
+    is_public: boolean;
+    description: string | null;
+    is_owner: boolean;
+    sources?: Array<{ id: string; handle_or_url: string; display_name: string | null; avatar_url: string | null; type: string }>;
+  } | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [broker, setBroker] = useState<{ account_kind: string; mode: string; broker: string; alpaca_account_id: string | null; alpaca_key_id_last4: string | null } | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [positions, setPositions] = useState<Record<string, { current_price: number; unrealized_pl: number }>>({});
@@ -439,179 +447,189 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">Junto</h2>
-              {junto && (
-                <div className="flex gap-3 text-xs">
-                  <Link href={`/junto/${junto.id}`} className="text-[#B08D57] hover:underline">View</Link>
-                  {junto.is_owner && (
-                    <Link href={`/junto/${junto.id}/edit`} className="text-[#B08D57] hover:underline">Edit</Link>
+        {/* Settings (collapsible — rolls up junto, account, mandate config, guidelines) */}
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded mb-6">
+          <button
+            onClick={() => setSettingsOpen(o => !o)}
+            className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-[rgba(176,141,87,0.04)]"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">Settings</span>
+              <span className="text-xs text-[#F5EFE0]/40 font-mono">
+                {mandate.mode} · {fmtUsd(mandate.capital_allotted_usd)} · {mandate.max_position_pct}% max · {junto?.sources?.length ?? 0} sources
+              </span>
+            </div>
+            <span className="text-[#F5EFE0]/45 text-xs">{settingsOpen ? '▾' : '▸'}</span>
+          </button>
+
+          {settingsOpen && (
+            <div className="px-5 pb-5 border-t border-[rgba(176,141,87,0.18)] pt-5 space-y-6">
+              {/* Junto + tracked sources */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">Junto</h3>
+                  {junto && (
+                    <div className="flex gap-3 text-xs">
+                      <Link href={`/junto/${junto.id}`} className="text-[#B08D57] hover:underline">View</Link>
+                      {junto.is_owner && (
+                        <Link href={`/junto/${junto.id}/edit`} className="text-[#B08D57] hover:underline">Edit</Link>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-            {junto ? (
-              <>
-                <div className="text-base font-bold text-[#F5EFE0] mb-1">{junto.name}</div>
-                <div className="text-xs text-[#F5EFE0]/45 mb-2">
-                  {junto.is_public ? 'Public' : 'Private'}
-                  {junto.is_owner ? ' · you own this' : ''}
-                </div>
-                {junto.description && (
-                  <p className="text-xs text-[#F5EFE0]/60 line-clamp-3">{junto.description}</p>
+                {junto ? (
+                  <>
+                    <div className="text-base font-bold text-[#F5EFE0] mb-1">{junto.name}</div>
+                    <div className="text-xs text-[#F5EFE0]/45 mb-2">
+                      {junto.is_public ? 'Public' : 'Private'}
+                      {junto.is_owner ? ' · you own this' : ''}
+                    </div>
+                    {junto.description && (
+                      <p className="text-xs text-[#F5EFE0]/60 line-clamp-3 mb-3">{junto.description}</p>
+                    )}
+                    <div className="mt-2">
+                      <div className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] mb-2">
+                        Tracking · {junto.sources?.length ?? 0}
+                      </div>
+                      {junto.sources && junto.sources.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {junto.sources.map(s => (
+                            <span
+                              key={s.id}
+                              className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-[#080604] border border-[rgba(176,141,87,0.18)] text-xs font-mono text-[#F5EFE0]/75"
+                              title={s.handle_or_url}
+                            >
+                              {s.avatar_url && (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img src={s.avatar_url} alt="" className="w-3.5 h-3.5 rounded-full" />
+                              )}
+                              <span>{s.display_name || s.handle_or_url}</span>
+                              <span className="text-[#F5EFE0]/30">{s.type}</span>
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-[#F5EFE0]/30">No sources attached to this junto.</p>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-[#F5EFE0]/30">No junto attached.</p>
                 )}
-              </>
-            ) : (
-              <p className="text-sm text-[#F5EFE0]/30">No junto attached.</p>
-            )}
-          </div>
+              </div>
 
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-            <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] mb-2">Account</h2>
-            {broker ? (
-              <>
-                <div className="text-base font-bold text-[#F5EFE0] mb-1">
-                  {broker.account_kind === 'managed' ? 'Managed (MyJunto)' : 'BYO Alpaca keys'}
-                </div>
-                <div className="text-xs text-[#F5EFE0]/45 mb-2">
-                  {broker.broker} · {broker.mode}
-                </div>
-                <div className="text-xs text-[#F5EFE0]/60 font-mono break-all">
-                  {broker.account_kind === 'managed'
-                    ? (broker.alpaca_account_id ? `acct ${broker.alpaca_account_id}` : '(no account id)')
-                    : (broker.alpaca_key_id_last4 ? `key …${broker.alpaca_key_id_last4}` : '(no key)')}
-                </div>
-                {broker.account_kind === 'managed' && (
-                  <Link href="/account/open" className="inline-block mt-3 text-xs text-[#B08D57] hover:underline">
-                    Manage account →
-                  </Link>
+              {/* Account */}
+              <div>
+                <h3 className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] mb-2">Account</h3>
+                {broker ? (
+                  <>
+                    <div className="text-base font-bold text-[#F5EFE0] mb-1">
+                      {broker.account_kind === 'managed' ? 'Managed (MyJunto)' : 'BYO Alpaca keys'}
+                    </div>
+                    <div className="text-xs text-[#F5EFE0]/45 mb-2">{broker.broker} · {broker.mode}</div>
+                    <div className="text-xs text-[#F5EFE0]/60 font-mono break-all">
+                      {broker.account_kind === 'managed'
+                        ? (broker.alpaca_account_id ? `acct ${broker.alpaca_account_id}` : '(no account id)')
+                        : (broker.alpaca_key_id_last4 ? `key …${broker.alpaca_key_id_last4}` : '(no key)')}
+                    </div>
+                    {broker.account_kind === 'managed' && (
+                      <Link href="/account/open" className="inline-block mt-2 text-xs text-[#B08D57] hover:underline">
+                        Manage account →
+                      </Link>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-[#F5EFE0]/30">No broker info.</p>
                 )}
-              </>
-            ) : (
-              <p className="text-sm text-[#F5EFE0]/30">No broker info.</p>
-            )}
-          </div>
-        </div>
-
-        {/* Settings */}
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">Settings</h2>
-            {!editingSettings ? (
-              <button onClick={openSettingsEditor} className="text-xs text-[#B08D57] hover:underline">Edit</button>
-            ) : (
-              <div className="flex gap-2">
-                <button onClick={() => setEditingSettings(false)} className="text-xs text-[#F5EFE0]/45">Cancel</button>
-                <button onClick={saveSettings} disabled={savingSettings} className="text-xs text-[#B08D57]">{savingSettings ? 'Saving…' : 'Save'}</button>
               </div>
-            )}
-          </div>
-          {!editingSettings ? (
-            <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 text-sm">
-              <SettingRow label="Name" value={mandate.name} />
-              <SettingRow label="Mode" value={mandate.mode} />
-              <SettingRow label="Status" value={mandate.status} />
-              <SettingRow label="Capital" value={fmtUsd(mandate.capital_allotted_usd)} />
-              <SettingRow label="Max position" value={`${mandate.max_position_pct}%`} />
-              <SettingRow label="Daily loss limit" value={`${mandate.daily_loss_limit_pct}%`} />
-              <SettingRow
-                label="Allowed tickers"
-                value={mandate.allowed_tickers?.length ? mandate.allowed_tickers.join(', ') : '— any —'}
-                wide
-              />
-              <SettingRow
-                label="Blocked tickers"
-                value={mandate.blocked_tickers?.length ? mandate.blocked_tickers.join(', ') : '— none —'}
-                wide
-              />
-            </dl>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <SettingField label="Name">
-                <input
-                  value={settingsDraft.name}
-                  onChange={e => setSettingsDraft({ ...settingsDraft, name: e.target.value })}
-                  className={settingInputCls}
-                />
-              </SettingField>
-              <SettingField label="Mode">
-                <select
-                  value={settingsDraft.mode}
-                  onChange={e => setSettingsDraft({ ...settingsDraft, mode: e.target.value as 'paper' | 'live' })}
-                  className={settingInputCls}
-                >
-                  <option value="paper">Paper</option>
-                  <option value="live">Live</option>
-                </select>
-              </SettingField>
-              <SettingField label="Capital (USD)">
-                <input
-                  type="number"
-                  value={settingsDraft.capital_allotted_usd}
-                  onChange={e => setSettingsDraft({ ...settingsDraft, capital_allotted_usd: e.target.value })}
-                  className={settingInputCls}
-                />
-              </SettingField>
-              <SettingField label="Max position %">
-                <input
-                  type="number"
-                  value={settingsDraft.max_position_pct}
-                  onChange={e => setSettingsDraft({ ...settingsDraft, max_position_pct: e.target.value })}
-                  className={settingInputCls}
-                />
-              </SettingField>
-              <SettingField label="Daily loss limit %">
-                <input
-                  type="number"
-                  value={settingsDraft.daily_loss_limit_pct}
-                  onChange={e => setSettingsDraft({ ...settingsDraft, daily_loss_limit_pct: e.target.value })}
-                  className={settingInputCls}
-                />
-              </SettingField>
-              <SettingField label="Allowed tickers (comma-sep, blank = any)">
-                <input
-                  value={settingsDraft.allowed_tickers}
-                  onChange={e => setSettingsDraft({ ...settingsDraft, allowed_tickers: e.target.value })}
-                  placeholder="AAPL, MSFT, NVDA"
-                  className={settingInputCls}
-                />
-              </SettingField>
-              <SettingField label="Blocked tickers (comma-sep)">
-                <input
-                  value={settingsDraft.blocked_tickers}
-                  onChange={e => setSettingsDraft({ ...settingsDraft, blocked_tickers: e.target.value })}
-                  placeholder="TSLA, GME"
-                  className={settingInputCls}
-                />
-              </SettingField>
+
+              {/* Mandate config */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">Mandate</h3>
+                  {!editingSettings ? (
+                    <button onClick={openSettingsEditor} className="text-xs text-[#B08D57] hover:underline">Edit</button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button onClick={() => setEditingSettings(false)} className="text-xs text-[#F5EFE0]/45">Cancel</button>
+                      <button onClick={saveSettings} disabled={savingSettings} className="text-xs text-[#B08D57]">{savingSettings ? 'Saving…' : 'Save'}</button>
+                    </div>
+                  )}
+                </div>
+                {!editingSettings ? (
+                  <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 text-sm">
+                    <SettingRow label="Name" value={mandate.name} />
+                    <SettingRow label="Mode" value={mandate.mode} />
+                    <SettingRow label="Status" value={mandate.status} />
+                    <SettingRow label="Capital" value={fmtUsd(mandate.capital_allotted_usd)} />
+                    <SettingRow label="Max position" value={`${mandate.max_position_pct}%`} />
+                    <SettingRow label="Daily loss limit" value={`${mandate.daily_loss_limit_pct}%`} />
+                    <SettingRow
+                      label="Allowed tickers"
+                      value={mandate.allowed_tickers?.length ? mandate.allowed_tickers.join(', ') : '— any —'}
+                      wide
+                    />
+                    <SettingRow
+                      label="Blocked tickers"
+                      value={mandate.blocked_tickers?.length ? mandate.blocked_tickers.join(', ') : '— none —'}
+                      wide
+                    />
+                  </dl>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <SettingField label="Name">
+                      <input value={settingsDraft.name} onChange={e => setSettingsDraft({ ...settingsDraft, name: e.target.value })} className={settingInputCls} />
+                    </SettingField>
+                    <SettingField label="Mode">
+                      <select value={settingsDraft.mode} onChange={e => setSettingsDraft({ ...settingsDraft, mode: e.target.value as 'paper' | 'live' })} className={settingInputCls}>
+                        <option value="paper">Paper</option>
+                        <option value="live">Live</option>
+                      </select>
+                    </SettingField>
+                    <SettingField label="Capital (USD)">
+                      <input type="number" value={settingsDraft.capital_allotted_usd} onChange={e => setSettingsDraft({ ...settingsDraft, capital_allotted_usd: e.target.value })} className={settingInputCls} />
+                    </SettingField>
+                    <SettingField label="Max position %">
+                      <input type="number" value={settingsDraft.max_position_pct} onChange={e => setSettingsDraft({ ...settingsDraft, max_position_pct: e.target.value })} className={settingInputCls} />
+                    </SettingField>
+                    <SettingField label="Daily loss limit %">
+                      <input type="number" value={settingsDraft.daily_loss_limit_pct} onChange={e => setSettingsDraft({ ...settingsDraft, daily_loss_limit_pct: e.target.value })} className={settingInputCls} />
+                    </SettingField>
+                    <SettingField label="Allowed tickers (comma-sep, blank = any)">
+                      <input value={settingsDraft.allowed_tickers} onChange={e => setSettingsDraft({ ...settingsDraft, allowed_tickers: e.target.value })} placeholder="AAPL, MSFT, NVDA" className={settingInputCls} />
+                    </SettingField>
+                    <SettingField label="Blocked tickers (comma-sep)">
+                      <input value={settingsDraft.blocked_tickers} onChange={e => setSettingsDraft({ ...settingsDraft, blocked_tickers: e.target.value })} placeholder="TSLA, GME" className={settingInputCls} />
+                    </SettingField>
+                  </div>
+                )}
+              </div>
+
+              {/* Guidelines */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">Guidelines</h3>
+                  {!editing ? (
+                    <button onClick={() => setEditing(true)} className="text-xs text-[#B08D57] hover:underline">Edit</button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button onClick={() => { setEditing(false); setDraftGuidelines(mandate.guidelines); }} className="text-xs text-[#F5EFE0]/45">Cancel</button>
+                      <button onClick={saveGuidelines} disabled={saving} className="text-xs text-[#B08D57]">{saving ? 'Saving…' : 'Save'}</button>
+                    </div>
+                  )}
+                </div>
+                {editing ? (
+                  <textarea
+                    value={draftGuidelines}
+                    onChange={e => setDraftGuidelines(e.target.value)}
+                    rows={8}
+                    className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]"
+                  />
+                ) : (
+                  <p className="text-sm text-[#F5EFE0]/70 whitespace-pre-wrap">{mandate.guidelines || '(none)'}</p>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-
-        {/* Guidelines */}
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">Guidelines</h2>
-            {!editing ? (
-              <button onClick={() => setEditing(true)} className="text-xs text-[#B08D57] hover:underline">Edit</button>
-            ) : (
-              <div className="flex gap-2">
-                <button onClick={() => { setEditing(false); setDraftGuidelines(mandate.guidelines); }} className="text-xs text-[#F5EFE0]/45">Cancel</button>
-                <button onClick={saveGuidelines} disabled={saving} className="text-xs text-[#B08D57]">{saving ? 'Saving…' : 'Save'}</button>
-              </div>
-            )}
-          </div>
-          {editing ? (
-            <textarea
-              value={draftGuidelines}
-              onChange={e => setDraftGuidelines(e.target.value)}
-              rows={8}
-              className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]"
-            />
-          ) : (
-            <p className="text-sm text-[#F5EFE0]/70 whitespace-pre-wrap">{mandate.guidelines || '(none)'}</p>
           )}
         </div>
 
