@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { getSupabase } from '@/lib/db/client';
 import { getTickerSummary, listTickerReports } from '@/lib/db/ticker-reports';
 import { getUserWatchlist } from '@/lib/db/watchlist';
+import { hasProPrivileges, type Tier } from '@/lib/tiers';
 
 async function resolveUserId(session: any): Promise<string | null> {
   const supabase = getSupabase();
@@ -25,8 +26,9 @@ async function gate(ticker: string): Promise<NextResponse | { userId: string }> 
   const userId = await resolveUserId(session);
   if (!userId) return NextResponse.json({ error: 'User not found' }, { status: 401 });
 
-  const { data: user } = await getSupabase().from('users').select('is_pro').eq('id', userId).single();
-  if (!user?.is_pro) return NextResponse.json({ error: 'Pro subscription required' }, { status: 402 });
+  const { data: user } = await getSupabase().from('users').select('is_pro, subscription_tier').eq('id', userId).single();
+  const tier = (user?.subscription_tier as Tier) || (user?.is_pro ? 'pro' : 'free');
+  if (!hasProPrivileges(tier)) return NextResponse.json({ error: 'Pro subscription required' }, { status: 402 });
 
   const watchlist = await getUserWatchlist(userId);
   const tickers = watchlist.map((w) => w.ticker.toUpperCase());

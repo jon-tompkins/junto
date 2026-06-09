@@ -32,7 +32,7 @@ export async function getProUsersForDispatch(): Promise<ProUser[]> {
   const { data, error } = await getSupabase()
     .from('users')
     .select('id, email, display_name, featured_junto_id, dispatch_tg_text, dispatch_tg_audio, dispatch_audio_enabled, dispatch_email')
-    .eq('is_pro', true)
+    .or('is_pro.eq.true,subscription_tier.in.(pro,operator)')
     .not('featured_junto_id', 'is', null);
   if (error) throw error;
   return (data as ProUser[]) || [];

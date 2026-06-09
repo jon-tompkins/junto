@@ -3,17 +3,19 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getAllProfilesWithSources } from '@/lib/db/source-analyst-profiles';
 import { getSupabase } from '@/lib/db/client';
+import { hasProPrivileges, type Tier } from '@/lib/tiers';
 
 async function resolveIsPro(session: any): Promise<boolean> {
   const supabase = getSupabase();
   const twitterId = session?.user?.twitterId;
   const googleId = session?.user?.googleId;
-  let query = supabase.from('users').select('is_pro');
+  let query = supabase.from('users').select('is_pro, subscription_tier');
   if (twitterId) query = query.eq('twitter_id', twitterId);
   else if (googleId) query = query.eq('google_id', googleId);
   else return false;
   const { data } = await query.single();
-  return data?.is_pro ?? false;
+  const tier = (data?.subscription_tier as Tier) || (data?.is_pro ? 'pro' : 'free');
+  return hasProPrivileges(tier);
 }
 
 export async function GET() {

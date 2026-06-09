@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCreditBalance, getUserEmail, setUserEmail } from '@/lib/db/credits';
 import { getSupabase } from '@/lib/db/client';
+import { hasProPrivileges, type Tier } from '@/lib/tiers';
 
 async function resolveUserId(session: any): Promise<string | null> {
   const supabase = getSupabase();
@@ -51,7 +52,7 @@ export async function GET() {
       userId,
       timezone: user?.timezone || 'America/New_York',
       isOnboarded: user?.is_onboarded ?? false,
-      isPro: user?.is_pro ?? false,
+      isPro: hasProPrivileges((user?.subscription_tier as Tier) || (user?.is_pro ? 'pro' : 'free')),
       subscriptionTier: (user?.subscription_tier as 'free' | 'pro' | 'operator') || (user?.is_pro ? 'pro' : 'free'),
       dispatchTgText: user?.dispatch_tg_text ?? true,
       dispatchTgAudio: user?.dispatch_tg_audio ?? true,
@@ -123,7 +124,7 @@ export async function PUT(req: NextRequest) {
       userId,
       timezone: user?.timezone || 'America/New_York',
       isOnboarded: user?.is_onboarded ?? false,
-      isPro: user?.is_pro ?? false,
+      isPro: hasProPrivileges((user?.subscription_tier as Tier) || (user?.is_pro ? 'pro' : 'free')),
       subscriptionTier: (user?.subscription_tier as 'free' | 'pro' | 'operator') || (user?.is_pro ? 'pro' : 'free'),
       dispatchTgText: user?.dispatch_tg_text ?? true,
       dispatchTgAudio: user?.dispatch_tg_audio ?? true,

@@ -3,12 +3,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getSupabase } from '@/lib/db/client';
 import { getUserWatchlist, addToWatchlist, removeFromWatchlist } from '@/lib/db/watchlist';
+import { hasProPrivileges, type Tier } from '@/lib/tiers';
 
 const WATCHLIST_CAP = 10;
 
 async function isUserPro(userId: string): Promise<boolean> {
-  const { data } = await getSupabase().from('users').select('is_pro').eq('id', userId).single();
-  return !!data?.is_pro;
+  const { data } = await getSupabase().from('users').select('is_pro, subscription_tier').eq('id', userId).single();
+  const tier = (data?.subscription_tier as Tier) || (data?.is_pro ? 'pro' : 'free');
+  return hasProPrivileges(tier);
 }
 
 async function resolveUserId(session: any): Promise<string | null> {

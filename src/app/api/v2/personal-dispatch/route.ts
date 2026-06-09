@@ -6,6 +6,7 @@ import {
   getLatestPersonalDispatch,
   listPersonalDispatches,
 } from '@/lib/db/personal-dispatches';
+import { hasProPrivileges, type Tier } from '@/lib/tiers';
 
 async function resolveUserId(session: any): Promise<string | null> {
   const supabase = getSupabase();
@@ -38,11 +39,12 @@ export async function GET(req: NextRequest) {
 
   const { data: u } = await getSupabase()
     .from('users')
-    .select('is_pro, featured_junto_id')
+    .select('is_pro, subscription_tier, featured_junto_id')
     .eq('id', userId)
     .single();
 
-  if (!u?.is_pro) {
+  const tier = (u?.subscription_tier as Tier) || (u?.is_pro ? 'pro' : 'free');
+  if (!hasProPrivileges(tier)) {
     return NextResponse.json({ error: 'Pro required', code: 'pro_required' }, { status: 402 });
   }
 
@@ -65,6 +67,6 @@ export async function GET(req: NextRequest) {
       source_count: d.source_count,
       ticker_count: d.ticker_count,
     })),
-    has_featured_junto: !!u.featured_junto_id,
+    has_featured_junto: !!u?.featured_junto_id,
   });
 }
