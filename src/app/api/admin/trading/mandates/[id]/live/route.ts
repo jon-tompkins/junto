@@ -36,15 +36,23 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     // actually protecting each position at the broker (not just what's in the DB).
     const stopBySym = new Map<string, number>();
     const targetBySym = new Map<string, number>();
-    for (const o of openOrders) {
+    // OCO/bracket parents arrive as a single top-level order with the stop +
+    // take_profit legs nested under .legs — we have to walk both the top-level
+    // order and its legs to find broker-truth protective prices.
+    const consider = (o: any) => {
       const sym = (o.symbol || '').toUpperCase();
-      if (!sym) continue;
-      // We're long-only for now — protective legs are sell-side. Skip entry-side orders.
-      if (o.side !== 'sell') continue;
+      if (!sym) return;
+      if (o.side !== 'sell') return;
       if ((o.type === 'stop' || o.type === 'stop_limit') && Number(o.stop_price) > 0) {
         stopBySym.set(sym, Number(o.stop_price));
       } else if (o.type === 'limit' && Number(o.limit_price) > 0) {
         targetBySym.set(sym, Number(o.limit_price));
+      }
+    };
+    for (const o of openOrders) {
+      consider(o);
+      if (Array.isArray(o.legs)) {
+        for (const leg of o.legs) consider(leg);
       }
     }
 
