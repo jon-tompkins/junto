@@ -87,8 +87,11 @@ function PricingPageInner() {
         body: JSON.stringify({ tier: 'pro', plan }),
       });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
-    } catch {
+      if (data.url) { window.location.href = data.url; return; }
+      setBanner({ kind: 'cancelled', text: data.error || 'Subscribe failed.' });
+    } catch (e) {
+      setBanner({ kind: 'cancelled', text: e instanceof Error ? e.message : 'Subscribe failed.' });
+    } finally {
       setProLoading(null);
     }
   }
@@ -103,8 +106,11 @@ function PricingPageInner() {
         body: JSON.stringify({ tier: 'operator', plan }),
       });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
-    } catch {
+      if (data.url) { window.location.href = data.url; return; }
+      setBanner({ kind: 'cancelled', text: data.error || 'Subscribe failed.' });
+    } catch (e) {
+      setBanner({ kind: 'cancelled', text: e instanceof Error ? e.message : 'Subscribe failed.' });
+    } finally {
       setOperatorLoading(null);
     }
   }
