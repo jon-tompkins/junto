@@ -78,17 +78,30 @@ export async function protectMandate(mandateId: string): Promise<{
 
       const symOrders = ordersBySymbol.get(sym) || [];
       const sellOrders = symOrders.filter((o: any) => o.side === exitSide);
-      const hasStop = sellOrders.some((o: any) => (o.type === 'stop' || o.type === 'stop_limit') && Number(o.stop_price) > 0);
-      const hasLimit = sellOrders.some((o: any) => o.type === 'limit' && Number(o.limit_price) > 0);
+
+      // An OCO parent (order_class='oco' or 'bracket') is one top-level order
+      // with a stop leg + limit leg nested under .legs. Detect those first so
+      // we don't tear down a working bracket and re-submit.
+      const hasOco = sellOrders.some((o: any) =>
+        (o.order_class === 'oco' || o.order_class === 'bracket') &&
+        Array.isArray(o.legs) && o.legs.length >= 1,
+      );
+      const hasStop = hasOco || sellOrders.some((o: any) => (o.type === 'stop' || o.type === 'stop_limit') && Number(o.stop_price) > 0);
+      const hasLimit = hasOco || sellOrders.some((o: any) => o.type === 'limit' && Number(o.limit_price) > 0);
       if (hasStop && hasLimit) {
         results.push({ ticker: sym, action: 'already_protected' });
         continue;
       }
 
-      // Cancel any orphaned sell-side legs before re-attaching, so we don't
-      // end up with duplicates.
+      // Cancel any orphaned sell-side legs before re-attaching, then wait for
+      // Alpaca to release the held_for_orders qty — without the delay the
+      // resubmit fails with `insufficient qty available`.
+      let cancelled = 0;
       for (const o of sellOrders) {
-        try { await alpaca.cancelOrder(o.id); } catch { /* ignore */ }
+        try { await alpaca.cancelOrder(o.id); cancelled++; } catch { /* ignore */ }
+      }
+      if (cancelled > 0) {
+        await new Promise((r) => setTimeout(r, 2500));
       }
 
       const qty = Math.floor(Number(pos.qty));
