@@ -82,7 +82,14 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [broker, setBroker] = useState<{ account_kind: string; mode: string; broker: string; alpaca_account_id: string | null; alpaca_key_id_last4: string | null } | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
-  const [positions, setPositions] = useState<Record<string, { current_price: number; unrealized_pl: number }>>({});
+  const [positions, setPositions] = useState<Record<string, {
+    current_price: number;
+    unrealized_pl: number;
+    live_stop?: number | null;
+    live_target?: number | null;
+    has_stop?: boolean;
+    has_target?: boolean;
+  }>>({});
   const [signals, setSignals] = useState<Signal[]>([]);
   const [ticks, setTicks] = useState<TickRun[]>([]);
   const [loading, setLoading] = useState(true);
@@ -792,7 +799,14 @@ function TradeTable({
   showLive,
 }: {
   trades: Trade[];
-  positions: Record<string, { current_price: number; unrealized_pl: number }>;
+  positions: Record<string, {
+    current_price: number;
+    unrealized_pl: number;
+    live_stop?: number | null;
+    live_target?: number | null;
+    has_stop?: boolean;
+    has_target?: boolean;
+  }>;
   showLive?: boolean;
 }) {
   return (
@@ -828,8 +842,24 @@ function TradeTable({
                   {pos ? `$${pos.current_price.toFixed(2)}` : '—'}
                 </td>
               )}
-              <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/45">{t.stop_price ? `$${t.stop_price.toFixed(2)}` : '—'}</td>
-              <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/45">{t.target_price ? `$${t.target_price.toFixed(2)}` : '—'}</td>
+              <td className="py-2 pr-4 text-right font-mono">
+                {showLive && t.status === 'open' && pos && !pos.has_stop ? (
+                  <span className="text-[#e8453c]" title="No stop order live at broker">⚠ {t.stop_price ? `$${t.stop_price.toFixed(2)}` : '—'}</span>
+                ) : (
+                  <span className="text-[#F5EFE0]/45">
+                    {(pos?.live_stop ?? t.stop_price) ? `$${(pos?.live_stop ?? t.stop_price)!.toFixed(2)}` : '—'}
+                  </span>
+                )}
+              </td>
+              <td className="py-2 pr-4 text-right font-mono">
+                {showLive && t.status === 'open' && pos && !pos.has_target ? (
+                  <span className="text-[#e8453c]" title="No target order live at broker">⚠ {t.target_price ? `$${t.target_price.toFixed(2)}` : '—'}</span>
+                ) : (
+                  <span className="text-[#F5EFE0]/45">
+                    {(pos?.live_target ?? t.target_price) ? `$${(pos?.live_target ?? t.target_price)!.toFixed(2)}` : '—'}
+                  </span>
+                )}
+              </td>
               <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{t.exit_price ? `$${t.exit_price.toFixed(2)}` : '—'}</td>
               {showLive && (
                 <td

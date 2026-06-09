@@ -13,6 +13,8 @@ import {
 } from '@/lib/trading/telegram-commands';
 
 export const dynamic = 'force-dynamic';
+// Trade approval polls fill for ~30s + protection retry — needs room above default 10s.
+export const maxDuration = 60;
 
 // Telegram webhook. Configured via setWebhook during deploy (see
 // scripts/setup-telegram-webhook.ts). Handles /start <code> for account linking.

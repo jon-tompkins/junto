@@ -166,21 +166,43 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
 
     await updateTrade(tradeId, { alpaca_order_id: order.id });
 
-    // Best-effort: poll up to ~8s for the entry to fill, then attach GTC OCO
-    // protection. If still unfilled, the next tick's protector sweep catches it.
+    // Poll up to ~30s for the entry to fill, then attach GTC OCO protection.
+    // After fill, retry protection up to 3 times because Alpaca's positions
+    // endpoint can lag by a few seconds — without the retry, protectMandate
+    // returns `no_position` and the position sits naked until next tick.
     const { protectMandate } = await import('./protection');
     let protectedNow = false;
-    for (let i = 0; i < 8; i++) {
+    let filled = false;
+    for (let i = 0; i < 30; i++) {
       await new Promise((r) => setTimeout(r, 1000));
       try {
         const status = await alpaca.getOrder(order.id);
         if (status.status === 'filled' || (Number(status.filled_qty) || 0) > 0) {
-          await protectMandate(mandate.id).catch(() => null);
-          protectedNow = true;
+          filled = true;
+          break;
+        }
+        if (status.status === 'rejected' || status.status === 'canceled' || status.status === 'expired') {
           break;
         }
       } catch {
         // ignore poll errors
+      }
+    }
+
+    if (filled) {
+      for (let attempt = 0; attempt < 3 && !protectedNow; attempt++) {
+        try {
+          const r = await protectMandate(mandate.id);
+          const ours = r.results.find((x) => x.ticker.toUpperCase() === trade.ticker.toUpperCase());
+          if (ours?.action === 'protected' || ours?.action === 'already_protected') {
+            protectedNow = true;
+          } else {
+            // no_position race or transient error — wait and retry
+            await new Promise((r) => setTimeout(r, 2000));
+          }
+        } catch {
+          await new Promise((r) => setTimeout(r, 2000));
+        }
       }
     }
 
