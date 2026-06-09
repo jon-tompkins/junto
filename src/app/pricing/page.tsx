@@ -48,13 +48,17 @@ function PricingPageInner() {
   const [proLoading, setProLoading] = useState<'monthly' | 'annual' | null>(null);
   const [operatorLoading, setOperatorLoading] = useState<'monthly' | 'annual' | null>(null);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [currentTier, setCurrentTier] = useState<'free' | 'pro' | 'operator' | null>(null);
   const [banner, setBanner] = useState<{ kind: 'success' | 'cancelled'; text: string } | null>(null);
 
   useEffect(() => {
     if (!session?.user) return;
     fetch('/api/v2/account')
       .then(r => r.json())
-      .then(data => setCreditBalance(data.balance ?? null))
+      .then(data => {
+        setCreditBalance(data.balance ?? null);
+        setCurrentTier(data.subscriptionTier ?? null);
+      })
       .catch(() => {});
   }, [session]);
 
@@ -246,17 +250,17 @@ function PricingPageInner() {
             <div className="space-y-2">
               <button
                 onClick={() => handleProSubscribe('monthly')}
-                disabled={proLoading !== null}
-                className="w-full px-4 py-2.5 rounded bg-[#B08D57] hover:bg-[#B08D57]/85 text-[#080604] text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide transition disabled:opacity-60 disabled:cursor-wait"
+                disabled={proLoading !== null || currentTier === 'pro'}
+                className="w-full px-4 py-2.5 rounded bg-[#B08D57] hover:bg-[#B08D57]/85 text-[#080604] text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide transition disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-[#B08D57]/30"
               >
-                {proLoading === 'monthly' ? 'Redirecting…' : 'Subscribe — $5/mo'}
+                {currentTier === 'pro' ? 'Current plan' : proLoading === 'monthly' ? 'Redirecting…' : 'Subscribe — $5/mo'}
               </button>
               <button
                 onClick={() => handleProSubscribe('annual')}
-                disabled={proLoading !== null}
-                className="w-full px-4 py-2.5 rounded border border-[#B08D57] text-[#B08D57] hover:bg-[#B08D57]/10 text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide transition disabled:opacity-60 disabled:cursor-wait"
+                disabled={proLoading !== null || currentTier === 'pro'}
+                className="w-full px-4 py-2.5 rounded border border-[#B08D57] text-[#B08D57] hover:bg-[#B08D57]/10 text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {proLoading === 'annual' ? 'Redirecting…' : 'Or pay $50/year'}
+                {currentTier === 'pro' ? '—' : proLoading === 'annual' ? 'Redirecting…' : 'Or pay $50/year'}
               </button>
             </div>
           </div>
@@ -297,17 +301,17 @@ function PricingPageInner() {
             <div className="space-y-2">
               <button
                 onClick={() => handleOperatorSubscribe('monthly')}
-                disabled={operatorLoading !== null}
-                className="w-full px-4 py-2.5 rounded bg-[#e8453c] hover:bg-[#e8453c]/85 text-[#F5EFE0] text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide transition disabled:opacity-60 disabled:cursor-wait"
+                disabled={operatorLoading !== null || currentTier === 'operator'}
+                className="w-full px-4 py-2.5 rounded bg-[#e8453c] hover:bg-[#e8453c]/85 text-[#F5EFE0] text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide transition disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-[#e8453c]/30"
               >
-                {operatorLoading === 'monthly' ? 'Redirecting…' : 'Subscribe — $20/mo'}
+                {currentTier === 'operator' ? 'Current plan' : operatorLoading === 'monthly' ? 'Redirecting…' : 'Subscribe — $20/mo'}
               </button>
               <button
                 onClick={() => handleOperatorSubscribe('annual')}
-                disabled={operatorLoading !== null}
-                className="w-full px-4 py-2.5 rounded border border-[#e8453c] text-[#e8453c] hover:bg-[#e8453c]/10 text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide transition disabled:opacity-60 disabled:cursor-wait"
+                disabled={operatorLoading !== null || currentTier === 'operator'}
+                className="w-full px-4 py-2.5 rounded border border-[#e8453c] text-[#e8453c] hover:bg-[#e8453c]/10 text-sm font-bold font-[var(--font-oswald)] uppercase tracking-wide transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {operatorLoading === 'annual' ? 'Redirecting…' : 'Or pay $200/year'}
+                {currentTier === 'operator' ? '—' : operatorLoading === 'annual' ? 'Redirecting…' : 'Or pay $200/year'}
               </button>
             </div>
           </div>
