@@ -104,3 +104,65 @@ export async function postTweet(text: string, opts?: { replyToId?: string }): Pr
   // /users/me call. The /i/web/status/ URL works regardless of handle.
   return { id, text: returnedText, url: `https://x.com/i/web/status/${id}` };
 }
+
+async function signedGet(url: string, creds: XCreds): Promise<any> {
+  const authHeader = signRequest('GET', url, creds);
+  const res = await fetch(url, { headers: { Authorization: authHeader } });
+  const responseText = await res.text();
+  if (!res.ok) throw new Error(`X GET ${url} ${res.status}: ${responseText}`);
+  return JSON.parse(responseText);
+}
+
+// Cache @myjunto_xyz user id for the lifetime of the lambda — never changes.
+let cachedMeId: string | null = null;
+
+export async function getMyUserId(): Promise<string> {
+  if (cachedMeId) return cachedMeId;
+  const creds = getCreds();
+  const data = await signedGet('https://api.x.com/2/users/me', creds);
+  const id = data?.data?.id;
+  if (!id) throw new Error(`X /users/me returned no id: ${JSON.stringify(data)}`);
+  cachedMeId = id;
+  return id;
+}
+
+export async function lookupUserId(handle: string): Promise<{ id: string; username: string; name: string }> {
+  const creds = getCreds();
+  const clean = handle.replace(/^@/, '').trim();
+  if (!clean) throw new Error('handle required');
+  const data = await signedGet(`https://api.x.com/2/users/by/username/${encodeURIComponent(clean)}`, creds);
+  const u = data?.data;
+  if (!u?.id) throw new Error(`X user @${clean} not found: ${JSON.stringify(data)}`);
+  return { id: u.id, username: u.username, name: u.name };
+}
+
+export interface FollowResult {
+  ok: true;
+  target_id: string;
+  target_handle: string;
+  following: boolean;
+  pending: boolean;
+}
+
+export async function followUser(handle: string): Promise<FollowResult> {
+  const creds = getCreds();
+  const [me, target] = await Promise.all([getMyUserId(), lookupUserId(handle)]);
+  const url = `https://api.x.com/2/users/${me}/following`;
+  const authHeader = signRequest('POST', url, creds);
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ target_user_id: target.id }),
+  });
+  const responseText = await res.text();
+  if (!res.ok) throw new Error(`X POST /2/users/${me}/following ${res.status}: ${responseText}`);
+  const data = JSON.parse(responseText);
+  return {
+    ok: true,
+    target_id: target.id,
+    target_handle: target.username,
+    following: !!data?.data?.following,
+    pending: !!data?.data?.pending_follow,
+  };
+}
