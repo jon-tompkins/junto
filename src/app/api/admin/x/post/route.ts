@@ -5,9 +5,14 @@ import { postTweet } from '@/lib/x/post';
 export const dynamic = 'force-dynamic';
 
 // POST /api/admin/x/post  { text: string, replyToId?: string }
-// Sends a tweet from the configured myjunto X account. Admin-only.
+// Sends a tweet from the configured myjunto X account.
+// Auth: either an admin session cookie OR `Authorization: Bearer $CRON_SECRET`
+// — the bearer path lets crons and ops agents fire tweets without a browser.
 export async function POST(req: NextRequest) {
-  if (!(await isAdminSession())) {
+  const bearer = req.headers.get('authorization');
+  const cronSecret = process.env.CRON_SECRET;
+  const bearerOk = bearer && cronSecret && bearer === `Bearer ${cronSecret}`;
+  if (!bearerOk && !(await isAdminSession())) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
