@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { TopNav } from '@/components/top-nav';
 import { AuthModal } from '@/components/auth-modal';
-import { QuickDispatch } from '@/components/quick-dispatch';
+import { TickerStrip } from '@/components/landing/TickerStrip';
 import {
   CADENCE_OPTIONS,
   CADENCE_LABELS,
@@ -201,45 +201,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How it works — 3-step illustration */}
-      <section className="container mx-auto px-4 pb-16">
-        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-3">
-          {[
-            { n: '1', title: 'Connect', body: 'Sign in with X or Google in one click.' },
-            { n: '2', title: 'Select your Junto', body: 'Pick the voices you trust — add accounts or import a Twitter list.' },
-            { n: '3', title: 'Get the signal', body: 'A daily brief in your inbox, plus optional audio podcast.' },
-          ].map((step) => (
-            <div
-              key={step.n}
-              className="rounded-sm p-5"
-              style={{ border: '1px solid rgba(176,141,87,0.18)', background: 'rgba(176,141,87,0.02)' }}
-            >
-              <div
-                className="text-xs font-mono mb-3"
-                style={{ color: '#B08D57' }}
-              >
-                {step.n.padStart(2, '0')}
-              </div>
-              <div
-                className="font-semibold mb-1.5"
-                style={{ color: '#F5EFE0', fontFamily: 'var(--font-oswald)', textTransform: 'uppercase', letterSpacing: '0.04em' }}
-              >
-                {step.title}
-              </div>
-              <div className="text-sm" style={{ color: 'rgba(245,239,224,0.55)' }}>{step.body}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* Ticker: live positions from the featured junto */}
+      <TickerStrip />
 
-      {/* Divider */}
-      <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
-
-      {/* Quick Dispatch — interactive demo, the most engaging proof */}
-      <QuickDispatch />
-
-      {/* Divider */}
-      <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
+      {/* How it works — three-step walkthrough with visuals */}
+      <HowItWorks />
 
       {/* Newsletter Grid */}
       <section className="container mx-auto px-4 py-20">
@@ -392,6 +358,142 @@ export default function LandingPage() {
         message="Sign in to subscribe to newsletters. New accounts get 1,000 free credits."
       />
     </main>
+  );
+}
+
+// ─────────────────────────────────────────────────
+// How It Works — three stacked steps with visuals
+// ─────────────────────────────────────────────────
+
+function HowItWorks() {
+  return (
+    <section className="container mx-auto px-4 py-24">
+      <div className="max-w-5xl mx-auto space-y-24">
+        <StepRow
+          n="01"
+          title="Choose your Junto"
+          body="A junto is a curated set of voices — the analysts, traders, and thinkers whose signal you actually trust. Pick a featured junto or build your own from X accounts, lists, and feeds."
+          visual={<ChooseJuntoVisual />}
+        />
+        <StepRow
+          n="02"
+          title="Define your Lens"
+          body="Tell us what you care about and how to think about it. A lens is your prompt — the angle the AI applies when synthesizing your sources. Bullish on small-caps? Watching macro? Lens it."
+          visual={<LensVisual />}
+          reverse
+        />
+        <StepRow
+          n="03"
+          title="Select your Delivery"
+          body="Email at 6am, Telegram alerts when the model fires, a podcast you listen to on your walk. Same junto, same lens, delivered however you actually consume."
+          visual={<DeliveryVisual />}
+        />
+      </div>
+    </section>
+  );
+}
+
+function StepRow({ n, title, body, visual, reverse }: { n: string; title: string; body: string; visual: React.ReactNode; reverse?: boolean }) {
+  return (
+    <div className={`grid md:grid-cols-2 gap-10 items-center ${reverse ? 'md:[direction:rtl]' : ''}`}>
+      <div className="md:[direction:ltr]">
+        <div className="text-xs font-mono mb-3" style={{ color: '#B08D57' }}>{n}</div>
+        <h3 className="text-3xl md:text-4xl font-bold mb-4 leading-tight" style={{ color: '#F5EFE0' }}>
+          {title}
+        </h3>
+        <p className="text-base leading-relaxed" style={{ color: 'rgba(245,239,224,0.6)' }}>{body}</p>
+      </div>
+      <div className="md:[direction:ltr]">
+        <div
+          className="rounded-sm p-6"
+          style={{ border: '1px solid rgba(176,141,87,0.18)', background: 'rgba(176,141,87,0.02)' }}
+        >
+          {visual}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChooseJuntoVisual() {
+  const voices = [
+    { handle: 'sama', name: 'Sam Altman' },
+    { handle: 'pmarca', name: 'Marc Andreessen' },
+    { handle: 'naval', name: 'Naval' },
+    { handle: 'balajis', name: 'Balaji' },
+    { handle: 'jposhaughnessy', name: 'Jim O’Shaughnessy' },
+    { handle: 'lulumeservey', name: 'Lulu Cheng Meservey' },
+  ];
+  return (
+    <div className="space-y-2">
+      <div className="text-[10px] uppercase tracking-widest mb-3" style={{ color: 'rgba(245,239,224,0.4)', fontFamily: 'var(--font-oswald)' }}>
+        Your Junto · 6 voices
+      </div>
+      {voices.map((v) => (
+        <div key={v.handle} className="flex items-center gap-3 p-2 rounded-sm" style={{ background: 'rgba(176,141,87,0.04)' }}>
+          <div className="w-7 h-7 rounded-sm flex items-center justify-center" style={{ background: 'rgba(176,141,87,0.12)' }}>
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" style={{ color: '#B08D57' }}>
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium truncate" style={{ color: '#F5EFE0' }}>@{v.handle}</div>
+            <div className="text-xs truncate" style={{ color: 'rgba(245,239,224,0.4)' }}>{v.name}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LensVisual() {
+  return (
+    <div className="space-y-3">
+      <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: 'rgba(245,239,224,0.4)', fontFamily: 'var(--font-oswald)' }}>
+        Your Lens
+      </div>
+      <div className="rounded-sm p-4 text-sm leading-relaxed" style={{ background: 'rgba(8,6,4,0.6)', border: '1px solid rgba(176,141,87,0.18)', color: 'rgba(245,239,224,0.85)', fontFamily: 'var(--font-mono)' }}>
+        <span style={{ color: '#B08D57' }}>&gt;</span> I&apos;m a long-only investor hunting under-followed small-caps. Surface contrarian theses, technical breakouts, and unusual options flow. Skip macro hot takes.
+      </div>
+      <div className="flex gap-2 flex-wrap pt-2">
+        {['small-cap', 'long-only', 'breakouts', 'contrarian'].map((tag) => (
+          <span key={tag} className="text-[11px] px-2 py-0.5 rounded-sm" style={{ background: 'rgba(176,141,87,0.08)', color: 'rgba(245,239,224,0.55)' }}>
+            {tag}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DeliveryVisual() {
+  const channels = [
+    { name: 'Email', meta: 'Daily · 6:00am', icon: '✉' },
+    { name: 'Telegram', meta: 'Real-time alerts', icon: '✦' },
+    { name: 'Podcast', meta: 'AI voice · 7 min', icon: '◉' },
+  ];
+  return (
+    <div className="space-y-2">
+      <div className="text-[10px] uppercase tracking-widest mb-3" style={{ color: 'rgba(245,239,224,0.4)', fontFamily: 'var(--font-oswald)' }}>
+        Delivery
+      </div>
+      {channels.map((c) => (
+        <div key={c.name} className="flex items-center justify-between p-3 rounded-sm" style={{ border: '1px solid rgba(176,141,87,0.18)', background: 'rgba(176,141,87,0.03)' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-sm flex items-center justify-center text-sm" style={{ background: 'rgba(176,141,87,0.1)', color: '#B08D57' }}>
+              {c.icon}
+            </div>
+            <div>
+              <div className="text-sm font-medium" style={{ color: '#F5EFE0' }}>{c.name}</div>
+              <div className="text-xs" style={{ color: 'rgba(245,239,224,0.4)' }}>{c.meta}</div>
+            </div>
+          </div>
+          <div className="w-9 h-5 rounded-full p-0.5" style={{ background: 'rgba(176,141,87,0.4)' }}>
+            <div className="w-4 h-4 rounded-full ml-auto" style={{ background: '#F5EFE0' }} />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
