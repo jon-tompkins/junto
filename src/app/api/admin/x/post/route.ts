@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     const result = await postTweet(text, body.replyToId ? { replyToId: body.replyToId } : undefined);
     return NextResponse.json({ ok: true, ...result });
   } catch (err: any) {
-    return NextResponse.json({ ok: false, error: err?.message || 'Post failed' }, { status: 500 });
+    console.error('[x/post] failed:', err?.message, err?.stack);
+    return NextResponse.json({ ok: false, error: err?.message || 'Post failed', stack: err?.stack?.split('\n').slice(0, 5) }, { status: 500 });
   }
 }
