@@ -38,7 +38,7 @@ export async function protectMandate(mandateId: string): Promise<{
     alpaca.getPositions().catch(() => [] as any[]),
     supabase
       .from('trades')
-      .select('id, ticker, side, qty, stop_price, target_price, bracket_order_id')
+      .select('id, ticker, side, qty, stop_price, target_price, stop_order_id, target_order_id')
       .eq('mandate_id', mandateId)
       .eq('status', 'open')
       .then((r) => r.data || []),
@@ -106,10 +106,18 @@ export async function protectMandate(mandateId: string): Promise<{
         clientOrderId: `protect-${trade.id}-${Date.now()}`,
       });
 
-      // Track the new bracket id so /live and the UI can find it later.
+      // OCO returns a parent order with two legs (stop + take_profit). Capture
+      // both leg ids so amendments can replaceOrder against the right leg.
+      const legs = Array.isArray((oco as any).legs) ? (oco as any).legs : [];
+      const stopLeg = legs.find((l: any) => l.type === 'stop' || l.type === 'stop_limit');
+      const targetLeg = legs.find((l: any) => l.type === 'limit');
       await supabase
         .from('trades')
-        .update({ bracket_order_id: oco.id, updated_at: new Date().toISOString() })
+        .update({
+          stop_order_id: stopLeg?.id || oco.id,
+          target_order_id: targetLeg?.id || oco.id,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', trade.id);
 
       results.push({ ticker: sym, action: 'protected', newOrderId: oco.id });
