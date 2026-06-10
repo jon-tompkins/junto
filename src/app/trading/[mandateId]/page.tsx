@@ -326,26 +326,18 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
 
   const pendingTrades = trades.filter(t => t.status === 'pending');
   const closedTrades = trades.filter(t => t.status === 'closed');
-  // Alpaca is the source of truth for what's actually held. Build the Open
-  // rows from broker positions and join the matching DB trade row by ticker
-  // (for stop/target levels we set, the trade-detail link, etc.). DB trades
-  // with status='open' but no broker position get a row too so a stuck
-  // bookkeeping mismatch stays visible instead of hiding.
+  // Alpaca is the source of truth for what's actually held. Open rows are
+  // exactly the broker positions; we join the matching DB trade by ticker
+  // for stop/target levels and the trade-detail link when present.
   const dbOpenByTicker = new Map<string, Trade>();
   for (const t of trades) {
     if (t.status === 'open') dbOpenByTicker.set(t.ticker.toUpperCase(), t);
   }
-  const positionTickers = new Set(Object.keys(positions));
-  const openRows = [
-    ...Object.entries(positions).map(([ticker, pos]) => ({
-      ticker,
-      pos,
-      trade: dbOpenByTicker.get(ticker) || null,
-    })),
-    ...Array.from(dbOpenByTicker.entries())
-      .filter(([ticker]) => !positionTickers.has(ticker))
-      .map(([ticker, trade]) => ({ ticker, pos: null, trade })),
-  ];
+  const openRows = Object.entries(positions).map(([ticker, pos]) => ({
+    ticker,
+    pos,
+    trade: dbOpenByTicker.get(ticker) || null,
+  }));
   const totalUnrealized = Object.values(positions).reduce((sum, p) => sum + (p.unrealized_pl || 0), 0);
   const realizedTotal = closedTrades.reduce((sum, t) => sum + (Number(t.realized_pnl_usd) || 0), 0);
   const cashPct = account.equity && account.equity > 0 && account.cash != null
@@ -827,7 +819,7 @@ interface OpenRow {
     live_target?: number | null;
     has_stop?: boolean;
     has_target?: boolean;
-  } | null;
+  };
   trade: Trade | null;
 }
 
@@ -849,20 +841,18 @@ function OpenPositionsTable({ rows }: { rows: OpenRow[] }) {
       </thead>
       <tbody>
         {rows.map(({ ticker, pos, trade }) => {
-          const side = pos?.side || trade?.side || '—';
-          const qty = pos?.qty ?? (trade?.qty != null ? Number(trade.qty) : null);
-          const entry = pos?.avg_entry_price ?? trade?.entry_price ?? null;
-          const last = pos?.current_price ?? null;
-          const stop = pos?.live_stop ?? trade?.stop_price ?? null;
-          const target = pos?.live_target ?? trade?.target_price ?? null;
-          const unrealized = pos?.unrealized_pl ?? null;
-          const statusBadge = !pos
-            ? { label: 'no broker pos', color: '#e8453c' }
-            : !trade
+          const side = pos.side || trade?.side || '—';
+          const qty = pos.qty ?? (trade?.qty != null ? Number(trade.qty) : null);
+          const entry = pos.avg_entry_price ?? trade?.entry_price ?? null;
+          const last = pos.current_price;
+          const stop = pos.live_stop ?? trade?.stop_price ?? null;
+          const target = pos.live_target ?? trade?.target_price ?? null;
+          const unrealized = pos.unrealized_pl;
+          const statusBadge = !trade
             ? { label: 'untracked', color: '#B08D57' }
             : { label: 'open', color: '#F5EFE0' };
-          const stopWarn = !!pos && pos.qty && !pos.has_stop;
-          const targetWarn = !!pos && pos.qty && !pos.has_target;
+          const stopWarn = !!pos.qty && !pos.has_stop;
+          const targetWarn = !!pos.qty && !pos.has_target;
           return (
             <tr key={ticker} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
               <td className="py-2 pr-4">
@@ -875,7 +865,7 @@ function OpenPositionsTable({ rows }: { rows: OpenRow[] }) {
               <td className="py-2 pr-4 text-[#F5EFE0]/60">{side}</td>
               <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{qty ?? '—'}</td>
               <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{entry ? `$${Number(entry).toFixed(2)}` : '—'}</td>
-              <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]">{last ? `$${last.toFixed(2)}` : '—'}</td>
+              <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]">{last ? `$${Number(last).toFixed(2)}` : '—'}</td>
               <td className="py-2 pr-4 text-right font-mono">
                 {stopWarn ? (
                   <span className="text-[#e8453c]" title="No stop order live at broker">⚠ {stop ? `$${Number(stop).toFixed(2)}` : '—'}</span>
@@ -890,8 +880,8 @@ function OpenPositionsTable({ rows }: { rows: OpenRow[] }) {
                   <span className="text-[#F5EFE0]/45">{target ? `$${Number(target).toFixed(2)}` : '—'}</span>
                 )}
               </td>
-              <td className="py-2 pr-4 text-right font-mono" style={{ color: unrealized == null ? '#F5EFE0' : unrealized >= 0 ? '#3ecf6a' : '#e8453c' }}>
-                {unrealized == null ? '—' : `${unrealized < 0 ? '-' : ''}$${Math.abs(unrealized).toFixed(2)}`}
+              <td className="py-2 pr-4 text-right font-mono" style={{ color: unrealized >= 0 ? '#3ecf6a' : '#e8453c' }}>
+                {`${unrealized < 0 ? '-' : ''}$${Math.abs(unrealized).toFixed(2)}`}
               </td>
               <td className="py-2 pr-4 text-xs" style={{ color: statusBadge.color }}>{statusBadge.label}</td>
             </tr>
