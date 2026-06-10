@@ -42,16 +42,25 @@ export async function POST(req: NextRequest) {
   if (update.callback_query) {
     const cb = update.callback_query;
     if (cb.data?.startsWith('trade_')) {
+      // Ack the callback and strip the inline keyboard immediately so a slow
+      // approveTrade (Alpaca submit + 30s fill poll + OCO attach) can't blow
+      // past Telegram's ~15s callback deadline, which leaves the button looking
+      // unresponsive and tempts the user to double-tap. The real result message
+      // goes out as a follow-up below.
+      await answerCallbackQuery(cb.id, 'Working…').catch(() => {});
+      if (cb.message) {
+        await editMessageReplyMarkup(cb.message.chat.id, cb.message.message_id).catch(() => {});
+      }
       try {
         const result = await handleApprovalCallback({ data: cb.data, chatId: cb.message?.chat?.id ?? 0 });
-        await answerCallbackQuery(cb.id, result.message);
         if (cb.message) {
-          await editMessageReplyMarkup(cb.message.chat.id, cb.message.message_id);
           await sendTelegramMessage(cb.message.chat.id, result.message, { replyMarkup: result.replyMarkup });
         }
       } catch (err: any) {
-        await answerCallbackQuery(cb.id, 'Error processing.');
         console.error('[trade approval]', err);
+        if (cb.message) {
+          await sendTelegramMessage(cb.message.chat.id, '⚠️ Error processing approval. Check the trade page.').catch(() => {});
+        }
       }
     } else if (cb.data?.startsWith('amend_')) {
       try {

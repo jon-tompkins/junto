@@ -1,6 +1,6 @@
 import { sendTelegramMessage, type InlineKeyboardMarkup } from '@/lib/telegram/client';
 import { getUserTelegramChatId } from '@/lib/telegram/link';
-import { getMandateById, getTradeById, updateTrade, addJournalEntry, updateSignalForTrade } from './db';
+import { getMandateById, getTradeById, updateTrade, addJournalEntry, updateSignalForTrade, claimTradeForSubmit } from './db';
 import { alpacaForMandate } from './client';
 import type { TradeDecision } from './types';
 
@@ -150,6 +150,17 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
           };
         }
       }
+    }
+
+    // Claim the trade before any Alpaca call so a concurrent Approve click
+    // (e.g. user retaps because the Telegram callback ack felt slow) can't
+    // double-submit. We stamp a placeholder alpaca_order_id; the real id
+    // overwrites it below. If the claim fails, another caller already owns
+    // the submission — return idempotently.
+    const placeholderOrderId = `pending-${tradeId}`;
+    const claimed = await claimTradeForSubmit(tradeId, placeholderOrderId);
+    if (!claimed) {
+      return { ok: true, message: `Already submitting ${trade.ticker}.` };
     }
 
     // Entry first (market, day — Alpaca requires day on market orders).

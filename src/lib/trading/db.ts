@@ -113,6 +113,23 @@ export async function updateTrade(
   if (error) throw error;
 }
 
+// Atomically reserve a pending trade for submission. Returns true if this
+// caller won the race; false if another caller already claimed it (e.g.
+// double-click on the Telegram Approve button). Claim is signaled by
+// stamping alpaca_order_id; the only legal pre-claim state is pending +
+// no order id.
+export async function claimTradeForSubmit(id: string, placeholderOrderId: string): Promise<boolean> {
+  const { data, error } = await getSupabase()
+    .from('trades')
+    .update({ alpaca_order_id: placeholderOrderId, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('status', 'pending')
+    .is('alpaca_order_id', null)
+    .select('id');
+  if (error) throw error;
+  return Array.isArray(data) && data.length > 0;
+}
+
 export async function addJournalEntry(params: {
   tradeId: string;
   kind: 'entry' | 'daily' | 'exit' | 'post_mortem';
