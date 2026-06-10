@@ -74,6 +74,31 @@ export async function POST(req: NextRequest) {
         await answerCallbackQuery(cb.id, 'Error processing.');
         console.error('[amend approval]', err);
       }
+    } else if (cb.data?.startsWith('menu_')) {
+      await answerCallbackQuery(cb.id, 'Loading…').catch(() => {});
+      const chatId = cb.message?.chat?.id;
+      if (chatId) {
+        const userId = await getUserIdByTelegramChatId(chatId);
+        if (!userId) {
+          await sendTelegramMessage(chatId, '⚠️ This chat isn\'t linked. Open <a href="https://myjunto.xyz">myjunto.xyz</a> → Settings → Link Telegram.');
+        } else {
+          try {
+            const action = cb.data.slice('menu_'.length);
+            let body: string;
+            switch (action) {
+              case 'positions': body = await buildPositionsMessage(userId); break;
+              case 'pnl':       body = await buildPnlMessage(userId); break;
+              case 'mandates':  body = await buildMandatesMessage(userId); break;
+              case 'ticks':     body = await buildTicksMessage(userId); break;
+              default:          body = 'Unknown menu action.';
+            }
+            await sendTelegramMessage(chatId, body);
+          } catch (err: any) {
+            console.error('[menu]', err);
+            await sendTelegramMessage(chatId, `⚠️ Menu action failed: ${err?.message?.slice(0, 200) || 'unknown'}`);
+          }
+        }
+      }
     } else {
       await answerCallbackQuery(cb.id);
     }
@@ -109,10 +134,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  if (/^\/menu(?:@\w+)?\s*$/i.test(text)) {
+    await sendTelegramMessage(
+      chatId,
+      `<b>📋 Junto menu</b>\n\nTap an action below, or type <code>/help</code> for the full command list.`,
+      {
+        replyMarkup: {
+          inline_keyboard: [
+            [
+              { text: '📊 Positions', callback_data: 'menu_positions' },
+              { text: '💰 P&L',        callback_data: 'menu_pnl' },
+            ],
+            [
+              { text: '🎯 Mandates',  callback_data: 'menu_mandates' },
+              { text: '⚡ Ticks',      callback_data: 'menu_ticks' },
+            ],
+            [
+              { text: '🌐 Open dashboard', url: 'https://myjunto.xyz/trading' },
+            ],
+          ],
+        },
+      },
+    );
+    return NextResponse.json({ ok: true });
+  }
+
   if (/^\/help(?:@\w+)?\s*$/i.test(text)) {
     await sendTelegramMessage(
       chatId,
       `<b>Junto bot commands</b>\n\n` +
+      `/menu — action buttons for common tasks\n` +
       `/positions — open positions + unrealized P&amp;L\n` +
       `/pnl — realized today/7d/all-time + equity\n` +
       `/mandates — list your mandates\n` +

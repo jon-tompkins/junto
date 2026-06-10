@@ -16,7 +16,7 @@ async function main() {
 
   const body: Record<string, unknown> = {
     url,
-    allowed_updates: ['message'],
+    allowed_updates: ['message', 'callback_query'],
     drop_pending_updates: true,
   };
   if (secret) body.secret_token = secret;
@@ -28,6 +28,34 @@ async function main() {
   });
   const data = await res.json();
   console.log('setWebhook:', data);
+
+  // Slash-command autocomplete + menu button. Keep in sync with the handler in
+  // src/app/api/telegram/webhook/route.ts.
+  const commands = [
+    { command: 'menu', description: 'Action buttons for common tasks' },
+    { command: 'positions', description: 'Open positions + unrealized P&L' },
+    { command: 'pnl', description: 'Realized today / 7d / all-time + equity' },
+    { command: 'mandates', description: 'List your trading mandates' },
+    { command: 'ticks', description: 'Recent tick-run activity' },
+    { command: 'pause', description: 'Pause a mandate (/pause <name>)' },
+    { command: 'resume', description: 'Resume a mandate (/resume <name>)' },
+    { command: 'close', description: 'Market-close a ticker (/close <ticker>)' },
+    { command: 'help', description: 'Show all commands' },
+    { command: 'start', description: 'Link your Junto account' },
+  ];
+  const cmdRes = await fetch(`https://api.telegram.org/bot${token}/setMyCommands`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ commands }),
+  }).then((r) => r.json());
+  console.log('setMyCommands:', cmdRes);
+
+  const menuRes = await fetch(`https://api.telegram.org/bot${token}/setChatMenuButton`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ menu_button: { type: 'commands' } }),
+  }).then((r) => r.json());
+  console.log('setChatMenuButton:', menuRes);
 
   const info = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`).then((r) => r.json());
   console.log('getWebhookInfo:', info);
