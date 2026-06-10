@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdminSession } from '@/lib/admin';
-import { postTweet } from '@/lib/x/post';
+import { postTweet, deleteTweet } from '@/lib/x/post';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,5 +42,23 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     console.error('[x/post] failed:', err?.message, err?.stack);
     return NextResponse.json({ ok: false, error: err?.message || 'Post failed', stack: err?.stack?.split('\n').slice(0, 5) }, { status: 500 });
+  }
+}
+
+// DELETE /api/admin/x/post?id=<tweetId>
+export async function DELETE(req: NextRequest) {
+  const bearer = req.headers.get('authorization');
+  const cronSecret = process.env.CRON_SECRET;
+  const bearerOk = bearer && cronSecret && bearer === `Bearer ${cronSecret}`;
+  if (!bearerOk && !(await isAdminSession())) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+  const id = new URL(req.url).searchParams.get('id');
+  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+  try {
+    const result = await deleteTweet(id);
+    return NextResponse.json({ ok: true, ...result });
+  } catch (err: any) {
+    return NextResponse.json({ ok: false, error: err?.message || 'Delete failed' }, { status: 500 });
   }
 }

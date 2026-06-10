@@ -32,7 +32,7 @@ function pct(s: string): string {
 }
 
 function signRequest(
-  method: 'GET' | 'POST',
+  method: 'GET' | 'POST' | 'DELETE',
   url: string,
   creds: XCreds,
   // Query params only — JSON body is NOT included in OAuth 1.0a signature base
@@ -119,6 +119,17 @@ export async function postTweet(
   // We don't know the screen name from the API response without an extra
   // /users/me call. The /i/web/status/ URL works regardless of handle.
   return { id, text: returnedText, url: `https://x.com/i/web/status/${id}` };
+}
+
+export async function deleteTweet(id: string): Promise<{ deleted: boolean }> {
+  const creds = getCreds();
+  const url = `https://api.x.com/2/tweets/${id}`;
+  const authHeader = signRequest('DELETE', url, creds);
+  const res = await fetch(url, { method: 'DELETE', headers: { Authorization: authHeader } });
+  const responseText = await res.text();
+  if (!res.ok) throw new Error(`X DELETE /2/tweets/${id} ${res.status}: ${responseText}`);
+  const data = JSON.parse(responseText);
+  return { deleted: !!data?.data?.deleted };
 }
 
 // Upload a single image to X via v1.1 media/upload (simple, non-chunked).
