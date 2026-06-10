@@ -136,8 +136,17 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-3 mb-6 sm:mb-8">
           <div>
             <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">
-              {trade.ticker} <span className="text-sm text-[#F5EFE0]/45">{trade.side} · {trade.qty}</span>
+              <Link href={`/positions/${encodeURIComponent(trade.ticker)}`} className="hover:text-[#B08D57] transition">
+                {trade.ticker}
+              </Link>{' '}
+              <span className="text-sm text-[#F5EFE0]/45">{trade.side} · {trade.qty}</span>
             </h1>
+            <Link
+              href={`/positions/${encodeURIComponent(trade.ticker)}`}
+              className="inline-block text-[10px] text-[#B08D57] hover:underline uppercase tracking-wide font-[var(--font-oswald)] mt-1"
+            >
+              View {trade.ticker} position →
+            </Link>
             <p className="text-sm text-[#F5EFE0]/45 mt-1">
               Entry {trade.entry_price ? `$${trade.entry_price.toFixed(2)}` : '—'}
               {' · '}Stop {trade.stop_price ? `$${trade.stop_price.toFixed(2)}` : '—'}
