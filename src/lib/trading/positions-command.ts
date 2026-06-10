@@ -120,8 +120,18 @@ export async function buildPositionsMessage(userId: string): Promise<string> {
 
       const srcs = sourcesByTrade.get(t.id);
       if (srcs && srcs.length) {
-        const resolved = await resolveSourceLabels(srcs.slice(0, 3));
-        const links = resolved.map(r => `<a href="${escapeHtml(r.url)}">${escapeHtml(r.label)}</a>`);
+        const resolved = await resolveSourceLabels(srcs);
+        // Multiple tweet URLs from the same handle are common (e.g. three
+        // posts by @intheassembly cited the same thesis). Dedupe by resolved
+        // label so the line shows distinct authors, not "@x · @x · @x".
+        const seen = new Set<string>();
+        const unique = resolved.filter(r => {
+          const key = r.label.toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        }).slice(0, 3);
+        const links = unique.map(r => `<a href="${escapeHtml(r.url)}">${escapeHtml(r.label)}</a>`);
         lines.push(`  Source: ${links.join(' · ')}`);
       }
     }
