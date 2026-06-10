@@ -15,6 +15,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   if (!mandate) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const positions: Record<string, {
+    qty: number;
+    side: 'long' | 'short';
+    avg_entry_price: number;
     current_price: number;
     unrealized_pl: number;
     live_stop: number | null;
@@ -58,7 +61,11 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
 
     for (const p of live) {
       const sym = p.symbol.toUpperCase();
+      const rawQty = Number(p.qty) || 0;
       positions[sym] = {
+        qty: Math.abs(rawQty),
+        side: rawQty < 0 || (p.side && String(p.side).toLowerCase() === 'short') ? 'short' : 'long',
+        avg_entry_price: Number(p.avg_entry_price) || 0,
         current_price: Number(p.current_price) || 0,
         unrealized_pl: Number(p.unrealized_pl) || 0,
         live_stop: stopBySym.get(sym) ?? null,

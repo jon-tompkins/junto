@@ -83,6 +83,9 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const [broker, setBroker] = useState<{ account_kind: string; mode: string; broker: string; alpaca_account_id: string | null; alpaca_key_id_last4: string | null } | null>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [positions, setPositions] = useState<Record<string, {
+    qty?: number;
+    side?: 'long' | 'short';
+    avg_entry_price?: number;
     current_price: number;
     unrealized_pl: number;
     live_stop?: number | null;
@@ -322,16 +325,28 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   }
 
   const pendingTrades = trades.filter(t => t.status === 'pending');
-  const openTrades = trades.filter(t => t.status === 'open' || t.status === 'pending');
   const closedTrades = trades.filter(t => t.status === 'closed');
-  // Sum unrealized only across positions the table is actually rendering,
-  // otherwise an orphan Alpaca position (no matching DB trade row) makes the
-  // header total disagree with the visible row sum.
-  const openTickers = new Set(openTrades.map(t => t.ticker));
-  const totalUnrealized = Object.entries(positions)
-    .filter(([ticker]) => openTickers.has(ticker))
-    .reduce((sum, [, p]) => sum + (p.unrealized_pl || 0), 0);
-  const untrackedTickers = Object.keys(positions).filter(ticker => !openTickers.has(ticker));
+  // Alpaca is the source of truth for what's actually held. Build the Open
+  // rows from broker positions and join the matching DB trade row by ticker
+  // (for stop/target levels we set, the trade-detail link, etc.). DB trades
+  // with status='open' but no broker position get a row too so a stuck
+  // bookkeeping mismatch stays visible instead of hiding.
+  const dbOpenByTicker = new Map<string, Trade>();
+  for (const t of trades) {
+    if (t.status === 'open') dbOpenByTicker.set(t.ticker.toUpperCase(), t);
+  }
+  const positionTickers = new Set(Object.keys(positions));
+  const openRows = [
+    ...Object.entries(positions).map(([ticker, pos]) => ({
+      ticker,
+      pos,
+      trade: dbOpenByTicker.get(ticker) || null,
+    })),
+    ...Array.from(dbOpenByTicker.entries())
+      .filter(([ticker]) => !positionTickers.has(ticker))
+      .map(([ticker, trade]) => ({ ticker, pos: null, trade })),
+  ];
+  const totalUnrealized = Object.values(positions).reduce((sum, p) => sum + (p.unrealized_pl || 0), 0);
   const realizedTotal = closedTrades.reduce((sum, t) => sum + (Number(t.realized_pnl_usd) || 0), 0);
   const cashPct = account.equity && account.equity > 0 && account.cash != null
     ? (account.cash / account.equity) * 100
@@ -436,12 +451,6 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             />
           </div>
         </div>
-
-        {untrackedTickers.length > 0 && (
-          <div className="bg-[#e8453c]/10 border border-[#e8453c]/50 rounded p-3 mb-6 text-xs text-[#e8453c]">
-            ⚠️ Broker has {untrackedTickers.length} position{untrackedTickers.length === 1 ? '' : 's'} not tracked here: {untrackedTickers.join(', ')}. These contribute to broker equity but not to the table or the Unrealized total above.
-          </div>
-        )}
 
         {pendingTrades.length > 0 && (
           <div className="bg-[#B08D57]/10 border border-[#B08D57]/50 rounded p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -656,13 +665,13 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         {/* Trades */}
         <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-6">
           <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] mb-3">
-            Open · {openTrades.length}
+            Open · {openRows.length}
           </h2>
-          {openTrades.length === 0 ? (
-            <p className="text-sm text-[#F5EFE0]/30">No open trades.</p>
+          {openRows.length === 0 ? (
+            <p className="text-sm text-[#F5EFE0]/30">No open positions.</p>
           ) : (
             <div className="overflow-x-auto -mx-5 px-5">
-              <TradeTable trades={openTrades} positions={positions} showLive />
+              <OpenPositionsTable rows={openRows} />
             </div>
           )}
         </div>
@@ -803,6 +812,93 @@ function SnapStat({
       </div>
       {sub && <div className="text-[10px] text-[#F5EFE0]/40 font-mono mt-0.5">{sub}</div>}
     </div>
+  );
+}
+
+interface OpenRow {
+  ticker: string;
+  pos: {
+    qty?: number;
+    side?: 'long' | 'short';
+    avg_entry_price?: number;
+    current_price: number;
+    unrealized_pl: number;
+    live_stop?: number | null;
+    live_target?: number | null;
+    has_stop?: boolean;
+    has_target?: boolean;
+  } | null;
+  trade: Trade | null;
+}
+
+function OpenPositionsTable({ rows }: { rows: OpenRow[] }) {
+  return (
+    <table className="w-full text-sm min-w-[760px]">
+      <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
+        <tr>
+          <th className="py-2 pr-4">Ticker</th>
+          <th className="py-2 pr-4">Side</th>
+          <th className="py-2 pr-4 text-right">Qty</th>
+          <th className="py-2 pr-4 text-right">Entry</th>
+          <th className="py-2 pr-4 text-right">Last</th>
+          <th className="py-2 pr-4 text-right">Stop</th>
+          <th className="py-2 pr-4 text-right">Target</th>
+          <th className="py-2 pr-4 text-right">Unrealized</th>
+          <th className="py-2 pr-4">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(({ ticker, pos, trade }) => {
+          const side = pos?.side || trade?.side || '—';
+          const qty = pos?.qty ?? (trade?.qty != null ? Number(trade.qty) : null);
+          const entry = pos?.avg_entry_price ?? trade?.entry_price ?? null;
+          const last = pos?.current_price ?? null;
+          const stop = pos?.live_stop ?? trade?.stop_price ?? null;
+          const target = pos?.live_target ?? trade?.target_price ?? null;
+          const unrealized = pos?.unrealized_pl ?? null;
+          const statusBadge = !pos
+            ? { label: 'no broker pos', color: '#e8453c' }
+            : !trade
+            ? { label: 'untracked', color: '#B08D57' }
+            : { label: 'open', color: '#F5EFE0' };
+          const stopWarn = !!pos && pos.qty && !pos.has_stop;
+          const targetWarn = !!pos && pos.qty && !pos.has_target;
+          return (
+            <tr key={ticker} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
+              <td className="py-2 pr-4">
+                {trade ? (
+                  <Link href={`/trading/trades/${trade.id}`} className="font-mono text-[#B08D57] hover:underline">{ticker}</Link>
+                ) : (
+                  <span className="font-mono text-[#B08D57]">{ticker}</span>
+                )}
+              </td>
+              <td className="py-2 pr-4 text-[#F5EFE0]/60">{side}</td>
+              <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{qty ?? '—'}</td>
+              <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{entry ? `$${Number(entry).toFixed(2)}` : '—'}</td>
+              <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]">{last ? `$${last.toFixed(2)}` : '—'}</td>
+              <td className="py-2 pr-4 text-right font-mono">
+                {stopWarn ? (
+                  <span className="text-[#e8453c]" title="No stop order live at broker">⚠ {stop ? `$${Number(stop).toFixed(2)}` : '—'}</span>
+                ) : (
+                  <span className="text-[#F5EFE0]/45">{stop ? `$${Number(stop).toFixed(2)}` : '—'}</span>
+                )}
+              </td>
+              <td className="py-2 pr-4 text-right font-mono">
+                {targetWarn ? (
+                  <span className="text-[#e8453c]" title="No target order live at broker">⚠ {target ? `$${Number(target).toFixed(2)}` : '—'}</span>
+                ) : (
+                  <span className="text-[#F5EFE0]/45">{target ? `$${Number(target).toFixed(2)}` : '—'}</span>
+                )}
+              </td>
+              <td className="py-2 pr-4 text-right font-mono" style={{ color: unrealized == null ? '#F5EFE0' : unrealized >= 0 ? '#3ecf6a' : '#e8453c' }}>
+                {unrealized == null ? '—' : `${unrealized < 0 ? '-' : ''}$${Math.abs(unrealized).toFixed(2)}`}
+              </td>
+              <td className="py-2 pr-4 text-xs" style={{ color: statusBadge.color }}>{statusBadge.label}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }
 
