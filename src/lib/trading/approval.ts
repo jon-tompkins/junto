@@ -223,6 +223,19 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
       content: `[approved by user via ${source}, submitted market order_id=${order.id}${protectedNow ? ', GTC OCO protection attached' : ', awaiting fill — protector will attach GTC OCO on next tick'}]`,
     });
     await updateSignalForTrade(tradeId, { decision: 'submitted', decisionReason: 'user_approved' });
+
+    // Best-effort: echo the position into the analyst profile of every source
+    // that drove the proposal so /sources/[handle] reflects what we traded.
+    // Don't block the user response on this — failures shouldn't surface to
+    // Telegram since the trade itself is fine.
+    if (filled) {
+      try {
+        const { recordTradeStanceForSources } = await import('./source-stance');
+        await recordTradeStanceForSources(tradeId);
+      } catch (e) {
+        console.error('[approval] recordTradeStanceForSources failed', e);
+      }
+    }
     return { ok: true, message: `✅ Submitted ${trade.ticker}${protectedNow ? ' — filled + protected.' : ' — awaiting fill.'}` };
   } catch (err: any) {
     await updateTrade(tradeId, { status: 'rejected' });
