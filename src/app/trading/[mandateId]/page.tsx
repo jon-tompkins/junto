@@ -88,6 +88,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     avg_entry_price?: number;
     current_price: number;
     unrealized_pl: number;
+    unrealized_intraday_pl?: number;
     live_stop?: number | null;
     live_target?: number | null;
     has_stop?: boolean;
@@ -815,6 +816,7 @@ interface OpenRow {
     avg_entry_price?: number;
     current_price: number;
     unrealized_pl: number;
+    unrealized_intraday_pl?: number;
     live_stop?: number | null;
     live_target?: number | null;
     has_stop?: boolean;
@@ -835,6 +837,7 @@ function OpenPositionsTable({ rows }: { rows: OpenRow[] }) {
           <th className="py-2 pr-4 text-right">Last</th>
           <th className="py-2 pr-4 text-right">Stop</th>
           <th className="py-2 pr-4 text-right">Target</th>
+          <th className="py-2 pr-4 text-right">Day P&amp;L</th>
           <th className="py-2 pr-4 text-right">Unrealized</th>
           <th className="py-2 pr-4">Status</th>
         </tr>
@@ -848,6 +851,7 @@ function OpenPositionsTable({ rows }: { rows: OpenRow[] }) {
           const stop = pos.live_stop ?? trade?.stop_price ?? null;
           const target = pos.live_target ?? trade?.target_price ?? null;
           const unrealized = pos.unrealized_pl;
+          const dayPl = pos.unrealized_intraday_pl ?? null;
           const statusBadge = !trade
             ? { label: 'untracked', color: '#B08D57' }
             : { label: 'open', color: '#F5EFE0' };
@@ -880,6 +884,9 @@ function OpenPositionsTable({ rows }: { rows: OpenRow[] }) {
                   <span className="text-[#F5EFE0]/45">{target ? `$${Number(target).toFixed(2)}` : '—'}</span>
                 )}
               </td>
+              <td className="py-2 pr-4 text-right font-mono" style={{ color: dayPl == null ? '#F5EFE0' : dayPl >= 0 ? '#3ecf6a' : '#e8453c' }}>
+                {dayPl == null ? '—' : `${dayPl < 0 ? '-' : ''}$${Math.abs(dayPl).toFixed(2)}`}
+              </td>
               <td className="py-2 pr-4 text-right font-mono" style={{ color: unrealized >= 0 ? '#3ecf6a' : '#e8453c' }}>
                 {`${unrealized < 0 ? '-' : ''}$${Math.abs(unrealized).toFixed(2)}`}
               </td>
@@ -901,6 +908,7 @@ function TradeTable({
   positions: Record<string, {
     current_price: number;
     unrealized_pl: number;
+    unrealized_intraday_pl?: number;
     live_stop?: number | null;
     live_target?: number | null;
     has_stop?: boolean;
