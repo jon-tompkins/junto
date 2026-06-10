@@ -102,7 +102,11 @@ export function makeManagedAlpaca(accountId: string): AlpacaClient {
     },
 
     listOpenOrders(symbol?: string) {
-      const qs = symbol ? `?status=open&symbols=${encodeURIComponent(symbol)}` : '?status=open';
+      // nested=true so OCO/bracket legs (stop_loss + take_profit) come back
+      // attached to their parent. Without it Alpaca surfaces only one leg of
+      // each OCO at top level and the UI thinks stops aren't live.
+      const base = `?status=open&nested=true`;
+      const qs = symbol ? `${base}&symbols=${encodeURIComponent(symbol)}` : base;
       return brokerFetch<AlpacaOrder[]>('GET', `${acct}/orders${qs}`);
     },
 
