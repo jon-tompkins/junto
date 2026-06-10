@@ -6,5 +6,21 @@ import { getTradingAccess } from '@/lib/trading/access';
 export default async function TradingLayout({ children }: { children: React.ReactNode }) {
   const access = await getTradingAccess();
   if (!access) redirect('/pricing?upgrade=operator');
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <footer className="max-w-6xl mx-auto px-4 sm:px-6 pb-10 pt-2 text-[11px] text-[#F5EFE0]/35 font-[var(--font-oswald)] uppercase tracking-wide flex items-center gap-2">
+        <span>Powered by</span>
+        <a
+          href="https://alpaca.markets"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#B08D57] hover:text-[#F5EFE0] underline-offset-2 hover:underline normal-case tracking-normal"
+        >
+          Alpaca
+        </a>
+        <span>· orders, positions, and protective brackets execute in your own Alpaca account.</span>
+      </footer>
+    </>
+  );
 }
