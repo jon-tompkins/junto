@@ -71,7 +71,10 @@ export interface PostTweetResult {
   url: string;
 }
 
-export async function postTweet(text: string, opts?: { replyToId?: string }): Promise<PostTweetResult> {
+export async function postTweet(
+  text: string,
+  opts?: { replyToId?: string; mediaIds?: string[]; images?: Array<{ data: Buffer; mimeType: string }> },
+): Promise<PostTweetResult> {
   // Auto-tag every agent-posted tweet with 🤖 so the feed makes it obvious
   // which posts came from automation vs. a human at the keyboard. Skipped if
   // the caller already included the emoji.
@@ -80,8 +83,17 @@ export async function postTweet(text: string, opts?: { replyToId?: string }): Pr
   const creds = getCreds();
   const url = 'https://api.x.com/2/tweets';
 
+  const mediaIds: string[] = [...(opts?.mediaIds || [])];
+  if (opts?.images?.length) {
+    for (const img of opts.images) {
+      mediaIds.push(await uploadMedia(img.data, img.mimeType, creds));
+    }
+  }
+  if (mediaIds.length > 4) throw new Error(`X allows at most 4 media per tweet (got ${mediaIds.length})`);
+
   const body: Record<string, any> = { text: tagged };
   if (opts?.replyToId) body.reply = { in_reply_to_tweet_id: opts.replyToId };
+  if (mediaIds.length) body.media = { media_ids: mediaIds };
 
   const authHeader = signRequest('POST', url, creds);
 
@@ -107,6 +119,27 @@ export async function postTweet(text: string, opts?: { replyToId?: string }): Pr
   // We don't know the screen name from the API response without an extra
   // /users/me call. The /i/web/status/ URL works regardless of handle.
   return { id, text: returnedText, url: `https://x.com/i/web/status/${id}` };
+}
+
+// Upload a single image to X via v1.1 media/upload (simple, non-chunked).
+// Multipart bodies are NOT included in the OAuth 1.0a signature base string
+// per Twitter's spec, so we sign the bare endpoint URL with no query params.
+// Returns the media_id_string to attach to a v2 tweet.
+async function uploadMedia(data: Buffer, mimeType: string, creds: XCreds): Promise<string> {
+  if (data.length > 5 * 1024 * 1024) {
+    throw new Error(`Image exceeds 5MB simple-upload limit (got ${data.length} bytes); chunked INIT/APPEND/FINALIZE not implemented`);
+  }
+  const url = 'https://upload.twitter.com/1.1/media/upload.json';
+  const authHeader = signRequest('POST', url, creds);
+  const form = new FormData();
+  form.append('media', new Blob([new Uint8Array(data)], { type: mimeType }), 'upload');
+  const res = await fetch(url, { method: 'POST', headers: { Authorization: authHeader }, body: form });
+  const responseText = await res.text();
+  if (!res.ok) throw new Error(`X media/upload ${res.status}: ${responseText}`);
+  const parsed = JSON.parse(responseText);
+  const id = parsed?.media_id_string;
+  if (!id) throw new Error(`X media/upload returned no media_id_string: ${responseText}`);
+  return id;
 }
 
 async function signedGet(url: string, creds: XCreds): Promise<any> {

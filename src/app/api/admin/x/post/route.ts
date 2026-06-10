@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  let body: { text?: string; replyToId?: string };
+  let body: { text?: string; replyToId?: string; imageUrls?: string[] };
   try {
     body = await req.json();
   } catch {
@@ -27,7 +27,17 @@ export async function POST(req: NextRequest) {
   if (!text) return NextResponse.json({ error: 'text required' }, { status: 400 });
 
   try {
-    const result = await postTweet(text, body.replyToId ? { replyToId: body.replyToId } : undefined);
+    const images = await Promise.all((body.imageUrls || []).map(async (u) => {
+      const r = await fetch(u);
+      if (!r.ok) throw new Error(`fetch ${u} → ${r.status}`);
+      const mimeType = r.headers.get('content-type') || 'image/jpeg';
+      const data = Buffer.from(await r.arrayBuffer());
+      return { data, mimeType };
+    }));
+    const result = await postTweet(text, {
+      replyToId: body.replyToId,
+      images: images.length ? images : undefined,
+    });
     return NextResponse.json({ ok: true, ...result });
   } catch (err: any) {
     console.error('[x/post] failed:', err?.message, err?.stack);
