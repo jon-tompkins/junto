@@ -324,7 +324,14 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const pendingTrades = trades.filter(t => t.status === 'pending');
   const openTrades = trades.filter(t => t.status === 'open' || t.status === 'pending');
   const closedTrades = trades.filter(t => t.status === 'closed');
-  const totalUnrealized = Object.values(positions).reduce((sum, p) => sum + (p.unrealized_pl || 0), 0);
+  // Sum unrealized only across positions the table is actually rendering,
+  // otherwise an orphan Alpaca position (no matching DB trade row) makes the
+  // header total disagree with the visible row sum.
+  const openTickers = new Set(openTrades.map(t => t.ticker));
+  const totalUnrealized = Object.entries(positions)
+    .filter(([ticker]) => openTickers.has(ticker))
+    .reduce((sum, [, p]) => sum + (p.unrealized_pl || 0), 0);
+  const untrackedTickers = Object.keys(positions).filter(ticker => !openTickers.has(ticker));
   const realizedTotal = closedTrades.reduce((sum, t) => sum + (Number(t.realized_pnl_usd) || 0), 0);
   const cashPct = account.equity && account.equity > 0 && account.cash != null
     ? (account.cash / account.equity) * 100
@@ -429,6 +436,12 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             />
           </div>
         </div>
+
+        {untrackedTickers.length > 0 && (
+          <div className="bg-[#e8453c]/10 border border-[#e8453c]/50 rounded p-3 mb-6 text-xs text-[#e8453c]">
+            ⚠️ Broker has {untrackedTickers.length} position{untrackedTickers.length === 1 ? '' : 's'} not tracked here: {untrackedTickers.join(', ')}. These contribute to broker equity but not to the table or the Unrealized total above.
+          </div>
+        )}
 
         {pendingTrades.length > 0 && (
           <div className="bg-[#B08D57]/10 border border-[#B08D57]/50 rounded p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
