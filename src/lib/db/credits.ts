@@ -59,26 +59,23 @@ export async function addCredits(
   type: string,
   description: string,
 ): Promise<void> {
-  const { data: user, error: fetchErr } = await supabase()
-    .from('users')
-    .select('credit_balance')
-    .eq('id', userId)
-    .single();
+  // Atomic: single UPDATE via RPC — mirrors deduct_credits to prevent concurrent
+  // payout races when multiple subscribers in one run pay the same creator.
+  const { data: newBalance, error: rpcErr } = await supabase()
+    .rpc('add_credits', { p_user_id: userId, p_amount: amount });
 
-  if (fetchErr || !user) return;
+  if (rpcErr || newBalance === -1) {
+    console.error('add_credits RPC failed', { type, userId, err: rpcErr?.message });
+    return;
+  }
 
-  const newBalance = user.credit_balance + amount;
-  await supabase()
-    .from('users')
-    .update({ credit_balance: newBalance })
-    .eq('id', userId);
-
-  await supabase().from('credit_transactions').insert({
+  const { error: insertErr } = await supabase().from('credit_transactions').insert({
     user_id: userId,
     amount,
     type,
     description,
   });
+  if (insertErr) console.error('credit_transactions insert failed', { type, userId, err: insertErr.message });
 }
 
 /**
