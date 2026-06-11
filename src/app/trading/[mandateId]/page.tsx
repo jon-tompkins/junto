@@ -341,6 +341,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   }));
   const totalUnrealized = Object.values(positions).reduce((sum, p) => sum + (p.unrealized_pl || 0), 0);
   const realizedTotal = closedTrades.reduce((sum, t) => sum + (Number(t.realized_pnl_usd) || 0), 0);
+  const positionEquity = Object.values(positions).reduce((sum, p) => sum + ((p.qty || 0) * (p.current_price || 0)), 0);
   const cashPct = account.equity && account.equity > 0 && account.cash != null
     ? (account.cash / account.equity) * 100
     : null;
@@ -419,7 +420,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <SnapStat
               label="Equity"
-              value={account.equity == null ? '—' : fmtUsd(account.equity)}
+              value={openRows.length === 0 ? '—' : fmtUsd(positionEquity)}
               sub={`capital ${fmtUsd(mandate.capital_allotted_usd)}`}
             />
             <SnapStat
@@ -827,7 +828,7 @@ interface OpenRow {
 
 function OpenPositionsTable({ rows }: { rows: OpenRow[] }) {
   return (
-    <table className="w-full text-sm min-w-[760px]">
+    <table className="w-full text-sm min-w-[860px]">
       <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
         <tr>
           <th className="py-2 pr-4">Ticker</th>
@@ -835,6 +836,7 @@ function OpenPositionsTable({ rows }: { rows: OpenRow[] }) {
           <th className="py-2 pr-4 text-right">Qty</th>
           <th className="py-2 pr-4 text-right">Entry</th>
           <th className="py-2 pr-4 text-right">Last</th>
+          <th className="py-2 pr-4 text-right">Mkt Value</th>
           <th className="py-2 pr-4 text-right">Stop</th>
           <th className="py-2 pr-4 text-right">Target</th>
           <th className="py-2 pr-4 text-right">Day P&amp;L</th>
@@ -848,6 +850,7 @@ function OpenPositionsTable({ rows }: { rows: OpenRow[] }) {
           const qty = pos.qty ?? (trade?.qty != null ? Number(trade.qty) : null);
           const entry = pos.avg_entry_price ?? trade?.entry_price ?? null;
           const last = pos.current_price;
+          const marketValue = qty != null && last ? qty * last : null;
           const stop = pos.live_stop ?? trade?.stop_price ?? null;
           const target = pos.live_target ?? trade?.target_price ?? null;
           const unrealized = pos.unrealized_pl;
@@ -870,6 +873,7 @@ function OpenPositionsTable({ rows }: { rows: OpenRow[] }) {
               <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{qty ?? '—'}</td>
               <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{entry ? `$${Number(entry).toFixed(2)}` : '—'}</td>
               <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]">{last ? `$${Number(last).toFixed(2)}` : '—'}</td>
+              <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{marketValue != null ? fmtUsd(marketValue) : '—'}</td>
               <td className="py-2 pr-4 text-right font-mono">
                 {stopWarn ? (
                   <span className="text-[#e8453c]" title="No stop order live at broker">⚠ {stop ? `$${Number(stop).toFixed(2)}` : '—'}</span>
