@@ -20,11 +20,14 @@ export function JuntoChat({ juntoId, juntoName, disabled }: JuntoChatProps) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const [collapsed, setCollapsed] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    // Scroll only within the message list, not the whole page.
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, loading]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -67,16 +70,25 @@ export function JuntoChat({ juntoId, juntoName, disabled }: JuntoChatProps) {
   return (
     <div className="rounded-xl border border-[rgba(176,141,87,0.18)] bg-[#141210] overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-[rgba(176,141,87,0.12)] flex items-center justify-between">
+      <button
+        type="button"
+        onClick={() => setCollapsed(c => !c)}
+        className="w-full px-4 py-3 border-b border-[rgba(176,141,87,0.12)] flex items-center justify-between text-left hover:bg-[rgba(176,141,87,0.04)] transition-colors"
+      >
         <div className="flex items-center gap-2">
           <span className="text-lg">💬</span>
           <h3 className="text-sm font-semibold text-[#F5EFE0]">Chat with {juntoName}</h3>
         </div>
-        <span className="text-xs text-[#F5EFE0]/40">10 credits/query • Operator/Pro</span>
-      </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-[#F5EFE0]/40">10 credits/query • Operator/Pro</span>
+          <span className={`text-[#F5EFE0]/40 text-xs transition-transform ${collapsed ? '' : 'rotate-180'}`}>▾</span>
+        </div>
+      </button>
 
+      {!collapsed && (
+      <>
       {/* Messages */}
-      <div className="h-80 overflow-y-auto p-4 space-y-3">
+      <div ref={scrollRef} className="h-80 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 && (
           <div className="text-center py-8 text-[#F5EFE0]/30 text-sm">
             <p className="mb-2">Ask about what your junto sources are discussing</p>
@@ -112,8 +124,6 @@ export function JuntoChat({ juntoId, juntoName, disabled }: JuntoChatProps) {
             </div>
           </div>
         )}
-
-        <div ref={bottomRef} />
       </div>
 
       {/* Error */}
@@ -147,6 +157,8 @@ export function JuntoChat({ juntoId, juntoName, disabled }: JuntoChatProps) {
           →
         </button>
       </form>
+      </>
+      )}
     </div>
   );
 }
