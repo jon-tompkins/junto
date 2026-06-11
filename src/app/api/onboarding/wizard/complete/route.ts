@@ -11,6 +11,7 @@ interface WizardPayload {
   juntoId: string;          // public junto chosen as featured
   tickers: string[];        // pre-filled + user-edited
   dispatchEmail?: boolean;
+  deliveryEmail?: string;   // delivery address — required for Twitter signups (no OAuth email)
   audioEnabled?: boolean;
   sendWindows?: string[];   // ['morning'] default
 }
@@ -63,6 +64,12 @@ export async function POST(req: NextRequest) {
     };
     if (typeof body.dispatchEmail === 'boolean') updates.dispatch_email = body.dispatchEmail;
     if (typeof body.audioEnabled === 'boolean') updates.dispatch_audio_enabled = body.audioEnabled;
+    // Persist the delivery email (Twitter signups have none from OAuth). Only
+    // accept a well-formed address so we never store junk on the account.
+    const deliveryEmail = body.deliveryEmail?.trim();
+    if (deliveryEmail && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(deliveryEmail)) {
+      updates.email = deliveryEmail;
+    }
     await supabase.from('users').update(updates).eq('id', user.id);
 
     // ── 2. Personal newsletter — create or update pointing at the preset ─

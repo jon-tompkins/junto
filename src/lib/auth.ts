@@ -51,6 +51,9 @@ export const authOptions: NextAuthOptions = {
         }
       } catch (err) {
         console.error('SignIn callback error:', err);
+        // Don't let a failed user lookup/create fall through into a broken,
+        // half-provisioned session — block sign-in so NextAuth surfaces it.
+        return false;
       }
       return true;
     },
@@ -93,10 +96,9 @@ async function handleTwitterSignIn(supabase: ReturnType<typeof getSupabase>, pro
   if (existingUser) {
     const { error } = await supabase.from('users').update(userData).eq('id', existingUser.id);
     if (error) console.error('SignIn: Error updating user:', error);
-  } else {
-    await createNewUser(supabase, { ...userData, credit_purchased: NEW_USER_BONUS_CREDITS, is_pro: true }, 'twitter_id', twitterId);
+    return true;
   }
-  return true;
+  return createNewUser(supabase, { ...userData, credit_purchased: NEW_USER_BONUS_CREDITS, is_pro: true }, 'twitter_id', twitterId);
 }
 
 async function handleGoogleSignIn(supabase: ReturnType<typeof getSupabase>, profile: any): Promise<boolean> {
@@ -128,10 +130,9 @@ async function handleGoogleSignIn(supabase: ReturnType<typeof getSupabase>, prof
   if (existingUser) {
     const { error } = await supabase.from('users').update(userData).eq('id', existingUser.id);
     if (error) console.error('SignIn: Error updating user:', error);
-  } else {
-    await createNewUser(supabase, { ...userData, credit_purchased: NEW_USER_BONUS_CREDITS, is_pro: true }, 'google_id', googleId);
+    return true;
   }
-  return true;
+  return createNewUser(supabase, { ...userData, credit_purchased: NEW_USER_BONUS_CREDITS, is_pro: true }, 'google_id', googleId);
 }
 
 async function createNewUser(
@@ -139,12 +140,12 @@ async function createNewUser(
   userData: Record<string, any>,
   conflictKey: string,
   lookupValue: string | undefined,
-) {
+): Promise<boolean> {
   console.log('SignIn: Creating new user with', NEW_USER_BONUS_CREDITS, 'bonus credits');
   const { error } = await supabase.from('users').upsert(userData, { onConflict: conflictKey });
   if (error) {
     console.error('SignIn: Error creating user:', error);
-    return;
+    return false;
   }
 
   const { data: newUser } = await supabase.from('users').select('id').eq(conflictKey, lookupValue).single();
@@ -156,4 +157,5 @@ async function createNewUser(
       description: 'Welcome bonus — new account signup',
     });
   }
+  return true;
 }

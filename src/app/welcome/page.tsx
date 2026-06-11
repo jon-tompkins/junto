@@ -85,6 +85,9 @@ export default function WelcomePage() {
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [sendWindow, setSendWindow] = useState('morning');
 
+  const [deliveryEmail, setDeliveryEmail] = useState('');
+  const [hasAccountEmail, setHasAccountEmail] = useState(true);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,6 +96,25 @@ export default function WelcomePage() {
       router.push('/login?callbackUrl=/welcome');
     }
   }, [status, router]);
+
+  // Prefill the delivery email from the account (Google supplies one; Twitter
+  // doesn't — those users need to enter one here or they get no dispatch).
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    fetch('/api/v2/account')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.email) {
+          setDeliveryEmail(d.email);
+          setHasAccountEmail(true);
+        } else {
+          setHasAccountEmail(false);
+        }
+      })
+      .catch(() => {});
+  }, [status]);
+
+  const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(deliveryEmail.trim());
 
   // When interests change, fetch matching presets and pre-fill tickers
   // from the union of default ticker sets, dedup'd.
@@ -145,6 +167,11 @@ export default function WelcomePage() {
 
   const submit = async () => {
     if (!selectedJuntoId) return;
+    if (dispatchEmail && !emailValid) {
+      setError('Add a valid email to receive your dispatch — or turn off email delivery.');
+      setDeliveryOpen(true);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -156,6 +183,7 @@ export default function WelcomePage() {
           juntoId: selectedJuntoId,
           tickers,
           dispatchEmail,
+          deliveryEmail: deliveryEmail.trim() || undefined,
           audioEnabled,
           sendWindows: [sendWindow],
         }),
@@ -364,10 +392,30 @@ export default function WelcomePage() {
             <div className="space-y-2 text-sm bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4">
               <Row label="Junto" value={selectedJunto?.name || '—'} />
               <Row label="Watchlist" value={tickers.length > 0 ? tickers.map((t) => `$${t}`).join(', ') : 'None yet'} />
-              <Row label="Email" value={dispatchEmail ? 'On' : 'Off'} />
+              <Row label="Email" value={dispatchEmail ? (deliveryEmail.trim() || 'On') : 'Off'} />
               <Row label="Audio" value={audioEnabled ? 'On' : 'Off'} />
               <Row label="When" value={SEND_WINDOWS.find((w) => w.value === sendWindow)?.label || sendWindow} />
             </div>
+
+            {dispatchEmail && (
+              <div className="mt-4">
+                <label className="text-xs text-[#F5EFE0]/55 font-mono uppercase tracking-wide block mb-1">
+                  {hasAccountEmail ? 'Delivery email' : 'Where should we send it?'}
+                </label>
+                <input
+                  type="email"
+                  value={deliveryEmail}
+                  onChange={(e) => setDeliveryEmail(e.target.value)}
+                  placeholder="you@email.com"
+                  className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
+                />
+                {!hasAccountEmail && (
+                  <p className="mt-1 text-xs text-[#F5EFE0]/45">
+                    Your account has no email on file — add one so your dispatch can reach you.
+                  </p>
+                )}
+              </div>
+            )}
 
             <button
               onClick={() => setDeliveryOpen((o) => !o)}
