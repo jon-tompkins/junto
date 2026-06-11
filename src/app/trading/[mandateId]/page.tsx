@@ -422,7 +422,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             <SnapStat
               label="Equity"
               value={openRows.length === 0 ? '—' : fmtUsd(positionEquity)}
-              sub={`capital ${fmtUsd(mandate.capital_allotted_usd)}`}
+              sub={account.equity != null ? `acct ${fmtUsd(account.equity)}` : `capital ${fmtUsd(mandate.capital_allotted_usd)}`}
             />
             <SnapStat
               label="Cash"
