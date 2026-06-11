@@ -6,20 +6,28 @@ import { TIER_MONTHLY_CREDITS, tierForPriceId, type Tier } from '@/lib/tiers';
 // Fallback for subscriptions whose price ID we can't map (legacy / mis-config).
 const FALLBACK_MONTHLY_CREDITS = TIER_MONTHLY_CREDITS.pro;
 
+// Day-of-month (1-28, clamped) the subscription bills on — the monthly reset anchor.
+function anchorDayFromUnix(ts: number | null | undefined): number {
+  if (!ts) return Math.min(new Date().getUTCDate(), 28);
+  return Math.min(new Date(ts * 1000).getUTCDate(), 28);
+}
+
 async function detailsForSubscription(
   subscriptionId: string,
-): Promise<{ amount: number; interval: 'month' | 'year'; tier: Exclude<Tier, 'free'> }> {
+): Promise<{ amount: number; interval: 'month' | 'year'; tier: Exclude<Tier, 'free'>; anchorDay: number }> {
   try {
     const sub = await getStripe().subscriptions.retrieve(subscriptionId);
     const price = sub.items.data[0]?.price;
     const interval = (price?.recurring?.interval ?? 'month') as 'month' | 'year';
     const mapped = price?.id ? tierForPriceId(price.id) : null;
     const tier = mapped?.tier ?? 'pro';
-    const monthly = TIER_MONTHLY_CREDITS[tier];
-    const amount = interval === 'year' ? monthly * 12 : monthly;
-    return { amount, interval, tier };
+    // Always the MONTHLY allotment — annual billers get monthly resets via the
+    // reset cron, not a 12x lump that defeats use-it-or-lose-it.
+    const amount = TIER_MONTHLY_CREDITS[tier];
+    const anchorDay = anchorDayFromUnix((sub as any).billing_cycle_anchor ?? (sub as any).current_period_start);
+    return { amount, interval, tier, anchorDay };
   } catch {
-    return { amount: FALLBACK_MONTHLY_CREDITS, interval: 'month', tier: 'pro' };
+    return { amount: FALLBACK_MONTHLY_CREDITS, interval: 'month', tier: 'pro', anchorDay: Math.min(new Date().getUTCDate(), 28) };
   }
 }
 
@@ -70,6 +78,7 @@ async function setSubscriptionStatus(
   tier: Tier,
   customerId?: string,
   subscriptionId?: string,
+  anchorDay?: number,
 ) {
   const supabase = getSupabase();
   const active = tier !== 'free';
@@ -80,6 +89,7 @@ async function setSubscriptionStatus(
   };
   if (customerId) updates.stripe_customer_id = customerId;
   if (subscriptionId) updates.stripe_subscription_id = active ? subscriptionId : null;
+  if (active && anchorDay) updates.subscription_anchor_day = anchorDay;
   if (!active) updates.pro_expires_at = new Date().toISOString();
   await supabase.from('users').update(updates).eq('id', userId);
 }
@@ -134,8 +144,8 @@ export async function POST(req: NextRequest) {
           if (!userId) break;
           const customerId = session.customer as string;
           const subscriptionId = session.subscription as string;
-          const { amount, interval, tier } = await detailsForSubscription(subscriptionId);
-          await setSubscriptionStatus(userId, tier, customerId, subscriptionId);
+          const { amount, interval, tier, anchorDay } = await detailsForSubscription(subscriptionId);
+          await setSubscriptionStatus(userId, tier, customerId, subscriptionId, anchorDay);
           const tierLabel = tier === 'operator' ? 'Operator' : 'Pro';
           const label = `${tierLabel} subscription — ${interval === 'year' ? 'annual' : 'monthly'} credits`;
           await setSubscriptionCredits(userId, amount, label, session.id);
@@ -190,7 +200,8 @@ export async function POST(req: NextRequest) {
         const priceId = sub.items?.data?.[0]?.price?.id as string | undefined;
         const mapped = priceId ? tierForPriceId(priceId) : null;
         const tier: Tier = mapped?.tier ?? 'pro';
-        await setSubscriptionStatus(userId, tier, undefined, sub.id);
+        const anchorDay = anchorDayFromUnix(sub.billing_cycle_anchor ?? sub.current_period_start);
+        await setSubscriptionStatus(userId, tier, undefined, sub.id, anchorDay);
         console.log(`[webhook] Subscription updated → ${tier} for user ${userId}`);
         break;
       }
