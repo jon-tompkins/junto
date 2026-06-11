@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 import { PositionsHeatmap, HeatmapPosition } from '@/components/positions-heatmap';
+import { JuntoChat } from '@/components/junto-chat';
 
 interface PositionEntry {
   stance: 'bullish' | 'bearish' | 'neutral' | 'cautious';
@@ -378,6 +379,13 @@ export default function JuntoViewPage() {
                 </Link>
               ))}
             </div>
+          </section>
+        )}
+
+        {/* Junto Chat */}
+        {isOwner && (
+          <section className="mb-10">
+            <JuntoChat juntoId={junto.id} juntoName={junto.name} />
           </section>
         )}
 
