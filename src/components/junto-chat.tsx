@@ -22,12 +22,16 @@ export function JuntoChat({ juntoId, juntoName, disabled }: JuntoChatProps) {
   const [error, setError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const lastMsgRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Scroll only within the message list, not the whole page.
-    const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages, loading]);
+    // Align the top of the newest message with the top of the list,
+    // scrolling only within the list (never the page).
+    const container = scrollRef.current;
+    const el = lastMsgRef.current;
+    if (!container || !el) return;
+    container.scrollTop += el.getBoundingClientRect().top - container.getBoundingClientRect().top;
+  }, [messages]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -98,7 +102,11 @@ export function JuntoChat({ juntoId, juntoName, disabled }: JuntoChatProps) {
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <div
+            key={i}
+            ref={i === messages.length - 1 ? lastMsgRef : undefined}
+            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
             <div
               className={`max-w-[85%] rounded-lg px-3 py-2 text-sm leading-relaxed ${
                 msg.role === 'user'
