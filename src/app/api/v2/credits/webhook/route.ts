@@ -23,20 +23,43 @@ async function detailsForSubscription(
   }
 }
 
-async function addCredits(userId: string, amount: number, description: string, relatedId: string) {
+// One-time credit-pack purchase → persistent, non-redeemable "purchased" bucket.
+async function addPurchasedCredits(userId: string, amount: number, description: string, relatedId: string) {
   const supabase = getSupabase();
-  const { data: user } = await supabase
-    .from('users')
-    .select('credit_balance')
-    .eq('id', userId)
-    .single();
-  if (!user) return;
-  const newBalance = (user.credit_balance || 0) + amount;
-  await supabase.from('users').update({ credit_balance: newBalance }).eq('id', userId);
+  const { error } = await supabase.rpc('add_credits', {
+    p_user_id: userId,
+    p_amount: amount,
+    p_bucket: 'purchased',
+  });
+  if (error) {
+    console.error('[webhook] add_credits failed', error.message);
+    return;
+  }
   await supabase.from('credit_transactions').insert({
     user_id: userId,
     amount,
     type: 'purchase',
+    description,
+    related_id: relatedId,
+  });
+}
+
+// Subscription credits RESET to the monthly allotment on each grant/renewal
+// (use-it-or-lose-it), rather than accumulating.
+async function setSubscriptionCredits(userId: string, amount: number, description: string, relatedId: string) {
+  const supabase = getSupabase();
+  const { error } = await supabase.rpc('set_subscription_credits', {
+    p_user_id: userId,
+    p_amount: amount,
+  });
+  if (error) {
+    console.error('[webhook] set_subscription_credits failed', error.message);
+    return;
+  }
+  await supabase.from('credit_transactions').insert({
+    user_id: userId,
+    amount,
+    type: 'subscription',
     description,
     related_id: relatedId,
   });
@@ -102,7 +125,7 @@ export async function POST(req: NextRequest) {
           const credits = parseInt(session.metadata?.credits || '0', 10);
           const packageId = session.metadata?.packageId || '';
           if (!userId || !credits) break;
-          await addCredits(userId, credits, `Purchased ${packageId} (${credits} credits)`, session.id);
+          await addPurchasedCredits(userId, credits, `Purchased ${packageId} (${credits} credits)`, session.id);
           console.log(`[webhook] Added ${credits} credits to user ${userId}`);
         }
 
@@ -115,7 +138,7 @@ export async function POST(req: NextRequest) {
           await setSubscriptionStatus(userId, tier, customerId, subscriptionId);
           const tierLabel = tier === 'operator' ? 'Operator' : 'Pro';
           const label = `${tierLabel} subscription — ${interval === 'year' ? 'annual' : 'monthly'} credits`;
-          await addCredits(userId, amount, label, session.id);
+          await setSubscriptionCredits(userId, amount, label, session.id);
           console.log(`[webhook] ${tierLabel} activated (${interval}) for user ${userId}, +${amount} credits`);
         }
         break;
@@ -139,7 +162,7 @@ export async function POST(req: NextRequest) {
           : { amount: FALLBACK_MONTHLY_CREDITS, interval: 'month' as const, tier: 'pro' as const };
         const tierLabel = tier === 'operator' ? 'Operator' : 'Pro';
         const label = `${tierLabel} subscription — ${interval === 'year' ? 'annual' : 'monthly'} credits`;
-        await addCredits(userId, amount, label, invoice.id);
+        await setSubscriptionCredits(userId, amount, label, invoice.id);
         console.log(`[webhook] Renewal credits ${tierLabel}/${interval} +${amount} for user ${userId}`);
         break;
       }

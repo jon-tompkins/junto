@@ -41,8 +41,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ use
   const wasPaid = current.subscription_tier === 'pro' || current.subscription_tier === 'operator' || current.is_pro;
   if (tier !== 'free' && (!wasPaid || current.subscription_tier !== tier)) {
     const amount = TIER_MONTHLY_CREDITS[tier];
-    const newBalance = (current.credit_balance || 0) + amount;
-    await supabase.from('users').update({ credit_balance: newBalance }).eq('id', userId);
+    // Monthly tier allotment → subscription bucket (reset, use-it-or-lose-it).
+    await supabase.rpc('set_subscription_credits', { p_user_id: userId, p_amount: amount });
     await supabase.from('credit_transactions').insert({
       user_id: userId,
       amount,

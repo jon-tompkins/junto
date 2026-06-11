@@ -21,9 +21,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ use
 
   // Grant initial credits when manually activating Pro
   if (is_pro) {
-    const { data: user } = await supabase.from('users').select('credit_balance').eq('id', userId).single();
-    const newBalance = (user?.credit_balance || 0) + 1000;
-    await supabase.from('users').update({ credit_balance: newBalance }).eq('id', userId);
+    // Monthly Pro allotment → subscription bucket (reset, use-it-or-lose-it).
+    await supabase.rpc('set_subscription_credits', { p_user_id: userId, p_amount: 1000 });
     await supabase.from('credit_transactions').insert({
       user_id: userId,
       amount: 1000,

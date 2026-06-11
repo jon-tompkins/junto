@@ -94,7 +94,7 @@ async function handleTwitterSignIn(supabase: ReturnType<typeof getSupabase>, pro
     const { error } = await supabase.from('users').update(userData).eq('id', existingUser.id);
     if (error) console.error('SignIn: Error updating user:', error);
   } else {
-    await createNewUser(supabase, { ...userData, credit_balance: NEW_USER_BONUS_CREDITS, is_pro: true }, 'twitter_id', twitterId);
+    await createNewUser(supabase, { ...userData, credit_purchased: NEW_USER_BONUS_CREDITS, is_pro: true }, 'twitter_id', twitterId);
   }
   return true;
 }
@@ -129,7 +129,7 @@ async function handleGoogleSignIn(supabase: ReturnType<typeof getSupabase>, prof
     const { error } = await supabase.from('users').update(userData).eq('id', existingUser.id);
     if (error) console.error('SignIn: Error updating user:', error);
   } else {
-    await createNewUser(supabase, { ...userData, credit_balance: NEW_USER_BONUS_CREDITS, is_pro: true }, 'google_id', googleId);
+    await createNewUser(supabase, { ...userData, credit_purchased: NEW_USER_BONUS_CREDITS, is_pro: true }, 'google_id', googleId);
   }
   return true;
 }

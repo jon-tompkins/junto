@@ -51,18 +51,21 @@ export async function deductCredits(
 }
 
 /**
- * Add credits to a user (for creator payouts)
+ * Add credits to a user.
+ * bucket: 'subscription' (monthly, expiring) | 'purchased' (cash, non-redeemable)
+ *       | 'earned' (creator payout, redeemable). Defaults to 'purchased'.
  */
 export async function addCredits(
   userId: string,
   amount: number,
   type: string,
   description: string,
+  bucket: 'subscription' | 'purchased' | 'earned' = 'purchased',
 ): Promise<void> {
   // Atomic: single UPDATE via RPC — mirrors deduct_credits to prevent concurrent
   // payout races when multiple subscribers in one run pay the same creator.
   const { data: newBalance, error: rpcErr } = await supabase()
-    .rpc('add_credits', { p_user_id: userId, p_amount: amount });
+    .rpc('add_credits', { p_user_id: userId, p_amount: amount, p_bucket: bucket });
 
   if (rpcErr || newBalance === -1) {
     console.error('add_credits RPC failed', { type, userId, err: rpcErr?.message });
@@ -125,6 +128,7 @@ export async function chargeSubscriber(
       creatorCredits,
       'creator_payout',
       `Creator payout: ${newsletterName}`,
+      'earned',
     );
   }
 

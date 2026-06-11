@@ -64,9 +64,12 @@ export async function POST(req: NextRequest) {
     }
 
     if (promo.bonus_credits > 0) {
-      const { data: user } = await supabase.from('users').select('credit_balance').eq('id', userId).single();
-      const newBalance = (user?.credit_balance || 0) + promo.bonus_credits;
-      updates.credit_balance = newBalance;
+      // Promo bonus → non-redeemable purchased bucket.
+      await supabase.rpc('add_credits', {
+        p_user_id: userId,
+        p_amount: promo.bonus_credits,
+        p_bucket: 'purchased',
+      });
       await supabase.from('credit_transactions').insert({
         user_id: userId,
         amount: promo.bonus_credits,
