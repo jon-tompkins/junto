@@ -304,6 +304,11 @@ export default function JuntoViewPage() {
           </div>
         </div>
 
+        {/* Junto Chat */}
+        <section className="mb-10">
+          <JuntoChat juntoId={junto.id} juntoName={junto.name} />
+        </section>
+
         {/* Members section */}
         <section className="mb-10">
           <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">Members</h2>
@@ -379,13 +384,6 @@ export default function JuntoViewPage() {
                 </Link>
               ))}
             </div>
-          </section>
-        )}
-
-        {/* Junto Chat */}
-        {isOwner && (
-          <section className="mb-10">
-            <JuntoChat juntoId={junto.id} juntoName={junto.name} />
           </section>
         )}
 
