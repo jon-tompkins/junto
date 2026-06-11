@@ -432,28 +432,18 @@ export async function getNewslettersDueForGeneration(): Promise<NewsletterV2[]> 
   const subscribedIds = new Set((subData || []).map((s: any) => s.newsletter_id));
   const dayFiltered = scheduled.filter(nl => subscribedIds.has(nl.id));
 
-  // Filter out newsletters that already ran in this window (min 5h gap)
-  const due: NewsletterV2[] = [];
-  for (const nl of dayFiltered) {
-    const { data: latestRun } = await supabase()
-      .from('newsletter_runs')
-      .select('generated_at')
-      .eq('newsletter_id', nl.id)
-      .order('generated_at', { ascending: false })
-      .limit(1)
-      .single();
+  // Filter out newsletters that already ran in this window (min 5h gap).
+  // One bounded query for all candidates: any newsletter with a run in the
+  // last 5h is excluded; everything else (including never-run) is due.
+  const cutoff = new Date(now.getTime() - 5 * 60 * 60 * 1000).toISOString();
+  const { data: recentRuns } = await supabase()
+    .from('newsletter_runs')
+    .select('newsletter_id')
+    .in('newsletter_id', dayFiltered.map(nl => nl.id))
+    .gte('generated_at', cutoff);
 
-    const lastGenerated = latestRun ? new Date(latestRun.generated_at) : null;
-    const hoursSinceLastRun = lastGenerated
-      ? (now.getTime() - lastGenerated.getTime()) / (1000 * 60 * 60)
-      : Infinity;
-
-    if (hoursSinceLastRun >= 5) {
-      due.push(nl);
-    }
-  }
-
-  return due;
+  const ranRecently = new Set((recentRuns || []).map((r: { newsletter_id: string }) => r.newsletter_id));
+  return dayFiltered.filter(nl => !ranRecently.has(nl.id));
 }
 
 // Bypass the time-of-day/day-of-week gate for manual testing. Still requires
