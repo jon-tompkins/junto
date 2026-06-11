@@ -340,6 +340,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     trade: dbOpenByTicker.get(ticker) || null,
   }));
   const totalUnrealized = Object.values(positions).reduce((sum, p) => sum + (p.unrealized_pl || 0), 0);
+  const totalDayPl = Object.values(positions).reduce((sum, p) => sum + (p.unrealized_intraday_pl || 0), 0);
   const realizedTotal = closedTrades.reduce((sum, t) => sum + (Number(t.realized_pnl_usd) || 0), 0);
   const positionEquity = Object.values(positions).reduce((sum, p) => sum + ((p.qty || 0) * (p.current_price || 0)), 0);
   const cashPct = account.equity && account.equity > 0 && account.cash != null
@@ -417,7 +418,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                 : 'live'}
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             <SnapStat
               label="Equity"
               value={openRows.length === 0 ? '—' : fmtUsd(positionEquity)}
@@ -427,6 +428,11 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               label="Cash"
               value={account.cash == null ? '—' : fmtUsd(account.cash)}
               sub={cashPct == null ? undefined : `${cashPct.toFixed(1)}% of equity`}
+            />
+            <SnapStat
+              label="Day P/L"
+              value={openRows.length === 0 ? '—' : fmtUsd(totalDayPl)}
+              accent={totalDayPl >= 0 ? '#3ecf6a' : '#e8453c'}
             />
             <SnapStat
               label="Unrealized"
