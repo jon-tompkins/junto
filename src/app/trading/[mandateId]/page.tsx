@@ -772,42 +772,54 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         </div>
 
         {/* Trading Thoughts — the engine's self-authored learnings */}
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-6">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <button
-              onClick={() => setLearningsOpen(o => !o)}
-              className="flex items-center gap-2 text-left group"
-            >
-              <span className={`text-[#B08D57] text-xs transition-transform ${learningsOpen ? 'rotate-90' : ''}`}>▶</span>
-              <span>
-                <span className="block text-sm uppercase tracking-wider text-[#F5EFE0]/45 group-hover:text-[#F5EFE0]/70 font-[var(--font-oswald)]">
-                  Trading Thoughts
-                  {mandate.use_learnings && (
-                    <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded bg-[#3ecf6a]/15 text-[#3ecf6a] tracking-wide">REFERENCED</span>
-                  )}
-                </span>
-                <span className="block text-[11px] text-[#F5EFE0]/30 mt-0.5">
-                  {mandate.learnings_updated_at
-                    ? <>Last updated {new Date(mandate.learnings_updated_at).toLocaleString()}</>
-                    : <>Not generated yet</>}
-                </span>
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded mb-6">
+          <button
+            onClick={() => setLearningsOpen(o => !o)}
+            className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-[rgba(176,141,87,0.04)]"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">
+                Trading Thoughts
+                {mandate.use_learnings && (
+                  <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded bg-[#3ecf6a]/15 text-[#3ecf6a] tracking-wide">REFERENCED</span>
+                )}
               </span>
-            </button>
-            <button
-              onClick={regenerateLearnings}
-              disabled={regenLearnings}
-              className="text-xs px-3 py-1.5 rounded font-[var(--font-oswald)] uppercase tracking-wide bg-[#141210] border border-[rgba(176,141,87,0.4)] text-[#B08D57] hover:bg-[#B08D57]/10 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {regenLearnings ? 'Synthesizing…' : 'Regenerate'}
-            </button>
-          </div>
+              <span className="text-xs text-[#F5EFE0]/40 font-mono">
+                {mandate.learnings_updated_at
+                  ? `updated ${new Date(mandate.learnings_updated_at).toLocaleDateString()} ${new Date(mandate.learnings_updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                  : 'not generated yet'}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={e => { e.stopPropagation(); regenerateLearnings(); }}
+                disabled={regenLearnings || (() => {
+                  if (!mandate.learnings_updated_at) return false;
+                  return Date.now() - new Date(mandate.learnings_updated_at).getTime() < 24 * 60 * 60 * 1000;
+                })()}
+                title={(() => {
+                  if (!mandate.learnings_updated_at) return 'Generate trading thoughts';
+                  const elapsed = Date.now() - new Date(mandate.learnings_updated_at).getTime();
+                  if (elapsed < 24 * 60 * 60 * 1000) {
+                    const remainingH = Math.ceil((24 * 60 * 60 * 1000 - elapsed) / (60 * 60 * 1000));
+                    return `Available in ~${remainingH}h (once daily)`;
+                  }
+                  return 'Regenerate trading thoughts';
+                })()}
+                className="text-xs px-3 py-1.5 rounded font-[var(--font-oswald)] uppercase tracking-wide bg-[#141210] border border-[rgba(176,141,87,0.4)] text-[#B08D57] hover:bg-[#B08D57]/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {regenLearnings ? 'Synthesizing…' : 'Regenerate'}
+              </button>
+              <span className="text-[#F5EFE0]/45 text-xs">{learningsOpen ? '▾' : '▸'}</span>
+            </div>
+          </button>
 
           {learningsOpen && (
-            <div className="mt-4">
-              <p className="text-[11px] text-[#F5EFE0]/30 mb-3">
+            <div className="px-5 pb-5 border-t border-[rgba(176,141,87,0.18)] pt-5 space-y-4">
+              <p className="text-[11px] text-[#F5EFE0]/30">
                 What the engine has learned from its own closed trades, post-mortems and your notes.
               </p>
-              <label className="flex items-start gap-2.5 mb-4 cursor-pointer select-none">
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={mandate.use_learnings}
