@@ -262,6 +262,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         setSignals(data.signals || []);
         setTicks(data.ticks || []);
         setDraftGuidelines(data.mandate?.guidelines || '');
+        setAccount(data.account || { equity: null, cash: null });
       })
       .finally(() => setLoading(false));
   }, [status, mandateId]);

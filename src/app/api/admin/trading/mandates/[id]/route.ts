@@ -40,20 +40,26 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .limit(30),
   ]);
 
-  // Pull live positions from Alpaca so the trade table can show last price +
-  // unrealized P&L per open ticker. Failure leaves positions empty — UI degrades
-  // to em-dashes rather than blowing up the whole page.
+  // Pull live positions + account from Alpaca so the trade table can show last
+  // price + unrealized P&L per open ticker and the snapshot shows real
+  // equity/cash on first render (not just after the 15s poll kicks in).
   const positions: Record<string, { current_price: number; unrealized_pl: number }> = {};
+  let account: { equity: number | null; cash: number | null } = { equity: null, cash: null };
   try {
-    const live = await alpacaForMandate(mandate).getPositions();
+    const alp = alpacaForMandate(mandate);
+    const [live, acc] = await Promise.all([
+      alp.getPositions(),
+      alp.getAccount().catch(() => null),
+    ]);
     for (const p of live) {
       positions[p.symbol.toUpperCase()] = {
         current_price: Number(p.current_price) || 0,
         unrealized_pl: Number(p.unrealized_pl) || 0,
       };
     }
+    if (acc) account = { equity: Number(acc.equity) || null, cash: Number(acc.cash) || null };
   } catch {
-    // leave positions empty
+    // leave positions + account empty
   }
 
   const juntoRow = (juntoRes as any).data;
@@ -94,6 +100,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     signals: signalsRes.data || [],
     ticks: ticksRes.data || [],
     positions,
+    account,
   });
 }
 
