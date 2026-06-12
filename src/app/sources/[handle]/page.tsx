@@ -9,6 +9,7 @@ interface PositionEntry {
   stance: 'bullish' | 'bearish' | 'neutral' | 'cautious';
   since: string;
   last_mentioned?: string;
+  conviction?: number;
   note?: string;
   target_price?: number;
 }
@@ -258,6 +259,11 @@ export default function SourceProfilePage() {
                         <span className={`text-xs px-2.5 py-1 rounded-sm font-medium shrink-0 ${STANCE_BADGE[pos.stance]}`}>
                           {STANCE_LABELS[pos.stance]}
                         </span>
+                        {pos.conviction != null && pos.conviction >= 2 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded border font-medium text-[#B08D57]/80 bg-[#B08D57]/8 border-[#B08D57]/20" title={`Conviction: ${pos.conviction}/5`}>
+                            {'●'.repeat(pos.conviction)}{'○'.repeat(5 - pos.conviction)}
+                          </span>
+                        )}
                       </div>
                     </div>
 

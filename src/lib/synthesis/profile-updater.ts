@@ -69,6 +69,7 @@ WHAT NOT TO TRACK — remove these if they exist, never add new ones:
 
 Rules:
 - Include a position whenever a tweet states OR confirms a directional view — even "still long X" or "added more X" counts
+- Set mentioned_in_tweets: true whenever the new tweets reference the asset in ANY way — a cashtag, the bare ticker, or the asset name — even a casual restatement with no fresh thesis, even just "$PURR" or "$BTC" in passing. When in doubt, set it true. Only set it false when the position is carried over from the existing profile and the new tweets are genuinely silent on it (no cashtag, no name, no reference at all)
 - If new tweets clearly show an exit or contradiction of an existing position, change the stance
 - If new tweets are silent on an existing position, still include it with its current stance (do not drop it just because it wasn't mentioned)
 - Remove positions in the "WHAT NOT TO TRACK" category
@@ -141,8 +142,24 @@ Output schema — do NOT include a "since" date, that is managed externally:
 
       // since: never changes for same stance; resets only on a flip
       const since = (prev && !stanceFlipped) ? prev.since : today;
-      // last_mentioned: only advance if Claude says these tweets actually referenced it
-      const last_mentioned = pos.mentioned_in_tweets ? today : (prev?.last_mentioned || prev?.since || today);
+      // last_mentioned: if the model surfaced this position from the tweet batch,
+      // it was mentioned by definition — advance to today. Otherwise keep previous.
+      const last_mentioned = pos.mentioned_in_tweets
+        ? today
+        : (prev?.last_mentioned || prev?.since || today);
+
+      // Conviction: builds when stance is reaffirmed in new tweets, resets on flip.
+      // Range 1–5, starts at 1 for new positions.
+      let conviction: number;
+      if (!prev) {
+        conviction = pos.mentioned_in_tweets ? 2 : 1;
+      } else if (stanceFlipped) {
+        conviction = 1;
+      } else if (pos.mentioned_in_tweets) {
+        conviction = Math.min(5, (prev.conviction ?? 1) + 1);
+      } else {
+        conviction = prev.conviction ?? 1;
+      }
 
       let entry_price = prev?.entry_price ?? null;
       if (entry_price == null) {
@@ -154,6 +171,7 @@ Output schema — do NOT include a "since" date, that is managed externally:
         stance: pos.stance,
         since,
         last_mentioned,
+        conviction,
         ...(pos.note ? { note: pos.note } : {}),
         ...(entry_price != null ? { entry_price } : {}),
         ...(prev?.target_price != null ? { target_price: prev.target_price } : {}),
