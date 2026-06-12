@@ -132,7 +132,7 @@ export async function claimTradeForSubmit(id: string, placeholderOrderId: string
 
 export async function addJournalEntry(params: {
   tradeId: string;
-  kind: 'entry' | 'daily' | 'exit' | 'post_mortem';
+  kind: 'entry' | 'daily' | 'exit' | 'post_mortem' | 'note';
   content: string;
   sourceUrls?: string[];
   processScore?: number;

@@ -24,7 +24,7 @@ interface Trade {
 
 interface Entry {
   id: string;
-  kind: 'entry' | 'daily' | 'exit' | 'post_mortem';
+  kind: 'entry' | 'daily' | 'exit' | 'post_mortem' | 'note';
   content: string;
   source_urls: string[] | null;
   process_score: number | null;
@@ -37,6 +37,7 @@ const KIND_COLORS: Record<string, string> = {
   daily: '#F5EFE0',
   exit: '#e8453c',
   post_mortem: '#3ecf6a',
+  note: '#7aa2f7',
 };
 
 function quadrant(p: number | null, o: number | null): string {
@@ -61,6 +62,9 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
   const [reproposeMsg, setReproposeMsg] = useState<string | null>(null);
   const [acting, setActing] = useState<null | 'approve' | 'skip'>(null);
   const [actMsg, setActMsg] = useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  const [noteMsg, setNoteMsg] = useState<string | null>(null);
 
   async function refreshTrade() {
     const data = await fetch(`/api/admin/trading/trades/${tradeId}`).then(r => r.json());
@@ -80,6 +84,31 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
       setActMsg(err?.message || 'Action failed');
     } finally {
       setActing(null);
+    }
+  }
+
+  async function handleSaveNote() {
+    const content = noteDraft.trim();
+    if (!content) return;
+    setSavingNote(true);
+    setNoteMsg(null);
+    try {
+      const res = await fetch(`/api/admin/trading/trades/${tradeId}/note`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setNoteMsg(data.error || 'Failed to save note');
+        return;
+      }
+      setNoteDraft('');
+      await refreshTrade();
+    } catch (err: any) {
+      setNoteMsg(err?.message || 'Failed to save note');
+    } finally {
+      setSavingNote(false);
     }
   }
 
@@ -235,6 +264,30 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
             </div>
           </div>
         )}
+
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4 mb-6">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="w-2 h-2 rounded-full" style={{ background: KIND_COLORS.note }} />
+            <span className="text-xs uppercase tracking-wider font-[var(--font-oswald)]" style={{ color: KIND_COLORS.note }}>Add note</span>
+          </div>
+          <textarea
+            value={noteDraft}
+            onChange={e => setNoteDraft(e.target.value)}
+            placeholder="Your read on this trade — reasoning, second-guesses, lessons…"
+            rows={3}
+            className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded p-3 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/25 focus:outline-none focus:border-[#B08D57] resize-y"
+          />
+          <div className="flex items-center justify-end gap-3 mt-2">
+            {noteMsg && <span className="text-[10px] text-[#e8453c]">{noteMsg}</span>}
+            <button
+              onClick={handleSaveNote}
+              disabled={savingNote || !noteDraft.trim()}
+              className="text-xs px-3 py-1.5 rounded font-[var(--font-oswald)] uppercase tracking-wide bg-[#B08D57] text-[#080604] hover:bg-[#c9a36a] disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {savingNote ? 'Saving…' : 'Save note'}
+            </button>
+          </div>
+        </div>
 
         <div className="space-y-4">
           {entries.map(e => (
