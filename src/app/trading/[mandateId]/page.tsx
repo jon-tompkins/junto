@@ -18,6 +18,9 @@ interface Mandate {
   blocked_tickers: string[] | null;
   status: string;
   mode: string;
+  learnings: string | null;
+  learnings_updated_at: string | null;
+  use_learnings: boolean;
 }
 
 interface Trade {
@@ -120,6 +123,37 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const [account, setAccount] = useState<{ equity: number | null; cash: number | null }>({ equity: null, cash: null });
   const [lastTickAt, setLastTickAt] = useState<string | null>(null);
   const [livePulse, setLivePulse] = useState(false);
+  const [regenLearnings, setRegenLearnings] = useState(false);
+  const [togglingLearnings, setTogglingLearnings] = useState(false);
+
+  async function toggleUseLearnings(next: boolean) {
+    setTogglingLearnings(true);
+    setMandate(m => m ? { ...m, use_learnings: next } : m);
+    try {
+      const res = await fetch(`/api/admin/trading/mandates/${mandateId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ use_learnings: next }),
+      });
+      const data = await res.json();
+      if (data.mandate) setMandate(m => m ? { ...m, use_learnings: data.mandate.use_learnings } : m);
+    } finally {
+      setTogglingLearnings(false);
+    }
+  }
+
+  async function regenerateLearnings() {
+    setRegenLearnings(true);
+    try {
+      const res = await fetch(`/api/admin/trading/mandates/${mandateId}/learnings`, { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) {
+        setMandate(m => m ? { ...m, learnings: data.learnings, learnings_updated_at: data.learnings_updated_at } : m);
+      }
+    } finally {
+      setRegenLearnings(false);
+    }
+  }
 
   async function sendTestProposal() {
     const ticker = prompt('Ticker for test proposal (default SPY):', 'SPY')?.toUpperCase().trim() || 'SPY';
@@ -693,6 +727,48 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                 )}
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Trading Thoughts — the engine's self-authored learnings */}
+        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-6">
+          <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+            <div>
+              <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">Trading Thoughts</h2>
+              <p className="text-[11px] text-[#F5EFE0]/30 mt-0.5">
+                What the engine has learned from its own closed trades, post-mortems and your notes.
+                {mandate.learnings_updated_at && (
+                  <> · updated {new Date(mandate.learnings_updated_at).toLocaleString()}</>
+                )}
+              </p>
+            </div>
+            <button
+              onClick={regenerateLearnings}
+              disabled={regenLearnings}
+              className="text-xs px-3 py-1.5 rounded font-[var(--font-oswald)] uppercase tracking-wide bg-[#141210] border border-[rgba(176,141,87,0.4)] text-[#B08D57] hover:bg-[#B08D57]/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {regenLearnings ? 'Synthesizing…' : 'Regenerate'}
+            </button>
+          </div>
+
+          <label className="flex items-start gap-2.5 mb-4 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={mandate.use_learnings}
+              disabled={togglingLearnings}
+              onChange={e => toggleUseLearnings(e.target.checked)}
+              className="mt-0.5 accent-[#B08D57] w-4 h-4"
+            />
+            <span className="text-xs text-[#F5EFE0]/70 leading-snug">
+              Reference these thoughts when proposing trades.
+              <span className="text-[#F5EFE0]/40"> {mandate.use_learnings ? 'On — proposals use the mandate + these learnings.' : 'Off — proposals use the mandate only.'}</span>
+            </span>
+          </label>
+
+          {mandate.learnings?.trim() ? (
+            <p className="text-sm text-[#F5EFE0]/80 whitespace-pre-wrap">{mandate.learnings}</p>
+          ) : (
+            <p className="text-sm text-[#F5EFE0]/30">No trading thoughts yet — they build up as trades close. Hit Regenerate to synthesize from history so far.</p>
           )}
         </div>
 

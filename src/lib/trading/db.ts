@@ -65,6 +65,41 @@ export async function getOpenTrades(mandateId: string): Promise<TradeRow[]> {
   return (data || []) as TradeRow[];
 }
 
+export async function getClosedTrades(mandateId: string, limit = 40): Promise<TradeRow[]> {
+  const { data, error } = await getSupabase()
+    .from('trades')
+    .select('*')
+    .eq('mandate_id', mandateId)
+    .eq('status', 'closed')
+    .order('exit_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data || []) as TradeRow[];
+}
+
+export async function getJournalEntriesForTrades(
+  tradeIds: string[],
+  kinds: string[],
+) {
+  if (tradeIds.length === 0) return [];
+  const { data, error } = await getSupabase()
+    .from('trade_journal_entries')
+    .select('trade_id, kind, content, process_score, outcome_score, created_at')
+    .in('trade_id', tradeIds)
+    .in('kind', kinds)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function saveMandateLearnings(mandateId: string, learnings: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from('trading_mandates')
+    .update({ learnings, learnings_updated_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq('id', mandateId);
+  if (error) throw error;
+}
+
 export async function getTradeById(id: string): Promise<TradeRow | null> {
   const { data, error } = await getSupabase()
     .from('trades')

@@ -80,6 +80,17 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     result.errors.push(`monitor: ${err.message}`);
   }
 
+  // A trade closed this tick → refresh the engine's trading-thoughts doc so its
+  // self-authored lessons stay current. Best-effort; never breaks the tick.
+  if (result.monitored.closed > 0) {
+    try {
+      const { regenerateLearnings } = await import('./learnings');
+      await regenerateLearnings(mandate);
+    } catch (err: any) {
+      result.errors.push(`learnings: ${err.message}`);
+    }
+  }
+
   // Alpaca → DB drift correction. Runs after monitor (so trades it just
   // closed are no longer 'open') and before protect (so the protector sees
   // corrected qty/levels). Failures are non-fatal.

@@ -16,6 +16,9 @@ export interface Mandate {
   account_kind: 'byo_keys' | 'managed';
   alpaca_account_id: string | null;
   status: 'active' | 'paused' | 'archived';
+  learnings: string | null;
+  learnings_updated_at: string | null;
+  use_learnings: boolean;
 }
 
 export interface ExtractedSignal {

@@ -43,7 +43,12 @@ export async function decideTrades(ctx: DecisionContext): Promise<TradeDecision[
     )
     .join('\n\n');
 
-  const system = `You are a disciplined portfolio manager running a mandate. For each candidate signal, decide whether to open a position. You must respect the mandate's guidelines exactly.
+  const useLearnings = mandate.use_learnings && !!mandate.learnings?.trim();
+  const learningsBlock = useLearnings
+    ? `\n\nLessons from this mandate's own trade history (apply these — they were earned from real results; weight the recurring-mistake lessons heavily):\n${mandate.learnings}`
+    : '';
+
+  const system = `You are a disciplined portfolio manager running a mandate. For each candidate signal, decide whether to open a position. You must respect the mandate's guidelines exactly.${useLearnings ? '\n\nYou also have a record of lessons learned from your own past trades. Let those lessons shape sizing, setup selection, and which signals you reject.' : ''}
 
 For every position you open, you write an entry thesis that captures:
 - the specific edge being expressed
@@ -60,7 +65,7 @@ Output strict JSON only:
 ] }`;
 
   const user = `Mandate guidelines:
-${mandate.guidelines}
+${mandate.guidelines}${learningsBlock}
 
 Account equity: $${accountEquity.toFixed(2)}
 Max position size: ${mandate.max_position_pct}% (= $${((accountEquity * mandate.max_position_pct) / 100).toFixed(2)})
