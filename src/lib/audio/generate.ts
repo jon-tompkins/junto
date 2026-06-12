@@ -64,6 +64,7 @@ export async function generateDispatchAudio(args: GenerateAudioArgs): Promise<Ge
     userId: args.ownerUserId,
     dispatchDate: args.dispatchDate,
     mp3: tts.audio,
+    runId: args.dispatchId,
   });
 
   return {

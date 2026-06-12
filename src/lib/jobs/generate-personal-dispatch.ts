@@ -310,6 +310,7 @@ export async function generatePersonalDispatchForUser(
           userId: user.id,
           dispatchDate,
           mp3: tts.audio,
+          runId: dispatch.id,
         });
 
         recordCost({

@@ -6,8 +6,12 @@ export async function uploadDispatchAudio(args: {
   userId: string;
   dispatchDate: string; // YYYY-MM-DD
   mp3: Buffer;
+  runId?: string; // unique identifier to prevent path collisions
 }): Promise<{ path: string; publicUrl: string; bytes: number }> {
-  const path = `${args.userId}/${args.dispatchDate}.mp3`;
+  // Include runId in path to prevent collisions when multiple dispatches
+  // generate on the same day (e.g., personal dispatch + subscribed newsletters)
+  const filename = args.runId ? `${args.dispatchDate}-${args.runId}.mp3` : `${args.dispatchDate}.mp3`;
+  const path = `${args.userId}/${filename}`;
   const supabase = getSupabase();
 
   const { error } = await supabase.storage.from(BUCKET).upload(path, args.mp3, {
