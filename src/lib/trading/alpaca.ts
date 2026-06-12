@@ -167,7 +167,11 @@ export function makeAlpaca(override?: { keyId?: string | null; secret?: string |
     // Returns open orders, optionally filtered by symbol. Used by the
     // protection reconciler to detect naked positions.
     listOpenOrders(symbol?: string) {
-      const qs = symbol ? `?status=open&symbols=${encodeURIComponent(symbol)}` : '?status=open';
+      // nested=true so OCO/bracket legs come back attached to their parent.
+      // Without it Alpaca surfaces only one leg per OCO and the UI thinks
+      // stops/targets aren't live.
+      const base = `?status=open&nested=true`;
+      const qs = symbol ? `${base}&symbols=${encodeURIComponent(symbol)}` : base;
       return call<AlpacaOrder[]>(creds, 'GET', `/v2/orders${qs}`);
     },
 
