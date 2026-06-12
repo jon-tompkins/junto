@@ -2,6 +2,7 @@ import { getAnthropic } from '@/lib/synthesis/client';
 import type { Mandate, ExtractedSignal, AmendmentDecision } from './types';
 import type { AlpacaPosition } from './alpaca';
 import type { TradeRow } from './db';
+import { getTradingStyle } from './styles';
 
 const SONNET_MODEL = 'claude-sonnet-4-6';
 
@@ -37,7 +38,17 @@ export async function decideAmendments(ctx: AmendContext): Promise<AmendmentDeci
     .map((s, i) => `[${i + 1}] ${s.ticker} direction=${s.direction} conviction=${s.conviction}\n  rationale: ${s.rationale}\n  sources: ${s.source_urls.join(', ')}`)
     .join('\n\n');
 
-  const system = `You manage open positions on behalf of a mandate. For each open position that has a fresh source signal, decide whether to amend it.
+  const style = getTradingStyle(mandate.style);
+  const styleBlock = style
+    ? `Investing style — channel ${style.name}:\n${style.philosophy}\n\n`
+    : '';
+
+  const useLearnings = mandate.use_learnings && !!mandate.learnings?.trim();
+  const learningsBlock = useLearnings
+    ? `\n\nLessons from this mandate's own trade history (apply these — they were earned from real results; weight the recurring-mistake lessons heavily):\n${mandate.learnings}`
+    : '';
+
+  const system = `You manage open positions on behalf of a mandate. For each open position that has a fresh source signal, decide whether to amend it.${style ? `\n\nYou operate in the style of ${style.name}. Let that philosophy govern how you manage exits, stops, and targets — but the mandate's hard rules always override the style.` : ''}${useLearnings ? '\n\nYou also have a record of lessons learned from your own past trades. Let those lessons shape how aggressively you tighten stops, take profits, or cut losers.' : ''}
 
 Allowed amendments:
 - "stop_move": raise (tighten) or lower (loosen) the stop price. Only propose if the new stop is meaningfully better risk management given the signal.
@@ -53,8 +64,8 @@ Output strict JSON only:
 
 For "close", set new_value: null.`;
 
-  const user = `Mandate guidelines:
-${mandate.guidelines}
+  const user = `${styleBlock}Mandate guidelines:
+${mandate.guidelines}${learningsBlock}
 
 Open positions with fresh signals:
 ${tradesBlock}
