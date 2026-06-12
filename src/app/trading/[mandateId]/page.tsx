@@ -125,6 +125,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const [livePulse, setLivePulse] = useState(false);
   const [regenLearnings, setRegenLearnings] = useState(false);
   const [togglingLearnings, setTogglingLearnings] = useState(false);
+  const [learningsOpen, setLearningsOpen] = useState(false);
 
   async function toggleUseLearnings(next: boolean) {
     setTogglingLearnings(true);
@@ -732,16 +733,26 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
 
         {/* Trading Thoughts — the engine's self-authored learnings */}
         <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-6">
-          <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
-            <div>
-              <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">Trading Thoughts</h2>
-              <p className="text-[11px] text-[#F5EFE0]/30 mt-0.5">
-                What the engine has learned from its own closed trades, post-mortems and your notes.
-                {mandate.learnings_updated_at && (
-                  <> · updated {new Date(mandate.learnings_updated_at).toLocaleString()}</>
-                )}
-              </p>
-            </div>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <button
+              onClick={() => setLearningsOpen(o => !o)}
+              className="flex items-center gap-2 text-left group"
+            >
+              <span className={`text-[#B08D57] text-xs transition-transform ${learningsOpen ? 'rotate-90' : ''}`}>▶</span>
+              <span>
+                <span className="block text-sm uppercase tracking-wider text-[#F5EFE0]/45 group-hover:text-[#F5EFE0]/70 font-[var(--font-oswald)]">
+                  Trading Thoughts
+                  {mandate.use_learnings && (
+                    <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded bg-[#3ecf6a]/15 text-[#3ecf6a] tracking-wide">REFERENCED</span>
+                  )}
+                </span>
+                <span className="block text-[11px] text-[#F5EFE0]/30 mt-0.5">
+                  {mandate.learnings_updated_at
+                    ? <>Last updated {new Date(mandate.learnings_updated_at).toLocaleString()}</>
+                    : <>Not generated yet</>}
+                </span>
+              </span>
+            </button>
             <button
               onClick={regenerateLearnings}
               disabled={regenLearnings}
@@ -751,24 +762,31 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             </button>
           </div>
 
-          <label className="flex items-start gap-2.5 mb-4 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={mandate.use_learnings}
-              disabled={togglingLearnings}
-              onChange={e => toggleUseLearnings(e.target.checked)}
-              className="mt-0.5 accent-[#B08D57] w-4 h-4"
-            />
-            <span className="text-xs text-[#F5EFE0]/70 leading-snug">
-              Reference these thoughts when proposing trades.
-              <span className="text-[#F5EFE0]/40"> {mandate.use_learnings ? 'On — proposals use the mandate + these learnings.' : 'Off — proposals use the mandate only.'}</span>
-            </span>
-          </label>
+          {learningsOpen && (
+            <div className="mt-4">
+              <p className="text-[11px] text-[#F5EFE0]/30 mb-3">
+                What the engine has learned from its own closed trades, post-mortems and your notes.
+              </p>
+              <label className="flex items-start gap-2.5 mb-4 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={mandate.use_learnings}
+                  disabled={togglingLearnings}
+                  onChange={e => toggleUseLearnings(e.target.checked)}
+                  className="mt-0.5 accent-[#B08D57] w-4 h-4"
+                />
+                <span className="text-xs text-[#F5EFE0]/70 leading-snug">
+                  Reference these thoughts when proposing trades.
+                  <span className="text-[#F5EFE0]/40"> {mandate.use_learnings ? 'On — proposals use the mandate + these learnings.' : 'Off — proposals use the mandate only.'}</span>
+                </span>
+              </label>
 
-          {mandate.learnings?.trim() ? (
-            <p className="text-sm text-[#F5EFE0]/80 whitespace-pre-wrap">{mandate.learnings}</p>
-          ) : (
-            <p className="text-sm text-[#F5EFE0]/30">No trading thoughts yet — they build up as trades close. Hit Regenerate to synthesize from history so far.</p>
+              {mandate.learnings?.trim() ? (
+                <p className="text-sm text-[#F5EFE0]/80 whitespace-pre-wrap">{mandate.learnings}</p>
+              ) : (
+                <p className="text-sm text-[#F5EFE0]/30">No trading thoughts yet — they build up as trades close. Hit Regenerate to synthesize from history so far.</p>
+              )}
+            </div>
           )}
         </div>
 
