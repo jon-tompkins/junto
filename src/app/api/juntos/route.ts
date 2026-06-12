@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'name is required' }, { status: 400 });
     }
 
-    const junto = await createJunto(name, description ?? null, userId, is_public ?? true);
+    const junto = await createJunto(name, description ?? null, userId, is_public ?? false);
 
     if (Array.isArray(source_ids) && source_ids.length > 0) {
       for (const sid of source_ids) {

@@ -67,6 +67,7 @@ export default function EditJuntoPage() {
   const [description, setDescription] = useState('');
   const [savingMeta, setSavingMeta] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [isPublic, setIsPublic] = useState(true);
   const [sourceType, setSourceType] = useState<SourceType>('twitter');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -94,6 +95,7 @@ export default function EditJuntoPage() {
           setJunto(data.junto);
           setName(data.junto.name);
           setDescription(data.junto.description || '');
+          setIsPublic(data.junto.is_public);
         }
       });
   }
@@ -262,6 +264,7 @@ export default function EditJuntoPage() {
         body: JSON.stringify({
           name: name.trim(),
           description: description.trim() || null,
+          is_public: isPublic,
         }),
       });
       if (!res.ok) {
@@ -339,6 +342,33 @@ export default function EditJuntoPage() {
             rows={3}
             className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition resize-none mb-4"
           />
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <label className="block text-sm font-medium text-[#F5EFE0]/80">Visibility</label>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsPublic(false)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-sm transition font-[var(--font-oswald)] uppercase tracking-wide ${
+                  !isPublic
+                    ? 'bg-[#B08D57] text-[#080604]'
+                    : 'bg-[#080604] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
+                }`}
+              >
+                🔒 Private
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPublic(true)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-sm transition font-[var(--font-oswald)] uppercase tracking-wide ${
+                  isPublic
+                    ? 'bg-[#B08D57] text-[#080604]'
+                    : 'bg-[#080604] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
+                }`}
+              >
+                🌐 Public
+              </button>
+            </div>
+          </div>
           <div className="flex items-center gap-3">
             <button
               onClick={saveMeta}

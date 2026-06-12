@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 import { markdownToHtml } from '@/lib/utils/markdown-client';
 import { PositionsHeatmap } from '@/components/positions-heatmap';
+import { JuntoChat } from '@/components/junto-chat';
 
 // ─── Share Button ─────────────────────────────────────
 
@@ -1344,6 +1345,16 @@ export default function DashboardPage() {
             <PositionsSnapshotCard juntoId={featuredJunto?.id} />
           </div>
         </div>
+
+        {/* ─── Junto Chat ────────────────────────────────── */}
+        {featuredJunto && (
+          <div className="mb-8">
+            <h2 className="text-[10px] uppercase tracking-[0.18em] text-[#F5EFE0]/45 font-[var(--font-oswald)] mb-2 px-1">
+              Chat with {featuredJunto.name}
+            </h2>
+            <JuntoChat juntoId={featuredJunto.id} juntoName={featuredJunto.name} />
+          </div>
+        )}
 
         {/* ─── Received dispatches feed ─────────────────── */}
         <div className="mb-8">
