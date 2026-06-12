@@ -237,6 +237,10 @@ function buildEmailHtml(content: string, subject: string, date: string, unsubUrl
                 &nbsp;&nbsp;·&nbsp;&nbsp;
                 <a href="${unsubUrl}" style="color: #64748b; text-decoration: underline;">Unsubscribe</a>
               </p>
+              <p style="margin: 12px 0 0; font-size: 10px; color: #94a3b8; line-height: 1.5;">
+                myjunto is for informational purposes only and is not financial, investment, or trading advice.
+                Do your own research before making any financial decision.
+              </p>
             </td>
           </tr>
 

@@ -88,6 +88,8 @@ export default function WelcomePage() {
   const [deliveryEmail, setDeliveryEmail] = useState('');
   const [hasAccountEmail, setHasAccountEmail] = useState(true);
 
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -167,6 +169,10 @@ export default function WelcomePage() {
 
   const submit = async () => {
     if (!selectedJuntoId) return;
+    if (!disclaimerAccepted) {
+      setError('Please confirm you understand myjunto is not financial advice.');
+      return;
+    }
     if (dispatchEmail && !emailValid) {
       setError('Add a valid email to receive your dispatch — or turn off email delivery.');
       setDeliveryOpen(true);
@@ -186,6 +192,7 @@ export default function WelcomePage() {
           deliveryEmail: deliveryEmail.trim() || undefined,
           audioEnabled,
           sendWindows: [sendWindow],
+          disclaimerAccepted: true,
         }),
       });
       const data = await res.json();
@@ -449,11 +456,24 @@ export default function WelcomePage() {
               </div>
             )}
 
+            <label className="mt-6 flex items-start gap-2.5 text-xs text-[#F5EFE0]/65 leading-relaxed cursor-pointer">
+              <input
+                type="checkbox"
+                checked={disclaimerAccepted}
+                onChange={(e) => setDisclaimerAccepted(e.target.checked)}
+                className="mt-0.5 shrink-0 accent-[#B08D57]"
+              />
+              <span>
+                I understand myjunto is for informational purposes only and is not financial,
+                investment, or trading advice.
+              </span>
+            </label>
+
             <div className="mt-8 flex justify-between">
               <button onClick={() => setStep(3)} className="text-sm text-[#F5EFE0]/55 hover:text-[#F5EFE0]">← Back</button>
               <button
                 onClick={submit}
-                disabled={submitting}
+                disabled={submitting || !disclaimerAccepted}
                 className="bg-[#B08D57] disabled:opacity-50 text-[#080604] px-6 py-2.5 rounded text-sm font-semibold uppercase tracking-wide font-[var(--font-oswald)]"
               >
                 {submitting ? 'Setting up…' : 'Start receiving'}

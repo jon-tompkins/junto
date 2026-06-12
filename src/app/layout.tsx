@@ -109,6 +109,12 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${spaceGrotesk.variable} ${oswald.variable} ${ibmPlexMono.variable}`}>
         <AuthProvider>{children}</AuthProvider>
+        <footer style={{ background: "#080604", borderTop: "1px solid rgba(176,141,87,0.14)", padding: "16px", textAlign: "center" }}>
+          <p style={{ margin: 0, fontSize: "11px", lineHeight: 1.5, color: "rgba(245,239,224,0.32)", maxWidth: "640px", marginLeft: "auto", marginRight: "auto" }}>
+            myjunto is for informational purposes only and is not financial, investment, or trading advice.
+            Do your own research before making any financial decision.
+          </p>
+        </footer>
       </body>
     </html>
   );

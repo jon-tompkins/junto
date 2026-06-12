@@ -14,6 +14,7 @@ interface WizardPayload {
   deliveryEmail?: string;   // delivery address — required for Twitter signups (no OAuth email)
   audioEnabled?: boolean;
   sendWindows?: string[];   // ['morning'] default
+  disclaimerAccepted?: boolean; // one-time "not financial advice" acknowledgment
 }
 
 const DEFAULT_SCHEDULE_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
     if (deliveryEmail && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(deliveryEmail)) {
       updates.email = deliveryEmail;
     }
+    if (body.disclaimerAccepted) updates.disclaimer_accepted_at = new Date().toISOString();
     await supabase.from('users').update(updates).eq('id', user.id);
 
     // ── 2. Personal newsletter — create or update pointing at the preset ─
