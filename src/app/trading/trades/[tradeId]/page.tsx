@@ -18,7 +18,7 @@ interface Trade {
   exit_at: string | null;
   stop_price: number | null;
   target_price: number | null;
-  status: string;
+  status: 'pending' | 'submitted' | 'open' | 'closed' | 'cancelled' | 'rejected';
   realized_pnl_usd: number | null;
 }
 
@@ -186,6 +186,17 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
                 {actMsg && (
                   <div className="text-[10px] text-[#F5EFE0]/60 max-w-[260px] text-right">{actMsg}</div>
                 )}
+              </div>
+            )}
+            {trade.status === 'submitted' && (
+              <div className="mt-3 flex flex-col items-end gap-1">
+                <div className="flex items-center gap-2 text-xs text-[#B08D57] font-[var(--font-oswald)] uppercase tracking-wide">
+                  <span className="inline-block w-3 h-3 border-2 border-[#B08D57] border-t-transparent rounded-full animate-spin" />
+                  Awaiting fill
+                </div>
+                <div className="text-[10px] text-[#F5EFE0]/40 max-w-[260px] text-right">
+                  Order submitted — confirming fill & attaching protection…
+                </div>
               </div>
             )}
             {(trade.status === 'cancelled' || trade.status === 'rejected') && (

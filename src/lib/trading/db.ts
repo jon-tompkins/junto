@@ -37,7 +37,7 @@ export interface TradeRow {
   alpaca_order_id: string | null;
   stop_order_id: string | null;
   target_order_id: string | null;
-  status: 'pending' | 'open' | 'closed' | 'cancelled' | 'rejected';
+  status: 'pending' | 'submitted' | 'open' | 'closed' | 'cancelled' | 'rejected';
   realized_pnl_usd: number | null;
 }
 
@@ -60,7 +60,7 @@ export async function getOpenTrades(mandateId: string): Promise<TradeRow[]> {
     .from('trades')
     .select('*')
     .eq('mandate_id', mandateId)
-    .in('status', ['pending', 'open']);
+    .in('status', ['pending', 'submitted', 'open']);
   if (error) throw error;
   return (data || []) as TradeRow[];
 }

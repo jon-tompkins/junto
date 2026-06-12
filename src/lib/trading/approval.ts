@@ -120,6 +120,8 @@ export async function skipTrade(tradeId: string, source: 'telegram' | 'web'): Pr
 
 // Approve + submit a pending trade. Shared by Telegram callback and web button.
 // Runs the 1% slippage guard against live price before submitting to Alpaca.
+// Returns immediately after order submission — sets status to 'submitted'.
+// Fill detection + protection attachment happen asynchronously via monitor tick.
 export async function approveTrade(tradeId: string, source: 'telegram' | 'web'): Promise<ActionResult> {
   const trade = await getTradeById(tradeId);
   if (!trade) return { ok: false, message: 'Trade not found.' };
@@ -166,8 +168,8 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
     // Entry first (market, day — Alpaca requires day on market orders).
     // We deliberately do NOT submit a bracket here: bracket child legs
     // inherit the parent's TIF=day and expire at market close, leaving the
-    // position naked overnight. Instead, after the entry fills we attach a
-    // GTC OCO stop+limit so protection survives across sessions.
+    // position naked overnight. Instead, the monitor tick will attach a
+    // GTC OCO stop+limit after fill confirmation.
     const order = await alpaca.submitMarketOrder({
       symbol: trade.ticker,
       qty: Number(trade.qty),
@@ -175,68 +177,21 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
       clientOrderId: `junto-${tradeId}`,
     });
 
-    await updateTrade(tradeId, { alpaca_order_id: order.id });
-
-    // Poll up to ~30s for the entry to fill, then attach GTC OCO protection.
-    // After fill, retry protection up to 3 times because Alpaca's positions
-    // endpoint can lag by a few seconds — without the retry, protectMandate
-    // returns `no_position` and the position sits naked until next tick.
-    const { protectMandate } = await import('./protection');
-    let protectedNow = false;
-    let filled = false;
-    for (let i = 0; i < 30; i++) {
-      await new Promise((r) => setTimeout(r, 1000));
-      try {
-        const status = await alpaca.getOrder(order.id);
-        if (status.status === 'filled' || (Number(status.filled_qty) || 0) > 0) {
-          filled = true;
-          break;
-        }
-        if (status.status === 'rejected' || status.status === 'canceled' || status.status === 'expired') {
-          break;
-        }
-      } catch {
-        // ignore poll errors
-      }
-    }
-
-    if (filled) {
-      for (let attempt = 0; attempt < 3 && !protectedNow; attempt++) {
-        try {
-          const r = await protectMandate(mandate.id);
-          const ours = r.results.find((x) => x.ticker.toUpperCase() === trade.ticker.toUpperCase());
-          if (ours?.action === 'protected' || ours?.action === 'already_protected') {
-            protectedNow = true;
-          } else {
-            // no_position race or transient error — wait and retry
-            await new Promise((r) => setTimeout(r, 2000));
-          }
-        } catch {
-          await new Promise((r) => setTimeout(r, 2000));
-        }
-      }
-    }
+    // Set status to 'submitted' + stamp real order ID, then return immediately.
+    // The monitor tick handles fill detection → 'open' status + protection.
+    await updateTrade(tradeId, {
+      alpaca_order_id: order.id,
+      status: 'submitted',
+    });
 
     await addJournalEntry({
       tradeId,
       kind: 'entry',
-      content: `[approved by user via ${source}, submitted market order_id=${order.id}${protectedNow ? ', GTC OCO protection attached' : ', awaiting fill — protector will attach GTC OCO on next tick'}]`,
+      content: `[approved by user via ${source}, submitted market order_id=${order.id}, awaiting fill — monitor will confirm and attach GTC OCO protection]`,
     });
     await updateSignalForTrade(tradeId, { decision: 'submitted', decisionReason: 'user_approved' });
 
-    // Best-effort: echo the position into the analyst profile of every source
-    // that drove the proposal so /sources/[handle] reflects what we traded.
-    // Don't block the user response on this — failures shouldn't surface to
-    // Telegram since the trade itself is fine.
-    if (filled) {
-      try {
-        const { recordTradeStanceForSources } = await import('./source-stance');
-        await recordTradeStanceForSources(tradeId);
-      } catch (e) {
-        console.error('[approval] recordTradeStanceForSources failed', e);
-      }
-    }
-    return { ok: true, message: `✅ Submitted ${trade.ticker}${protectedNow ? ' — filled + protected.' : ' — awaiting fill.'}` };
+    return { ok: true, message: `📤 Submitted ${trade.ticker} — awaiting fill confirmation.` };
   } catch (err: any) {
     await updateTrade(tradeId, { status: 'rejected' });
     await addJournalEntry({

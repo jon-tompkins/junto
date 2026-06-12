@@ -108,6 +108,8 @@ export async function buildPositionsMessage(userId: string): Promise<string> {
         plLine = `  Last $${live.price.toFixed(2)}  P&L ${sign}$${live.pl.toFixed(2)}`;
       } else if (t.status === 'pending') {
         plLine = `  <i>pending approval</i>`;
+      } else if (t.status === 'submitted') {
+        plLine = `  <i>submitted — awaiting fill</i>`;
       } else {
         plLine = `  <i>no live quote</i>`;
       }

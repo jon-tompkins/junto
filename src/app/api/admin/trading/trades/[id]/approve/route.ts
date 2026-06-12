@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getTradingAccess, canAccessTrade } from '@/lib/trading/access';
 import { approveTrade } from '@/lib/trading/approval';
 
-// approveTrade polls fill for ~30s then retries protection — needs room above default 10s.
-export const maxDuration = 60;
+// approveTrade no longer polls for fill — returns instantly after submitting.
 
 export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const access = await getTradingAccess();

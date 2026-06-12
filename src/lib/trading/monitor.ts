@@ -22,8 +22,8 @@ export async function monitorMandate(mandate: Mandate): Promise<{
   const positionsBySymbol = new Map(positions.map((p) => [p.symbol.toUpperCase(), p]));
 
   for (const trade of trades) {
-    // Pending → see if order filled
-    if (trade.status === 'pending' && trade.alpaca_order_id) {
+    // Submitted or pending with order ID → check if order filled
+    if ((trade.status === 'pending' || trade.status === 'submitted') && trade.alpaca_order_id) {
       try {
         const order = await alpaca.getOrder(trade.alpaca_order_id);
         if (order.status === 'filled') {
@@ -39,6 +39,23 @@ export async function monitorMandate(mandate: Mandate): Promise<{
             stop_order_id: stopLeg?.id ?? null,
             target_order_id: targetLeg?.id ?? null,
           });
+
+          // Best-effort: echo the position into analyst profiles
+          try {
+            const { recordTradeStanceForSources } = await import('./source-stance');
+            await recordTradeStanceForSources(trade.id);
+          } catch (e) {
+            console.error('[monitor] recordTradeStanceForSources failed', e);
+          }
+
+          // Attach GTC OCO protection now that position is confirmed
+          try {
+            const { protectMandate } = await import('./protection');
+            await protectMandate(mandate.id);
+          } catch (e) {
+            console.error('[monitor] protectMandate failed', e);
+          }
+
           opened++;
         } else if (['canceled', 'rejected', 'expired'].includes(order.status)) {
           await updateTrade(trade.id, { status: 'rejected' });

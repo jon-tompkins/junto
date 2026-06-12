@@ -325,7 +325,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     );
   }
 
-  const pendingTrades = trades.filter(t => t.status === 'pending');
+  const pendingTrades = trades.filter(t => t.status === 'pending' || t.status === 'submitted');
   const closedTrades = trades.filter(t => t.status === 'closed');
   // Alpaca is the source of truth for what's actually held. Open rows are
   // exactly the broker positions; we join the matching DB trade by ticker
@@ -452,29 +452,63 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
           </div>
         </div>
 
-        {pendingTrades.length > 0 && (
-          <div className="bg-[#B08D57]/10 border border-[#B08D57]/50 rounded p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <div className="text-sm font-semibold text-[#B08D57] mb-0.5">
-                {pendingTrades.length} trade{pendingTrades.length === 1 ? '' : 's'} awaiting approval
-              </div>
-              <p className="text-xs text-[#F5EFE0]/60">
-                {pendingTrades.map(t => `${t.ticker}`).join(', ')}
-              </p>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {pendingTrades.slice(0, 3).map(t => (
-                <Link
-                  key={t.id}
-                  href={`/trading/trades/${t.id}`}
-                  className="px-3 py-1.5 rounded text-xs font-[var(--font-oswald)] uppercase tracking-wide bg-[#B08D57] text-[#080604] hover:bg-[#c9a36a]"
-                >
-                  Review {t.ticker} →
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+        {(() => {
+          const awaitingApproval = trades.filter(t => t.status === 'pending');
+          const awaitingFill = trades.filter(t => t.status === 'submitted');
+          return (
+            <>
+              {awaitingApproval.length > 0 && (
+                <div className="bg-[#B08D57]/10 border border-[#B08D57]/50 rounded p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-[#B08D57] mb-0.5">
+                      {awaitingApproval.length} trade{awaitingApproval.length === 1 ? '' : 's'} awaiting approval
+                    </div>
+                    <p className="text-xs text-[#F5EFE0]/60">
+                      {awaitingApproval.map(t => `${t.ticker}`).join(', ')}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {awaitingApproval.slice(0, 3).map(t => (
+                      <Link
+                        key={t.id}
+                        href={`/trading/trades/${t.id}`}
+                        className="px-3 py-1.5 rounded text-xs font-[var(--font-oswald)] uppercase tracking-wide bg-[#B08D57] text-[#080604] hover:bg-[#c9a36a]"
+                      >
+                        Review {t.ticker} →
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {awaitingFill.length > 0 && (
+                <div className="bg-[#B08D57]/5 border border-[#B08D57]/25 rounded p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="inline-block w-4 h-4 border-2 border-[#B08D57] border-t-transparent rounded-full animate-spin" />
+                    <div>
+                      <div className="text-sm font-semibold text-[#B08D57]/80 mb-0.5">
+                        {awaitingFill.length} order{awaitingFill.length === 1 ? '' : 's'} submitted — confirming fill
+                      </div>
+                      <p className="text-xs text-[#F5EFE0]/45">
+                        {awaitingFill.map(t => `${t.ticker}`).join(', ')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {awaitingFill.slice(0, 3).map(t => (
+                      <Link
+                        key={t.id}
+                        href={`/trading/trades/${t.id}`}
+                        className="px-3 py-1.5 rounded text-xs font-[var(--font-oswald)] uppercase tracking-wide border border-[#B08D57]/40 text-[#B08D57] hover:bg-[#B08D57]/10"
+                      >
+                        {t.ticker} →
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {/* Settings (collapsible — rolls up junto, account, mandate config, guidelines) */}
         <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded mb-6">

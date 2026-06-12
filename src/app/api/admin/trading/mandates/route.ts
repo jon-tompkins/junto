@@ -35,7 +35,7 @@ export async function GET() {
   const statsByMandate = new Map<string, { open: number; closed: number; pnl: number; unrealized: number | null }>();
   for (const t of (tradesRes as any).data || []) {
     const s = statsByMandate.get(t.mandate_id) || { open: 0, closed: 0, pnl: 0, unrealized: null };
-    if (t.status === 'open' || t.status === 'pending') s.open++;
+    if (t.status === 'open' || t.status === 'pending' || t.status === 'submitted') s.open++;
     if (t.status === 'closed') {
       s.closed++;
       s.pnl += Number(t.realized_pnl_usd) || 0;
