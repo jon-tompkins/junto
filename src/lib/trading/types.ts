@@ -19,6 +19,7 @@ export interface Mandate {
   learnings: string | null;
   learnings_updated_at: string | null;
   use_learnings: boolean;
+  style: string | null;
 }
 
 export interface ExtractedSignal {

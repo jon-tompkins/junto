@@ -4,6 +4,7 @@ import { useEffect, useState, use } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
+import { STYLE_OPTIONS } from '@/lib/trading/styles';
 
 interface Mandate {
   id: string;
@@ -21,6 +22,7 @@ interface Mandate {
   learnings: string | null;
   learnings_updated_at: string | null;
   use_learnings: boolean;
+  style: string | null;
 }
 
 interface Trade {
@@ -126,6 +128,23 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const [regenLearnings, setRegenLearnings] = useState(false);
   const [togglingLearnings, setTogglingLearnings] = useState(false);
   const [learningsOpen, setLearningsOpen] = useState(false);
+  const [savingStyle, setSavingStyle] = useState(false);
+
+  async function changeStyle(style: string | null) {
+    setSavingStyle(true);
+    setMandate(m => m ? { ...m, style } : m);
+    try {
+      const res = await fetch(`/api/admin/trading/mandates/${mandateId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ style }),
+      });
+      const data = await res.json();
+      if (data.mandate) setMandate(m => m ? { ...m, style: data.mandate.style } : m);
+    } finally {
+      setSavingStyle(false);
+    }
+  }
 
   async function toggleUseLearnings(next: boolean) {
     setTogglingLearnings(true);
@@ -701,6 +720,27 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                     </SettingField>
                   </div>
                 )}
+              </div>
+
+              {/* Style */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">Style</h3>
+                  {savingStyle && <span className="text-[10px] text-[#F5EFE0]/30">Saving…</span>}
+                </div>
+                <select
+                  value={mandate.style || ''}
+                  onChange={e => changeStyle(e.target.value || null)}
+                  className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]"
+                >
+                  <option value="">No style — mandate only</option>
+                  {STYLE_OPTIONS.map(s => (
+                    <option key={s.key} value={s.key}>{s.name} — {s.tagline}</option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-[#F5EFE0]/30 mt-1.5">
+                  Layered above the mandate: every proposal is shaped by style → mandate guidelines → learned memory. Hard mandate rules always override the style.
+                </p>
               </div>
 
               {/* Guidelines */}

@@ -31,6 +31,7 @@ export async function regenerateLearnings(mandate: Mandate): Promise<string> {
     byTrade.set(e.trade_id, arr);
   }
 
+  const now = Date.now();
   const blocks = closed.map((t) => {
     const entries = byTrade.get(t.id) || [];
     const pm = entries.find((e) => e.kind === 'post_mortem');
@@ -40,8 +41,11 @@ export async function regenerateLearnings(mandate: Mandate): Promise<string> {
     const scores = pm && (pm.process_score || pm.outcome_score)
       ? ` [process ${pm.process_score ?? '?'}/5, outcome ${pm.outcome_score ?? '?'}/5]`
       : '';
+    const closedAt = (t as any).exit_at ? Date.parse((t as any).exit_at) : null;
+    const ageDays = closedAt ? Math.max(0, Math.round((now - closedAt) / 86_400_000)) : null;
+    const age = ageDays != null ? ` (closed ${ageDays}d ago)` : '';
     const lines = [
-      `### ${t.ticker} ${t.side} — PnL ${pnl}${scores}`,
+      `### ${t.ticker} ${t.side} — PnL ${pnl}${scores}${age}`,
     ];
     if (thesis?.content) lines.push(`Thesis: ${thesis.content.slice(0, 400)}`);
     if (pm?.content) lines.push(`Post-mortem: ${pm.content.slice(0, 500)}`);
@@ -58,6 +62,8 @@ Cover:
 - Recurring mistakes: patterns behind low process scores (bad theses, poor sizing, ignoring invalidation). These are the lessons — weight them heavily.
 - Signal from the user's notes: what the human flagged that the engine should internalize.
 - Concrete adjustments to apply going forward (e.g. "tighten stops on momentum names", "require a catalyst before sizing up", "avoid X setup").
+
+Weight recent trades more heavily than old ones — each trade is tagged with how long ago it closed. A lesson from a trade 60+ days ago is lower-confidence than a pattern showing up in the last few weeks; if the recent record contradicts an older lesson, trust the recent one and let the stale lesson fade. Note when the book of evidence is thin.
 
 Be honest and terse. Bad process with a lucky win is still bad process. No fluff, no restating the mandate's rules back. Under 500 words, markdown with short sections.`;
 

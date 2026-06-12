@@ -1,6 +1,7 @@
 import { getAnthropic } from '@/lib/synthesis/client';
 import type { Mandate, ExtractedSignal, TradeDecision } from './types';
 import type { AlpacaPosition } from './alpaca';
+import { getTradingStyle } from './styles';
 
 const SONNET_MODEL = 'claude-sonnet-4-6';
 
@@ -43,12 +44,17 @@ export async function decideTrades(ctx: DecisionContext): Promise<TradeDecision[
     )
     .join('\n\n');
 
+  const style = getTradingStyle(mandate.style);
+  const styleBlock = style
+    ? `Investing style — channel ${style.name}:\n${style.philosophy}\n\n`
+    : '';
+
   const useLearnings = mandate.use_learnings && !!mandate.learnings?.trim();
   const learningsBlock = useLearnings
     ? `\n\nLessons from this mandate's own trade history (apply these — they were earned from real results; weight the recurring-mistake lessons heavily):\n${mandate.learnings}`
     : '';
 
-  const system = `You are a disciplined portfolio manager running a mandate. For each candidate signal, decide whether to open a position. You must respect the mandate's guidelines exactly.${useLearnings ? '\n\nYou also have a record of lessons learned from your own past trades. Let those lessons shape sizing, setup selection, and which signals you reject.' : ''}
+  const system = `You are a disciplined portfolio manager running a mandate. For each candidate signal, decide whether to open a position. You must respect the mandate's guidelines exactly.${style ? `\n\nYou operate in the style of ${style.name}. Let that philosophy govern how you read setups, size positions, and which signals you reject — but the mandate's hard rules (sizing caps, ticker filters, loss limits) always override the style.` : ''}${useLearnings ? '\n\nYou also have a record of lessons learned from your own past trades. Let those lessons shape sizing, setup selection, and which signals you reject.' : ''}
 
 For every position you open, you write an entry thesis that captures:
 - the specific edge being expressed
@@ -64,7 +70,7 @@ Output strict JSON only:
   { "ticker": "AAPL", "side": "long", "notional_usd": 5000, "entry_thesis": "...", "invalidation": "...", "stop_pct": 7, "target_pct": 20, "expected_hold_days": 30, "source_urls": ["..."], "conviction": 4 }
 ] }`;
 
-  const user = `Mandate guidelines:
+  const user = `${styleBlock}Mandate guidelines:
 ${mandate.guidelines}${learningsBlock}
 
 Account equity: $${accountEquity.toFixed(2)}

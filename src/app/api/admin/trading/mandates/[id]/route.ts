@@ -110,7 +110,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const fields = [
     'name', 'guidelines', 'capital_allotted_usd', 'max_position_pct',
     'daily_loss_limit_pct', 'allowed_tickers', 'blocked_tickers',
-    'junto_id', 'status', 'mode', 'use_learnings',
+    'junto_id', 'status', 'mode', 'use_learnings', 'style',
   ];
   for (const f of fields) if (body[f] !== undefined) patch[f] = body[f];
 
