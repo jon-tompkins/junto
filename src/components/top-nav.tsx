@@ -12,6 +12,7 @@ export function TopNav() {
   const [tier, setTier] = useState<'free' | 'pro' | 'operator' | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
@@ -50,10 +51,6 @@ export function TopNav() {
         {[
           ...(session?.user ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
           { href: '/explore', label: 'Dispatches' },
-          { href: '/juntos', label: 'Juntos' },
-          { href: '/sources', label: 'Sources' },
-          { href: '/positions', label: 'Positions' },
-          { href: '/docs', label: 'Docs' },
         ].map(({ href, label }) => (
           <Link
             key={href}
@@ -67,6 +64,57 @@ export function TopNav() {
             {label}
           </Link>
         ))}
+
+        {/* Detail dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setDetailOpen(o => !o)}
+            onBlur={() => setTimeout(() => setDetailOpen(false), 150)}
+            className="text-sm transition flex items-center gap-1"
+            style={{
+              color: isActive('/juntos') || isActive('/sources') || isActive('/positions') ? '#F5EFE0' : 'rgba(245,239,224,0.5)',
+              fontWeight: isActive('/juntos') || isActive('/sources') || isActive('/positions') ? 500 : undefined,
+            }}
+          >
+            Detail
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {detailOpen && (
+            <div
+              className="absolute left-0 mt-2 w-36 rounded-sm shadow-xl z-50 py-1"
+              style={{ background: '#141210', border: '1px solid rgba(176,141,87,0.28)' }}
+            >
+              {[
+                { href: '/juntos', label: 'Juntos' },
+                { href: '/sources', label: 'Sources' },
+                { href: '/positions', label: 'Positions' },
+              ].map(({ href, label }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="block px-3 py-2 text-sm transition hover:opacity-80"
+                  style={{ color: isActive(href) ? '#F5EFE0' : 'rgba(245,239,224,0.6)' }}
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <Link
+          href="/docs"
+          className="text-sm transition"
+          style={{
+            color: isActive('/docs') ? '#F5EFE0' : 'rgba(245,239,224,0.5)',
+            fontWeight: isActive('/docs') ? 500 : undefined,
+          }}
+        >
+          Docs
+        </Link>
+
         {session?.user && (
           tradingUnlocked ? (
             <Link
@@ -220,9 +268,9 @@ export function TopNav() {
             {[
               ...(session?.user ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
               { href: '/explore', label: 'Dispatches' },
-              { href: '/juntos', label: 'Juntos' },
-              { href: '/sources', label: 'Sources' },
-              { href: '/positions', label: 'Positions' },
+              { href: '/juntos', label: 'Detail → Juntos' },
+              { href: '/sources', label: 'Detail → Sources' },
+              { href: '/positions', label: 'Detail → Positions' },
               { href: '/docs', label: 'Docs' },
               ...(session?.user ? [{ href: tradingUnlocked ? '/trading' : '/pricing', label: tradingUnlocked ? 'Trading' : 'Trading (Operator)' }] : []),
               ...(session?.user ? [
