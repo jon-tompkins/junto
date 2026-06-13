@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 export function TopNav() {
   const { data: session } = useSession();
@@ -13,6 +13,7 @@ export function TopNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
+  const detailRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (session?.user) {
@@ -26,6 +27,18 @@ export function TopNav() {
     }
   }, [session]);
 
+  // Close detail dropdown on outside click
+  useEffect(() => {
+    if (!detailOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (detailRef.current && !detailRef.current.contains(e.target as Node)) {
+        setDetailOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [detailOpen]);
+
   const tradingUnlocked = tier === 'operator';
 
   const creditColor =
@@ -38,15 +51,17 @@ export function TopNav() {
   const isActive = (path: string) =>
     pathname === path || pathname?.startsWith(path + '/');
 
+  const isDetailActive = isActive('/juntos') || isActive('/sources') || isActive('/positions');
+
   return (
-    <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
+    <nav className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
       {/* Logo */}
-      <Link href="/" className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-oswald)' }}>
+      <Link href="/" className="text-2xl font-bold tracking-tight shrink-0" style={{ fontFamily: 'var(--font-oswald)' }}>
         <span style={{ color: '#F5EFE0' }}>my</span>
         <span style={{ color: '#B08D57' }}>junto</span>
       </Link>
 
-      {/* Center nav links */}
+      {/* Center nav links — desktop */}
       <div className="hidden md:flex items-center gap-6">
         {[
           ...(session?.user ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
@@ -66,18 +81,17 @@ export function TopNav() {
         ))}
 
         {/* Detail dropdown */}
-        <div className="relative">
+        <div className="relative" ref={detailRef}>
           <button
             onClick={() => setDetailOpen(o => !o)}
-            onBlur={() => setTimeout(() => setDetailOpen(false), 150)}
             className="text-sm transition flex items-center gap-1"
             style={{
-              color: isActive('/juntos') || isActive('/sources') || isActive('/positions') ? '#F5EFE0' : 'rgba(245,239,224,0.5)',
-              fontWeight: isActive('/juntos') || isActive('/sources') || isActive('/positions') ? 500 : undefined,
+              color: isDetailActive ? '#F5EFE0' : 'rgba(245,239,224,0.5)',
+              fontWeight: isDetailActive ? 500 : undefined,
             }}
           >
             Detail
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <svg className={`w-3 h-3 transition-transform ${detailOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
@@ -94,6 +108,7 @@ export function TopNav() {
                 <Link
                   key={href}
                   href={href}
+                  onClick={() => setDetailOpen(false)}
                   className="block px-3 py-2 text-sm transition hover:opacity-80"
                   style={{ color: isActive(href) ? '#F5EFE0' : 'rgba(245,239,224,0.6)' }}
                 >
@@ -150,7 +165,7 @@ export function TopNav() {
             {creditBalance !== null && (
               <Link
                 href="/pricing"
-                className="text-xs font-medium transition hover:opacity-80"
+                className="text-xs font-medium transition hover:opacity-80 hidden sm:inline"
                 style={{ color: creditColor, fontFamily: 'var(--font-mono)' }}
               >
                 {creditBalance.toLocaleString()} credits
@@ -180,10 +195,10 @@ export function TopNav() {
                       )}
                     </div>
                     {[
-                      { href: '/history', label: 'History', brass: false },
-                      { href: '/theses', label: 'Theses', brass: false },
-                      { href: '/flows', label: 'Flows', brass: false },
-                      { href: '/settings', label: 'Settings', brass: false },
+                      { href: '/history', label: 'History' },
+                      { href: '/theses', label: 'Theses' },
+                      { href: '/flows', label: 'Flows' },
+                      { href: '/settings', label: 'Settings' },
                       { href: '/pricing', label: 'Billing', brass: true },
                     ].map(({ href, label, brass }) => (
                       <Link
@@ -191,7 +206,7 @@ export function TopNav() {
                         href={href}
                         onClick={() => setMenuOpen(false)}
                         className="block px-3 py-2 text-sm transition hover:opacity-80"
-                        style={{ color: brass ? '#B08D57' : 'rgba(245,239,224,0.7)' }}
+                        style={{ color: (brass as boolean) ? '#B08D57' : 'rgba(245,239,224,0.7)' }}
                       >
                         {label}
                       </Link>
@@ -214,7 +229,7 @@ export function TopNav() {
           </>
         ) : (
           <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm transition" style={{ color: 'rgba(245,239,224,0.5)' }}>
+            <Link href="/login" className="text-sm transition hidden sm:inline" style={{ color: 'rgba(245,239,224,0.5)' }}>
               Sign In
             </Link>
             <Link
@@ -230,97 +245,148 @@ export function TopNav() {
         {/* Mobile menu toggle */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden transition"
+          className="md:hidden transition p-1"
           style={{ color: 'rgba(245,239,224,0.5)' }}
           aria-label="Toggle navigation"
         >
           {mobileOpen ? (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           ) : (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           )}
         </button>
       </div>
 
-      {/* Mobile nav sheet */}
+      {/* Mobile nav — full-screen overlay */}
       {mobileOpen && (
-        <>
-          <div className="fixed inset-0 z-40" style={{ background: 'rgba(8,6,4,0.6)' }} onClick={() => setMobileOpen(false)} />
+        <div className="fixed inset-0 z-[100] md:hidden">
+          {/* Backdrop */}
+          <div className="absolute inset-0" style={{ background: 'rgba(8,6,4,0.85)', backdropFilter: 'blur(8px)' }} onClick={() => setMobileOpen(false)} />
+
+          {/* Sheet */}
           <div
-            className="fixed top-0 right-0 bottom-0 w-64 z-50 flex flex-col py-6 px-5 gap-1 md:hidden"
+            className="absolute top-0 right-0 bottom-0 w-full max-w-xs z-10 flex flex-col"
             style={{ background: '#0e0c09', borderLeft: '1px solid rgba(176,141,87,0.2)' }}
           >
-            <button
-              onClick={() => setMobileOpen(false)}
-              className="self-end mb-4 transition"
-              style={{ color: 'rgba(245,239,224,0.4)' }}
-              aria-label="Close"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            {[
-              ...(session?.user ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
-              { href: '/explore', label: 'Dispatches' },
-              { href: '/juntos', label: 'Detail → Juntos' },
-              { href: '/sources', label: 'Detail → Sources' },
-              { href: '/positions', label: 'Detail → Positions' },
-              { href: '/docs', label: 'Docs' },
-              ...(session?.user ? [{ href: tradingUnlocked ? '/trading' : '/pricing', label: tradingUnlocked ? 'Trading' : 'Trading (Operator)' }] : []),
-              ...(session?.user ? [
-                { href: '/history', label: 'History' },
-                { href: '/theses', label: 'Theses' },
-                { href: '/flows', label: 'Flows' },
-                { href: '/pricing', label: 'Billing' },
-              ] : [
-                { href: '/pricing', label: 'Pricing' },
-              ]),
-            ].map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setMobileOpen(false)}
-                className="px-3 py-3 rounded-sm text-sm transition"
-                style={{
-                  color: isActive(href) ? '#F5EFE0' : 'rgba(245,239,224,0.6)',
-                  background: isActive(href) ? 'rgba(176,141,87,0.1)' : undefined,
-                  borderLeft: isActive(href) ? '2px solid #B08D57' : '2px solid transparent',
-                }}
-              >
-                {label}
+            {/* Sheet header */}
+            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(176,141,87,0.12)' }}>
+              <Link href="/" onClick={() => setMobileOpen(false)} className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-oswald)' }}>
+                <span style={{ color: '#F5EFE0' }}>my</span>
+                <span style={{ color: '#B08D57' }}>junto</span>
               </Link>
-            ))}
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="p-1 transition"
+                style={{ color: 'rgba(245,239,224,0.4)' }}
+                aria-label="Close"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
 
+            {/* Nav links */}
+            <nav className="flex-1 overflow-y-auto px-2 py-3">
+              {/* Main nav */}
+              <div className="space-y-0.5">
+                {session?.user && (
+                  <MobileNavLink href="/dashboard" label="Dashboard" active={isActive('/dashboard')} onClick={() => setMobileOpen(false)} />
+                )}
+                <MobileNavLink href="/explore" label="Dispatches" active={isActive('/explore')} onClick={() => setMobileOpen(false)} />
+              </div>
+
+              {/* Detail group */}
+              <div className="mt-4 mb-1 px-3">
+                <span className="text-[10px] uppercase tracking-widest font-[var(--font-oswald)]" style={{ color: 'rgba(245,239,224,0.3)' }}>Detail</span>
+              </div>
+              <div className="space-y-0.5">
+                <MobileNavLink href="/juntos" label="Juntos" active={isActive('/juntos')} onClick={() => setMobileOpen(false)} indent />
+                <MobileNavLink href="/sources" label="Sources" active={isActive('/sources')} onClick={() => setMobileOpen(false)} indent />
+                <MobileNavLink href="/positions" label="Positions" active={isActive('/positions')} onClick={() => setMobileOpen(false)} indent />
+              </div>
+
+              {/* Rest */}
+              <div className="mt-4 space-y-0.5">
+                <MobileNavLink href="/docs" label="Docs" active={isActive('/docs')} onClick={() => setMobileOpen(false)} />
+                {session?.user && (
+                  tradingUnlocked ? (
+                    <MobileNavLink href="/trading" label="Trading" active={isActive('/trading')} onClick={() => setMobileOpen(false)} />
+                  ) : (
+                    <MobileNavLink href="/pricing" label="Trading" active={false} onClick={() => setMobileOpen(false)} locked />
+                  )
+                )}
+              </div>
+
+              {/* Account section */}
+              {session?.user && (
+                <div className="mt-6 space-y-0.5" style={{ borderTop: '1px solid rgba(176,141,87,0.12)', paddingTop: '0.75rem' }}>
+                  <MobileNavLink href="/history" label="History" active={isActive('/history')} onClick={() => setMobileOpen(false)} muted />
+                  <MobileNavLink href="/theses" label="Theses" active={isActive('/theses')} onClick={() => setMobileOpen(false)} muted />
+                  <MobileNavLink href="/flows" label="Flows" active={isActive('/flows')} onClick={() => setMobileOpen(false)} muted />
+                  <MobileNavLink href="/settings" label="Settings" active={isActive('/settings')} onClick={() => setMobileOpen(false)} muted />
+                  <MobileNavLink href="/pricing" label="Billing" active={isActive('/pricing')} onClick={() => setMobileOpen(false)} muted />
+                </div>
+              )}
+            </nav>
+
+            {/* Sheet footer */}
             {session?.user && (
-              <div className="mt-auto pt-4" style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}>
-                <Link
-                  href="/settings"
-                  onClick={() => setMobileOpen(false)}
-                  className="block px-3 py-2 text-sm transition"
-                  style={{ color: 'rgba(245,239,224,0.5)' }}
-                >
-                  Settings
-                </Link>
+              <div className="px-5 py-4" style={{ borderTop: '1px solid rgba(176,141,87,0.12)' }}>
                 <button
-                  onClick={() => signOut({ callbackUrl: '/' })}
-                  className="block w-full text-left px-3 py-2 text-sm transition"
-                  style={{ color: 'rgba(245,239,224,0.3)' }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#e8453c'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(245,239,224,0.3)'; }}
+                  onClick={() => { setMobileOpen(false); signOut({ callbackUrl: '/' }); }}
+                  className="text-sm transition"
+                  style={{ color: 'rgba(245,239,224,0.35)' }}
                 >
                   Sign Out
                 </button>
               </div>
             )}
           </div>
-        </>
+        </div>
       )}
     </nav>
+  );
+}
+
+function MobileNavLink({
+  href,
+  label,
+  active,
+  onClick,
+  indent,
+  muted,
+  locked,
+}: {
+  href: string;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  indent?: boolean;
+  muted?: boolean;
+  locked?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className="flex items-center gap-2 px-3 py-2.5 rounded-sm text-sm transition"
+      style={{
+        color: active ? '#F5EFE0' : muted ? 'rgba(245,239,224,0.4)' : 'rgba(245,239,224,0.65)',
+        background: active ? 'rgba(176,141,87,0.1)' : undefined,
+        paddingLeft: indent ? '1.25rem' : undefined,
+      }}
+    >
+      {locked && (
+        <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c1.105 0 2 .895 2 2s-.895 2-2 2-2-.895-2-2 .895-2 2-2zm6-3V6a6 6 0 10-12 0v2a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2zM8 8V6a4 4 0 118 0v2H8z" />
+        </svg>
+      )}
+      {label}
+    </Link>
   );
 }

@@ -82,6 +82,12 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
     { href: '/juntos', label: 'Juntos', icon: '◆' },
     { href: '/settings', label: 'Settings', icon: '⚙' },
     { href: '/prompt', label: 'Prompt', icon: '✎' },
+  ];
+
+  // Detail dropdown section (dispatches moved here for cohesive structure)
+  const [detailOpen, setDetailOpen] = useState(true);
+  const detailItems = [
+    { href: '/dashboard', label: 'Dispatches', icon: '□' },
     { href: '/history', label: 'History', icon: '◫' },
   ];
 
@@ -108,6 +114,40 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
             </li>
           ))}
         </ul>
+
+        {/* Detail dropdown - dispatches & related views */}
+        <div className="px-3 mt-2">
+          <button
+            onClick={() => setDetailOpen(!detailOpen)}
+            className="flex items-center justify-between w-full px-3 py-2 text-sm rounded-sm transition-colors hover:bg-[#1c1a17]"
+            style={{ color: 'rgba(245,239,224,0.45)' }}
+          >
+            <span className="flex items-center gap-3">
+              <span className="text-xs" style={{ color: 'rgba(176,141,87,0.5)' }}>▸</span>
+              Detail
+            </span>
+            <span className="text-[10px]">{detailOpen ? '−' : '+'}</span>
+          </button>
+          {detailOpen && (
+            <ul className="ml-6 mt-1 space-y-0.5 border-l border-[#B08D57]/20 pl-3">
+              {detailItems.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-1.5 text-sm rounded-sm transition-colors"
+                    style={pathname === item.href
+                      ? { background: 'rgba(176,141,87,0.12)', color: '#F5EFE0', borderLeft: '2px solid #B08D57' }
+                      : { color: 'rgba(245,239,224,0.4)' }}
+                  >
+                    <span className="text-xs" style={{ color: pathname === item.href ? '#B08D57' : 'rgba(176,141,87,0.5)' }}>{item.icon}</span>
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </nav>
 
       {/* Credits section */}

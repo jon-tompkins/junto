@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { TopNav } from '@/components/top-nav';
 import { AuthModal } from '@/components/auth-modal';
@@ -113,11 +114,19 @@ const ICON_MAP: Record<string, string> = {
 
 export default function LandingPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [newsletters, setNewsletters] = useState<Newsletter[]>(PLACEHOLDER_NEWSLETTERS);
   const [selectedNewsletter, setSelectedNewsletter] = useState<Newsletter | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [subscribeSuccess, setSubscribeSuccess] = useState<string | null>(null);
+
+  // Redirect logged-in users to dashboard (splash only for unauth)
+  useEffect(() => {
+    if (session) {
+      router.replace('/dashboard');
+    }
+  }, [session, router]);
 
   // Fetch real newsletters from DB
   useEffect(() => {
@@ -172,27 +181,27 @@ export default function LandingPage() {
       <TopNav />
 
       {/* Hero */}
-      <section className="container mx-auto px-4 pt-24 pb-16 relative">
+      <section className="container mx-auto px-4 pt-16 pb-12 sm:pt-24 sm:pb-16 relative">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-5xl md:text-7xl font-bold leading-[0.95] tracking-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold leading-[0.95] tracking-tight">
             The signal,<br />
             <span style={{ color: '#B08D57' }}>not the noise.</span>
           </h1>
-          <p className="text-lg md:text-xl mt-6 max-w-xl mx-auto" style={{ color: 'rgba(245,239,224,0.6)' }}>
+          <p className="text-base sm:text-lg md:text-xl mt-4 sm:mt-6 max-w-xl mx-auto" style={{ color: 'rgba(245,239,224,0.6)' }}>
             AI-synthesized briefs from the voices you actually trust. Pick your sources, set your lens, get your dispatch.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 mt-10 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 mt-8 sm:mt-10 justify-center">
             <Link
               href="/onboarding"
-              className="inline-flex items-center justify-center px-8 py-4 rounded font-semibold transition text-base uppercase tracking-wide"
+              className="inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded font-semibold transition text-sm sm:text-base uppercase tracking-wide"
               style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}
             >
               Get started
             </Link>
             <Link
               href="/explore"
-              className="inline-flex items-center justify-center px-8 py-4 rounded font-medium transition text-base"
+              className="inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded font-medium transition text-sm sm:text-base"
               style={{ border: '1px solid rgba(176,141,87,0.28)', color: 'rgba(245,239,224,0.7)' }}
             >
               Browse dispatches →
