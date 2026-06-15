@@ -62,7 +62,9 @@ export default function AdminTradingPage() {
     account_kind: 'byo_keys' as 'byo_keys' | 'managed',
     alpaca_key_id: '',
     alpaca_secret: '',
+    mode: 'paper' as 'paper' | 'live',
   });
+  const [createType, setCreateType] = useState<'paper' | 'live' | null>(null);
   const [managedAccount, setManagedAccount] = useState<{ id: string; status: string } | null>(null);
 
   useEffect(() => {
@@ -145,7 +147,8 @@ export default function AdminTradingPage() {
       if (data.mandate) {
         setMandates(prev => [{ ...data.mandate, stats: { open: 0, closed: 0, pnl: 0, unrealized: null } }, ...prev]);
         setShowCreate(false);
-        setForm({ name: '', junto_id: '', capital_allotted_usd: '1000', max_position_pct: '10', daily_loss_limit_pct: '3', guidelines: '', account_kind: 'byo_keys', alpaca_key_id: '', alpaca_secret: '' });
+        setForm({ name: '', junto_id: '', capital_allotted_usd: '1000', max_position_pct: '10', daily_loss_limit_pct: '3', guidelines: '', account_kind: 'byo_keys', alpaca_key_id: '', alpaca_secret: '', mode: 'paper' });
+        setCreateType(null);
       } else {
         setError(data.error || 'Failed to create');
       }
@@ -364,15 +367,20 @@ export default function AdminTradingPage() {
               </Field>
             </div>
             {form.account_kind === 'byo_keys' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="Alpaca key ID">
-                  <input value={form.alpaca_key_id} onChange={e => setForm({ ...form, alpaca_key_id: e.target.value })} className={inputCls} placeholder="PK..." />
-                </Field>
-                <Field label="Alpaca secret">
-                  <input type="password" value={form.alpaca_secret} onChange={e => setForm({ ...form, alpaca_secret: e.target.value })} className={inputCls} />
-                </Field>
+              <div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="Alpaca key ID">
+                    <input value={form.alpaca_key_id} onChange={e => setForm({ ...form, alpaca_key_id: e.target.value })} className={inputCls} placeholder="PK..." />
+                  </Field>
+                  <Field label="Alpaca secret">
+                    <input type="password" value={form.alpaca_secret} onChange={e => setForm({ ...form, alpaca_secret: e.target.value })} className={inputCls} />
+                  </Field>
+                </div>
+                <p className="text-[11px] text-[#F5EFE0]/45 mt-2">
+                  For live (real-money) Alpaca accounts: go to Alpaca dashboard → Manage accounts → Generate key. Keys are optional — you can use paper trading or skip connecting for now.
+                </p>
               </div>
-            )}
+            )
             <Field label="Guidelines (natural language)">
               <textarea
                 value={form.guidelines}
@@ -405,8 +413,9 @@ export default function AdminTradingPage() {
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <div className="text-lg font-bold text-[#F5EFE0]">{m.name}</div>
-                    <div className="text-xs text-[#F5EFE0]/45 mt-0.5">
-                      {m.junto_name || 'no junto'} · {m.mode}
+                    <div className="text-xs text-[#F5EFE0]/45 mt-0.5 flex items-center gap-2">
+                      {m.junto_name || 'no junto'}
+                      <span className={`px-1.5 py-px rounded text-[10px] font-mono ${m.mode === 'live' ? 'bg-[#e8453c]/20 text-[#e8453c]' : 'bg-[#3ecf6a]/20 text-[#3ecf6a]'}`}>{m.mode}</span>
                     </div>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded font-[var(--font-oswald)] uppercase tracking-wide ${

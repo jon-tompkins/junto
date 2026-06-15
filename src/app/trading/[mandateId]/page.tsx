@@ -411,7 +411,10 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-3 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">{mandate.name}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">{mandate.name}</h1>
+              <span className={`px-2 py-0.5 text-xs rounded font-mono tracking-wider ${mandate.mode === 'live' ? 'bg-[#e8453c]/20 text-[#e8453c] border border-[#e8453c]/40' : 'bg-[#3ecf6a]/20 text-[#3ecf6a] border border-[#3ecf6a]/40'}`}>{mandate.mode?.toUpperCase() || 'PAPER'}</span>
+            </div>
             <p className="text-sm text-[#F5EFE0]/45 mt-1">
               {mandate.junto_name || 'no junto'} · {mandate.mode} · {fmtUsd(mandate.capital_allotted_usd)} · {mandate.max_position_pct}% max position
             </p>
