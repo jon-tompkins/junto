@@ -1183,7 +1183,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             {creditBalance !== null && (
               <Link
-                href="/pricing"
+                href="/settings"
                 className={`px-3 py-2.5 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-xs font-mono ${creditColor}`}
               >
                 {creditBalance.toLocaleString()} credits
