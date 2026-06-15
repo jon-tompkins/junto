@@ -32,6 +32,7 @@ export default function SettingsPage() {
   const [savedTimezone, setSavedTimezone] = useState('America/New_York');
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [isPro, setIsPro] = useState(false);
+  const [tier, setTier] = useState<'free' | 'pro' | 'operator' | null>(null);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
@@ -153,6 +154,7 @@ export default function SettingsPage() {
       }
       if (data.balance !== undefined) setCreditBalance(data.balance);
       if (data.isPro !== undefined) setIsPro(data.isPro);
+      if (data.subscriptionTier) setTier(data.subscriptionTier);
       if (typeof data.dispatchTgText === 'boolean') setDispatchTgText(data.dispatchTgText);
       if (typeof data.dispatchTgAudio === 'boolean') setDispatchTgAudio(data.dispatchTgAudio);
     } catch (err) {
@@ -327,11 +329,12 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <span className="text-sm text-[#F5EFE0]/60">Plan</span>
-              {isPro && <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-[#B08D57] text-[#080604] font-bold font-[var(--font-oswald)] uppercase tracking-wide">Pro</span>}
+              {tier === 'operator' && <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-[#B08D57] text-[#080604] font-bold font-[var(--font-oswald)] uppercase tracking-wide">Operator</span>}
+              {tier === 'pro' && <span className="ml-2 text-[10px] px-2 py-0.5 rounded bg-[#B08D57] text-[#080604] font-bold font-[var(--font-oswald)] uppercase tracking-wide">Pro</span>}
             </div>
             {isPro ? (
               <a
-                href="/api/v2/billing/portal"
+                href="/pricing"
                 className="text-xs text-[#F5EFE0]/50 hover:text-[#F5EFE0]/80 underline transition"
               >
                 Manage subscription →

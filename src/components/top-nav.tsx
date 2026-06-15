@@ -164,7 +164,7 @@ export function TopNav() {
           <>
             {creditBalance !== null && (
               <Link
-                href="/pricing"
+                href="/settings"
                 className="text-xs font-medium transition hover:opacity-80 hidden sm:inline"
                 style={{ color: creditColor, fontFamily: 'var(--font-mono)' }}
               >
