@@ -135,7 +135,7 @@ export interface MandateAlpacaCreds {
 }
 
 export function alpacaForMandate(mandate: MandateAlpacaCreds): AlpacaClient {
-  if (mandate.account_kind === 'managed' && mandate.alpaca_account_id) {
+  if (mandate.alpaca_account_id) {
     return makeManagedAlpaca(mandate.alpaca_account_id);
   }
   return makeAlpaca({ keyId: mandate.alpaca_key_id ?? null, secret: mandate.alpaca_secret ?? null });

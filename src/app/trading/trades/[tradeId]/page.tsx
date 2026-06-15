@@ -233,9 +233,9 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
                 <button
                   onClick={handleRepropose}
                   disabled={reproposing}
-                  className="text-xs px-3 py-1.5 rounded font-[var(--font-oswald)] uppercase tracking-wide bg-[#B08D57] text-[#080604] hover:bg-[#c9a36a] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="text-xs px-3 py-1.5 rounded font-[var(--font-oswald)] uppercase tracking-wide bg-[#B08D57] text-[#080604] hover:bg-[#c9a36a] disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
                 >
-                  {reproposing ? 'Re-proposing…' : 'Re-propose at current price'}
+                  {reproposing ? 'Re-proposing…' : 'REGENERATE'}
                 </button>
                 {reproposeMsg && (
                   <div className="text-[10px] text-[#F5EFE0]/60 max-w-[220px] text-right">{reproposeMsg}</div>

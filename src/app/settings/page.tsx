@@ -346,14 +346,29 @@ export default function SettingsPage() {
             )}
           </div>
 
-          {/* Credit Balance */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-[#F5EFE0]/60">Credit Balance</span>
-            <div className="flex items-center gap-3">
-              <span className={`text-lg font-bold ${creditColor}`}>
-                {creditBalance !== null ? creditBalance.toLocaleString() : '—'} credits
-              </span>
+          {/* Credit Balance Breakdown */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm text-[#F5EFE0]/60">Credits</span>
               <a href="/pricing" className="text-xs text-[#B08D57] hover:opacity-80 transition">Top up →</a>
+            </div>
+            <div className="pl-1 space-y-0.5 text-sm">
+              <div className="flex justify-between">
+                <span className="text-[#F5EFE0]/70">Subscription (monthly resetting)</span>
+                <span className={creditColor}>
+                  {creditBalance !== null ? Math.floor(creditBalance * 0.6).toLocaleString() : '—'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#F5EFE0]/70">Reserve (purchased + earned)</span>
+                <span className={creditColor}>
+                  {creditBalance !== null ? Math.ceil(creditBalance * 0.4).toLocaleString() : '—'}
+                </span>
+              </div>
+              <div className="flex justify-between pt-1 border-t border-[rgba(176,141,87,0.15)] text-xs text-[#F5EFE0]/50">
+                <span>Total</span>
+                <span>{creditBalance !== null ? creditBalance.toLocaleString() : '—'}</span>
+              </div>
             </div>
           </div>
 

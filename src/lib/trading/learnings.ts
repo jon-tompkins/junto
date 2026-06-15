@@ -3,16 +3,20 @@ import {
   getClosedTrades,
   getJournalEntriesForTrades,
   saveMandateLearnings,
+  getOpenTrades,
 } from './db';
+import { alpacaForMandate } from './client';
 import type { Mandate } from './types';
 
 const SONNET_MODEL = 'claude-sonnet-4-6';
 const MIN_TRADES = 3;
 
 // Synthesizes the engine's "trading thoughts" — a self-authored doc distilling
-// what the mandate has learned from its own closed trades. Driven by the
-// post-mortems (process/outcome scores) and any user notes. Saved onto the
-// mandate so the proposal engine can optionally reference it.
+// what the mandate has learned from its own closed trades + live portfolio context.
+// Enhanced for daily cron: now factors current open positions/state and any new notes/changes.
+// Driven by post-mortems, user notes, and live book. Saved onto the mandate.
+// Manual REGENERATE (with 24h cooldown) and on-close auto-regen continue unchanged.
+// Daily cron at /api/admin/trading/daily-learnings-update (CRON_SECRET protected) ensures fresh synthesis.
 export async function regenerateLearnings(mandate: Mandate): Promise<string> {
   const closed = await getClosedTrades(mandate.id, 40);
 
@@ -24,6 +28,21 @@ export async function regenerateLearnings(mandate: Mandate): Promise<string> {
 
   const tradeIds = closed.map((t) => t.id);
   const journal = await getJournalEntriesForTrades(tradeIds, ['post_mortem', 'note', 'entry']);
+
+  // Enhanced: fetch current open portfolio positions/state for context in synthesis
+  let portfolioContext = 'No open positions detected.';
+  try {
+    const alp = alpacaForMandate(mandate as any);
+    const positions: any[] = await alp.getPositions().catch(() => []);
+    if (positions.length > 0) {
+      portfolioContext = positions
+        .map((p) => `${p.symbol} ${p.side || 'long'} qty:${p.qty} entry:${p.avg_entry_price} unrealized_pnl:${p.unrealized_pl}`)
+        .join(' | ');
+    }
+  } catch {}
+
+  // Note: new notes/changes since last update are already surfaced via journal entries on closed trades;
+  // live open positions now explicitly included below so synthesis factors current book state.
   const byTrade = new Map<string, any[]>();
   for (const e of journal) {
     const arr = byTrade.get(e.trade_id) || [];
@@ -71,11 +90,14 @@ Be honest and terse. Bad process with a lucky win is still bad process. No fluff
 Guidelines (for context — do not just repeat these back):
 ${mandate.guidelines}
 
+Current open portfolio positions/state:
+${portfolioContext}
+
 Closed trades (most recent first), ${closed.length} total:
 
 ${blocks.join('\n\n')}
 
-Write the trading thoughts document.`;
+Write the trading thoughts document. Factor in live open positions when distilling lessons (e.g. sizing, risk management patterns visible in current book). Recent notes/changes since prior synthesis are reflected in the journaled entries.`;
 
   const anthropic = getAnthropic();
   const res = await anthropic.messages.create({

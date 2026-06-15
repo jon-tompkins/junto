@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 import { STYLE_OPTIONS } from '@/lib/trading/styles';
+import ReactMarkdown from 'react-markdown';
 
 interface Mandate {
   id: string;
@@ -835,7 +836,9 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               </label>
 
               {mandate.learnings?.trim() ? (
-                <p className="text-sm text-[#F5EFE0]/80 whitespace-pre-wrap">{mandate.learnings}</p>
+                <div className="text-sm text-[#F5EFE0]/80">
+                  <ReactMarkdown>{mandate.learnings}</ReactMarkdown>
+                </div>
               ) : (
                 <p className="text-sm text-[#F5EFE0]/30">No trading thoughts yet — they build up as trades close. Hit Regenerate to synthesize from history so far.</p>
               )}
