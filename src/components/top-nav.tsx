@@ -130,6 +130,17 @@ export function TopNav() {
           Docs
         </Link>
 
+        <Link
+          href="/demos"
+          className="text-sm transition"
+          style={{
+            color: isActive('/demos') ? '#F5EFE0' : 'rgba(245,239,224,0.5)',
+            fontWeight: isActive('/demos') ? 500 : undefined,
+          }}
+        >
+          Demo
+        </Link>
+
         {session?.user && (
           tradingUnlocked ? (
             <Link
@@ -313,6 +324,7 @@ export function TopNav() {
               {/* Rest */}
               <div className="mt-4 space-y-0.5">
                 <MobileNavLink href="/docs" label="Docs" active={isActive('/docs')} onClick={() => setMobileOpen(false)} />
+                <MobileNavLink href="/demos" label="Demo" active={isActive('/demos')} onClick={() => setMobileOpen(false)} />
                 {session?.user && (
                   tradingUnlocked ? (
                     <MobileNavLink href="/trading" label="Trading" active={isActive('/trading')} onClick={() => setMobileOpen(false)} />
