@@ -232,22 +232,26 @@ async function uploadVideo(data: Buffer, mimeType: string, creds: XCreds): Promi
   });
   const finText = await finRes.text();
   if (!finRes.ok) throw new Error(`X media/upload FINALIZE ${finRes.status}: ${finText}`);
-  let info = JSON.parse(finText)?.processing_info;
+  // Video is transcoded asynchronously. FINALIZE *usually* returns
+  // processing_info, but we don't trust its shape — always poll STATUS until
+  // the media reports `succeeded`, otherwise attaching it to a tweet 400s with
+  // "Your media IDs are invalid".
+  let info = JSON.parse(finText)?.processing_info || { state: 'pending', check_after_secs: 1 };
 
-  // STATUS polling — async transcode. Bail after ~2 min.
   const deadline = Date.now() + 120_000;
-  while (info && (info.state === 'pending' || info.state === 'in_progress')) {
-    if (Date.now() > deadline) throw new Error('X video processing timed out');
-    await sleep(Math.max(1, info.check_after_secs || 1) * 1000);
+  while (info && info.state !== 'succeeded') {
+    if (info.state === 'failed') {
+      throw new Error(`X video processing failed: ${JSON.stringify(info.error || info)}`);
+    }
+    if (Date.now() > deadline) throw new Error(`X video processing timed out (last state: ${info.state})`);
+    await sleep(Math.max(1, info.check_after_secs || 2) * 1000);
     const stParams: Record<string, string> = { command: 'STATUS', media_id: mediaId };
     const stUrl = `${UPLOAD_URL}?${new URLSearchParams(stParams).toString()}`;
     const stRes = await fetch(stUrl, { headers: { Authorization: signRequest('GET', UPLOAD_URL, creds, stParams) } });
     const stText = await stRes.text();
     if (!stRes.ok) throw new Error(`X media/upload STATUS ${stRes.status}: ${stText}`);
     info = JSON.parse(stText)?.processing_info;
-  }
-  if (info?.state === 'failed') {
-    throw new Error(`X video processing failed: ${JSON.stringify(info.error || info)}`);
+    if (!info) throw new Error(`X media/upload STATUS returned no processing_info: ${stText}`);
   }
   return mediaId;
 }
