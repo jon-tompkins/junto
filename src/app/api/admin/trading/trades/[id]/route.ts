@@ -30,7 +30,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     .from('trade_journal_entries')
     .select('*')
     .eq('trade_id', id)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: false });
 
   return NextResponse.json({
     trade,
