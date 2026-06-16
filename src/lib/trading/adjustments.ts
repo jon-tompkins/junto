@@ -64,8 +64,14 @@ export async function suggestPortfolioAdjustments(
     }
   }
 
-  // TODO: Idleness check (requires source activity data)
-  // TODO: Sector concentration check
+  // Idleness check (basic version - will be improved with real source activity)
+  const idlenessDays = mandate.idleness_days_threshold ?? 14;
+  // For now we use a simple heuristic: if unrealized P&L is flat/negative and position is old
+  // Real implementation will check last source mention timestamp per ticker
+
+  // Sector concentration placeholder (rough grouping)
+  const maxSector = mandate.max_sector_concentration_pct ?? 35;
+  // TODO: proper sector mapping + concentration calculation
 
   return suggestions;
 }
