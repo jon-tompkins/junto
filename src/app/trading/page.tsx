@@ -58,6 +58,10 @@ export default function AdminTradingPage() {
     capital_allotted_usd: '1000',
     max_position_pct: '10',
     daily_loss_limit_pct: '3',
+    max_single_position_pct: '',
+    max_top3_concentration_pct: '',
+    max_sector_concentration_pct: '',
+    idleness_days_threshold: '',
     guidelines: '',
     account_kind: 'byo_keys' as 'byo_keys' | 'managed',
     alpaca_key_id: '',
@@ -147,7 +151,7 @@ export default function AdminTradingPage() {
       if (data.mandate) {
         setMandates(prev => [{ ...data.mandate, stats: { open: 0, closed: 0, pnl: 0, unrealized: null } }, ...prev]);
         setShowCreate(false);
-        setForm({ name: '', junto_id: '', capital_allotted_usd: '1000', max_position_pct: '10', daily_loss_limit_pct: '3', guidelines: '', account_kind: 'byo_keys', alpaca_key_id: '', alpaca_secret: '', mode: 'paper' });
+        setForm({ name: '', junto_id: '', capital_allotted_usd: '1000', max_position_pct: '10', daily_loss_limit_pct: '3', max_single_position_pct: '', max_top3_concentration_pct: '', max_sector_concentration_pct: '', idleness_days_threshold: '', guidelines: '', account_kind: 'byo_keys', alpaca_key_id: '', alpaca_secret: '', mode: 'paper' });
         setCreateType(null);
       } else {
         setError(data.error || 'Failed to create');
@@ -365,6 +369,24 @@ export default function AdminTradingPage() {
               <Field label="Daily loss limit %">
                 <input type="number" value={form.daily_loss_limit_pct} onChange={e => setForm({ ...form, daily_loss_limit_pct: e.target.value })} className={inputCls} />
               </Field>
+            </div>
+
+            <div className="pt-4 border-t border-[#F5EFE0]/10">
+              <div className="text-sm font-medium mb-2 text-[#F5EFE0]/70">Portfolio Risk Limits</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="Max single position %">
+                  <input type="number" value={form.max_single_position_pct || ''} onChange={e => setForm({ ...form, max_single_position_pct: e.target.value })} className={inputCls} placeholder="15" />
+                </Field>
+                <Field label="Max top 3 concentration %">
+                  <input type="number" value={form.max_top3_concentration_pct || ''} onChange={e => setForm({ ...form, max_top3_concentration_pct: e.target.value })} className={inputCls} placeholder="50" />
+                </Field>
+                <Field label="Max sector concentration %">
+                  <input type="number" value={form.max_sector_concentration_pct || ''} onChange={e => setForm({ ...form, max_sector_concentration_pct: e.target.value })} className={inputCls} placeholder="35" />
+                </Field>
+                <Field label="Idleness threshold (days)">
+                  <input type="number" value={form.idleness_days_threshold || ''} onChange={e => setForm({ ...form, idleness_days_threshold: e.target.value })} className={inputCls} placeholder="14" />
+                </Field>
+              </div>
             </div>
             {form.account_kind === 'byo_keys' && (
               <div>
