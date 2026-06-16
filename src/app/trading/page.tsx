@@ -381,6 +381,7 @@ export default function AdminTradingPage() {
                 </p>
               </div>
             )
+            }
             <Field label="Guidelines (natural language)">
               <textarea
                 value={form.guidelines}
