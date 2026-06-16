@@ -68,6 +68,8 @@ Reject low-quality signals — it is fine to return an empty list.
 
 ${isBookFull ? 'PORTFOLIO STATUS: The book is currently near or at max risk capacity (most capital is already deployed in open positions). You may still propose trades, but the user will be warned that free capital is limited.' : ''}
 
+When returning decisions, include a basic sector label if possible (e.g. "AI/Tech", "Crypto", "Biotech", "Financials").
+
 Output strict JSON only:
 { "decisions": [
   { "ticker": "AAPL", "side": "long", "notional_usd": 5000, "entry_thesis": "...", "invalidation": "...", "stop_pct": 7, "target_pct": 20, "expected_hold_days": 30, "source_urls": ["..."], "conviction": 4 }

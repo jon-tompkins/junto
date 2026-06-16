@@ -30,7 +30,7 @@ export async function requestApproval(params: {
 
   const body = `🤖 <b>Trade proposal</b> — ${escapeHtml(params.mandateName)}
 
-<b>${params.decision.side === 'long' ? 'BUY' : 'SHORT'} ${escapeHtml(params.decision.ticker)}</b>
+<b>${params.decision.side === 'long' ? 'BUY' : 'SHORT'} ${escapeHtml(params.decision.ticker)}</b>${params.decision.sector ? ` (${params.decision.sector})` : ''}
 Notional: $${params.decision.notional_usd.toFixed(0)} @ ~$${params.entryPrice.toFixed(2)}
 Stop: $${stopPrice.toFixed(2)} (-${params.decision.stop_pct}%)  Target: $${targetPrice.toFixed(2)} (+${params.decision.target_pct}%)
 Hold: ~${params.decision.expected_hold_days}d  Conviction: ${params.decision.conviction}/5

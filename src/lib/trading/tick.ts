@@ -12,6 +12,7 @@ import {
 } from './db';
 import { loadJuntoSnapshot, extractSignals } from './extract';
 import { decideTrades } from './decide';
+import { suggestPortfolioAdjustments } from './adjustments';
 import { decideAmendments } from './decide-amendments';
 import { monitorMandate } from './monitor';
 import { protectMandate } from './protection';
@@ -29,6 +30,7 @@ export interface TickResult {
   decisions: number;
   proposed: number;
   amendments_proposed: number;
+  adjustments: number;
   note?: string;
   errors: string[];
   portfolioMetrics?: {
@@ -185,6 +187,14 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     }
   } else {
     result.note = 'close_window_amendments_only';
+  }
+
+  // Portfolio adjustment suggestions (reductions + idleness)
+  try {
+    const adjustments = await suggestPortfolioAdjustments(mandate, positions, accountEquity);
+    result.adjustments = adjustments.length;
+  } catch (err: any) {
+    result.errors.push(`adjustments: ${err.message}`);
   }
 
   const alpaca = alpacaForMandate(mandate);
