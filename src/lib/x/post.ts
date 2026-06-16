@@ -166,7 +166,10 @@ async function uploadMedia(data: Buffer, mimeType: string, creds: XCreds): Promi
   return id;
 }
 
-const UPLOAD_URL = 'https://upload.twitter.com/1.1/media/upload.json';
+// v2 media endpoint. Media_ids minted by the legacy upload.twitter.com/1.1
+// host are rejected by api.x.com/2/tweets ("Your media IDs are invalid"), so
+// the chunked flow must run against the v2 graph to produce a compatible id.
+const UPLOAD_URL = 'https://api.x.com/2/media/upload';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
