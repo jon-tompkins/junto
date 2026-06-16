@@ -20,6 +20,13 @@ export interface Mandate {
   learnings_updated_at: string | null;
   use_learnings: boolean;
   style: string | null;
+
+  // Portfolio risk settings (Phase 1)
+  max_single_position_pct: number | null;
+  max_top3_concentration_pct: number | null;
+  max_sector_concentration_pct: number | null;
+  idleness_days_threshold: number | null;
+  idleness_resuggest_days: number | null;
 }
 
 export interface ExtractedSignal {
@@ -41,6 +48,7 @@ export interface TradeDecision {
   expected_hold_days: number;
   source_urls: string[];
   conviction: number;
+  sector?: string; // Phase 1 - basic sector label on proposals
 }
 
 export type TickWindow = 'open' | 'mid_morning' | 'midday' | 'mid_afternoon' | 'close';
