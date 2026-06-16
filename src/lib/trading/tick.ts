@@ -128,6 +128,10 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     return result;
   }
 
+  // Book capacity check (short-term "no free capital" feature)
+  const openNotional = positions.reduce((sum: number, p: any) => sum + (Number(p.market_value) || 0), 0);
+  const isBookFull = openNotional >= accountEquity * 0.82; // ~82%+ deployed = full book
+
   let signals;
   let reviewedTwitterIds: string[] = [];
   try {
@@ -149,7 +153,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
   let decisions: import('./types').TradeDecision[] = [];
   if (allowNewEntries) {
     try {
-      decisions = await decideTrades({ mandate, signals, positions, accountEquity });
+      decisions = await decideTrades({ mandate, signals, positions, accountEquity, isBookFull });
       result.decisions = decisions.length;
     } catch (err: any) {
       result.errors.push(`decide: ${err.message}`);

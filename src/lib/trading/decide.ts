@@ -10,10 +10,11 @@ export interface DecisionContext {
   signals: ExtractedSignal[];
   positions: AlpacaPosition[];
   accountEquity: number;
+  isBookFull?: boolean;
 }
 
 export async function decideTrades(ctx: DecisionContext): Promise<TradeDecision[]> {
-  const { mandate, signals, positions, accountEquity } = ctx;
+  const { mandate, signals, positions, accountEquity, isBookFull = false } = ctx;
   if (signals.length === 0) return [];
 
   const heldSymbols = new Set(positions.map((p) => p.symbol.toUpperCase()));
@@ -64,6 +65,8 @@ For every position you open, you write an entry thesis that captures:
 
 Use conservative position sizing. max_position_pct caps each notional as a % of equity.
 Reject low-quality signals — it is fine to return an empty list.
+
+${isBookFull ? 'PORTFOLIO STATUS: The book is currently near or at max risk capacity (most capital is already deployed in open positions). You may still propose trades, but the user will be warned that free capital is limited.' : ''}
 
 Output strict JSON only:
 { "decisions": [
