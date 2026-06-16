@@ -179,7 +179,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // they ARE part of the signature base (passed to signRequest). APPEND is
 // multipart/form-data, whose fields are excluded from the base per spec, so it
 // signs the bare URL.
-async function uploadVideo(data: Buffer, mimeType: string, creds: XCreds): Promise<string> {
+async function uploadVideo(data: Buffer, mimeType: string, creds: XCreds, trace?: any[]): Promise<string> {
   const totalBytes = data.length;
   if (totalBytes > 512 * 1024 * 1024) {
     throw new Error(`Video exceeds X's 512MB limit (got ${totalBytes} bytes)`);
@@ -198,6 +198,7 @@ async function uploadVideo(data: Buffer, mimeType: string, creds: XCreds): Promi
     headers: { Authorization: signRequest('POST', UPLOAD_URL, creds, initParams) },
   });
   const initText = await initRes.text();
+  trace?.push({ step: 'INIT', status: initRes.status, body: initText.slice(0, 500) });
   if (!initRes.ok) throw new Error(`X media/upload INIT ${initRes.status}: ${initText}`);
   const mediaId = JSON.parse(initText)?.media_id_string;
   if (!mediaId) throw new Error(`X media/upload INIT returned no media_id_string: ${initText}`);
@@ -217,8 +218,10 @@ async function uploadVideo(data: Buffer, mimeType: string, creds: XCreds): Promi
       headers: { Authorization: signRequest('POST', UPLOAD_URL, creds) },
       body: form,
     });
+    const appendText = await appendRes.text();
+    trace?.push({ step: 'APPEND', segment, status: appendRes.status, body: appendText.slice(0, 300) });
     if (!appendRes.ok) {
-      throw new Error(`X media/upload APPEND seg ${segment} ${appendRes.status}: ${await appendRes.text()}`);
+      throw new Error(`X media/upload APPEND seg ${segment} ${appendRes.status}: ${appendText}`);
     }
     segment++;
   }
@@ -231,6 +234,7 @@ async function uploadVideo(data: Buffer, mimeType: string, creds: XCreds): Promi
     headers: { Authorization: signRequest('POST', UPLOAD_URL, creds, finParams) },
   });
   const finText = await finRes.text();
+  trace?.push({ step: 'FINALIZE', status: finRes.status, body: finText.slice(0, 500) });
   if (!finRes.ok) throw new Error(`X media/upload FINALIZE ${finRes.status}: ${finText}`);
   // Video is transcoded asynchronously. FINALIZE *usually* returns
   // processing_info, but we don't trust its shape — always poll STATUS until
@@ -249,11 +253,22 @@ async function uploadVideo(data: Buffer, mimeType: string, creds: XCreds): Promi
     const stUrl = `${UPLOAD_URL}?${new URLSearchParams(stParams).toString()}`;
     const stRes = await fetch(stUrl, { headers: { Authorization: signRequest('GET', UPLOAD_URL, creds, stParams) } });
     const stText = await stRes.text();
+    trace?.push({ step: 'STATUS', status: stRes.status, body: stText.slice(0, 500) });
     if (!stRes.ok) throw new Error(`X media/upload STATUS ${stRes.status}: ${stText}`);
     info = JSON.parse(stText)?.processing_info;
     if (!info) throw new Error(`X media/upload STATUS returned no processing_info: ${stText}`);
   }
   return mediaId;
+}
+
+// Diagnostic: run the full chunked video upload and return the per-step trace
+// plus the final media_id, WITHOUT posting a tweet. Lets us see whether the
+// transcode actually reaches `succeeded` and what each X response looked like.
+export async function inspectVideoUpload(data: Buffer, mimeType: string): Promise<{ mediaId: string; trace: any[] }> {
+  const creds = getCreds();
+  const trace: any[] = [];
+  const mediaId = await uploadVideo(data, mimeType, creds, trace);
+  return { mediaId, trace };
 }
 
 async function signedGet(url: string, creds: XCreds): Promise<any> {

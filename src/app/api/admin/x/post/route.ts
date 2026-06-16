@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdminSession } from '@/lib/admin';
-import { postTweet, deleteTweet } from '@/lib/x/post';
+import { postTweet, deleteTweet, inspectVideoUpload } from '@/lib/x/post';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,11 +16,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  let body: { text?: string; replyToId?: string; imageUrls?: string[]; videoUrl?: string };
+  let body: { text?: string; replyToId?: string; imageUrls?: string[]; videoUrl?: string; debugVideo?: boolean };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  // Diagnostic: upload the video and return the trace without posting a tweet.
+  if (body.debugVideo && body.videoUrl) {
+    try {
+      const r = await fetch(body.videoUrl);
+      if (!r.ok) throw new Error(`fetch ${body.videoUrl} → ${r.status}`);
+      const mimeType = r.headers.get('content-type') || 'video/mp4';
+      const data = Buffer.from(await r.arrayBuffer());
+      const result = await inspectVideoUpload(data, mimeType);
+      return NextResponse.json({ ok: true, debug: true, ...result });
+    } catch (err: any) {
+      return NextResponse.json({ ok: false, debug: true, error: err?.message || 'inspect failed' }, { status: 500 });
+    }
   }
 
   const text = (body.text || '').trim();
