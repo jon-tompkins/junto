@@ -19,5 +19,6 @@ export async function GET(req: NextRequest) {
     X_ACCESS_TOKEN_SECRET: Boolean(process.env.X_ACCESS_TOKEN_SECRET),
     api_key_len: process.env.X_API_KEY?.length || 0,
     access_token_starts_with: process.env.X_ACCESS_TOKEN?.slice(0, 6) || null,
+    commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || null,
   });
 }
