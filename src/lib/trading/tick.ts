@@ -31,6 +31,12 @@ export interface TickResult {
   amendments_proposed: number;
   note?: string;
   errors: string[];
+  portfolioMetrics?: {
+    totalEquity: number;
+    totalDeployedPct: number;
+    largestPositionPct: number;
+    top3ConcentrationPct: number;
+  };
 }
 
 export async function runTick(window: TickWindow): Promise<TickResult[]> {
@@ -131,6 +137,23 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
   // Book capacity check (short-term "no free capital" feature)
   const openNotional = positions.reduce((sum: number, p: any) => sum + (Number(p.market_value) || 0), 0);
   const isBookFull = openNotional >= accountEquity * 0.82; // ~82%+ deployed = full book
+
+  // Portfolio concentration metrics (Phase 1)
+  const sortedByValue = [...positions].sort((a: any, b: any) =>
+    (Number(b.market_value) || 0) - (Number(a.market_value) || 0)
+  );
+  const top3Notional = sortedByValue.slice(0, 3).reduce((sum: number, p: any) => sum + (Number(p.market_value) || 0), 0);
+  const top3ConcentrationPct = accountEquity > 0 ? (top3Notional / accountEquity) * 100 : 0;
+  const largestPositionPct = accountEquity > 0 && sortedByValue.length > 0
+    ? (Number(sortedByValue[0].market_value) || 0) / accountEquity * 100
+    : 0;
+
+  result.portfolioMetrics = {
+    totalEquity: accountEquity,
+    totalDeployedPct: accountEquity > 0 ? (openNotional / accountEquity) * 100 : 0,
+    largestPositionPct: Number(largestPositionPct.toFixed(1)),
+    top3ConcentrationPct: Number(top3ConcentrationPct.toFixed(1)),
+  };
 
   let signals;
   let reviewedTwitterIds: string[] = [];
