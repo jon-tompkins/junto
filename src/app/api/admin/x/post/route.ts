@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  let body: { text?: string; replyToId?: string; imageUrls?: string[] };
+  let body: { text?: string; replyToId?: string; imageUrls?: string[]; videoUrl?: string };
   try {
     body = await req.json();
   } catch {
@@ -34,9 +34,17 @@ export async function POST(req: NextRequest) {
       const data = Buffer.from(await r.arrayBuffer());
       return { data, mimeType };
     }));
+    let video: { data: Buffer; mimeType: string } | undefined;
+    if (body.videoUrl) {
+      const r = await fetch(body.videoUrl);
+      if (!r.ok) throw new Error(`fetch ${body.videoUrl} → ${r.status}`);
+      const mimeType = r.headers.get('content-type') || 'video/mp4';
+      video = { data: Buffer.from(await r.arrayBuffer()), mimeType };
+    }
     const result = await postTweet(text, {
       replyToId: body.replyToId,
       images: images.length ? images : undefined,
+      video,
     });
     return NextResponse.json({ ok: true, ...result });
   } catch (err: any) {

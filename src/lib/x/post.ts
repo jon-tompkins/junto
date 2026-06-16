@@ -73,7 +73,12 @@ export interface PostTweetResult {
 
 export async function postTweet(
   text: string,
-  opts?: { replyToId?: string; mediaIds?: string[]; images?: Array<{ data: Buffer; mimeType: string }> },
+  opts?: {
+    replyToId?: string;
+    mediaIds?: string[];
+    images?: Array<{ data: Buffer; mimeType: string }>;
+    video?: { data: Buffer; mimeType: string };
+  },
 ): Promise<PostTweetResult> {
   // Auto-tag every agent-posted tweet with 🤖 so the feed makes it obvious
   // which posts came from automation vs. a human at the keyboard. Skipped if
@@ -83,7 +88,15 @@ export async function postTweet(
   const creds = getCreds();
   const url = 'https://api.x.com/2/tweets';
 
+  // X does not allow mixing a video with images, and permits only one video.
+  if (opts?.video && (opts.images?.length || (opts.mediaIds?.length ?? 0) > 0)) {
+    throw new Error('X allows a video OR images, not both');
+  }
+
   const mediaIds: string[] = [...(opts?.mediaIds || [])];
+  if (opts?.video) {
+    mediaIds.push(await uploadVideo(opts.video.data, opts.video.mimeType, creds));
+  }
   if (opts?.images?.length) {
     for (const img of opts.images) {
       mediaIds.push(await uploadMedia(img.data, img.mimeType, creds));
@@ -151,6 +164,92 @@ async function uploadMedia(data: Buffer, mimeType: string, creds: XCreds): Promi
   const id = parsed?.media_id_string;
   if (!id) throw new Error(`X media/upload returned no media_id_string: ${responseText}`);
   return id;
+}
+
+const UPLOAD_URL = 'https://upload.twitter.com/1.1/media/upload.json';
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Upload a video to X via the chunked v1.1 media/upload flow:
+// INIT (declare size + tweet_video category) → APPEND (binary chunks) →
+// FINALIZE → poll STATUS until async transcoding succeeds. Returns the
+// media_id_string to attach to a v2 tweet.
+//
+// OAuth note: INIT/FINALIZE/STATUS carry their params in the query string, so
+// they ARE part of the signature base (passed to signRequest). APPEND is
+// multipart/form-data, whose fields are excluded from the base per spec, so it
+// signs the bare URL.
+async function uploadVideo(data: Buffer, mimeType: string, creds: XCreds): Promise<string> {
+  const totalBytes = data.length;
+  if (totalBytes > 512 * 1024 * 1024) {
+    throw new Error(`Video exceeds X's 512MB limit (got ${totalBytes} bytes)`);
+  }
+
+  // INIT
+  const initParams: Record<string, string> = {
+    command: 'INIT',
+    total_bytes: String(totalBytes),
+    media_type: mimeType,
+    media_category: 'tweet_video',
+  };
+  const initUrl = `${UPLOAD_URL}?${new URLSearchParams(initParams).toString()}`;
+  const initRes = await fetch(initUrl, {
+    method: 'POST',
+    headers: { Authorization: signRequest('POST', UPLOAD_URL, creds, initParams) },
+  });
+  const initText = await initRes.text();
+  if (!initRes.ok) throw new Error(`X media/upload INIT ${initRes.status}: ${initText}`);
+  const mediaId = JSON.parse(initText)?.media_id_string;
+  if (!mediaId) throw new Error(`X media/upload INIT returned no media_id_string: ${initText}`);
+
+  // APPEND — 4MB chunks
+  const chunkSize = 4 * 1024 * 1024;
+  let segment = 0;
+  for (let offset = 0; offset < totalBytes; offset += chunkSize) {
+    const chunk = data.subarray(offset, Math.min(offset + chunkSize, totalBytes));
+    const form = new FormData();
+    form.append('command', 'APPEND');
+    form.append('media_id', mediaId);
+    form.append('segment_index', String(segment));
+    form.append('media', new Blob([new Uint8Array(chunk)], { type: 'application/octet-stream' }), 'chunk');
+    const appendRes = await fetch(UPLOAD_URL, {
+      method: 'POST',
+      headers: { Authorization: signRequest('POST', UPLOAD_URL, creds) },
+      body: form,
+    });
+    if (!appendRes.ok) {
+      throw new Error(`X media/upload APPEND seg ${segment} ${appendRes.status}: ${await appendRes.text()}`);
+    }
+    segment++;
+  }
+
+  // FINALIZE
+  const finParams: Record<string, string> = { command: 'FINALIZE', media_id: mediaId };
+  const finUrl = `${UPLOAD_URL}?${new URLSearchParams(finParams).toString()}`;
+  const finRes = await fetch(finUrl, {
+    method: 'POST',
+    headers: { Authorization: signRequest('POST', UPLOAD_URL, creds, finParams) },
+  });
+  const finText = await finRes.text();
+  if (!finRes.ok) throw new Error(`X media/upload FINALIZE ${finRes.status}: ${finText}`);
+  let info = JSON.parse(finText)?.processing_info;
+
+  // STATUS polling — async transcode. Bail after ~2 min.
+  const deadline = Date.now() + 120_000;
+  while (info && (info.state === 'pending' || info.state === 'in_progress')) {
+    if (Date.now() > deadline) throw new Error('X video processing timed out');
+    await sleep(Math.max(1, info.check_after_secs || 1) * 1000);
+    const stParams: Record<string, string> = { command: 'STATUS', media_id: mediaId };
+    const stUrl = `${UPLOAD_URL}?${new URLSearchParams(stParams).toString()}`;
+    const stRes = await fetch(stUrl, { headers: { Authorization: signRequest('GET', UPLOAD_URL, creds, stParams) } });
+    const stText = await stRes.text();
+    if (!stRes.ok) throw new Error(`X media/upload STATUS ${stRes.status}: ${stText}`);
+    info = JSON.parse(stText)?.processing_info;
+  }
+  if (info?.state === 'failed') {
+    throw new Error(`X video processing failed: ${JSON.stringify(info.error || info)}`);
+  }
+  return mediaId;
 }
 
 async function signedGet(url: string, creds: XCreds): Promise<any> {
