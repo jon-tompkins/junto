@@ -60,6 +60,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     decisions: 0,
     proposed: 0,
     amendments_proposed: 0,
+    adjustments: 0,
     errors: [],
   };
   const persist = async () => {
