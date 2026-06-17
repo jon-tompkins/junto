@@ -12,6 +12,18 @@ interface PositionEntry {
   conviction?: number;
   note?: string;
   target_price?: number;
+  entry_price?: number;
+}
+
+interface MandateHolding {
+  mandate_id: string;
+  mandate_name: string;
+  side: 'long' | 'short';
+  qty: number;
+  entry: number | null;
+  current: number | null;
+  unrealized_pl: number | null;
+  unrealized_plpc: number | null;
 }
 
 function stalenessLevel(pos: PositionEntry): 'fresh' | 'warn' | 'stale' {
@@ -20,22 +32,6 @@ function stalenessLevel(pos: PositionEntry): 'fresh' | 'warn' | 'stale' {
   if (days >= 30) return 'stale';
   if (days >= 14) return 'warn';
   return 'fresh';
-}
-
-function StaleBadge({ pos }: { pos: PositionEntry }) {
-  const level = stalenessLevel(pos);
-  if (level === 'fresh') return null;
-  const ref = pos.last_mentioned || pos.since;
-  const days = Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000);
-  const label = level === 'stale' ? `stale · ${days}d ago` : `${days}d ago`;
-  const cls = level === 'stale'
-    ? 'text-[#e8453c]/80 bg-[#e8453c]/10 border-[#e8453c]/20'
-    : 'text-amber-400/80 bg-amber-400/10 border-amber-400/20';
-  return (
-    <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${cls}`}>
-      {label}
-    </span>
-  );
 }
 
 interface QuoteData {
@@ -73,13 +69,6 @@ interface SourceProfile {
   };
 }
 
-const STANCE_BAR_COLOR: Record<string, string> = {
-  bullish: 'bg-[#3ecf6a]',
-  bearish: 'bg-[#e8453c]',
-  cautious: 'bg-amber-400',
-  neutral: 'bg-[#F5EFE0]/30',
-};
-
 const STANCE_BADGE: Record<string, string> = {
   bullish: 'bg-[#3ecf6a]/15 text-[#3ecf6a] border border-[#3ecf6a]/40',
   bearish: 'bg-[#e8453c]/15 text-[#e8453c] border border-[#e8453c]/40',
@@ -108,6 +97,14 @@ export default function SourceProfilePage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [quotes, setQuotes] = useState<Record<string, QuoteData>>({});
+  const [holdings, setHoldings] = useState<Record<string, MandateHolding[]>>({});
+
+  useEffect(() => {
+    fetch('/api/me/holdings')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.holdings) setHoldings(d.holdings); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch(`/api/sources/${handle}`)
@@ -179,13 +176,32 @@ export default function SourceProfilePage() {
     ([, a], [, b]) => new Date(a.since).getTime() - new Date(b.since).getTime(),
   );
 
-  const maxDays = positions.reduce((m, [, p]) => Math.max(m, daysHeld(p.since)), 1);
+  const perfRaw = positions.reduce(
+    (acc, [ticker, pos]) => {
+      const quote = quotes[ticker];
+      const stanceSign = pos.stance === 'bearish' ? -1 : 1;
+      if (quote?.price != null && pos.entry_price) {
+        const ret = ((quote.price - pos.entry_price) / pos.entry_price) * 100 * stanceSign;
+        acc.scored += 1;
+        acc.sumReturn += ret;
+        if (ret > 0) acc.working += 1;
+      }
+      if (pos.target_price != null && quote?.price != null) {
+        acc.targets += 1;
+        const hit = stanceSign === 1 ? quote.price >= pos.target_price : quote.price <= pos.target_price;
+        if (hit) acc.targetsHit += 1;
+      }
+      return acc;
+    },
+    { scored: 0, working: 0, sumReturn: 0, targets: 0, targetsHit: 0 },
+  );
+  const perf = { ...perfRaw, avgReturn: perfRaw.scored > 0 ? perfRaw.sumReturn / perfRaw.scored : 0 };
 
   return (
     <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
       <TopNav />
 
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
         <Link href="/sources" className="text-[#F5EFE0]/45 hover:text-[#F5EFE0]/80 text-sm transition mb-6 inline-block">
           ← Sources
         </Link>
@@ -226,100 +242,121 @@ export default function SourceProfilePage() {
           </div>
         )}
 
-        {/* Stance duration chart */}
+        {/* Live call performance — directional return on each open call vs the
+            source's rough entry. Not a closed-trade hit rate; that needs call
+            history we're only now starting to accumulate. */}
+        {perf.scored > 0 && (
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 mb-1 font-[var(--font-oswald)]">Calls Working</p>
+              <p className="text-xl font-bold text-[#F5EFE0]">
+                {Math.round((perf.working / perf.scored) * 100)}%
+                <span className="text-xs font-normal text-[#F5EFE0]/45 ml-1.5">{perf.working}/{perf.scored}</span>
+              </p>
+            </div>
+            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 mb-1 font-[var(--font-oswald)]">Avg Return</p>
+              <p className={`text-xl font-bold ${perf.avgReturn >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
+                {perf.avgReturn >= 0 ? '+' : ''}{perf.avgReturn.toFixed(1)}%
+              </p>
+            </div>
+            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 mb-1 font-[var(--font-oswald)]">Targets Hit</p>
+              <p className="text-xl font-bold text-[#F5EFE0]">
+                {perf.targets > 0 ? `${perf.targetsHit}/${perf.targets}` : '—'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Tracked stances table */}
         <div className="mb-8">
           <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
-            Tracked Stances
-            <span className="ml-2 font-normal normal-case text-[#F5EFE0]/30">— bar width = days held</span>
+            Tracked Calls
           </h2>
 
           {positions.length === 0 ? (
             <p className="text-[#F5EFE0]/45 text-sm">No positions tracked yet — will populate on next content pull.</p>
           ) : (
-            <div className="space-y-3">
-              {positions.map(([ticker, pos]) => {
-                const days = daysHeld(pos.since);
-                const pct = Math.max(4, Math.round((days / maxDays) * 100));
-                const quote = quotes[ticker];
-                const isBearish = pos.stance === 'bearish';
-                const stanceSign = isBearish ? -1 : 1;
-                const upside =
-                  quote?.price && pos.target_price
-                    ? ((pos.target_price - quote.price) / quote.price) * 100 * stanceSign
-                    : null;
-                const adjChange =
-                  quote?.changePercent != null ? quote.changePercent * stanceSign : null;
-                return (
-                  <Link key={ticker} href={`/positions/${ticker}`} className="block bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 hover:border-[rgba(176,141,87,0.4)] transition">
-                    {/* Top row: ticker + badges */}
-                    <div className="flex items-center justify-between gap-3 mb-3">
-                      <span className="font-mono font-bold text-[#F5EFE0] text-lg">{ticker}</span>
-                      <div className="flex items-center gap-2">
-                        <StaleBadge pos={pos} />
-                        <span className={`text-xs px-2.5 py-1 rounded-sm font-medium shrink-0 ${STANCE_BADGE[pos.stance]}`}>
-                          {STANCE_LABELS[pos.stance]}
-                        </span>
-                        {pos.conviction != null && pos.conviction >= 2 && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded border font-medium text-[#B08D57]/80 bg-[#B08D57]/8 border-[#B08D57]/20" title={`Conviction: ${pos.conviction}/5`}>
-                            {'●'.repeat(pos.conviction)}{'○'.repeat(5 - pos.conviction)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Price row */}
-                    {quote?.price != null && (
-                      <div className="flex items-baseline gap-3 mb-3 flex-wrap">
-                        <span className="text-[#F5EFE0] font-semibold">${quote.price.toFixed(2)}</span>
-                        {adjChange != null && (
-                          <span className={`text-xs font-medium ${adjChange >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
-                            {adjChange >= 0 ? '+' : ''}{adjChange.toFixed(2)}% today
-                          </span>
-                        )}
-                        {pos.target_price != null && (
-                          <span className="text-xs text-[#F5EFE0]/45">
-                            target <span className="text-[#F5EFE0]/80">${pos.target_price.toFixed(2)}</span>
-                            {upside != null && (
-                              <span className={`ml-1.5 font-medium ${upside >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
-                                ({upside >= 0 ? '+' : ''}{upside.toFixed(1)}%)
-                              </span>
-                            )}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {quote?.price == null && pos.target_price != null && (
-                      <div className="mb-3 text-xs text-[#F5EFE0]/45">
-                        target <span className="text-[#F5EFE0]/80">${pos.target_price.toFixed(2)}</span>
-                      </div>
-                    )}
-
-                    {/* Duration bar */}
-                    <div className="w-full h-2 bg-[#080604] rounded overflow-hidden mb-2">
-                      <div
-                        className={`h-full rounded ${STANCE_BAR_COLOR[pos.stance]} transition-all duration-500`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-
-                    {/* Since + last mentioned */}
-                    <div className="flex items-center justify-between text-xs text-[#F5EFE0]/30">
-                      <span>since {new Date(pos.since).toLocaleDateString()}</span>
-                      <div className="flex items-center gap-2">
-                        {pos.last_mentioned && pos.last_mentioned !== pos.since && (
-                          <span>last mentioned {new Date(pos.last_mentioned).toLocaleDateString()}</span>
-                        )}
-                        <span>{days}d</span>
-                      </div>
-                    </div>
-
-                    {/* Note */}
-                    {pos.note && (
-                      <p className="text-sm text-[#F5EFE0]/60 mt-2 leading-snug">{pos.note}</p>
-                    )}
-                  </Link>
-                );
-              })}
+            <div className="overflow-x-auto bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded">
+              <table className="w-full text-sm min-w-[760px]">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)] border-b border-[rgba(176,141,87,0.18)]">
+                    <th className="text-left font-semibold px-4 py-3">Name</th>
+                    <th className="text-right font-semibold px-3 py-3">Price</th>
+                    <th className="text-right font-semibold px-3 py-3">Entry</th>
+                    <th className="text-right font-semibold px-3 py-3">Return</th>
+                    <th className="text-left font-semibold px-3 py-3">Status</th>
+                    <th className="text-left font-semibold px-4 py-3">Your Holdings</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {positions.map(([ticker, pos]) => {
+                    const days = daysHeld(pos.since);
+                    const quote = quotes[ticker];
+                    const stanceSign = pos.stance === 'bearish' ? -1 : 1;
+                    const ret =
+                      quote?.price != null && pos.entry_price
+                        ? ((quote.price - pos.entry_price) / pos.entry_price) * 100 * stanceSign
+                        : null;
+                    const level = stalenessLevel(pos);
+                    const statusLabel = level === 'stale' ? `Stale · ${days}d` : level === 'warn' ? `Cooling · ${days}d` : `Active · ${days}d`;
+                    const statusCls = level === 'stale' ? 'text-[#e8453c]/80' : level === 'warn' ? 'text-amber-400/80' : 'text-[#3ecf6a]';
+                    const held = holdings[ticker] ?? [];
+                    return (
+                      <tr key={ticker} className="border-b border-[rgba(176,141,87,0.08)] last:border-0 hover:bg-[#1c1a17]/50 transition">
+                        <td className="px-4 py-3">
+                          <Link href={`/positions/${ticker}`} className="inline-flex items-center gap-2 group">
+                            <span className="font-mono font-bold text-[#F5EFE0] group-hover:text-[#B08D57] transition">{ticker}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium ${STANCE_BADGE[pos.stance]}`}>
+                              {STANCE_LABELS[pos.stance]}
+                            </span>
+                          </Link>
+                          {pos.note && <p className="text-xs text-[#F5EFE0]/40 mt-1 line-clamp-1 max-w-[220px]" title={pos.note}>{pos.note}</p>}
+                        </td>
+                        <td className="px-3 py-3 text-right font-mono text-[#F5EFE0]/90">
+                          {quote?.price != null ? `$${quote.price.toFixed(2)}` : '—'}
+                        </td>
+                        <td className="px-3 py-3 text-right font-mono text-[#F5EFE0]/60">
+                          {pos.entry_price != null ? `$${pos.entry_price.toFixed(2)}` : '—'}
+                        </td>
+                        <td className="px-3 py-3 text-right font-mono">
+                          {ret != null ? (
+                            <span className={ret >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}>
+                              {ret >= 0 ? '+' : ''}{ret.toFixed(1)}%
+                            </span>
+                          ) : (
+                            <span className="text-[#F5EFE0]/30">—</span>
+                          )}
+                        </td>
+                        <td className={`px-3 py-3 text-xs whitespace-nowrap ${statusCls}`}>{statusLabel}</td>
+                        <td className="px-4 py-3">
+                          {held.length === 0 ? (
+                            <span className="text-[#F5EFE0]/25 text-xs">—</span>
+                          ) : (
+                            <div className="space-y-1">
+                              {held.map((h) => (
+                                <div key={h.mandate_id} className="flex items-center gap-2 text-xs">
+                                  <Link href={`/admin/trading/${h.mandate_id}`} className="text-[#B08D57]/90 hover:text-[#B08D57] truncate max-w-[120px]" title={h.mandate_name}>
+                                    {h.mandate_name}
+                                  </Link>
+                                  <span className="text-[#F5EFE0]/30">{h.side}</span>
+                                  {h.unrealized_pl != null && (
+                                    <span className={`font-mono ${h.unrealized_pl >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
+                                      {h.unrealized_pl >= 0 ? '+' : ''}${h.unrealized_pl.toFixed(0)}
+                                      {h.unrealized_plpc != null && ` (${(h.unrealized_plpc * 100).toFixed(1)}%)`}
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
