@@ -750,6 +750,147 @@ function PositionsSnapshotCard({ juntoId }: { juntoId: string | null | undefined
   );
 }
 
+// ─── Trading portfolio ───────────────────────────────
+
+interface TradingMandateRow {
+  id: string;
+  name: string;
+  junto_name: string | null;
+  mode: string;
+  status: string;
+  capital_allotted_usd: number;
+  stats: { open: number; closed: number; pnl: number; unrealized: number | null };
+}
+
+interface TradingPortfolioSummary {
+  total_capital: number;
+  total_equity: number | null;
+  total_cash: number | null;
+  cash_pct: number | null;
+  total_realized_pnl: number;
+  total_unrealized_pnl: number;
+  mandate_count: number;
+}
+
+function fmtUsdDash(n: number | null | undefined): string {
+  if (n === null || n === undefined) return '—';
+  const sign = n < 0 ? '-' : '';
+  return `${sign}$${Math.abs(n).toFixed(2)}`;
+}
+
+function DashStat({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: string }) {
+  return (
+    <div>
+      <div className="text-[#F5EFE0]/45 uppercase tracking-wider text-[10px] font-[var(--font-oswald)] mb-1">{label}</div>
+      <div className="font-mono text-sm leading-tight" style={{ color: accent || '#F5EFE0' }}>{value}</div>
+      {sub && <div className="text-[10px] text-[#F5EFE0]/40 font-mono mt-0.5">{sub}</div>}
+    </div>
+  );
+}
+
+// Surfaces the user's Alpaca-backed trading mandates on the main dashboard:
+// rolled-up equity / P&L plus a per-mandate holdings line. Renders nothing for
+// users who have no trading access (endpoint 403s) or no mandates, so it stays
+// invisible to the newsletter-only audience.
+function TradingPortfolioCard() {
+  const [mandates, setMandates] = useState<TradingMandateRow[] | null>(null);
+  const [portfolio, setPortfolio] = useState<TradingPortfolioSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/admin/trading/mandates')
+      .then((r) => (r.ok ? r.json() : { mandates: [], portfolio: null }))
+      .then((d) => { setMandates(d.mandates || []); setPortfolio(d.portfolio || null); })
+      .catch(() => { setMandates([]); setPortfolio(null); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Live equity/unrealized while the tab is visible — same lightweight endpoint
+  // the /trading page polls.
+  useEffect(() => {
+    let cancelled = false;
+    const poll = async () => {
+      if (document.hidden) return;
+      try {
+        const res = await fetch('/api/admin/trading/portfolio-snapshot');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        setPortfolio((prev) => prev ? {
+          ...prev,
+          total_equity: data.portfolio.total_equity,
+          total_cash: data.portfolio.total_cash,
+          cash_pct: data.portfolio.cash_pct,
+          total_unrealized_pnl: data.portfolio.total_unrealized_pnl,
+        } : prev);
+        setMandates((prev) => prev ? prev.map((m) => {
+          const s = data.mandates[m.id];
+          return s ? { ...m, stats: { ...m.stats, unrealized: s.unrealized } } : m;
+        }) : prev);
+      } catch {
+        // network blip — retry next interval
+      }
+    };
+    const id = setInterval(poll, 20000);
+    const onVis = () => { if (!document.hidden) poll(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { cancelled = true; clearInterval(id); document.removeEventListener('visibilitychange', onVis); };
+  }, []);
+
+  if (loading || !mandates || mandates.length === 0) return null;
+
+  const totalPl = (portfolio?.total_realized_pnl ?? 0) + (portfolio?.total_unrealized_pnl ?? 0);
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-2 px-1">
+        <h2 className="text-[10px] uppercase tracking-[0.18em] text-[#F5EFE0]/45 font-[var(--font-oswald)]">
+          Trading Portfolio
+        </h2>
+        <Link href="/trading" className="text-[10px] uppercase tracking-wider text-[#B08D57] hover:text-[#F5EFE0] transition font-[var(--font-oswald)]">
+          Manage
+        </Link>
+      </div>
+      <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] overflow-hidden">
+        {portfolio && (
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 p-4 border-b border-[rgba(176,141,87,0.18)]">
+            <DashStat label="Equity" value={fmtUsdDash(portfolio.total_equity)} sub={`capital ${fmtUsdDash(portfolio.total_capital)}`} />
+            <DashStat label="Cash" value={fmtUsdDash(portfolio.total_cash)} sub={portfolio.cash_pct == null ? undefined : `${portfolio.cash_pct.toFixed(1)}% of equity`} />
+            <DashStat label="Unrealized" value={fmtUsdDash(portfolio.total_unrealized_pnl)} accent={portfolio.total_unrealized_pnl >= 0 ? '#3ecf6a' : '#e8453c'} />
+            <DashStat label="Realized" value={fmtUsdDash(portfolio.total_realized_pnl)} accent={portfolio.total_realized_pnl >= 0 ? '#3ecf6a' : '#e8453c'} />
+            <DashStat label="Total P/L" value={fmtUsdDash(totalPl)} accent={totalPl >= 0 ? '#3ecf6a' : '#e8453c'} />
+            <DashStat label="Mandates" value={String(portfolio.mandate_count)} />
+          </div>
+        )}
+        <div className="divide-y divide-[rgba(176,141,87,0.12)]">
+          {mandates.map((m) => (
+            <Link
+              key={m.id}
+              href={`/trading/${m.id}`}
+              className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[#1a1815] transition"
+            >
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-[#F5EFE0] truncate">{m.name}</span>
+                  <span className={`px-1.5 py-px rounded text-[9px] font-mono ${m.mode === 'live' ? 'bg-[#e8453c]/20 text-[#e8453c]' : 'bg-[#3ecf6a]/20 text-[#3ecf6a]'}`}>{m.mode}</span>
+                </div>
+                <div className="text-[11px] text-[#F5EFE0]/40 mt-0.5">
+                  {m.junto_name || 'no junto'} · {m.stats.open} open · {m.stats.closed} closed
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-xs font-mono whitespace-nowrap">
+                <span title="Unrealized P/L" style={{ color: m.stats.unrealized == null ? 'rgba(245,239,224,0.45)' : m.stats.unrealized >= 0 ? '#3ecf6a' : '#e8453c' }}>
+                  {fmtUsdDash(m.stats.unrealized)}
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Component ──────────────────────────────────────
 
 export default function DashboardPage() {
@@ -1205,6 +1346,9 @@ export default function DashboardPage() {
           </h2>
           <LatestDispatchCard />
         </div>
+
+        {/* ─── Trading Portfolio (only renders if user has mandates) ──────────── */}
+        <TradingPortfolioCard />
 
         {/* ─── Watchlist | Junto side-by-side ──────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
