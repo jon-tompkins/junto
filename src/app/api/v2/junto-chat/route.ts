@@ -5,6 +5,7 @@ import { getSupabase } from '@/lib/db/client';
 import { deductCredits } from '@/lib/db/credits';
 import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
 import { authLimiter } from '@/lib/rate-limit';
+import { recordCost, anthropicHaikuCostCents } from '@/lib/costs';
 
 const CREDITS_PER_QUERY = 10;
 const MAX_QUESTION_LEN = 500;
@@ -260,6 +261,19 @@ export async function POST(req: NextRequest) {
 
     const inputTokens = response.usage.input_tokens;
     const outputTokens = response.usage.output_tokens;
+
+    // Record inference cost
+    recordCost({
+      supplier: 'anthropic',
+      operation: 'junto_chat_synthesis',
+      cost_cents: anthropicHaikuCostCents(inputTokens, outputTokens),
+      usage_amount: inputTokens + outputTokens,
+      usage_unit: 'tokens',
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      user_id: userId,
+      metadata: { junto_id: juntoId, model: HAIKU_MODEL },
+    });
 
     // Log to audit table
     await supabase.from('junto_chat_log').insert({

@@ -1,4 +1,5 @@
 import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
+import { recordCost, anthropicHaikuCostCents } from '@/lib/costs';
 
 // Convert a markdown dispatch into plain prose suitable for TTS.
 // Expands cashtags, strips formatting, conversational tone.
@@ -44,6 +45,20 @@ Return only the audio script, nothing else.`;
   const usage = resp.usage
     ? { input_tokens: resp.usage.input_tokens, output_tokens: resp.usage.output_tokens }
     : null;
+
+  // Record inference cost
+  if (usage) {
+    recordCost({
+      supplier: 'anthropic',
+      operation: 'audio.script_synthesis',
+      cost_cents: anthropicHaikuCostCents(usage.input_tokens, usage.output_tokens),
+      usage_amount: usage.input_tokens + usage.output_tokens,
+      usage_unit: 'tokens',
+      input_tokens: usage.input_tokens,
+      output_tokens: usage.output_tokens,
+      metadata: { model: HAIKU_MODEL },
+    });
+  }
 
   return { script, usage };
 }

@@ -1,4 +1,5 @@
 import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
+import { recordCost, anthropicHaikuCostCents } from '@/lib/costs';
 import { alpacaForMandate } from './client';
 import { getOpenTrades, updateTrade, addJournalEntry, getJournalEntries } from './db';
 import type { Mandate } from './types';
@@ -151,6 +152,20 @@ async function writeDailyEntry(
     ],
   });
 
+  // Record inference cost
+  const inputTokens = (res as any).usage?.input_tokens ?? 0;
+  const outputTokens = (res as any).usage?.output_tokens ?? 0;
+  recordCost({
+    supplier: 'anthropic',
+    operation: 'trading.writeDailyEntry',
+    cost_cents: anthropicHaikuCostCents(inputTokens, outputTokens),
+    usage_amount: inputTokens + outputTokens,
+    usage_unit: 'tokens',
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    metadata: { trade_id: tradeId, model: HAIKU_MODEL },
+  });
+
   const content = res.content
     .filter((b) => b.type === 'text')
     .map((b: any) => b.text)
@@ -186,6 +201,20 @@ Output JSON only:
         content: `Mandate guidelines:\n${mandate.guidelines}\n\nEntry thesis:\n${thesis}\n\nDaily entries while open:\n${dailiesBlock}\n\nFinal state: position closed. Write the post-mortem.`,
       },
     ],
+  });
+
+  // Record inference cost
+  const inputTokens = (res as any).usage?.input_tokens ?? 0;
+  const outputTokens = (res as any).usage?.output_tokens ?? 0;
+  recordCost({
+    supplier: 'anthropic',
+    operation: 'trading.writeExitAndPostMortem',
+    cost_cents: anthropicHaikuCostCents(inputTokens, outputTokens),
+    usage_amount: inputTokens + outputTokens,
+    usage_unit: 'tokens',
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    metadata: { trade_id: tradeId, mandate_id: mandate.id, model: HAIKU_MODEL },
   });
 
   const text = res.content

@@ -1,4 +1,5 @@
 import { getAnthropic } from '@/lib/synthesis/client';
+import { recordCost, anthropicSonnetCostCents } from '@/lib/costs';
 import type { Mandate, ExtractedSignal, AmendmentDecision } from './types';
 import type { AlpacaPosition } from './alpaca';
 import type { TradeRow } from './db';
@@ -81,6 +82,20 @@ Return JSON.`;
     max_tokens: 2000,
     system,
     messages: [{ role: 'user', content: user }],
+  });
+
+  // Record inference cost
+  const inputTokens = (res as any).usage?.input_tokens ?? 0;
+  const outputTokens = (res as any).usage?.output_tokens ?? 0;
+  recordCost({
+    supplier: 'anthropic',
+    operation: 'trading.decideAmendments',
+    cost_cents: anthropicSonnetCostCents(inputTokens, outputTokens),
+    usage_amount: inputTokens + outputTokens,
+    usage_unit: 'tokens',
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    metadata: { mandate_id: mandate.id, model: SONNET_MODEL },
   });
 
   const text = res.content.filter((b) => b.type === 'text').map((b: any) => b.text).join('');

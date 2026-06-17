@@ -9,6 +9,8 @@
  *    (same format = newsletter generator picks them up automatically)
  */
 
+import { recordCost, anthropicHaikuCostCents, supadataCostCents } from '@/lib/costs';
+
 const SUPADATA_BASE = 'https://api.supadata.ai/v1';
 
 function getSupadataKey(): string {
@@ -130,6 +132,15 @@ export async function fetchTranscript(videoId: string): Promise<TranscriptResult
         });
         const pollData = await pollRes.json();
         if (pollData.status === 'completed' && pollData.data?.content) {
+          // Record Supadata transcript cost
+          recordCost({
+            supplier: 'supadata',
+            operation: 'youtube.transcript_fetch',
+            cost_cents: supadataCostCents(1),
+            usage_amount: 1,
+            usage_unit: 'transcripts',
+            metadata: { video_id: videoId, job_id: jobId },
+          });
           return { text: pollData.data.content, lang: pollData.data.lang || 'en' };
         }
         if (pollData.status === 'failed') {
@@ -149,6 +160,16 @@ export async function fetchTranscript(videoId: string): Promise<TranscriptResult
 
     const data = await res.json();
     if (!data.content || data.content.length < 50) return null;
+
+    // Record Supadata transcript cost
+    recordCost({
+      supplier: 'supadata',
+      operation: 'youtube.transcript_fetch',
+      cost_cents: supadataCostCents(1),
+      usage_amount: 1,
+      usage_unit: 'transcripts',
+      metadata: { video_id: videoId },
+    });
 
     return { text: data.content, lang: data.lang || 'en' };
   } catch (err) {
@@ -210,6 +231,20 @@ ${truncated}
 Extract 5-10 key insights as tweet-length statements. Return a JSON array of strings.`,
       },
     ],
+  });
+
+  // Record inference cost
+  const inputTokens = (response as any).usage?.input_tokens ?? 0;
+  const outputTokens = (response as any).usage?.output_tokens ?? 0;
+  recordCost({
+    supplier: 'anthropic',
+    operation: 'youtube.transcript_summarize',
+    cost_cents: anthropicHaikuCostCents(inputTokens, outputTokens),
+    usage_amount: inputTokens + outputTokens,
+    usage_unit: 'tokens',
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    metadata: { video_id: videoId, model: HAIKU_MODEL },
   });
 
   const raw = response.content[0]?.type === 'text' ? response.content[0].text : '[]';

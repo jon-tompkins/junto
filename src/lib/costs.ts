@@ -20,6 +20,11 @@ export const GROK_OUTPUT_COST_PER_TOKEN = 0.25 / 1_000_000;  // USD
 export const ANTHROPIC_HAIKU_INPUT_COST_PER_TOKEN = 1.0 / 1_000_000;   // USD
 export const ANTHROPIC_HAIKU_OUTPUT_COST_PER_TOKEN = 5.0 / 1_000_000;  // USD
 
+// Anthropic Claude Sonnet 4.6: $3/MTok input, $15/MTok output
+// Ref: https://www.anthropic.com/pricing
+export const ANTHROPIC_SONNET_INPUT_COST_PER_TOKEN = 3.0 / 1_000_000;   // USD
+export const ANTHROPIC_SONNET_OUTPUT_COST_PER_TOKEN = 15.0 / 1_000_000;  // USD
+
 // Apify kaitoeasyapi Tweet Scraper: $0.25 per 1000 tweets = $0.00025/tweet
 // Ref: https://apify.com/kaitoeasyapi/twitter-x-data-tweet-scraper-pay-per-result-cheapest
 export const APIFY_COST_PER_TWEET = 0.25 / 1000; // USD
@@ -65,6 +70,13 @@ export function anthropicHaikuCostCents(inputTokens: number, outputTokens: numbe
   return dollarsToCents(usd);
 }
 
+export function anthropicSonnetCostCents(inputTokens: number, outputTokens: number): number {
+  const usd =
+    inputTokens * ANTHROPIC_SONNET_INPUT_COST_PER_TOKEN +
+    outputTokens * ANTHROPIC_SONNET_OUTPUT_COST_PER_TOKEN;
+  return dollarsToCents(usd);
+}
+
 export function apifyCostCents(tweetCount: number): number {
   return dollarsToCents(tweetCount * APIFY_COST_PER_TWEET);
 }
@@ -78,9 +90,13 @@ export function openaiTtsCostCents(chars: number, hd = true): number {
   return dollarsToCents(chars * rate);
 }
 
+export function supadataCostCents(transcriptCount: number): number {
+  return dollarsToCents(transcriptCount * SUPADATA_COST_PER_TRANSCRIPT);
+}
+
 // ─── Recorder ─────────────────────────────────────────────
 
-type Supplier = 'grok' | 'anthropic' | 'apify' | 'resend' | 'supadata' | 'openai' | 'supabase';
+type Supplier = 'grok' | 'anthropic' | 'apify' | 'resend' | 'supadata' | 'openai' | 'supabase' | 'alpaca';
 
 interface CostRecord {
   supplier: Supplier;

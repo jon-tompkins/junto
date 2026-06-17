@@ -2,6 +2,7 @@ import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
 import { getRecentContentForSources } from '@/lib/db/content-twitter';
 import { getJuntoSourceIds, getProcessedTweetIds } from './db';
 import { getSupabase } from '@/lib/db/client';
+import { recordCost, anthropicHaikuCostCents } from '@/lib/costs';
 import type { Mandate, ExtractedSignal } from './types';
 
 const LOOKBACK_HOURS = 24;
@@ -100,6 +101,20 @@ Schema:
         content: `Posts from the last ${LOOKBACK_HOURS}h:\n\n${snapshot.contentBlock}\n\nReturn JSON.`,
       },
     ],
+  });
+
+  // Record inference cost
+  const inputTokens = (res as any).usage?.input_tokens ?? 0;
+  const outputTokens = (res as any).usage?.output_tokens ?? 0;
+  recordCost({
+    supplier: 'anthropic',
+    operation: 'trading.extractSignals',
+    cost_cents: anthropicHaikuCostCents(inputTokens, outputTokens),
+    usage_amount: inputTokens + outputTokens,
+    usage_unit: 'tokens',
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    metadata: { mandate_id: mandate.id, model: HAIKU_MODEL },
   });
 
   const text = res.content

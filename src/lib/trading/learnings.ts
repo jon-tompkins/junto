@@ -1,4 +1,5 @@
 import { getAnthropic } from '@/lib/synthesis/client';
+import { recordCost, anthropicSonnetCostCents } from '@/lib/costs';
 import {
   getClosedTrades,
   getJournalEntriesForTrades,
@@ -105,6 +106,20 @@ Write the trading thoughts document. Factor in live open positions when distilli
     max_tokens: 1500,
     system,
     messages: [{ role: 'user', content: user }],
+  });
+
+  // Record inference cost
+  const inputTokens = (res as any).usage?.input_tokens ?? 0;
+  const outputTokens = (res as any).usage?.output_tokens ?? 0;
+  recordCost({
+    supplier: 'anthropic',
+    operation: 'trading.regenerateLearnings',
+    cost_cents: anthropicSonnetCostCents(inputTokens, outputTokens),
+    usage_amount: inputTokens + outputTokens,
+    usage_unit: 'tokens',
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    metadata: { mandate_id: mandate.id, model: SONNET_MODEL },
   });
 
   const text = res.content

@@ -1,6 +1,7 @@
 import { getAnthropic, HAIKU_MODEL } from './client';
 import { getSourceProfile, upsertSourceProfile, SourceAnalystProfile, PositionEntry } from '../db/source-analyst-profiles';
 import { fetchCurrentPrice } from '../prices';
+import { recordCost, anthropicHaikuCostCents } from '../costs';
 
 interface TweetInput {
   content: string;
@@ -99,6 +100,20 @@ Output schema — do NOT include a "since" date, that is managed externally:
         content: `Handle: @${handle}\n\n${existingBlock}${cashtagHint}\n\nNew tweets:\n${tweetBlock}\n\nReturn updated profile JSON. Include EVERY cashtag from the hint above as a position — use the tweet text to determine stance.`,
       },
     ],
+  });
+
+  // Record inference cost
+  const inputTokens = (response as any).usage?.input_tokens ?? 0;
+  const outputTokens = (response as any).usage?.output_tokens ?? 0;
+  recordCost({
+    supplier: 'anthropic',
+    operation: 'source_profile_synthesis',
+    cost_cents: anthropicHaikuCostCents(inputTokens, outputTokens),
+    usage_amount: inputTokens + outputTokens,
+    usage_unit: 'tokens',
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    metadata: { source_id: sourceId, handle, model: HAIKU_MODEL },
   });
 
   const raw = response.content
