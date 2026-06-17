@@ -15,8 +15,15 @@ import {
   type AlpacaClient,
   type AlpacaAccount,
   type AlpacaClock,
+  type AlpacaOrder,
   type AlpacaPosition,
 } from './alpaca';
+import { signL1Action, formatPrice, formatSize } from './hyperliquid-sign';
+
+// Marketable-limit slippage cushion. HL has no true market order; a "market"
+// buy is an IOC limit priced through the book. 5% guarantees a fill at the
+// book without walking arbitrarily far.
+const MARKET_SLIPPAGE = 0.05;
 
 const MAINNET = 'https://api.hyperliquid.xyz';
 const TESTNET = 'https://api.hyperliquid-testnet.xyz';
@@ -81,18 +88,53 @@ async function info<T>(url: string, body: Record<string, unknown>): Promise<T> {
   return (await res.json()) as T;
 }
 
+async function exchange<T>(url: string, payload: Record<string, unknown>): Promise<T> {
+  const res = await fetch(`${url}/exchange`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const json = (await res.json()) as { status?: string; response?: unknown };
+  if (!res.ok || json.status !== 'ok') {
+    throw new Error(`Hyperliquid exchange ${res.status}: ${JSON.stringify(json)}`);
+  }
+  return json.response as T;
+}
+
+// Per-baseUrl asset metadata cache (name -> {index, szDecimals}). The universe
+// index is the on-wire asset id for perps orders.
+const metaCache = new Map<string, Promise<Map<string, { index: number; szDecimals: number }>>>();
+
+function assetIndexMap(mode?: 'paper' | 'live' | null) {
+  const url = baseUrl(mode);
+  let cached = metaCache.get(url);
+  if (!cached) {
+    cached = getHyperliquidMeta(mode).then((universe) => {
+      const m = new Map<string, { index: number; szDecimals: number }>();
+      universe.forEach((a, i) => m.set(a.name, { index: i, szDecimals: a.szDecimals }));
+      return m;
+    });
+    metaCache.set(url, cached);
+  }
+  return cached;
+}
+
 export interface HyperliquidConfig {
   walletAddress: string;
   mode?: 'paper' | 'live' | null;
+  // Approved agent (API) wallet key used to sign orders. Can trade but not
+  // withdraw. Required only for write methods.
+  agentPrivateKey?: `0x${string}` | null;
 }
 
 export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
   const url = baseUrl(cfg.mode);
   const user = cfg.walletAddress;
   if (!user) throw new Error('Hyperliquid wallet address not configured');
+  const isMainnet = cfg.mode === 'live';
 
-  const stage2 = (name: string) => (): never => {
-    throw new Error(`Hyperliquid.${name} is not implemented yet (Stage 2: signed order placement).`);
+  const stage3 = (name: string) => (): never => {
+    throw new Error(`Hyperliquid.${name} is not implemented yet (Stage 3).`);
   };
 
   return {
@@ -149,16 +191,75 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
       }
     },
 
-    // --- Stage 2: signed writes + per-order reads not yet wired ---
-    getOrder: stage2('getOrder'),
-    cancelOrder: stage2('cancelOrder'),
-    submitBracketOrder: stage2('submitBracketOrder'),
-    replaceOrder: stage2('replaceOrder'),
-    closePosition: stage2('closePosition'),
-    submitMarketOrder: stage2('submitMarketOrder'),
-    listOpenOrders: stage2('listOpenOrders'),
-    submitOcoExit: stage2('submitOcoExit'),
+    async submitMarketOrder(params): Promise<AlpacaOrder> {
+      if (!cfg.agentPrivateKey) {
+        throw new Error('Hyperliquid agent private key not configured — cannot place orders.');
+      }
+      const assets = await assetIndexMap(cfg.mode);
+      const asset = assets.get(params.symbol);
+      if (!asset) throw new Error(`Unknown Hyperliquid asset: ${params.symbol}`);
+
+      const mid = await this.getLastTrade(params.symbol);
+      if (mid == null) throw new Error(`No price for ${params.symbol}`);
+
+      const isBuy = params.side === 'buy';
+      const slipPx = isBuy ? mid * (1 + MARKET_SLIPPAGE) : mid * (1 - MARKET_SLIPPAGE);
+      const px = formatPrice(slipPx, asset.szDecimals);
+      const sz = formatSize(params.qty, asset.szDecimals);
+
+      // Key order (type, orders, grouping) and per-order (a,b,p,s,r,t) must
+      // match HL's Rust msgpack encoder.
+      const action = {
+        type: 'order',
+        orders: [{ a: asset.index, b: isBuy, p: px, s: sz, r: false, t: { limit: { tif: 'Ioc' } } }],
+        grouping: 'na',
+      };
+      const nonce = Date.now();
+      const signature = await signL1Action({
+        privateKey: cfg.agentPrivateKey,
+        action,
+        nonce,
+        isMainnet,
+      });
+
+      const resp = await exchange<{ type: string; data: { statuses: HlOrderStatus[] } }>(url, {
+        action,
+        nonce,
+        signature,
+        vaultAddress: null,
+      });
+
+      const status = resp.data.statuses[0];
+      if (status?.error) throw new Error(`Hyperliquid order rejected: ${status.error}`);
+      const filled = status?.filled;
+      const resting = status?.resting;
+      const oid = filled?.oid ?? resting?.oid;
+      return {
+        id: oid != null ? String(oid) : '',
+        symbol: params.symbol,
+        qty: sz,
+        filled_qty: filled ? String(filled.totalSz) : '0',
+        side: params.side,
+        status: filled ? 'filled' : 'new',
+        filled_avg_price: filled ? String(filled.avgPx) : null,
+      };
+    },
+
+    // --- Stage 3: remaining writes (close, OCO protection, amendments) ---
+    getOrder: stage3('getOrder'),
+    cancelOrder: stage3('cancelOrder'),
+    submitBracketOrder: stage3('submitBracketOrder'),
+    replaceOrder: stage3('replaceOrder'),
+    closePosition: stage3('closePosition'),
+    listOpenOrders: stage3('listOpenOrders'),
+    submitOcoExit: stage3('submitOcoExit'),
   };
+}
+
+interface HlOrderStatus {
+  resting?: { oid: number };
+  filled?: { oid: number; totalSz: string; avgPx: string };
+  error?: string;
 }
 
 // Asset metadata (szDecimals, maxLeverage) — needed in Stage 2 to convert a USD
