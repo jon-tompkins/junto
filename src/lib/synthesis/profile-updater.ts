@@ -1,5 +1,5 @@
 import { getAnthropic, HAIKU_MODEL } from './client';
-import { getSourceProfile, upsertSourceProfile, SourceAnalystProfile, PositionEntry } from '../db/source-analyst-profiles';
+import { getSourceProfile, upsertSourceProfile, recordCallOutcomes, SourceAnalystProfile, PositionEntry, CallOutcome } from '../db/source-analyst-profiles';
 import { fetchCurrentPrice } from '../prices';
 import { recordCost, anthropicHaikuCostCents } from '../costs';
 
@@ -176,7 +176,9 @@ Output schema — do NOT include a "since" date, that is managed externally:
         conviction = prev.conviction ?? 1;
       }
 
-      let entry_price = prev?.entry_price ?? null;
+      // A flip is a new call — reset entry to today's price (matching the reset
+      // `since`) so its return is measured from the flip, not the old stance.
+      let entry_price = (prev && !stanceFlipped) ? (prev.entry_price ?? null) : null;
       if (entry_price == null) {
         const price = await fetchCurrentPrice(ticker);
         if (price != null) entry_price = price;
@@ -193,6 +195,58 @@ Output schema — do NOT include a "since" date, that is managed externally:
       };
     }),
   );
+
+  // Capture closed calls for hit-rate tracking: a previously tracked ticker
+  // that flipped stance or dropped out of the final map has ended a call.
+  // Best-effort — never let logging break synthesis.
+  const closeEvents: { ticker: string; prev: PositionEntry; reason: CallOutcome['close_reason'] }[] = [];
+  if (existing?.positions) {
+    for (const [ticker, prev] of Object.entries(existing.positions)) {
+      const now = enriched[ticker];
+      if (!now) {
+        const refDate = prev.last_mentioned || prev.since;
+        const daysOld = Math.floor((Date.now() - new Date(refDate).getTime()) / 86_400_000);
+        closeEvents.push({ ticker, prev, reason: daysOld >= STALE_DROP_DAYS ? 'stale' : 'dropped' });
+      } else if (now.stance !== prev.stance) {
+        closeEvents.push({ ticker, prev, reason: 'flip' });
+      }
+    }
+  }
+
+  if (closeEvents.length > 0) {
+    try {
+      const outcomes = await Promise.all(
+        closeEvents.map(async ({ ticker, prev, reason }): Promise<CallOutcome> => {
+          const exit = await fetchCurrentPrice(ticker);
+          const sign = prev.stance === 'bearish' ? -1 : 1;
+          const directional = prev.stance === 'bullish' || prev.stance === 'bearish';
+          let return_pct: number | null = null;
+          if (exit != null && prev.entry_price) {
+            return_pct = ((exit - prev.entry_price) / prev.entry_price) * 100 * sign;
+          }
+          let outcome: CallOutcome['outcome'];
+          if (return_pct == null || !directional) outcome = 'unscored';
+          else if (return_pct > 0.5) outcome = 'win';
+          else if (return_pct < -0.5) outcome = 'loss';
+          else outcome = 'flat';
+          return {
+            source_id: sourceId,
+            ticker,
+            stance: prev.stance,
+            entry_price: prev.entry_price ?? null,
+            entry_date: prev.since ?? null,
+            exit_price: exit,
+            return_pct,
+            outcome,
+            close_reason: reason,
+          };
+        }),
+      );
+      await recordCallOutcomes(outcomes);
+    } catch (err) {
+      console.warn(`[profile-updater] failed to record call outcomes for @${handle}:`, err);
+    }
+  }
 
   await upsertSourceProfile(sourceId, parsed.summary, enriched);
 

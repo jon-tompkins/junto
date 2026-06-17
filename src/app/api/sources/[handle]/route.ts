@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getProfileByHandle } from '@/lib/db/source-analyst-profiles';
+import { getProfileByHandle, getSourceHitRate } from '@/lib/db/source-analyst-profiles';
 import { getPublicNewslettersByTwitterHandle, getUserIdByTwitterHandle } from '@/lib/db/newsletters-v2';
 import { getSubscribedNewslettersByUserId } from '@/lib/db/subscriptions';
 import { getSupabase } from '@/lib/db/client';
@@ -26,12 +26,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ han
     ]);
     if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    const [juntos, subscribedDispatches] = await Promise.all([
+    const [juntos, subscribedDispatches, hitRate] = await Promise.all([
       getPublicJuntosContainingSource(profile.source_id),
       userId ? getSubscribedNewslettersByUserId(userId) : Promise.resolve([]),
+      getSourceHitRate(profile.source_id),
     ]);
 
-    return NextResponse.json({ profile, dispatches, juntos, subscribedDispatches });
+    return NextResponse.json({ profile, dispatches, juntos, subscribedDispatches, hitRate });
   } catch (err) {
     console.error('[api/sources/[handle]]', err);
     return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });

@@ -56,6 +56,14 @@ interface Junto {
   created_at: string;
 }
 
+interface HitRate {
+  total: number;
+  scored: number;
+  wins: number;
+  losses: number;
+  avg_return_pct: number | null;
+}
+
 interface SourceProfile {
   id: string;
   summary: string | null;
@@ -98,6 +106,7 @@ export default function SourceProfilePage() {
   const [notFound, setNotFound] = useState(false);
   const [quotes, setQuotes] = useState<Record<string, QuoteData>>({});
   const [holdings, setHoldings] = useState<Record<string, MandateHolding[]>>({});
+  const [hitRate, setHitRate] = useState<HitRate | null>(null);
 
   useEffect(() => {
     fetch('/api/me/holdings')
@@ -118,6 +127,7 @@ export default function SourceProfilePage() {
         setDispatches(d.dispatches ?? []);
         setJuntos(d.juntos ?? []);
         setSubscribedDispatches(d.subscribedDispatches ?? []);
+        setHitRate(d.hitRate ?? null);
         const tickers = Object.keys(d.profile?.positions ?? {});
         if (tickers.length === 0) return;
         Promise.all(
@@ -245,25 +255,44 @@ export default function SourceProfilePage() {
         {/* Live call performance — directional return on each open call vs the
             source's rough entry. Not a closed-trade hit rate; that needs call
             history we're only now starting to accumulate. */}
-        {perf.scored > 0 && (
-          <div className="grid grid-cols-3 gap-3 mb-6">
+        {(perf.scored > 0 || (hitRate?.total ?? 0) > 0) && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4">
               <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 mb-1 font-[var(--font-oswald)]">Calls Working</p>
               <p className="text-xl font-bold text-[#F5EFE0]">
-                {Math.round((perf.working / perf.scored) * 100)}%
-                <span className="text-xs font-normal text-[#F5EFE0]/45 ml-1.5">{perf.working}/{perf.scored}</span>
+                {perf.scored > 0 ? `${Math.round((perf.working / perf.scored) * 100)}%` : '—'}
+                {perf.scored > 0 && <span className="text-xs font-normal text-[#F5EFE0]/45 ml-1.5">{perf.working}/{perf.scored}</span>}
               </p>
+              <p className="text-[10px] text-[#F5EFE0]/30 mt-0.5">open calls now</p>
             </div>
             <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4">
               <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 mb-1 font-[var(--font-oswald)]">Avg Return</p>
               <p className={`text-xl font-bold ${perf.avgReturn >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
-                {perf.avgReturn >= 0 ? '+' : ''}{perf.avgReturn.toFixed(1)}%
+                {perf.scored > 0 ? `${perf.avgReturn >= 0 ? '+' : ''}${perf.avgReturn.toFixed(1)}%` : '—'}
               </p>
+              <p className="text-[10px] text-[#F5EFE0]/30 mt-0.5">open calls now</p>
             </div>
             <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4">
               <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 mb-1 font-[var(--font-oswald)]">Targets Hit</p>
               <p className="text-xl font-bold text-[#F5EFE0]">
                 {perf.targets > 0 ? `${perf.targetsHit}/${perf.targets}` : '—'}
+              </p>
+              <p className="text-[10px] text-[#F5EFE0]/30 mt-0.5">open calls now</p>
+            </div>
+            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4">
+              <p className="text-[10px] uppercase tracking-wider text-[#B08D57]/70 mb-1 font-[var(--font-oswald)]">Hit Rate</p>
+              <p className="text-xl font-bold text-[#F5EFE0]">
+                {hitRate && hitRate.scored > 0 ? (
+                  <>
+                    {Math.round((hitRate.wins / hitRate.scored) * 100)}%
+                    <span className="text-xs font-normal text-[#F5EFE0]/45 ml-1.5">{hitRate.wins}/{hitRate.scored}</span>
+                  </>
+                ) : (
+                  '—'
+                )}
+              </p>
+              <p className="text-[10px] text-[#F5EFE0]/30 mt-0.5">
+                {hitRate && hitRate.total > 0 ? 'closed calls' : 'tracking from now'}
               </p>
             </div>
           </div>

@@ -10,6 +10,70 @@ export interface PositionEntry {
   entry_price?: number;
 }
 
+export interface CallOutcome {
+  source_id: string;
+  ticker: string;
+  stance: PositionEntry['stance'];
+  entry_price: number | null;
+  entry_date: string | null;
+  exit_price: number | null;
+  return_pct: number | null;
+  outcome: 'win' | 'loss' | 'flat' | 'unscored';
+  close_reason: 'flip' | 'dropped' | 'stale';
+}
+
+// Append-only: records the outcome of a call at the moment it closes (stance
+// flip, drop, or stale-out). Best-effort — a logging failure must never break
+// profile synthesis, so callers swallow errors.
+export async function recordCallOutcomes(rows: CallOutcome[]): Promise<void> {
+  if (rows.length === 0) return;
+  const supabase = getSupabase();
+  const { error } = await supabase.from('source_call_outcomes').insert(rows);
+  if (error) throw error;
+}
+
+export interface SourceHitRate {
+  source_id: string;
+  total: number;
+  scored: number;
+  wins: number;
+  losses: number;
+  avg_return_pct: number | null;
+}
+
+// Aggregate closed-call hit rate for a source. Only directional calls
+// (outcome win/loss) count toward the rate; 'unscored'/'flat' are excluded
+// from wins/losses but still inform avg return where a return exists.
+export async function getSourceHitRate(sourceId: string): Promise<SourceHitRate> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('source_call_outcomes')
+    .select('outcome, return_pct')
+    .eq('source_id', sourceId);
+  if (error || !data) return { source_id: sourceId, total: 0, scored: 0, wins: 0, losses: 0, avg_return_pct: null };
+
+  let wins = 0;
+  let losses = 0;
+  let retSum = 0;
+  let retCount = 0;
+  for (const r of data as { outcome: string; return_pct: number | null }[]) {
+    if (r.outcome === 'win') wins += 1;
+    else if (r.outcome === 'loss') losses += 1;
+    if (r.return_pct != null) {
+      retSum += Number(r.return_pct);
+      retCount += 1;
+    }
+  }
+  return {
+    source_id: sourceId,
+    total: data.length,
+    scored: wins + losses,
+    wins,
+    losses,
+    avg_return_pct: retCount > 0 ? retSum / retCount : null,
+  };
+}
+
 export interface SourceAnalystProfile {
   id: string;
   source_id: string;
