@@ -2,7 +2,8 @@
 // routing through either the Trading API (BYO keys) or the Broker API
 // (white-label managed accounts) depending on mandate.account_kind.
 
-import { makeAlpaca, type AlpacaClient, type AlpacaAccount, type AlpacaClock, type AlpacaPosition, type AlpacaOrder } from './alpaca';
+import { makeAlpaca, assertLiveAllowed, type AlpacaClient, type AlpacaAccount, type AlpacaClock, type AlpacaPosition, type AlpacaOrder } from './alpaca';
+import { decryptSecret } from './crypto';
 
 interface BrokerAuth {
   basic: string;
@@ -132,11 +133,17 @@ export interface MandateAlpacaCreds {
   alpaca_account_id?: string | null;
   alpaca_key_id?: string | null;
   alpaca_secret?: string | null;
+  mode?: 'paper' | 'live' | null;
 }
 
 export function alpacaForMandate(mandate: MandateAlpacaCreds): AlpacaClient {
   if (mandate.alpaca_account_id) {
+    assertLiveAllowed(mandate.mode);
     return makeManagedAlpaca(mandate.alpaca_account_id);
   }
-  return makeAlpaca({ keyId: mandate.alpaca_key_id ?? null, secret: mandate.alpaca_secret ?? null });
+  return makeAlpaca({
+    keyId: mandate.alpaca_key_id ?? null,
+    secret: decryptSecret(mandate.alpaca_secret),
+    mode: mandate.mode ?? null,
+  });
 }

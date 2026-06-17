@@ -3,6 +3,7 @@ import { getTradingAccess } from '@/lib/trading/access';
 import { getSupabase } from '@/lib/db/client';
 import { getUserTelegramChatId } from '@/lib/telegram/link';
 import { alpacaForMandate } from '@/lib/trading/client';
+import { encryptSecret } from '@/lib/trading/crypto';
 
 export async function GET() {
   const access = await getTradingAccess();
@@ -160,7 +161,10 @@ export async function POST(req: NextRequest) {
       account_kind: accountKind,
       alpaca_account_id: alpacaAccountId,
       alpaca_key_id: accountKind === 'byo_keys' ? (body.alpaca_key_id || null) : null,
-      alpaca_secret: accountKind === 'byo_keys' ? (body.alpaca_secret || null) : null,
+      alpaca_secret:
+        accountKind === 'byo_keys' && body.alpaca_secret
+          ? encryptSecret(String(body.alpaca_secret))
+          : null,
       status: 'active',
     })
     .select('*')

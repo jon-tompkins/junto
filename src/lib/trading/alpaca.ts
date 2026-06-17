@@ -7,10 +7,29 @@ interface AlpacaCreds {
   baseUrl: string;
 }
 
-function getCreds(override?: { keyId?: string | null; secret?: string | null }): AlpacaCreds {
+// Endpoint is decided by the mandate's mode, NOT a global env, so a paper
+// mandate can never route to a live account by accident. Live is default-deny:
+// it requires an explicit ALPACA_ALLOW_LIVE=true opt-in.
+export function assertLiveAllowed(mode?: 'paper' | 'live' | null): void {
+  if (mode === 'live' && process.env.ALPACA_ALLOW_LIVE !== 'true') {
+    throw new Error(
+      'Live trading is disabled. Set ALPACA_ALLOW_LIVE=true to enable live order routing.',
+    );
+  }
+}
+
+function resolveBaseUrl(mode?: 'paper' | 'live' | null): string {
+  if (mode === 'live') {
+    assertLiveAllowed(mode);
+    return 'https://api.alpaca.markets';
+  }
+  return 'https://paper-api.alpaca.markets';
+}
+
+function getCreds(override?: { keyId?: string | null; secret?: string | null; mode?: 'paper' | 'live' | null }): AlpacaCreds {
   const keyId = override?.keyId || process.env.ALPACA_KEY_ID;
   const secret = override?.secret || process.env.ALPACA_SECRET_KEY;
-  const baseUrl = process.env.ALPACA_BASE_URL || 'https://paper-api.alpaca.markets';
+  const baseUrl = resolveBaseUrl(override?.mode);
   if (!keyId || !secret) throw new Error('Alpaca credentials not configured');
   return { keyId, secret, baseUrl };
 }
@@ -88,7 +107,7 @@ export interface AlpacaClock {
   next_close: string;
 }
 
-export function makeAlpaca(override?: { keyId?: string | null; secret?: string | null }) {
+export function makeAlpaca(override?: { keyId?: string | null; secret?: string | null; mode?: 'paper' | 'live' | null }) {
   const creds = getCreds(override);
 
   return {
