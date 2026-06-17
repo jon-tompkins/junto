@@ -190,7 +190,11 @@ export default function TermsPage() {
               myjunto never receives your brokerage login credentials. Any API keys you
               provide are encrypted at rest and used solely to operate the features you
               enable. We do not sell your personal financial data. Our handling of your
-              information is further described in our Privacy Policy.
+              information is further described in our{' '}
+              <Link href="/privacy" className="text-[#B08D57] hover:text-[#B08D57]/80 transition underline">
+                Privacy Policy
+              </Link>
+              .
             </p>
           </SubSection>
 
