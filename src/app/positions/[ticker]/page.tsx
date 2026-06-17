@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { TopNav } from '@/components/top-nav';
 import { markdownToHtml } from '@/lib/utils/markdown-client';
+import { TradingViewChart, isCryptoTicker } from '@/components/tradingview-chart';
 
 function enrichTweetHtml(text: string): string {
   const escaped = text
@@ -47,19 +48,6 @@ const STANCE_BAR_COLOR: Record<string, string> = {
 
 const STANCES = ['bullish', 'cautious', 'neutral', 'bearish'] as const;
 
-// Known crypto tickers → map to TradingView COINBASE symbols
-const CRYPTO_TICKERS = new Set([
-  'BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE', 'ADA', 'AVAX', 'DOT', 'LINK',
-  'UNI', 'AAVE', 'MATIC', 'POL', 'OP', 'ARB', 'SUI', 'APT', 'INJ', 'TIA',
-  'TON', 'NEAR', 'ATOM', 'FTM', 'LTC', 'BCH', 'ETC', 'XLM', 'ALGO',
-]);
-
-function getTVSymbol(ticker: string): string {
-  const t = ticker.toUpperCase();
-  if (CRYPTO_TICKERS.has(t)) return `COINBASE:${t}USD`;
-  return t;
-}
-
 interface Analyst {
   source_id: string;
   handle: string;
@@ -95,71 +83,6 @@ function PnL({ entry, current }: { entry: number; current: number }) {
     <span className={`text-xs font-mono ${pos ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
       {pos ? '+' : ''}{pct.toFixed(1)}%
     </span>
-  );
-}
-
-function TradingViewChart({ ticker }: { ticker: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const symbol = getTVSymbol(ticker);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    container.innerHTML = '';
-
-    const widgetDiv = document.createElement('div');
-    widgetDiv.className = 'tradingview-widget-container__widget';
-    container.appendChild(widgetDiv);
-
-    const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js';
-    script.type = 'text/javascript';
-    script.async = true;
-    script.innerHTML = JSON.stringify({
-      symbols: [[symbol]],
-      chartOnly: false,
-      width: '100%',
-      height: 260,
-      locale: 'en',
-      colorTheme: 'dark',
-      autosize: true,
-      showVolume: false,
-      showMA: false,
-      hideDateRanges: false,
-      hideMarketStatus: false,
-      hideSymbolLogo: false,
-      scalePosition: 'right',
-      scaleMode: 'Normal',
-      fontFamily: 'inherit',
-      fontSize: '10',
-      noTimeScale: false,
-      valuesTracking: '1',
-      changeMode: 'price-and-percent',
-      chartType: 'area',
-      isTransparent: true,
-      dateRanges: ['1d|1', '1m|30', '3m|60', '12m|1D', '60m|1W', 'all|1M'],
-    });
-    container.appendChild(script);
-  }, [symbol]);
-
-  const tvUrl = `https://www.tradingview.com/chart/g53lUOaf/?symbol=${encodeURIComponent(symbol)}`;
-
-  return (
-    <div className="relative mb-8 rounded border border-[rgba(176,141,87,0.18)] overflow-hidden">
-      <div
-        ref={containerRef}
-        className="tradingview-widget-container"
-        style={{ height: 260 }}
-      />
-      {/* overlay captures clicks before the widget iframe does */}
-      <a
-        href={tvUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="absolute inset-0 z-10"
-        aria-label={`Open ${symbol} on TradingView`}
-      />
-    </div>
   );
 }
 
@@ -809,7 +732,7 @@ export default function PositionPage() {
             </div>
 
             {/* TradingView chart */}
-            <TradingViewChart ticker={ticker} />
+            <TradingViewChart ticker={ticker} className="mb-8" />
 
             <PriceLevels ticker={ticker} currentPrice={currentPrice} />
 
@@ -824,7 +747,7 @@ export default function PositionPage() {
                 {starred && session?.user && <SocialPulse ticker={ticker} />}
 
                 {/* Research reports — equities only */}
-                {!CRYPTO_TICKERS.has(ticker) && <ResearchReports ticker={ticker} />}
+                {!isCryptoTicker(ticker) && <ResearchReports ticker={ticker} />}
 
                 {/* Sources */}
                 <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide mb-3 font-[var(--font-oswald)]">

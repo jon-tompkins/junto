@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
+import { TradingViewChart } from '@/components/tradingview-chart';
 
 interface Trade {
   id: string;
@@ -55,6 +56,7 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
   const { status } = useSession();
   const router = useRouter();
   const [trade, setTrade] = useState<Trade | null>(null);
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [mandate, setMandate] = useState<{ id: string; name: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -143,6 +145,14 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
       .finally(() => setLoading(false));
   }, [status, tradeId]);
 
+  useEffect(() => {
+    if (!trade?.ticker) return;
+    fetch(`/api/prices/${encodeURIComponent(trade.ticker)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setCurrentPrice(d?.price ?? null))
+      .catch(() => null);
+  }, [trade?.ticker]);
+
   if (loading || !trade) {
     return (
       <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
@@ -164,10 +174,15 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-3 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">
+            <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide flex items-baseline gap-3 flex-wrap">
               <Link href={`/positions/${encodeURIComponent(trade.ticker)}`} className="hover:text-[#B08D57] transition">
                 {trade.ticker}
-              </Link>{' '}
+              </Link>
+              {currentPrice !== null && (
+                <span className="text-xl font-mono text-[#F5EFE0]/80 normal-case tracking-normal">
+                  ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              )}
               <span className="text-sm text-[#F5EFE0]/45">{trade.side} · {trade.qty}</span>
             </h1>
             <Link
@@ -244,6 +259,8 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
             )}
           </div>
         </div>
+
+        <TradingViewChart ticker={trade.ticker} className="mb-6 sm:mb-8" />
 
         {postMortem && (postMortem.process_score || postMortem.outcome_score) && (
           <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-6">
