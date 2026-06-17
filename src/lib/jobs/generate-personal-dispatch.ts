@@ -12,7 +12,7 @@ import {
   markPersonalDispatchSent,
   setDispatchAudio,
 } from '@/lib/db/personal-dispatches';
-import { recordCost, openaiTtsCostCents } from '@/lib/costs';
+import { recordCost, openaiTtsCostCents, anthropicHaikuCostCents } from '@/lib/costs';
 
 const FEATURED_LOOKBACK_HOURS = 24;
 const MAX_TWEETS_FOR_PROMPT = 40;
@@ -187,6 +187,19 @@ Be specific. Don't editorialize beyond what tweets say. Don't restate the struct
     .join('\n')
     .trim();
 
+  const inputTokens = resp.usage?.input_tokens || 0;
+  const outputTokens = resp.usage?.output_tokens || 0;
+  recordCost({
+    supplier: 'anthropic',
+    operation: 'personal_dispatch_synthesis',
+    cost_cents: anthropicHaikuCostCents(inputTokens, outputTokens),
+    usage_amount: inputTokens + outputTokens,
+    usage_unit: 'tokens',
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    metadata: { tickers: tickers.length, model: HAIKU_MODEL },
+  });
+
   const subject = `Your Day — ${dateLabel}`;
   return { subject, content: text };
 }
@@ -274,7 +287,6 @@ export async function generatePersonalDispatchForUser(
         });
 
         if (scriptUsage) {
-          const { anthropicHaikuCostCents } = await import('@/lib/costs');
           recordCost({
             supplier: 'anthropic',
             operation: 'dispatch_audio_script',

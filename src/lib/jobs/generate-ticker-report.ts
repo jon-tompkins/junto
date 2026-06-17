@@ -1,5 +1,6 @@
 import { searchTweets, FetchedTweet } from '@/lib/twitter/apify-client';
 import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
+import { recordCost, anthropicHaikuCostCents } from '@/lib/costs';
 import {
   upsertTickerReport,
   upsertTickerSummary,
@@ -92,6 +93,19 @@ Be specific and factual. Don't pad. Don't repeat the tweet count.`;
     .map((b: any) => b.text)
     .join('\n')
     .trim();
+
+  const inputTokens = resp.usage?.input_tokens || 0;
+  const outputTokens = resp.usage?.output_tokens || 0;
+  recordCost({
+    supplier: 'anthropic',
+    operation: 'ticker_report_summarize',
+    cost_cents: anthropicHaikuCostCents(inputTokens, outputTokens),
+    usage_amount: inputTokens + outputTokens,
+    usage_unit: 'tokens',
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    metadata: { ticker, model: HAIKU_MODEL },
+  });
 
   const summaryMatch = text.match(/##\s*Summary\s*\n([\s\S]+?)(?=\n##|$)/i);
   const summary = summaryMatch ? summaryMatch[1].trim() : text.split('\n').slice(0, 4).join(' ').trim();

@@ -5,7 +5,7 @@ import { getSupabase } from '@/lib/db/client';
 import { getAnthropic, getXAI } from '@/lib/synthesis/client';
 import { THESIS_SYSTEM_PROMPT } from '@/lib/theses/system-prompt';
 import { parseThesisFile } from '@/lib/theses/parser';
-import { recordCost, anthropicHaikuCostCents, grokCostCents } from '@/lib/costs';
+import { recordCost, anthropicSonnetCostCents, grokCostCents } from '@/lib/costs';
 import { authLimiter } from '@/lib/rate-limit';
 
 const CLAUDE_MODEL = 'claude-sonnet-4-6';
@@ -273,7 +273,7 @@ ${combinedInput}`;
     recordCost({
       supplier: 'anthropic',
       operation: 'thesis_ingest',
-      cost_cents: anthropicHaikuCostCents(inputTokens, outputTokens),
+      cost_cents: anthropicSonnetCostCents(inputTokens, outputTokens),
       usage_amount: inputTokens + outputTokens,
       usage_unit: 'tokens',
       input_tokens: inputTokens,
