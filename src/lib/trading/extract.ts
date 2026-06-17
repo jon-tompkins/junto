@@ -1,10 +1,14 @@
-import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
+import { getAnthropic } from '@/lib/synthesis/client';
 import { getRecentContentForSources } from '@/lib/db/content-twitter';
 import { getJuntoSourceIds, getProcessedTweetIds } from './db';
 import { getSupabase } from '@/lib/db/client';
-import { recordCost, anthropicHaikuCostCents } from '@/lib/costs';
+import { recordCost, anthropicSonnetCostCents } from '@/lib/costs';
 import type { Mandate, ExtractedSignal } from './types';
 
+// Sonnet (not Haiku) for signal extraction: it catches hedged/conditional calls,
+// sarcasm, and thread context that Haiku flattens — and this output feeds the
+// Sonnet decision step, so extraction quality gates every downstream trade.
+const SONNET_MODEL = 'claude-sonnet-4-6';
 const LOOKBACK_HOURS = 24;
 const MAX_TWEETS_FOR_PROMPT = 50;
 
@@ -92,7 +96,7 @@ Schema:
 
   const anthropic = getAnthropic();
   const res = await anthropic.messages.create({
-    model: HAIKU_MODEL,
+    model: SONNET_MODEL,
     max_tokens: 2000,
     system,
     messages: [
@@ -109,12 +113,12 @@ Schema:
   recordCost({
     supplier: 'anthropic',
     operation: 'trading.extractSignals',
-    cost_cents: anthropicHaikuCostCents(inputTokens, outputTokens),
+    cost_cents: anthropicSonnetCostCents(inputTokens, outputTokens),
     usage_amount: inputTokens + outputTokens,
     usage_unit: 'tokens',
     input_tokens: inputTokens,
     output_tokens: outputTokens,
-    metadata: { mandate_id: mandate.id, model: HAIKU_MODEL },
+    metadata: { mandate_id: mandate.id, model: SONNET_MODEL },
   });
 
   const text = res.content
