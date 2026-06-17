@@ -2,23 +2,15 @@
   "crons": [
     {
       "path": "/api/cron/pull-content",
-      "schedule": "45 0,6,12,18 * * *"
+      "schedule": "0 * * * *"
     },
     {
       "path": "/api/cron/pull-content",
-      "schedule": "55 15 * * 1-5"
+      "schedule": "30 13-20 * * 1-5"
     },
     {
       "path": "/api/cron/collect-twitter",
-      "schedule": "50,55 0,6,12,18 * * *"
-    },
-    {
-      "path": "/api/cron/collect-twitter",
-      "schedule": "0,5,10,15 1,7,13,19 * * *"
-    },
-    {
-      "path": "/api/cron/collect-twitter",
-      "schedule": "0,5,10,15,20,25 16 * * 1-5"
+      "schedule": "5,15,25,35,45,55 * * * *"
     },
     {
       "path": "/api/cron/generate-newsletters",

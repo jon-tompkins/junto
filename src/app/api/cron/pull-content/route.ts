@@ -9,15 +9,16 @@ import { getSupabase } from '@/lib/db/client';
 
 export const maxDuration = 300; // 5 minutes
 
-// Cron fires every 6 hours — skip sources pulled within this window
-const FRESHNESS_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
-// If any source was updated in the last OVERLAP_WINDOW, assume a prior cron is
-// running or just finished — bail to prevent duplicate runs.
-const OVERLAP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
-// Look back the full cron interval plus a 15-min buffer so tweets at the edge
-// of the previous window aren't missed. Duplicates are safe: storeTwitterContent
-// deduplicates by twitter_id.
-const PULL_LOOKBACK_MS = FRESHNESS_WINDOW_MS + 15 * 60 * 1000; // 6h15m
+// Per-source skip window: don't re-dispatch a source whose tweets we ingested
+// within this window. Kept small so the intraday cron cadence (every 30 min in
+// market hours, hourly off-hours) actually drives pulls. The old 6h value
+// collapsed pulls to ~2/day because collect-twitter bumps sources.updated_at on
+// every ingest, leaving every source "fresh" within the 6h gate.
+const FRESHNESS_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+// since_time window for the Apify query. Decoupled from the skip window and kept
+// wider than the pull cadence so a missed or hourly off-hours run can't drop
+// tweets in the gap. Overlap is free: storeTwitterContent dedupes by twitter_id.
+const PULL_LOOKBACK_MS = 2 * 60 * 60 * 1000; // 2 hours
 // First-time pull lookback when a source has never been fetched.
 const FIRST_PULL_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -46,22 +47,19 @@ export async function GET(req: NextRequest) {
     // window plus a buffer. First-ever pulls use FIRST_PULL_LOOKBACK_MS instead.
     const defaultSinceDate = new Date(now - PULL_LOOKBACK_MS).toISOString();
 
-    // Overlap guard: if any source was just updated (< 5 min ago), assume another
-    // pull-content cron is mid-flight or just finished. Bail to avoid duplicates.
-    const recentlyUpdated = twitterSources.some(
-      (s) => s.updated_at && now - new Date(s.updated_at).getTime() < OVERLAP_WINDOW_MS,
-    );
-    if (recentlyUpdated) {
-      console.log(`[pull-content] A source was updated within ${OVERLAP_WINDOW_MS / 1000}s — another run is active or just finished. Skipping Twitter pull.`);
-    } else if (twitterSources.length > 0) {
-      // Freshness filter: only pull sources last updated > 30 min ago (or never)
+    // pull-content is fire-and-forget (it starts an async Apify run and returns
+    // in ~seconds), and crons are spaced >=30 min apart, so concurrent pulls
+    // don't happen. since_time dedup also makes any rare duplicate dispatch cheap
+    // and harmless. No overlap guard needed.
+    if (twitterSources.length > 0) {
+      // Skip only sources we ingested within FRESHNESS_WINDOW_MS (or pull if never).
       const stale = twitterSources.filter(
         (s) => !s.updated_at || now - new Date(s.updated_at).getTime() >= FRESHNESS_WINDOW_MS,
       );
       const skipped = twitterSources.length - stale.length;
 
       console.log(
-        `[pull-content] ${twitterSources.length} Twitter sources total, ${stale.length} stale (>30min), ${skipped} fresh (skipped).`,
+        `[pull-content] ${twitterSources.length} Twitter sources total, ${stale.length} due for pull (>${FRESHNESS_WINDOW_MS / 60000}min), ${skipped} skipped (recently pulled).`,
       );
 
       // Single Apify run for all stale handles — pay-per-result, same cost.

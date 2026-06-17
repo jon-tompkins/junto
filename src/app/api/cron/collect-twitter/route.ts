@@ -7,10 +7,15 @@ import {
 } from '@/lib/db/apify-runs';
 import { storeTwitterContent, getRecentContentForSources } from '@/lib/db/content-twitter';
 import { updateSourceProfile } from '@/lib/synthesis/profile-updater';
-import { getSourcesMissingOrStaleProfiles } from '@/lib/db/source-analyst-profiles';
+import { getSourcesMissingOrStaleProfiles, getSourceProfile } from '@/lib/db/source-analyst-profiles';
 import { getSupabase } from '@/lib/db/client';
 
 export const maxDuration = 300; // 5 minutes
+
+// Re-synthesize a source's analyst profile (Haiku) at most once per day. Pulls
+// now run every ~30 min, but profile inference is decoupled from pull cadence —
+// analyst stances don't move minute-to-minute, so daily keeps cost flat.
+const PROFILE_RESYNTH_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // GET /api/cron/collect-twitter — poll Apify for pending batch runs and ingest
 // any that have finished. Pairs with /api/cron/pull-content which only kicks
@@ -144,9 +149,19 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Await all profile updates from this cycle's new tweets
+    // Await all profile updates from this cycle's new tweets — but only re-synth
+    // a source whose profile is older than PROFILE_RESYNTH_MS, so frequent pulls
+    // don't trigger Haiku on every ingest. New tweets are already stored; the
+    // profile just catches up once a day.
     for (const { sourceId, handle, tweets } of profileTasks) {
       try {
+        const existing = await getSourceProfile(sourceId);
+        if (
+          existing &&
+          Date.now() - new Date(existing.last_updated).getTime() < PROFILE_RESYNTH_MS
+        ) {
+          continue;
+        }
         await updateSourceProfile(sourceId, handle, tweets);
       } catch (err) {
         console.warn(
