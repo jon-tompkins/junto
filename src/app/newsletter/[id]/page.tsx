@@ -145,15 +145,7 @@ export default function NewsletterDetailPage() {
         if (nlRes.ok) {
           const data = await nlRes.json();
           setNewsletter(data.newsletter);
-          if (session?.user && data.newsletter?.admin_user_id) {
-            try {
-              const ownerRes = await fetch('/api/v2/dashboard/created');
-              if (ownerRes.ok) {
-                const ownerData = await ownerRes.json();
-                setIsOwner((ownerData.newsletters || []).some((n: any) => n.id === data.newsletter.id));
-              }
-            } catch {}
-          }
+          setIsOwner(!!data.newsletter?.is_owner);
         }
         if (subRes?.ok) {
           const data = await subRes.json();

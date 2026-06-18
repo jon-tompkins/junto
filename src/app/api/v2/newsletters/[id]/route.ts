@@ -38,6 +38,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const curator = await getCuratorInfo(newsletter.admin_user_id);
 
+    let isOwner = false;
+    try {
+      const session = await getServerSession(authOptions);
+      if (session?.user) {
+        const userId = await resolveUserId(session);
+        isOwner = !!userId && newsletter.admin_user_id === userId;
+      }
+    } catch {
+      // ownership is best-effort for GET; default to false
+    }
+
     let junto: { id: string; name: string } | null = null;
     if ((newsletter as any).junto_id) {
       const { data } = await getSupabase()
@@ -79,6 +90,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         prompt_template: promptTemplate,
         tickers,
         watchlist,
+        is_owner: isOwner,
       },
     });
   } catch (error) {
