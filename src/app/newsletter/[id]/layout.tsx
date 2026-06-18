@@ -28,6 +28,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       description,
       type: 'article',
     },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${nl.name} | MyJunto`,
+      description,
+    },
   };
 }
 
