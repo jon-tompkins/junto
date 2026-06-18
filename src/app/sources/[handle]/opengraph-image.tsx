@@ -5,8 +5,9 @@ export const alt = 'Source tracker on MyJunto';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-export default async function Image({ params }: { params: { handle: string } }) {
-  const clean = decodeURIComponent(params.handle).replace('@', '');
+export default async function Image({ params }: { params: Promise<{ handle: string }> }) {
+  const { handle } = await params;
+  const clean = decodeURIComponent(handle).replace('@', '');
 
   const profile = await getProfileByHandle(clean).catch(() => null);
   const name = profile?.source.display_name || `@${clean}`;

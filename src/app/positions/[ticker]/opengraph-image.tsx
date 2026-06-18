@@ -21,8 +21,9 @@ async function getTickerStats(ticker: string) {
   return { total, breakdown };
 }
 
-export default async function Image({ params }: { params: { ticker: string } }) {
-  const ticker = decodeURIComponent(params.ticker).toUpperCase();
+export default async function Image({ params }: { params: Promise<{ ticker: string }> }) {
+  const { ticker: raw } = await params;
+  const ticker = decodeURIComponent(raw).toUpperCase();
   let stats = { total: 0, breakdown: { bullish: 0, bearish: 0, cautious: 0, neutral: 0 } };
   try {
     stats = await getTickerStats(ticker);
