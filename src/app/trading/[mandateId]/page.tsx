@@ -100,6 +100,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     has_stop?: boolean;
     has_target?: boolean;
   }>>({});
+  const [agreement, setAgreement] = useState<Record<string, AgreeingSource[]>>({});
   const [signals, setSignals] = useState<Signal[]>([]);
   const [ticks, setTicks] = useState<TickRun[]>([]);
   const [loading, setLoading] = useState(true);
@@ -260,6 +261,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         setBroker(data.broker || null);
         setTrades(data.trades || []);
         setPositions(data.positions || {});
+        setAgreement(data.agreement || {});
         setSignals(data.signals || []);
         setTicks(data.ticks || []);
         setDraftGuidelines(data.mandate?.guidelines || '');
@@ -858,7 +860,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             <p className="text-sm text-[#F5EFE0]/30">No open positions.</p>
           ) : (
             <div className="overflow-x-auto -mx-5 px-5">
-              <OpenPositionsTable rows={openRows} />
+              <OpenPositionsTable rows={openRows} agreement={agreement} />
             </div>
           )}
         </div>
@@ -1002,6 +1004,47 @@ function SnapStat({
   );
 }
 
+interface AgreeingSource {
+  source_id: string;
+  handle_or_url: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  stance: string;
+}
+
+// Junto sources whose directional stance matches the position side.
+// long → bullish; short → bearish. Neutral/cautious don't count as agreement.
+function AgreeingSources({ side, sources }: { side: string; sources: AgreeingSource[] }) {
+  const want = side === 'short' || side === 'sell' ? 'bearish' : 'bullish';
+  const agree = sources.filter((s) => s.stance === want);
+  if (agree.length === 0) return null;
+  const shown = agree.slice(0, 4);
+  const extra = agree.length - shown.length;
+  const tip = `${agree.length} junto source${agree.length === 1 ? '' : 's'} ${want}: ${agree.map((s) => s.display_name || s.handle_or_url).join(', ')}`;
+  return (
+    <span className="inline-flex items-center -space-x-1.5 align-middle" title={tip}>
+      {shown.map((s) =>
+        s.avatar_url ? (
+          <img
+            key={s.source_id}
+            src={s.avatar_url}
+            alt=""
+            className="w-4 h-4 rounded-full object-cover border border-[#080604] bg-[#1c1a17]"
+          />
+        ) : (
+          <span
+            key={s.source_id}
+            className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] text-[#B08D57] bg-[rgba(176,141,87,0.15)] border border-[#080604]"
+          >
+            {(s.display_name || s.handle_or_url).replace('@', '').slice(0, 1).toUpperCase()}
+          </span>
+        ),
+      )}
+      {extra > 0 && <span className="pl-2 text-[10px] text-[#F5EFE0]/40 font-mono">+{extra}</span>}
+    </span>
+  );
+}
+
 interface OpenRow {
   ticker: string;
   pos: {
@@ -1019,7 +1062,7 @@ interface OpenRow {
   trade: Trade | null;
 }
 
-function OpenPositionsTable({ rows }: { rows: OpenRow[] }) {
+function OpenPositionsTable({ rows, agreement }: { rows: OpenRow[]; agreement: Record<string, AgreeingSource[]> }) {
   return (
     <table className="w-full text-sm min-w-[860px]">
       <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
@@ -1056,11 +1099,14 @@ function OpenPositionsTable({ rows }: { rows: OpenRow[] }) {
           return (
             <tr key={ticker} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
               <td className="py-2 pr-4">
-                {trade ? (
-                  <Link href={`/trading/trades/${trade.id}`} className="font-mono text-[#B08D57] hover:underline">{ticker}</Link>
-                ) : (
-                  <span className="font-mono text-[#B08D57]">{ticker}</span>
-                )}
+                <span className="inline-flex items-center gap-2">
+                  {trade ? (
+                    <Link href={`/trading/trades/${trade.id}`} className="font-mono text-[#B08D57] hover:underline">{ticker}</Link>
+                  ) : (
+                    <span className="font-mono text-[#B08D57]">{ticker}</span>
+                  )}
+                  <AgreeingSources side={String(side)} sources={agreement[ticker] || []} />
+                </span>
               </td>
               <td className="py-2 pr-4 text-[#F5EFE0]/60">{side}</td>
               <td className="py-2 pr-4 text-right font-mono text-[#F5EFE0]/70">{qty ?? '—'}</td>

@@ -83,6 +83,38 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       }
     : null;
 
+  // Junto agreement: for each open-position ticker, which junto sources hold a
+  // directional stance on it. The client matches stance to the position side
+  // (long↔bullish, short↔bearish) and shows the agreeing sources' icons.
+  const agreement: Record<
+    string,
+    Array<{ source_id: string; handle_or_url: string; display_name: string | null; avatar_url: string | null; stance: string }>
+  > = {};
+  const openTickers = new Set(Object.keys(positions));
+  if (junto && junto.sources.length > 0 && openTickers.size > 0) {
+    const sourceById = new Map(junto.sources.map((s) => [s.id, s]));
+    const { data: profiles } = await supabase
+      .from('source_analyst_profiles')
+      .select('source_id, positions')
+      .in('source_id', junto.sources.map((s) => s.id));
+    for (const prof of (profiles as any[]) || []) {
+      const src = sourceById.get(prof.source_id);
+      if (!src) continue;
+      const posMap = (prof.positions || {}) as Record<string, { stance?: string }>;
+      for (const [tk, entry] of Object.entries(posMap)) {
+        const TK = tk.toUpperCase();
+        if (!openTickers.has(TK) || !entry?.stance) continue;
+        (agreement[TK] ||= []).push({
+          source_id: src.id,
+          handle_or_url: src.handle_or_url,
+          display_name: src.display_name,
+          avatar_url: src.avatar_url,
+          stance: entry.stance,
+        });
+      }
+    }
+  }
+
   const broker = {
     account_kind: mandate.account_kind,
     mode: mandate.mode,
@@ -100,6 +132,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     signals: signalsRes.data || [],
     ticks: ticksRes.data || [],
     positions,
+    agreement,
     account,
   });
 }
