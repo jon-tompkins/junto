@@ -262,6 +262,12 @@ export default function AdminDashboard() {
                 Traffic →
               </Link>
               <Link
+                href="/admin/creators"
+                className="px-3 py-1.5 rounded border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/80 hover:text-[#B08D57] hover:border-[#B08D57] transition"
+              >
+                Creators →
+              </Link>
+              <Link
                 href="/onboarding"
                 className="px-3 py-1.5 rounded border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/80 hover:text-[#B08D57] hover:border-[#B08D57] transition"
               >

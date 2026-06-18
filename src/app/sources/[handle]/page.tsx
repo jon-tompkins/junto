@@ -64,6 +64,33 @@ interface HitRate {
   avg_return_pct: number | null;
 }
 
+interface CreatorSibling {
+  type: string;
+  handle_or_url: string;
+  display_name: string | null;
+}
+
+interface CreatorInfo {
+  name: string;
+  slug: string;
+  siblings: CreatorSibling[];
+  combinedHitRate: HitRate | null;
+}
+
+const PLATFORM_LABEL: Record<string, string> = {
+  twitter: '𝕏 Twitter',
+  youtube: '▶ YouTube',
+  rss: 'RSS',
+  newsletter: '✉ Newsletter',
+  personal: 'Personal',
+};
+
+function siblingHref(s: CreatorSibling): string {
+  if (s.type === 'twitter') return `/sources/${s.handle_or_url}`;
+  if (/^https?:\/\//i.test(s.handle_or_url)) return s.handle_or_url;
+  return `/sources/${s.handle_or_url}`;
+}
+
 interface SourceProfile {
   id: string;
   summary: string | null;
@@ -107,6 +134,7 @@ export default function SourceProfilePage() {
   const [quotes, setQuotes] = useState<Record<string, QuoteData>>({});
   const [holdings, setHoldings] = useState<Record<string, MandateHolding[]>>({});
   const [hitRate, setHitRate] = useState<HitRate | null>(null);
+  const [creator, setCreator] = useState<CreatorInfo | null>(null);
 
   useEffect(() => {
     fetch('/api/me/holdings')
@@ -128,6 +156,7 @@ export default function SourceProfilePage() {
         setJuntos(d.juntos ?? []);
         setSubscribedDispatches(d.subscribedDispatches ?? []);
         setHitRate(d.hitRate ?? null);
+        setCreator(d.creator ?? null);
         const tickers = Object.keys(d.profile?.positions ?? {});
         if (tickers.length === 0) return;
         Promise.all(
@@ -244,6 +273,29 @@ export default function SourceProfilePage() {
             <p className="text-xs text-[#F5EFE0]/40 mt-1.5 font-[var(--font-oswald)] uppercase tracking-wider">
               Tracking since {new Date(profile.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
             </p>
+            {creator && creator.siblings.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/35 font-[var(--font-oswald)]">
+                  Also publishes as {creator.name} on
+                </span>
+                {creator.siblings.map((s) => {
+                  const href = siblingHref(s);
+                  const label = `${PLATFORM_LABEL[s.type] || s.type}`;
+                  const external = /^https?:\/\//i.test(href);
+                  const cls =
+                    'inline-flex items-center gap-1 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-2 py-0.5 text-xs text-[#F5EFE0]/75 hover:text-[#B08D57] hover:border-[#B08D57] transition';
+                  return external ? (
+                    <a key={`${s.type}:${s.handle_or_url}`} href={href} target="_blank" rel="noopener noreferrer" className={cls}>
+                      {label} ↗
+                    </a>
+                  ) : (
+                    <Link key={`${s.type}:${s.handle_or_url}`} href={href} className={cls}>
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
