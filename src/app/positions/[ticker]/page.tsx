@@ -749,6 +749,16 @@ export default function PositionPage() {
                 {/* Research reports — equities only */}
                 {!isCryptoTicker(ticker) && <ResearchReports ticker={ticker} />}
 
+                {/* Inferred-positions disclaimer */}
+                <div className="bg-amber-900/15 border border-amber-700/40 rounded p-4 mb-4 flex gap-3">
+                  <span className="text-amber-400 text-lg leading-none mt-0.5">⚠</span>
+                  <p className="text-sm text-amber-200/80 leading-relaxed">
+                    <span className="font-semibold text-amber-300">Inferred, not real positions.</span>{' '}
+                    Each stance below is read from the source&apos;s public posts — not from any brokerage or disclosed holding. Entries are rough estimates.
+                    Commentary tracking, not financial advice.
+                  </p>
+                </div>
+
                 {/* Sources */}
                 <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide mb-3 font-[var(--font-oswald)]">
                   Sources

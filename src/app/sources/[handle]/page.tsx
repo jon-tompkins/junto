@@ -241,7 +241,21 @@ export default function SourceProfilePage() {
             >
               @{displayHandle} ↗
             </a>
+            <p className="text-xs text-[#F5EFE0]/40 mt-1.5 font-[var(--font-oswald)] uppercase tracking-wider">
+              Tracking since {new Date(profile.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+            </p>
           </div>
+        </div>
+
+        {/* Inferred-positions disclaimer */}
+        <div className="bg-amber-900/15 border border-amber-700/40 rounded p-4 mb-8 flex gap-3">
+          <span className="text-amber-400 text-lg leading-none mt-0.5">⚠</span>
+          <p className="text-sm text-amber-200/80 leading-relaxed">
+            <span className="font-semibold text-amber-300">These are not real positions.</span>{' '}
+            Every stance, entry, and return below is <span className="font-semibold">inferred from this account&apos;s public posts</span> — not from any brokerage,
+            wallet, or disclosed holding. Entries are rough estimates from when a view was first spotted, and people post for many reasons. Treat this as
+            commentary tracking, not financial advice or a record of what anyone actually owns.
+          </p>
         </div>
 
         {/* Summary */}
@@ -489,7 +503,7 @@ export default function SourceProfilePage() {
         </div>
 
         <p className="text-xs text-[#F5EFE0]/30">
-          Profile analyzed {new Date(profile.last_updated).toLocaleString()} · Tracking since {new Date(profile.created_at).toLocaleDateString()}
+          Profile analyzed {new Date(profile.last_updated).toLocaleString()}. Positions inferred from public posts — not real holdings.
         </p>
       </div>
     </main>
