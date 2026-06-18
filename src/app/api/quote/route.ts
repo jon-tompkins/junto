@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { classifyTicker } from '@/lib/prices';
 
 // GET /api/quote?symbol=AAPL - validate ticker and get basic info
 export async function GET(request: NextRequest) {
@@ -18,8 +19,12 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // Crypto tickers (BTC, ETH, ...) trade on Yahoo under a -USD pair, not the
+    // bare symbol — bare "BTC" resolves to an unrelated equity (~$27).
+    const yahooSymbol = classifyTicker(symbol) === 'crypto' ? `${symbol}-USD` : symbol;
+
     // Use Yahoo Finance API to validate ticker
-    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
+    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1d&range=1d`;
     
     const response = await fetch(yahooUrl, {
       headers: {
@@ -55,7 +60,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       valid: true,
-      symbol: meta.symbol || symbol,
+      symbol,
       name: meta.shortName || meta.longName || symbol,
       price: price ? parseFloat(price.toFixed(2)) : null,
       change: change ? parseFloat(change.toFixed(2)) : null,
