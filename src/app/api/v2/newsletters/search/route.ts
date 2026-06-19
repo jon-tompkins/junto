@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
           source_count: sources.length,
           credit_cost: nl.credit_cost ?? 1,
           curator: curator ? {
-            name: curator.twitter_handle ? `@${curator.twitter_handle}` : null,
+            name: curator.display_name || (curator.twitter_handle ? `@${curator.twitter_handle}` : null),
             twitter_handle: curator.twitter_handle,
             avatar_url: curator.avatar_url,
           } : null,

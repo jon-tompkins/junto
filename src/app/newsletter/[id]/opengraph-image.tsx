@@ -38,7 +38,7 @@ async function getDispatch(id: string) {
     description: (nl.description as string) || '',
     cadence: CADENCE_LABEL[nl.schedule_cadence as string] || 'Daily',
     sourceCount: sources.length,
-    curator: curator?.twitter_handle ? `@${curator.twitter_handle}` : null,
+    curator: curator?.twitter_handle ? `@${curator.twitter_handle}` : curator?.display_name || null,
     handles,
   };
 }

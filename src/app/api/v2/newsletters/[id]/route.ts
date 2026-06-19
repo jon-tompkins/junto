@@ -82,7 +82,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       newsletter: {
         ...newsletter,
         curator: curator ? {
-          name: curator.twitter_handle ? `@${curator.twitter_handle}` : null,
+          name: curator.display_name || (curator.twitter_handle ? `@${curator.twitter_handle}` : null),
           twitter_handle: curator.twitter_handle,
           avatar_url: curator.avatar_url,
         } : null,
