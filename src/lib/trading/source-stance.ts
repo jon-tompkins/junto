@@ -40,25 +40,48 @@ export async function recordTradeStanceForSources(tradeId: string): Promise<{
   }
   if (!urls.length) return { updated: [] };
 
-  // URL → tweet_id → content_twitter.source_id (same join positions-command uses).
+  const sourceIds = new Map<string, string>(); // source_id -> handle
+
+  // Twitter: URL → tweet_id → content_twitter.source_id (same join positions-command uses).
   const tweetIds: string[] = [];
+  const nonStatusUrls: string[] = [];
   for (const u of urls) {
     const m = /\/status\/(\d+)/i.exec(u);
     if (m) tweetIds.push(m[1]);
+    else nonStatusUrls.push(u);
   }
-  if (!tweetIds.length) return { updated: [] };
-
-  const { data: rows } = await supabase
-    .from('content_twitter')
-    .select('source_id, sources(id, handle_or_url)')
-    .in('twitter_id', tweetIds);
-
-  const sourceIds = new Map<string, string>(); // source_id -> handle
-  for (const row of (rows || []) as any[]) {
-    const sid = row.sources?.id || row.source_id;
-    const handle = row.sources?.handle_or_url || '';
-    if (sid) sourceIds.set(sid, handle);
+  if (tweetIds.length) {
+    const { data: rows } = await supabase
+      .from('content_twitter')
+      .select('source_id, sources(id, handle_or_url)')
+      .in('twitter_id', tweetIds);
+    for (const row of (rows || []) as any[]) {
+      const sid = row.sources?.id || row.source_id;
+      const handle = row.sources?.handle_or_url || '';
+      if (sid) sourceIds.set(sid, handle);
+    }
   }
+
+  // Non-Twitter (newsletter / YouTube / URL sources): match the cited URL
+  // against a source's handle_or_url so those trades attribute too.
+  if (nonStatusUrls.length) {
+    const { data: nonTwitter } = await supabase
+      .from('sources')
+      .select('id, handle_or_url, type')
+      .neq('type', 'twitter');
+    for (const s of (nonTwitter || []) as any[]) {
+      const h = String(s.handle_or_url || '').toLowerCase();
+      if (!h) continue;
+      for (const u of nonStatusUrls) {
+        const lu = u.toLowerCase();
+        if (lu.includes(h) || h.includes(lu)) {
+          sourceIds.set(s.id, s.handle_or_url);
+          break;
+        }
+      }
+    }
+  }
+
   if (!sourceIds.size) return { updated: [] };
 
   const ticker = trade.ticker.toUpperCase();

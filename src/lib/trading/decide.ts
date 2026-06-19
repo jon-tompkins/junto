@@ -121,11 +121,22 @@ Return JSON.`;
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) return [];
 
+  // Per-ticker source URLs from the candidate signals — used to backfill a
+  // decision's attribution when the model drops source_urls. Signals carry
+  // real post URLs from extraction, so this recovers a resolvable source
+  // without an extra round-trip.
+  const signalUrlsByTicker = new Map<string, string[]>();
+  for (const s of candidates) {
+    const arr = signalUrlsByTicker.get(s.ticker) || [];
+    for (const u of s.source_urls) if (typeof u === 'string' && u) arr.push(u);
+    signalUrlsByTicker.set(s.ticker, arr);
+  }
+
   try {
     const parsed = JSON.parse(jsonMatch[0]);
     const decisions = Array.isArray(parsed.decisions) ? parsed.decisions : [];
     const maxNotional = (accountEquity * mandate.max_position_pct) / 100;
-    return decisions
+    const mapped = decisions
       .filter(
         (d: any) =>
           typeof d.ticker === 'string' &&
@@ -133,18 +144,36 @@ Return JSON.`;
           Number(d.notional_usd) > 0 &&
           typeof d.entry_thesis === 'string',
       )
-      .map((d: any) => ({
-        ticker: d.ticker.toUpperCase(),
-        side: d.side,
-        notional_usd: Math.min(Number(d.notional_usd), maxNotional),
-        entry_thesis: String(d.entry_thesis),
-        invalidation: String(d.invalidation || ''),
-        stop_pct: Math.max(2, Math.min(20, Number(d.stop_pct) || 7)),
-        target_pct: Math.max(5, Math.min(50, Number(d.target_pct) || 15)),
-        expected_hold_days: Math.max(1, Math.min(365, Number(d.expected_hold_days) || 14)),
-        source_urls: Array.isArray(d.source_urls) ? d.source_urls : [],
-        conviction: Number(d.conviction) || 3,
-      })) as TradeDecision[];
+      .map((d: any) => {
+        const ticker = d.ticker.toUpperCase();
+        const fromModel = Array.isArray(d.source_urls) ? d.source_urls.filter((u: any) => typeof u === 'string' && u) : [];
+        // Backfill from the originating signal when the model omitted sources.
+        const source_urls = fromModel.length ? fromModel : (signalUrlsByTicker.get(ticker) || []);
+        return {
+          ticker,
+          side: d.side,
+          notional_usd: Math.min(Number(d.notional_usd), maxNotional),
+          entry_thesis: String(d.entry_thesis),
+          invalidation: String(d.invalidation || ''),
+          stop_pct: Math.max(2, Math.min(20, Number(d.stop_pct) || 7)),
+          target_pct: Math.max(5, Math.min(50, Number(d.target_pct) || 15)),
+          expected_hold_days: Math.max(1, Math.min(365, Number(d.expected_hold_days) || 14)),
+          source_urls,
+          conviction: Number(d.conviction) || 3,
+        };
+      }) as TradeDecision[];
+
+    // Attribution gate: a trade must cite at least one source. If it isn't
+    // strong enough to point at a source, it isn't strong enough to trade.
+    const attributed: TradeDecision[] = [];
+    for (const d of mapped) {
+      if (d.source_urls.length === 0) {
+        console.warn(`[decide] dropping ${d.ticker} ${d.side} — no resolvable source_urls (attribution gate)`);
+        continue;
+      }
+      attributed.push(d);
+    }
+    return attributed;
   } catch {
     return [];
   }
