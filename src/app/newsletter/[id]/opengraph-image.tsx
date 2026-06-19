@@ -27,8 +27,9 @@ async function getDispatch(id: string) {
     getCuratorInfo(nl.admin_user_id).catch(() => null),
   ]);
 
+  // Prefer the @username/handle over a person's real display name on the card.
   const handles = (sources || [])
-    .map((s) => s.display_name || s.handle_or_url)
+    .map((s) => s.handle_or_url || s.display_name)
     .filter((h): h is string => !!h)
     .map((h) => (h.startsWith('@') || h.startsWith('http') ? h.replace(/^https?:\/\/(www\.)?/, '') : `@${h}`));
 
@@ -37,7 +38,7 @@ async function getDispatch(id: string) {
     description: (nl.description as string) || '',
     cadence: CADENCE_LABEL[nl.schedule_cadence as string] || 'Daily',
     sourceCount: sources.length,
-    curator: curator?.display_name || (curator?.twitter_handle ? `@${curator.twitter_handle}` : null),
+    curator: curator?.twitter_handle ? `@${curator.twitter_handle}` : null,
     handles,
   };
 }
