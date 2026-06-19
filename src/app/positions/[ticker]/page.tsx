@@ -441,6 +441,143 @@ function ResearchReports({ ticker }: { ticker: string }) {
   );
 }
 
+interface TradeNote {
+  trade_id: string;
+  kind: string;
+  content: string;
+  process_score: number | null;
+  outcome_score: number | null;
+  created_at: string;
+}
+
+interface ActivityTrade {
+  id: string;
+  mandate_id: string;
+  mandate_name: string | null;
+  ticker: string;
+  side: string;
+  qty: number | null;
+  status: string;
+  entry_price: number | null;
+  exit_price: number | null;
+  entry_at: string | null;
+  exit_at: string | null;
+  realized_pnl_usd: number | null;
+  created_at: string;
+  notes: TradeNote[];
+}
+
+const TRADE_STATUS_COLORS: Record<string, string> = {
+  open: 'text-[#3ecf6a] border-[#3ecf6a]/40 bg-[#3ecf6a]/10',
+  closed: 'text-[#F5EFE0]/60 border-[rgba(176,141,87,0.28)] bg-[#1c1a17]',
+  proposed: 'text-amber-400 border-amber-700/40 bg-amber-900/20',
+  rejected: 'text-[#e8453c] border-[#e8453c]/30 bg-[#e8453c]/5',
+  cancelled: 'text-[#F5EFE0]/40 border-[rgba(176,141,87,0.18)] bg-[#141210]',
+};
+
+// Owner-only: the viewer's own trades on this ticker plus their journal notes.
+// Renders nothing when the viewer has no trades here (API returns an empty list
+// for signed-out / non-trading viewers too), so it stays invisible to everyone
+// but the trader. Private by design — "I only see my trades".
+function TradingActivity({ ticker }: { ticker: string }) {
+  const [trades, setTrades] = useState<ActivityTrade[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/positions/${encodeURIComponent(ticker)}/trading-activity`)
+      .then((r) => (r.ok ? r.json() : { trades: [] }))
+      .then((d) => setTrades(d.trades || []))
+      .catch(() => setTrades([]))
+      .finally(() => setLoading(false));
+  }, [ticker]);
+
+  if (loading || trades.length === 0) return null;
+
+  return (
+    <section className="mb-8">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
+          My Trading Activity
+        </h2>
+        <span className="text-[10px] uppercase tracking-wide text-[#B08D57]/70 font-[var(--font-oswald)]">
+          Private · only you
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        {trades.map((t) => {
+          const sideShort = String(t.side).toLowerCase() === 'short' || String(t.side).toLowerCase() === 'sell';
+          return (
+            <div
+              key={t.id}
+              className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4"
+            >
+              <div className="flex items-center gap-2 flex-wrap mb-2">
+                <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-sm border ${sideShort ? 'text-[#e8453c] border-[#e8453c]/40 bg-[#e8453c]/10' : 'text-[#3ecf6a] border-[#3ecf6a]/40 bg-[#3ecf6a]/10'}`}>
+                  {t.side}
+                </span>
+                <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-sm border ${TRADE_STATUS_COLORS[String(t.status).toLowerCase()] || TRADE_STATUS_COLORS.closed}`}>
+                  {t.status}
+                </span>
+                {t.qty != null && (
+                  <span className="text-xs font-mono text-[#F5EFE0]/60">qty {t.qty}</span>
+                )}
+                {t.mandate_name && (
+                  <Link
+                    href={`/trading/${t.mandate_id}`}
+                    className="text-xs text-[#B08D57] hover:underline ml-auto"
+                  >
+                    {t.mandate_name} →
+                  </Link>
+                )}
+              </div>
+
+              <div className="flex gap-4 text-xs text-[#F5EFE0]/45 flex-wrap font-mono">
+                {t.entry_price != null && (
+                  <span>entry ${t.entry_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                )}
+                {t.exit_price != null && (
+                  <span>exit ${t.exit_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                )}
+                {t.realized_pnl_usd != null && (
+                  <span className={t.realized_pnl_usd >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}>
+                    {t.realized_pnl_usd >= 0 ? '+' : ''}${t.realized_pnl_usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                )}
+                <span>{new Date(t.entry_at || t.created_at).toLocaleDateString()}</span>
+              </div>
+
+              {t.notes.length > 0 && (
+                <div className="mt-3 space-y-2 border-t border-[rgba(176,141,87,0.18)] pt-3">
+                  {t.notes.map((n, i) => (
+                    <div key={`${n.trade_id}-${i}`} className="text-xs">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                        <span className="text-[10px] uppercase tracking-wide text-[#B08D57]/70 font-[var(--font-oswald)]">
+                          {n.kind}
+                        </span>
+                        {n.process_score != null && (
+                          <span className="text-[#F5EFE0]/40">process {n.process_score}/10</span>
+                        )}
+                        {n.outcome_score != null && (
+                          <span className="text-[#F5EFE0]/40">outcome {n.outcome_score}/10</span>
+                        )}
+                        <span className="text-[#F5EFE0]/30 ml-auto">
+                          {new Date(n.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-[#F5EFE0]/70 whitespace-pre-wrap leading-relaxed">{n.content}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export default function PositionPage() {
   const params = useParams();
   const ticker = decodeURIComponent(params.ticker as string).toUpperCase();
@@ -600,19 +737,21 @@ export default function PositionPage() {
             {/* TradingView chart */}
             <TradingViewChart ticker={ticker} className="mb-8" />
 
+            {/* My trading activity — owner-only, private. Survives staleness. */}
+            <TradingActivity ticker={ticker} />
+
+            {/* Social Pulse (Pro + on watchlist) */}
+            {starred && session?.user && <SocialPulse ticker={ticker} />}
+
+            {/* Research reports — equities only. Persist regardless of live stances. */}
+            {!isCryptoTicker(ticker) && <ResearchReports ticker={ticker} />}
+
             {!data || total === 0 ? (
-              <div className="text-center py-20 border border-dashed border-[rgba(176,141,87,0.28)] rounded">
-                <p className="text-[#F5EFE0]/60 font-medium mb-1">No positions tracked for {ticker}</p>
-                <p className="text-[#F5EFE0]/45 text-sm">No source has an explicit stance on this asset yet.</p>
+              <div className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 text-sm text-[#F5EFE0]/45">
+                No source currently has a live stance on {ticker}. Research and any past activity above remain available.
               </div>
             ) : (
               <>
-                {/* Social Pulse (Pro + on watchlist) */}
-                {starred && session?.user && <SocialPulse ticker={ticker} />}
-
-                {/* Research reports — equities only */}
-                {!isCryptoTicker(ticker) && <ResearchReports ticker={ticker} />}
-
                 {/* Inferred-positions disclaimer */}
                 <div className="bg-amber-900/15 border border-amber-700/40 rounded p-4 mb-4 flex gap-3">
                   <span className="text-amber-400 text-lg leading-none mt-0.5">⚠</span>
