@@ -15,6 +15,7 @@ import { NEWSLETTER_SYSTEM_PROMPT } from '@/lib/synthesis/prompts';
 import { getWatchlistTickers } from '@/lib/db/watchlists';
 import { generateDispatchAudio } from '@/lib/audio/generate';
 import { setDispatchAudio } from '@/lib/db/personal-dispatches';
+import { postDispatchToDiscord } from '@/lib/discord/post';
 
 export const maxDuration = 300; // 5 minutes
 
@@ -166,6 +167,23 @@ export async function GET(req: NextRequest) {
         });
 
         console.log(`[generate] Run stored: ${run.id} — "${result.subject}"`);
+
+        // 5b. Mirror the dispatch to its Discord channel, if mapped (migration 074).
+        // Best-effort: a Discord failure must never block delivery or billing.
+        const discordChannelId = (newsletter as any).discord_channel_id as string | null;
+        if (discordChannelId) {
+          try {
+            await postDispatchToDiscord({
+              channelId: discordChannelId,
+              subject: result.subject,
+              content: result.content,
+              generatedAt: (run as any).generated_at,
+            });
+            console.log(`[generate] ${newsletter.name}: posted to Discord channel ${discordChannelId}`);
+          } catch (discordErr) {
+            console.error(`[generate] ${newsletter.name}: Discord post failed`, discordErr);
+          }
+        }
 
         // 6. Charge the owner (doubled when voice memo is enabled on the dispatch)
         const audioEnabled = !!(newsletter as any).audio_enabled;
