@@ -118,10 +118,11 @@ async function handleGoogleSignIn(supabase: ReturnType<typeof getSupabase>, prof
     if (data) existingUser = data;
   }
 
+  // Intentionally do NOT ingest googleProfile.name — we don't want people's
+  // real Google account names stored or shown publicly. Handles only.
   const userData = {
     google_id: googleId,
     email,
-    display_name: googleProfile.name,
     avatar_url: googleProfile.picture,
     auth_provider: 'google',
     updated_at: new Date().toISOString(),
