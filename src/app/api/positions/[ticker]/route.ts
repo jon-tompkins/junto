@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/db/client';
+import { getSourceHitRatesForTicker } from '@/lib/db/source-analyst-profiles';
 
 export async function GET(
   _req: NextRequest,
@@ -25,6 +26,7 @@ export async function GET(
     since: string;
     target_price?: number;
     entry_price?: number;
+    track_record?: { wins: number; losses: number; scored: number; avg_return_pct: number | null };
   }> = [];
 
   const breakdown = { bullish: 0, bearish: 0, cautious: 0, neutral: 0 };
@@ -50,6 +52,15 @@ export async function GET(
       target_price: pos.target_price,
       entry_price: pos.entry_price,
     });
+  }
+
+  // Per-ticker track record for each source that holds a stance here.
+  const rates = await getSourceHitRatesForTicker(analysts.map((a) => a.source_id), ticker);
+  for (const a of analysts) {
+    const r = rates.get(a.source_id);
+    if (r && r.total > 0) {
+      a.track_record = { wins: r.wins, losses: r.losses, scored: r.scored, avg_return_pct: r.avg_return_pct };
+    }
   }
 
   const stanceOrder: Record<string, number> = { bullish: 0, cautious: 1, neutral: 2, bearish: 3 };

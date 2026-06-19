@@ -74,6 +74,49 @@ export async function getSourceHitRate(sourceId: string): Promise<SourceHitRate>
   };
 }
 
+// Per-ticker hit rate for many sources at once. One query scoped to the given
+// ticker + source ids, aggregated per source. Used by the asset page to show
+// each source's track record *on this specific asset* (vs. their overall rate).
+export async function getSourceHitRatesForTicker(
+  sourceIds: string[],
+  ticker: string,
+): Promise<Map<string, SourceHitRate>> {
+  const out = new Map<string, SourceHitRate>();
+  if (sourceIds.length === 0) return out;
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('source_call_outcomes')
+    .select('source_id, outcome, return_pct')
+    .in('source_id', sourceIds)
+    .ilike('ticker', ticker);
+  if (error || !data) return out;
+
+  type Acc = { total: number; wins: number; losses: number; retSum: number; retCount: number };
+  const acc = new Map<string, Acc>();
+  for (const r of data as { source_id: string; outcome: string; return_pct: number | null }[]) {
+    const a = acc.get(r.source_id) || { total: 0, wins: 0, losses: 0, retSum: 0, retCount: 0 };
+    a.total += 1;
+    if (r.outcome === 'win') a.wins += 1;
+    else if (r.outcome === 'loss') a.losses += 1;
+    if (r.return_pct != null) {
+      a.retSum += Number(r.return_pct);
+      a.retCount += 1;
+    }
+    acc.set(r.source_id, a);
+  }
+  for (const [sourceId, a] of acc) {
+    out.set(sourceId, {
+      source_id: sourceId,
+      total: a.total,
+      scored: a.wins + a.losses,
+      wins: a.wins,
+      losses: a.losses,
+      avg_return_pct: a.retCount > 0 ? a.retSum / a.retCount : null,
+    });
+  }
+  return out;
+}
+
 export interface SourceAnalystProfile {
   id: string;
   source_id: string;

@@ -59,6 +59,7 @@ interface Analyst {
   last_mentioned?: string;
   target_price?: number;
   entry_price?: number;
+  track_record?: { wins: number; losses: number; scored: number; avg_return_pct: number | null };
 }
 
 function stalenessLevel(a: Analyst): 'fresh' | 'warn' | 'stale' {
@@ -811,8 +812,26 @@ export default function PositionPage() {
                         {a.note && (
                           <p className="text-xs text-[#F5EFE0]/60 line-clamp-2 mb-1">{a.note}</p>
                         )}
-                        <div className="flex gap-3 text-xs text-[#F5EFE0]/30 flex-wrap">
+                        <div className="flex gap-3 text-xs text-[#F5EFE0]/30 flex-wrap items-center">
                           <span>since {new Date(a.since).toLocaleDateString()}</span>
+                          {a.track_record && a.track_record.scored > 0 && (
+                            <span
+                              title={`${a.track_record.wins}W / ${a.track_record.losses}L on closed ${ticker} calls`}
+                              className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-sm border border-[rgba(176,141,87,0.28)] bg-[#1c1a17]"
+                            >
+                              <span className="text-[#F5EFE0]/55 font-medium">
+                                {Math.round((a.track_record.wins / a.track_record.scored) * 100)}% on {ticker}
+                              </span>
+                              <span className="text-[#F5EFE0]/30 font-mono">
+                                {a.track_record.wins}-{a.track_record.losses}
+                              </span>
+                              {a.track_record.avg_return_pct != null && (
+                                <span className={`font-mono ${a.track_record.avg_return_pct >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
+                                  {a.track_record.avg_return_pct >= 0 ? '+' : ''}{a.track_record.avg_return_pct.toFixed(1)}% avg
+                                </span>
+                              )}
+                            </span>
+                          )}
                           {a.entry_price != null && (
                             <span>entry ${a.entry_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           )}
