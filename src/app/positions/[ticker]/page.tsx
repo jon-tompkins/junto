@@ -588,6 +588,8 @@ export default function PositionPage() {
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [starred, setStarred] = useState(false);
   const [starring, setStarring] = useState(false);
+  const [juntos, setJuntos] = useState<Array<{ id: string; name: string; sourceIds: Set<string> }>>([]);
+  const [juntoFilter, setJuntoFilter] = useState<string>('all');
 
   useEffect(() => {
     fetch(`/api/positions/${encodeURIComponent(ticker)}`)
@@ -607,6 +609,19 @@ export default function PositionPage() {
     fetch(`/api/v2/star?ticker=${encodeURIComponent(ticker)}`)
       .then((r) => r.json())
       .then((d) => setStarred(d.starred ?? false))
+      .catch(() => {});
+
+    // Owner's juntos — used to filter the sources/stances on this ticker by junto.
+    fetch('/api/juntos')
+      .then((r) => (r.ok ? r.json() : { juntos: [] }))
+      .then((d) => {
+        const list = (d.juntos || []).map((j: any) => ({
+          id: j.id,
+          name: j.name,
+          sourceIds: new Set<string>((j.sources || []).map((s: any) => s.id)),
+        }));
+        setJuntos(list);
+      })
       .catch(() => {});
   }, [ticker, session?.user]);
 
@@ -637,11 +652,27 @@ export default function PositionPage() {
     }
   }
 
-  const breakdown = data?.breakdown ?? {};
   const total = data?.total ?? 0;
-  const analysts = data?.analysts ?? [];
+  const allAnalysts = data?.analysts ?? [];
 
-  const topStance = total > 0
+  // Junto filter: when a junto is selected, restrict the visible stances to its
+  // member sources. Breakdown/consensus/avatars all recompute from the filtered
+  // set so the whole position view reflects "what this junto thinks".
+  const activeJunto = juntoFilter === 'all' ? null : juntos.find((j) => j.id === juntoFilter) || null;
+  const analysts = activeJunto
+    ? allAnalysts.filter((a) => activeJunto.sourceIds.has(a.source_id))
+    : allAnalysts;
+  const viewTotal = analysts.length;
+
+  const breakdown = analysts.reduce(
+    (acc, a) => {
+      if (a.stance in acc) (acc as any)[a.stance]++;
+      return acc;
+    },
+    { bullish: 0, bearish: 0, cautious: 0, neutral: 0 } as Record<string, number>,
+  );
+
+  const topStance = viewTotal > 0
     ? STANCES.reduce((best, s) => (breakdown[s] ?? 0) >= (breakdown[best] ?? 0) ? s : best)
     : null;
 
@@ -691,7 +722,7 @@ export default function PositionPage() {
                   </button>
                 )}
               </div>
-              {total > 0 && (
+              {viewTotal > 0 && (
                 <div className="flex items-center gap-3 flex-wrap text-sm">
                   <div className="flex -space-x-2">
                     {analysts.slice(0, 8).map((a) => (
@@ -764,9 +795,28 @@ export default function PositionPage() {
                 </div>
 
                 {/* Sources */}
-                <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide mb-3 font-[var(--font-oswald)]">
-                  Sources
-                </h2>
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                  <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
+                    Sources
+                  </h2>
+                  {juntos.length > 0 && (
+                    <select
+                      value={juntoFilter}
+                      onChange={(e) => setJuntoFilter(e.target.value)}
+                      className="text-xs bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-2 py-1 text-[#F5EFE0]/70 focus:outline-none focus:border-[#B08D57]"
+                    >
+                      <option value="all">All juntos</option>
+                      {juntos.map((j) => (
+                        <option key={j.id} value={j.id}>{j.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                {viewTotal === 0 ? (
+                  <div className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 text-sm text-[#F5EFE0]/45">
+                    No source{activeJunto ? ` in ${activeJunto.name}` : ''} has a live stance on {ticker}.
+                  </div>
+                ) : (
                 <div className="space-y-2">
                   {analysts.map((a) => (
                     <Link
@@ -846,6 +896,7 @@ export default function PositionPage() {
                     </Link>
                   ))}
                 </div>
+                )}
               </>
             )}
           </>
