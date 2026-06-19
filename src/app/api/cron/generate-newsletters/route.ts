@@ -178,6 +178,7 @@ export async function GET(req: NextRequest) {
               subject: result.subject,
               content: result.content,
               generatedAt: (run as any).generated_at,
+              subscribeUrl: `${process.env.APP_BASE_URL || 'https://www.myjunto.xyz'}/newsletter/${newsletter.id}`,
             });
             console.log(`[generate] ${newsletter.name}: posted to Discord channel ${discordChannelId}`);
           } catch (discordErr) {

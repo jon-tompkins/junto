@@ -49,6 +49,7 @@ export interface DispatchPost {
   subject: string;
   content: string;
   generatedAt?: string | null;
+  subscribeUrl?: string | null;
 }
 
 // Returns true if posted, false if skipped (no token), throws on hard failure.
@@ -71,8 +72,15 @@ export async function postDispatchToDiscord(post: DispatchPost): Promise<boolean
       description: pieces[i].slice(0, DESC_MAX),
       color: 0x2ecc71,
     };
-    if (isFirst) embed.title = post.subject.slice(0, TITLE_MAX);
+    if (isFirst) {
+      embed.title = post.subject.slice(0, TITLE_MAX);
+      if (post.subscribeUrl) embed.url = post.subscribeUrl;
+    }
     if (isLast) {
+      if (post.subscribeUrl) {
+        const link = `\n\n**[🔔 Subscribe here →](${post.subscribeUrl})**`;
+        embed.description = `${pieces[i].slice(0, DESC_MAX - link.length)}${link}`;
+      }
       embed.footer = { text: '🤖 myJunto dispatch' };
       embed.timestamp = timestamp;
     }
