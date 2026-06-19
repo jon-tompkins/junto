@@ -477,33 +477,22 @@ const TRADE_STATUS_COLORS: Record<string, string> = {
 };
 
 // Owner-only: the viewer's own trades on this ticker plus their journal notes.
-// Renders nothing when the viewer has no trades here (API returns an empty list
-// for signed-out / non-trading viewers too), so it stays invisible to everyone
-// but the trader. Private by design — "I only see my trades".
-function TradingActivity({ ticker }: { ticker: string }) {
-  const [trades, setTrades] = useState<ActivityTrade[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`/api/positions/${encodeURIComponent(ticker)}/trading-activity`)
-      .then((r) => (r.ok ? r.json() : { trades: [] }))
-      .then((d) => setTrades(d.trades || []))
-      .catch(() => setTrades([]))
-      .finally(() => setLoading(false));
-  }, [ticker]);
-
-  if (loading || trades.length === 0) return null;
+// Presentational — the parent owns the fetch so it can decide whether to show
+// the tab. Private by design — "I only see my trades".
+function TradingActivity({ ticker, trades }: { ticker: string; trades: ActivityTrade[] }) {
+  if (trades.length === 0) {
+    return (
+      <div className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 text-sm text-[#F5EFE0]/45">
+        You have no trades on {ticker} yet.
+      </div>
+    );
+  }
 
   return (
-    <section className="mb-8">
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
-          My Trading Activity
-        </h2>
-        <span className="text-[10px] uppercase tracking-wide text-[#B08D57]/70 font-[var(--font-oswald)]">
-          Private · only you
-        </span>
-      </div>
+    <section>
+      <p className="text-[10px] uppercase tracking-wide text-[#B08D57]/70 font-[var(--font-oswald)] mb-3">
+        Private · only you
+      </p>
 
       <div className="space-y-3">
         {trades.map((t) => {
@@ -590,6 +579,8 @@ export default function PositionPage() {
   const [starring, setStarring] = useState(false);
   const [juntos, setJuntos] = useState<Array<{ id: string; name: string; sourceIds: Set<string> }>>([]);
   const [juntoFilter, setJuntoFilter] = useState<string>('all');
+  const [activityTrades, setActivityTrades] = useState<ActivityTrade[]>([]);
+  const [activeTab, setActiveTab] = useState<'sources' | 'activity'>('sources');
 
   useEffect(() => {
     fetch(`/api/positions/${encodeURIComponent(ticker)}`)
@@ -602,6 +593,11 @@ export default function PositionPage() {
       .then((r) => r.ok ? r.json() : null)
       .then((d) => setCurrentPrice(d?.price ?? null))
       .catch(() => null);
+
+    fetch(`/api/positions/${encodeURIComponent(ticker)}/trading-activity`)
+      .then((r) => (r.ok ? r.json() : { trades: [] }))
+      .then((d) => setActivityTrades(d.trades || []))
+      .catch(() => setActivityTrades([]));
   }, [ticker]);
 
   useEffect(() => {
@@ -769,16 +765,33 @@ export default function PositionPage() {
             {/* TradingView chart */}
             <TradingViewChart ticker={ticker} className="mb-8" />
 
-            {/* My trading activity — owner-only, private. Survives staleness. */}
-            <TradingActivity ticker={ticker} />
+            {/* Research reports — top of the asset page. Persist regardless of live stances. */}
+            {!isCryptoTicker(ticker) && <ResearchReports ticker={ticker} />}
 
             {/* Social Pulse (Pro + on watchlist) */}
             {starred && session?.user && <SocialPulse ticker={ticker} />}
 
-            {/* Research reports — equities only. Persist regardless of live stances. */}
-            {!isCryptoTicker(ticker) && <ResearchReports ticker={ticker} />}
+            {/* Tabs: Sources (public stances) + My Activity (private, owner-only) */}
+            <div className="flex gap-1 border-b border-[rgba(176,141,87,0.18)] mb-4">
+              <button
+                onClick={() => setActiveTab('sources')}
+                className={`px-3 py-2 text-xs uppercase tracking-wide font-[var(--font-oswald)] border-b-2 -mb-px transition ${activeTab === 'sources' ? 'border-[#B08D57] text-[#F5EFE0]' : 'border-transparent text-[#F5EFE0]/45 hover:text-[#F5EFE0]/70'}`}
+              >
+                Sources{total > 0 ? ` (${total})` : ''}
+              </button>
+              {activityTrades.length > 0 && (
+                <button
+                  onClick={() => setActiveTab('activity')}
+                  className={`px-3 py-2 text-xs uppercase tracking-wide font-[var(--font-oswald)] border-b-2 -mb-px transition ${activeTab === 'activity' ? 'border-[#B08D57] text-[#F5EFE0]' : 'border-transparent text-[#F5EFE0]/45 hover:text-[#F5EFE0]/70'}`}
+                >
+                  My Activity ({activityTrades.length})
+                </button>
+              )}
+            </div>
 
-            {!data || total === 0 ? (
+            {activeTab === 'activity' ? (
+              <TradingActivity ticker={ticker} trades={activityTrades} />
+            ) : !data || total === 0 ? (
               <div className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 text-sm text-[#F5EFE0]/45">
                 No source currently has a live stance on {ticker}. Research and any past activity above remain available.
               </div>
@@ -794,12 +807,9 @@ export default function PositionPage() {
                   </p>
                 </div>
 
-                {/* Sources */}
-                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                  <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
-                    Sources
-                  </h2>
-                  {juntos.length > 0 && (
+                {/* Junto filter */}
+                {juntos.length > 0 && (
+                  <div className="flex items-center justify-end mb-3">
                     <select
                       value={juntoFilter}
                       onChange={(e) => setJuntoFilter(e.target.value)}
@@ -810,8 +820,8 @@ export default function PositionPage() {
                         <option key={j.id} value={j.id}>{j.name}</option>
                       ))}
                     </select>
-                  )}
-                </div>
+                  </div>
+                )}
                 {viewTotal === 0 ? (
                   <div className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 text-sm text-[#F5EFE0]/45">
                     No source{activeJunto ? ` in ${activeJunto.name}` : ''} has a live stance on {ticker}.
