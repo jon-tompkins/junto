@@ -192,6 +192,10 @@ export async function getCuratorInfo(userId: string): Promise<CuratorInfo | null
     .single();
 
   if (error) return null;
+  // Only show avatar if user has a Twitter handle (ensures Twitter avatar, not Google)
+  if (data && !data.twitter_handle) {
+    data.avatar_url = null;
+  }
   return data;
 }
 
@@ -206,7 +210,12 @@ export async function getCuratorInfoBatch(userIds: string[]): Promise<Record<str
   if (error || !data) return {};
   const map: Record<string, CuratorInfo> = {};
   for (const u of data) {
-    map[u.id] = { display_name: u.display_name, twitter_handle: u.twitter_handle, avatar_url: u.avatar_url };
+    // Only show avatar if user has a Twitter handle (ensures Twitter avatar, not Google)
+    map[u.id] = { 
+      display_name: u.display_name, 
+      twitter_handle: u.twitter_handle, 
+      avatar_url: u.twitter_handle ? u.avatar_url : null 
+    };
   }
   return map;
 }
