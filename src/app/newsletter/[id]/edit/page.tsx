@@ -68,6 +68,7 @@ export default function EditNewsletterPage() {
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [labelsStr, setLabelsStr] = useState('');
   const [sendDays, setSendDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri']);
+  const [sendWindows, setSendWindows] = useState<string[]>(['morning']);
   const [tickers, setTickers] = useState<string[]>([]);
   const [tickerInput, setTickerInput] = useState('');
 
@@ -115,6 +116,7 @@ export default function EditNewsletterPage() {
         setAudioEnabled(!!nl.audio_enabled);
         setLabelsStr(nl.labels?.join(', ') || '');
         setSendDays(nl.send_days || ['mon', 'tue', 'wed', 'thu', 'fri']);
+        setSendWindows(nl.default_send_windows || ['morning']);
         setTickers(nl.tickers || []);
         setSources(nl.sources?.map((s: any) => ({
           id: s.id,
@@ -153,6 +155,7 @@ export default function EditNewsletterPage() {
           audio_enabled: audioEnabled,
           labels,
           send_days: sendDays,
+          default_send_windows: sendWindows,
           tickers,
         }),
       });
@@ -538,6 +541,37 @@ export default function EditNewsletterPage() {
                   }`}
                 >
                   {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Send Windows */}
+          <div>
+            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">
+              Send Windows
+              <span className="text-[#F5EFE0]/30 font-normal ml-1">(Pacific time — newsletter generates in these windows)</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { key: 'morning', label: 'Morning (6 AM)' },
+                { key: 'midday', label: 'Midday (12 PM)' },
+                { key: 'evening', label: 'Evening (6 PM)' },
+                { key: 'night', label: 'Night (12 AM)' },
+              ].map((w) => (
+                <button
+                  key={w.key}
+                  type="button"
+                  onClick={() => setSendWindows(prev =>
+                    prev.includes(w.key) ? prev.filter(x => x !== w.key) : [...prev, w.key]
+                  )}
+                  className={`px-3 py-2 rounded-sm text-sm font-medium transition ${
+                    sendWindows.includes(w.key)
+                      ? 'bg-[#B08D57] text-[#080604]'
+                      : 'bg-[#141210] text-[#F5EFE0]/60 hover:bg-[#1c1a17] border border-[rgba(176,141,87,0.18)]'
+                  }`}
+                >
+                  {w.label}
                 </button>
               ))}
             </div>

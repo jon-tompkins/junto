@@ -160,6 +160,7 @@ export interface NewsletterV2 {
   updated_at: string;
   prompt_template_id?: string | null;
   send_days?: string[];
+  default_send_windows?: string[];
   keywords?: string[];
   junto_id?: string | null;
   watchlist_id?: string | null;

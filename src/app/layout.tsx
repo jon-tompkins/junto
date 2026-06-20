@@ -128,7 +128,7 @@ export default function RootLayout({
               </svg>
             </a>
             <a
-              href="https://discord.gg/rJBcGCzJzw"
+              href="https://discord.gg/rmdEwc44d"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="myjunto on Discord"

@@ -107,7 +107,7 @@ export async function getPublicNewslettersByTwitterHandle(twitterHandle: string)
   return (data || []).filter((n: any) => n.users?.twitter_handle === handle);
 }
 
-export async function updateNewsletter(id: string, updates: Partial<Pick<NewsletterV2, 'name' | 'description' | 'prompt' | 'secondary_prompt' | 'is_public' | 'schedule_cadence' | 'credit_cost'>> & { send_days?: string[]; prompt_template_id?: string | null; audio_enabled?: boolean }): Promise<NewsletterV2> {
+export async function updateNewsletter(id: string, updates: Partial<Pick<NewsletterV2, 'name' | 'description' | 'prompt' | 'secondary_prompt' | 'is_public' | 'schedule_cadence' | 'credit_cost'>> & { send_days?: string[]; default_send_windows?: string[]; prompt_template_id?: string | null; audio_enabled?: boolean }): Promise<NewsletterV2> {
   const { data, error } = await supabase()
     .from('newsletters_v2')
     .update({ ...updates, updated_at: new Date().toISOString() })
