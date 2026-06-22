@@ -438,7 +438,7 @@ export default function SourceProfilePage() {
                             <div className="space-y-1">
                               {held.map((h) => (
                                 <div key={h.mandate_id} className="flex items-center gap-2 text-xs">
-                                  <Link href={`/admin/trading/${h.mandate_id}`} className="text-[#B08D57]/90 hover:text-[#B08D57] truncate max-w-[120px]" title={h.mandate_name}>
+                                  <Link href={`/trading/${h.mandate_id}`} className="text-[#B08D57]/90 hover:text-[#B08D57] truncate max-w-[120px]" title={h.mandate_name}>
                                     {h.mandate_name}
                                   </Link>
                                   <span className="text-[#F5EFE0]/30">{h.side}</span>
