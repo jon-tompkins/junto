@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
+import { SourceChat } from '@/components/source-chat';
 
 interface PositionEntry {
   stance: 'bullish' | 'bearish' | 'neutral' | 'cautious';
@@ -308,6 +309,11 @@ export default function SourceProfilePage() {
             wallet, or disclosed holding. Entries are rough estimates from when a view was first spotted, and people post for many reasons. Treat this as
             commentary tracking, not financial advice or a record of what anyone actually owns.
           </p>
+        </div>
+
+        {/* Ask about this source */}
+        <div className="mb-8">
+          <SourceChat handle={displayHandle} />
         </div>
 
         {/* Summary */}
