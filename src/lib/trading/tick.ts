@@ -14,6 +14,7 @@ import { loadJuntoSnapshot, extractSignals } from './extract';
 import { decideTrades } from './decide';
 import { suggestPortfolioAdjustments } from './adjustments';
 import { decideAmendments } from './decide-amendments';
+import { reviewPositions } from './review-positions';
 import { monitorMandate } from './monitor';
 import { protectMandate } from './protection';
 import { reconcileMandate } from './reconcile';
@@ -30,6 +31,7 @@ export interface TickResult {
   decisions: number;
   proposed: number;
   amendments_proposed: number;
+  position_review_suggested: number;
   adjustments: number;
   note?: string;
   errors: string[];
@@ -60,6 +62,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     decisions: 0,
     proposed: 0,
     amendments_proposed: 0,
+    position_review_suggested: 0,
     adjustments: 0,
     errors: [],
   };
@@ -260,8 +263,14 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     }
   }
 
-  // Position amendments: for any open trade with a fresh signal, ask the
-  // decider whether to amend stop/target or close.
+  // Position amendments. Two sources, combined into one approval flow:
+  //   1. Tweet-driven: any open trade touched by a fresh signal this tick.
+  //   2. Daily review: ONCE per day (first/open window), a full sweep of every
+  //      open position against its thesis, journal notes, price action and the
+  //      mandate's learnings — independent of whether a tweet arrived. This is
+  //      the time-based "is anything worth adjusting?" check.
+  // Tweet-driven amendments are listed first so they win the per-trade/per-kind
+  // dedup below if the two ever collide on the same position+kind.
   try {
     const openTrades = await getOpenTrades(mandate.id);
     if (openTrades.length > 0) {
@@ -271,6 +280,17 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
         openTrades,
         positions,
       });
+
+      if (window === 'open') {
+        try {
+          const reviewAmendments = await reviewPositions({ mandate, openTrades, positions });
+          result.position_review_suggested = reviewAmendments.length;
+          amendments.push(...reviewAmendments);
+        } catch (err: any) {
+          result.errors.push(`review: ${err.message}`);
+        }
+      }
+
       for (const amend of amendments) {
         try {
           const trade = openTrades.find((t) => t.id === amend.trade_id);
