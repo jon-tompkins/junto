@@ -34,6 +34,18 @@ async function detailsForSubscription(
 // One-time credit-pack purchase → persistent, non-redeemable "purchased" bucket.
 async function addPurchasedCredits(userId: string, amount: number, description: string, relatedId: string) {
   const supabase = getSupabase();
+  // Idempotency guard: this path is additive, so a re-delivered Stripe event would
+  // double-grant. Skip if we already booked a purchase for this checkout session.
+  const { data: existing } = await supabase
+    .from('credit_transactions')
+    .select('id')
+    .eq('related_id', relatedId)
+    .eq('type', 'purchase')
+    .maybeSingle();
+  if (existing) {
+    console.log(`[webhook] purchase already granted for ${relatedId} — skipping`);
+    return;
+  }
   const { error } = await supabase.rpc('add_credits', {
     p_user_id: userId,
     p_amount: amount,
@@ -124,6 +136,18 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabase();
 
+    // Idempotency: Stripe delivers events at-least-once. Skip any event.id we've
+    // already fully processed so credit grants never double-fire on re-delivery.
+    const { data: seenEvent } = await supabase
+      .from('processed_stripe_events')
+      .select('event_id')
+      .eq('event_id', event.id)
+      .maybeSingle();
+    if (seenEvent) {
+      console.log(`[webhook] duplicate event ${event.id} (${event.type}) — skipping`);
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+
     switch (event.type) {
 
       // ── One-time credit purchase OR new Pro subscription ──────────────────
@@ -209,6 +233,12 @@ export async function POST(req: NextRequest) {
       default:
         break;
     }
+
+    // Mark fully processed so any re-delivery short-circuits above. Recorded only
+    // after successful handling, so a mid-handler failure (non-2xx) lets Stripe retry.
+    await supabase
+      .from('processed_stripe_events')
+      .insert({ event_id: event.id, type: event.type });
 
     return NextResponse.json({ received: true });
   } catch (error) {
