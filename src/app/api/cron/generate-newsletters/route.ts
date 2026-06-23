@@ -3,6 +3,7 @@ import { getNewslettersDueForGeneration, getNewslettersForForcedGeneration, getN
 import { getRecentContentForSources, getContextContentForSources, groupContentByHandle } from '@/lib/db/content-twitter';
 import { getRecentContentForNewsletterSources, getContextContentForNewsletterSources, groupNewsletterContentBySlug } from '@/lib/db/content-newsletter';
 import { getNewsletterSubscribers } from '@/lib/db/subscriptions';
+import { getSupabase } from '@/lib/db/client';
 import { storeRun, storeSkippedRun, updateRunStatus, getRecentDeliveredRuns } from '@/lib/db/newsletter-runs';
 import { recordBulkDeliveries } from '@/lib/db/newsletter-deliveries';
 import { generateNewsletterV2 } from '@/lib/synthesis/generator-v2';
@@ -57,6 +58,13 @@ export async function GET(req: NextRequest) {
 
     const results: Record<string, { status: string; subscribers?: number; error?: string }> = {};
 
+    // Atomic dedup key for this run: the cron fires 3×/active-hour (:00/:05/:10) and
+    // Vercel can double-invoke, so concurrent runs used to both pass the 5h-gap guard
+    // and double-generate+deliver. We claim a (newsletter, date, window) lock below.
+    const lockSupabase = getSupabase();
+    const dispatchDate = new Date().toISOString().split('T')[0];
+    const dispatchWindow = getCurrentSendWindow();
+
     for (const newsletter of dueNewsletters) {
       try {
         console.log(`[generate] Processing: ${newsletter.name} (${newsletter.id})`);
@@ -94,6 +102,21 @@ export async function GET(req: NextRequest) {
           });
           results[newsletter.name] = { status: 'skipped', error: 'No recent content in last 48 hours' };
           continue;
+        }
+
+        // Atomic claim — the unique PK on (newsletter_id, dispatch_date, send_window)
+        // means only ONE concurrent invocation wins; the rest skip here instead of
+        // generating + delivering (and double-charging credits) a second time.
+        // Placed after the content check so a no-content skip never holds the lock.
+        if (!force && dispatchWindow) {
+          const { error: lockErr } = await lockSupabase
+            .from('newsletter_dispatch_locks')
+            .insert({ newsletter_id: newsletter.id, dispatch_date: dispatchDate, send_window: dispatchWindow });
+          if (lockErr) {
+            console.log(`[generate] ${newsletter.name}: ${dispatchWindow} already claimed for ${dispatchDate} — skipping (dedup)`);
+            results[newsletter.name] = { status: 'skipped', error: 'Already generated this window (dedup)' };
+            continue;
+          }
         }
 
         console.log(
