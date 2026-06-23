@@ -55,8 +55,8 @@ Canonical debit: `deductCredits(userId, amount, type, description, relatedId?)` 
 
 | Action | Credits | File | Refundable | Notes |
 |--------|---------|------|-----------|-------|
-| Newsletter owner generation | 10 / 15 / 20 / 25 by source tier (1–10 / 11–20 / 21–30 / 31+) | `cron/generate-newsletters` (~:215) | ❌ | **×2 if audio on.** Once per dispatch. `OWNER_COST_TIERS`, `src/lib/pricing.ts` |
-| Subscriber delivery | 2 (×2 if audio both sides) | `cron/generate-newsletters` (~:278) | ❌ | 50% → creator *earned* bucket (`CREATOR_SHARE=0.5`) |
+| Newsletter owner generation | **10 flat** (×2 if audio) | `cron/generate-newsletters` (~:218) | ❌ | Once per dispatch, **flat regardless of source count** (`OWNER_COST_PER_SEND`, `src/lib/pricing.ts`). Sources hard-capped at `DISPATCH_SOURCE_CAP`=20. |
+| Subscriber delivery | **5** (×2 if audio both sides) | `cron/generate-newsletters` (~:281) | ❌ | 50% → creator *earned* bucket (`CREATOR_SHARE=0.5`) |
 | Quick Dispatch | 5 | `api/quick-dispatch` | ❌ | 1/day cap, 5 sources max |
 | Featured Junto synthesize | 5 | `api/v2/primary-junto/synthesize` | ❌ | charged before synthesis |
 | Research Deep Dive (Ailmanack) | 5 | `api/research/request` | ✅ | refunded if bridge fails |
@@ -89,8 +89,9 @@ All debits draw from overall balance; only creator payouts are tagged *earned*.
 
 ## 4. Open review questions (parked)
 
-1. **Audio 2× multiplier** on owner generation + subscriber delivery — intentional to keep, or revisit?
+1. **Audio 2× multiplier** on owner generation + subscriber delivery — kept (audio has real TTS cost, ~4.8¢/dispatch); revisit if we want dead-simple flat pricing.
 2. **Trading cap** — left uncapped by design; revisit only if a user spins up many BYO-key mandates and inference cost climbs.
+3. **Auto-untrack unreferenced sources** (long-term) — the real cost driver is unique sources tracked × time (tweet pull + profile refresh, amortized across newsletters). If this scales, stop tracking/refreshing sources no active newsletter references, so we don't pay daily for orphaned sources.
 
 ---
 

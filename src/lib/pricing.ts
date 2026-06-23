@@ -4,51 +4,42 @@
  * - 100 credits = $1.00
  * - New users get 1,000 free credits ($10 value)
  *
- * OWNER: flat rate per send based on source count tier
- * SUBSCRIBER: flat 2 credits per send, split 50/50 platform/creator
+ * Pricing is FLAT (decided 2026-06-23): the per-source cost lives upstream in
+ * shared source tracking (tweet pull + analyst-profile refresh, amortized
+ * across every newsletter that references a source), NOT in the dispatch
+ * render — which is a single near-flat LLM call. So source count is not billed;
+ * instead dispatches are hard-capped at DISPATCH_SOURCE_CAP sources to bound
+ * upstream cost.
  *
- * Source tiers:
- *   1-10 sources:  10 credits/send ($0.10)
- *   11-20 sources: 15 credits/send ($0.15)
- *   21-30 sources: 20 credits/send ($0.20)
- *   31+ sources:   25 credits/send ($0.25)
- *
- * Future: YouTube/podcast transcripts add to source count and may
- * have their own premium tier.
+ * OWNER: flat 10 credits/send ($0.10), regardless of source count.
+ * SUBSCRIBER: flat 5 credits/send ($0.05), split 50/50 platform/creator.
+ * Audio (TTS) carries real marginal cost, so it doubles either side.
  */
 
 // ─── Constants ───────────────────────────────────────
 export const CREDITS_PER_DOLLAR = 100;
 export const NEW_USER_BONUS_CREDITS = 1000;
 
-export const SUBSCRIBER_COST_PER_SEND = 2;  // 2 credits ($0.02) per delivery
+export const OWNER_COST_PER_SEND = 10;       // 10 credits ($0.10) per dispatch, flat
+export const SUBSCRIBER_COST_PER_SEND = 5;   // 5 credits ($0.05) per delivery
 export const PLATFORM_SHARE = 0.5;  // platform gets 50% of subscriber credits
 export const CREATOR_SHARE = 0.5;   // creator gets 50% of subscriber credits
 
-// ─── Source Tiers ────────────────────────────────────
-
-const OWNER_COST_TIERS = [
-  { maxSources: 10, credits: 10 },
-  { maxSources: 20, credits: 15 },
-  { maxSources: 30, credits: 20 },
-  { maxSources: Infinity, credits: 25 },
-];
+// Hard cap on sources per dispatch. The render barely scales with source
+// count, but each tracked source carries upstream per-day cost (tweet pull +
+// profile refresh), so we bound it. Also enforced at the junto level
+// (junto_sources is capped at 20).
+export const DISPATCH_SOURCE_CAP = 20;
 
 // ─── Cost Calculation ────────────────────────────────
 
 /**
  * Calculate credit cost per send for the newsletter OWNER.
- * Based on source count tier.
+ * Flat rate; doubles when the dispatch generates audio.
+ * (sourceCount accepted for signature stability but no longer billed.)
  */
-export function calculateOwnerCreditCost(sourceCount: number, audioEnabled = false): number {
-  let credits = OWNER_COST_TIERS[OWNER_COST_TIERS.length - 1].credits;
-  for (const tier of OWNER_COST_TIERS) {
-    if (sourceCount <= tier.maxSources) {
-      credits = tier.credits;
-      break;
-    }
-  }
-  return audioEnabled ? credits * 2 : credits;
+export function calculateOwnerCreditCost(_sourceCount: number, audioEnabled = false): number {
+  return audioEnabled ? OWNER_COST_PER_SEND * 2 : OWNER_COST_PER_SEND;
 }
 
 /**

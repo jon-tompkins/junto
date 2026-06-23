@@ -10,7 +10,7 @@ import { generateNewsletterV2 } from '@/lib/synthesis/generator-v2';
 import { sendNewsletter } from '@/lib/email/sender';
 import { sendTelegramNewsletter, sendTelegramAudio } from '@/lib/telegram/client';
 import { chargeOwner, chargeSubscriber } from '@/lib/db/credits';
-import { calculateOwnerCreditCost, calculateSubscriberCreditCost } from '@/lib/pricing';
+import { calculateOwnerCreditCost, calculateSubscriberCreditCost, DISPATCH_SOURCE_CAP } from '@/lib/pricing';
 import { getPromptTemplateById } from '@/lib/db/prompt-templates';
 import { NEWSLETTER_SYSTEM_PROMPT } from '@/lib/synthesis/prompts';
 import { getWatchlistTickers } from '@/lib/db/watchlists';
@@ -70,12 +70,18 @@ export async function GET(req: NextRequest) {
         console.log(`[generate] Processing: ${newsletter.name} (${newsletter.id})`);
 
         // 1. Get sources for this newsletter
-        const sources = await getNewsletterSources(newsletter.id);
-        if (sources.length === 0) {
+        const allSources = await getNewsletterSources(newsletter.id);
+        if (allSources.length === 0) {
           console.log(`[generate] Skipping ${newsletter.name}: no sources`);
           await storeSkippedRun(newsletter.id, 'skipped', 'No sources configured');
           results[newsletter.name] = { status: 'skipped', error: 'No sources configured' };
           continue;
+        }
+        // Hard cap sources per dispatch (cost guardrail). Juntos are already
+        // capped at 20; this also bounds the direct newsletter_sources path.
+        const sources = allSources.slice(0, DISPATCH_SOURCE_CAP);
+        if (allSources.length > DISPATCH_SOURCE_CAP) {
+          console.warn(`[generate] ${newsletter.name}: ${allSources.length} sources exceeds cap ${DISPATCH_SOURCE_CAP} — using first ${DISPATCH_SOURCE_CAP}`);
         }
 
         const sourceIds = sources.map((s) => s.id);
