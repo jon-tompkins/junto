@@ -265,10 +265,11 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
 
   // Position amendments. Two sources, combined into one approval flow:
   //   1. Tweet-driven: any open trade touched by a fresh signal this tick.
-  //   2. Daily review: ONCE per day (first/open window), a full sweep of every
+  //   2. Daily review: ONCE per day (midday window), a full sweep of every
   //      open position against its thesis, journal notes, price action and the
   //      mandate's learnings — independent of whether a tweet arrived. This is
-  //      the time-based "is anything worth adjusting?" check.
+  //      the time-based "is anything worth adjusting?" check. Midday (16:30 UTC)
+  //      deliberately dodges the open/close volatility windows.
   // Tweet-driven amendments are listed first so they win the per-trade/per-kind
   // dedup below if the two ever collide on the same position+kind.
   try {
@@ -281,7 +282,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
         positions,
       });
 
-      if (window === 'open') {
+      if (window === 'midday') {
         try {
           const reviewAmendments = await reviewPositions({ mandate, openTrades, positions });
           result.position_review_suggested = reviewAmendments.length;
