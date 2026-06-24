@@ -148,7 +148,8 @@ Return JSON.`;
         const ticker = d.ticker.toUpperCase();
         const fromModel = Array.isArray(d.source_urls) ? d.source_urls.filter((u: any) => typeof u === 'string' && u) : [];
         // Backfill from the originating signal when the model omitted sources.
-        const source_urls = fromModel.length ? fromModel : (signalUrlsByTicker.get(ticker) || []);
+        // Dedupe so the same post/author doesn't repeat in the attribution.
+        const source_urls = [...new Set(fromModel.length ? fromModel : (signalUrlsByTicker.get(ticker) || []))];
         return {
           ticker,
           side: d.side,

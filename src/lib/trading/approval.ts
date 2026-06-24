@@ -209,11 +209,20 @@ function escapeHtml(s: string): string {
 
 function formatSources(urls?: string[]): string {
   if (!urls || urls.length === 0) return '';
-  const links = urls.slice(0, 5).map((url, i) => {
-    const safe = escapeHtml(url);
+  // Dedupe by display label: the same handle (or identical URL) must not
+  // render as multiple chips. Several distinct tweets from one author all
+  // show "@handle", so collapse to the first. Keep first-seen order.
+  const seen = new Set<string>();
+  const links: string[] = [];
+  for (const url of urls) {
+    if (typeof url !== 'string' || !url) continue;
     const m = /(?:x|twitter)\.com\/([^/?#]+)/i.exec(url);
-    const label = m ? `@${escapeHtml(m[1])}` : `source ${i + 1}`;
-    return `<a href="${safe}">${label}</a>`;
-  });
-  return `\n\n<b>Sources:</b> ${links.join(' · ')}`;
+    const label = m ? `@${m[1]}` : url;
+    const key = label.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    links.push(`<a href="${escapeHtml(url)}">${m ? `@${escapeHtml(m[1])}` : `source ${links.length + 1}`}</a>`);
+    if (links.length >= 5) break;
+  }
+  return links.length ? `\n\n<b>Sources:</b> ${links.join(' · ')}` : '';
 }
