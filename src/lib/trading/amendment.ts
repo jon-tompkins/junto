@@ -9,7 +9,16 @@ import {
   addJournalEntry,
 } from './db';
 import { alpacaForMandate } from './client';
+import { protectMandate } from './protection';
 import type { AmendmentKind } from './types';
+
+// Alpaca returns 404 / code 40410000 "order not found" when a stored
+// stop/target order id is stale (the OCO leg was replaced or expired at the
+// broker). We recover from this rather than hard-failing the amendment.
+function isOrderNotFound(err: any): boolean {
+  const m = String(err?.message || '');
+  return /\b404\b/.test(m) || /order not found/i.test(m) || /40410000/.test(m);
+}
 
 const KIND_LABEL: Record<AmendmentKind, string> = {
   stop_move: 'Move stop',
@@ -112,18 +121,56 @@ export async function handleAmendmentCallback(params: {
       return { message: `✅ Closing ${trade.ticker}.` };
     }
 
-    if (amendment.kind === 'stop_move') {
-      if (!trade.stop_order_id || amendment.new_value == null) {
-        return { message: 'Missing stop order id; cannot patch.' };
+    if (amendment.kind === 'stop_move' || amendment.kind === 'target_move') {
+      if (amendment.new_value == null) {
+        return { message: `Missing new value; cannot ${amendment.kind}.` };
       }
-      await alpaca.replaceOrder(trade.stop_order_id, { stop_price: amendment.new_value });
-      await updateTrade(trade.id, { stop_price: amendment.new_value });
-    } else if (amendment.kind === 'target_move') {
-      if (!trade.target_order_id || amendment.new_value == null) {
-        return { message: 'Missing target order id; cannot patch.' };
+      const isStop = amendment.kind === 'stop_move';
+      const orderId = isStop ? trade.stop_order_id : trade.target_order_id;
+      const levelPatch = isStop
+        ? { stop_price: amendment.new_value }
+        : { target_price: amendment.new_value };
+
+      // Re-attach path: the broker order is missing/stale (404) or we never had
+      // an id. Persist the new level, drop the dead id, and let protection
+      // re-create a fresh OCO at that level so the move lands instead of failing.
+      let needsReattach = !orderId;
+      if (orderId) {
+        try {
+          await alpaca.replaceOrder(
+            orderId,
+            isStop ? { stop_price: amendment.new_value } : { limit_price: amendment.new_value },
+          );
+          await updateTrade(trade.id, levelPatch);
+        } catch (err: any) {
+          if (!isOrderNotFound(err)) throw err;
+          needsReattach = true;
+        }
       }
-      await alpaca.replaceOrder(trade.target_order_id, { limit_price: amendment.new_value });
-      await updateTrade(trade.id, { target_price: amendment.new_value });
+
+      if (needsReattach) {
+        await updateTrade(trade.id, {
+          ...levelPatch,
+          ...(isStop ? { stop_order_id: null } : { target_order_id: null }),
+        });
+        try {
+          await protectMandate(trade.mandate_id);
+        } catch {
+          // Protection also runs every tick; the new level is already persisted
+          // so it will be re-attached on the next sweep regardless.
+        }
+        await updateAmendment(amendmentId, {
+          status: 'applied',
+          applied_at: new Date().toISOString(),
+          applied_note: `stale/missing order; re-attached protection at ${amendment.new_value}`,
+        });
+        await addJournalEntry({
+          tradeId: trade.id,
+          kind: 'daily',
+          content: `[amendment applied via re-attach (broker order was stale): ${amendment.kind} → ${amendment.new_value} — ${amendment.rationale.slice(0, 200)}]`,
+        });
+        return { message: `✅ Applied ${KIND_LABEL[amendment.kind]} on ${trade.ticker} (re-attached protection).` };
+      }
     }
 
     await updateAmendment(amendmentId, {
