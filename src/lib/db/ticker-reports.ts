@@ -3,7 +3,8 @@ import { getSupabase } from './client';
 export interface TickerSummary {
   ticker: string;
   summary: string;
-  tweet_count: number;
+  tweet_count: number;     // tweets analyzed (top-N fed to the summary)
+  mention_count: number;   // qualifying tweets found that day (volume)
   last_report_at: string | null;
   updated_at: string;
 }
@@ -26,7 +27,8 @@ export interface TickerReport {
   summary: string;
   content: string;
   tweet_refs: TickerReportTweet[];
-  tweet_count: number;
+  tweet_count: number;     // tweets analyzed (top-N fed to the summary)
+  mention_count: number;   // qualifying tweets found that day (volume)
   created_at: string;
 }
 
@@ -43,6 +45,7 @@ export async function upsertTickerSummary(row: {
   ticker: string;
   summary: string;
   tweet_count: number;
+  mention_count: number;
 }): Promise<void> {
   const { error } = await getSupabase()
     .from('ticker_summaries')
@@ -51,6 +54,7 @@ export async function upsertTickerSummary(row: {
         ticker: row.ticker.toUpperCase(),
         summary: row.summary,
         tweet_count: row.tweet_count,
+        mention_count: row.mention_count,
         last_report_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
@@ -86,6 +90,7 @@ export async function upsertTickerReport(row: {
   summary: string;
   content: string;
   tweet_refs: TickerReportTweet[];
+  mention_count: number;
 }): Promise<TickerReport> {
   const { data, error } = await getSupabase()
     .from('ticker_reports')
@@ -97,6 +102,7 @@ export async function upsertTickerReport(row: {
         content: row.content,
         tweet_refs: row.tweet_refs,
         tweet_count: row.tweet_refs.length,
+        mention_count: row.mention_count,
       },
       { onConflict: 'ticker,report_date' }
     )

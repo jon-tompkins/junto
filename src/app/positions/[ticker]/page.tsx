@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -87,12 +87,24 @@ function PnL({ entry, current }: { entry: number; current: number }) {
   );
 }
 
+interface TickerReportTweetRef {
+  twitter_id: string;
+  author_handle: string;
+  author_followers: number | null;
+  content: string;
+  likes: number;
+  retweets: number;
+}
+
 interface TickerReportRow {
   id: string;
   ticker: string;
   report_date: string;
   summary: string;
+  content: string;
+  tweet_refs: TickerReportTweetRef[];
   tweet_count: number;
+  mention_count: number;
   created_at: string;
 }
 
@@ -100,15 +112,24 @@ interface TickerSummaryRow {
   ticker: string;
   summary: string;
   tweet_count: number;
+  mention_count: number;
   last_report_at: string | null;
   updated_at: string;
+}
+
+// "47 mentions · 15 analyzed" — falls back to analyzed-only for legacy rows
+// (mention_count 0) written before volume tracking existed.
+function pulseCountLabel(mentionCount: number, analyzed: number): string {
+  if (mentionCount && mentionCount > analyzed) {
+    return `${mentionCount} mentions · ${analyzed} analyzed`;
+  }
+  return `${analyzed} analyzed`;
 }
 
 function SocialPulse({ ticker }: { ticker: string }) {
   const [summary, setSummary] = useState<TickerSummaryRow | null>(null);
   const [reports, setReports] = useState<TickerReportRow[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [report, setReport] = useState<any>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'gated' | 'empty' | 'error'>('loading');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -135,16 +156,6 @@ function SocialPulse({ ticker }: { ticker: string }) {
       })
       .catch(() => setStatus('error'));
   }, [ticker]);
-
-  useEffect(() => {
-    if (!openId) return setReport(null);
-    const row = reports.find((r) => r.id === openId);
-    if (!row) return;
-    fetch(`/api/v2/tickers/${encodeURIComponent(ticker)}`)
-      .then((r) => r.json())
-      .then((d) => setReport((d.reports || []).find((rr: any) => rr.id === openId)))
-      .catch(() => setReport(null));
-  }, [openId, ticker, reports]);
 
   const [collapsed, setCollapsed] = useState(true);
 
@@ -186,7 +197,7 @@ function SocialPulse({ ticker }: { ticker: string }) {
                 dangerouslySetInnerHTML={{ __html: markdownToHtml(summary.summary) }}
               />
               <p className="text-[11px] text-[#F5EFE0]/40 mt-3">
-                {summary.tweet_count} tweets · updated {new Date(summary.updated_at).toLocaleString()}
+                {pulseCountLabel(summary.mention_count, summary.tweet_count)} · updated {new Date(summary.updated_at).toLocaleString()}
               </p>
             </div>
           )}
@@ -195,67 +206,75 @@ function SocialPulse({ ticker }: { ticker: string }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[10px] uppercase tracking-wide text-[#F5EFE0]/45 font-[var(--font-oswald)]">
+                  <th className="py-2 pr-4 w-6"></th>
                   <th className="py-2 pr-4">Date</th>
                   <th className="py-2 pr-4">Summary</th>
-                  <th className="py-2 pr-4 text-right">Tweets</th>
+                  <th className="py-2 pr-4 text-right">Mentions</th>
                 </tr>
               </thead>
               <tbody>
-                {reports.map((r) => (
-                  <tr
-                    key={r.id}
-                    className="border-t border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17] cursor-pointer"
-                    onClick={() => setOpenId(openId === r.id ? null : r.id)}
-                  >
-                    <td className="py-2 pr-4 font-mono text-[#F5EFE0]/60">{r.report_date}</td>
-                    <td className="py-2 pr-4 text-[#F5EFE0]/80 line-clamp-2">{r.summary}</td>
-                    <td className="py-2 pr-4 text-right text-[#F5EFE0]/45 font-mono">{r.tweet_count}</td>
-                  </tr>
-                ))}
+                {reports.map((r) => {
+                  const open = openId === r.id;
+                  return (
+                    <Fragment key={r.id}>
+                      <tr
+                        className="border-t border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17] cursor-pointer"
+                        onClick={() => setOpenId(open ? null : r.id)}
+                      >
+                        <td className="py-2 pr-2 text-[#F5EFE0]/45 text-[10px] align-top">{open ? '▾' : '▸'}</td>
+                        <td className="py-2 pr-4 font-mono text-[#F5EFE0]/60 align-top whitespace-nowrap">{r.report_date}</td>
+                        <td className={`py-2 pr-4 text-[#F5EFE0]/80 ${open ? '' : 'line-clamp-2'}`}>{r.summary}</td>
+                        <td className="py-2 pr-4 text-right text-[#F5EFE0]/45 font-mono align-top">{r.mention_count || r.tweet_count}</td>
+                      </tr>
+                      {open && (
+                        <tr className="bg-[#0e0c0a]">
+                          <td></td>
+                          <td colSpan={3} className="px-4 pb-4 pt-1">
+                            <div
+                              className="research-content text-sm max-w-none"
+                              dangerouslySetInnerHTML={{ __html: markdownToHtml(r.content) }}
+                            />
+                            <p className="text-[11px] text-[#F5EFE0]/40 mt-3">
+                              {pulseCountLabel(r.mention_count, r.tweet_count)}
+                            </p>
+                            {r.tweet_refs?.length > 0 && (
+                              <div className="mt-3 space-y-2">
+                                <p className="text-[10px] uppercase tracking-wide text-[#F5EFE0]/45 font-[var(--font-oswald)]">
+                                  Top tweets analyzed
+                                </p>
+                                {r.tweet_refs.map((t) => (
+                                  <a
+                                    key={t.twitter_id}
+                                    href={`https://twitter.com/${t.author_handle}/status/${t.twitter_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block p-2 rounded bg-[#141210] border border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17]"
+                                  >
+                                    <div className="flex items-center gap-2 mb-1 flex-wrap text-[11px]">
+                                      <span className="text-[#B08D57]">@{t.author_handle}</span>
+                                      {t.author_followers != null && (
+                                        <span className="text-[#F5EFE0]/40">{t.author_followers.toLocaleString()} followers</span>
+                                      )}
+                                      <span className="text-[#F5EFE0]/40 ml-auto">
+                                        {t.likes}❤ {t.retweets}🔁
+                                      </span>
+                                    </div>
+                                    <p
+                                      className="text-xs text-[#F5EFE0]/70 line-clamp-3"
+                                      dangerouslySetInnerHTML={{ __html: enrichTweetHtml(t.content) }}
+                                    />
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
-          )}
-
-          {report && (
-            <div className="mt-4 p-4 rounded bg-[#0e0c0a] border border-[rgba(176,141,87,0.18)]">
-              <h3 className="text-xs uppercase text-[#B08D57] mb-3 font-[var(--font-oswald)] tracking-wide">
-                {report.report_date}
-              </h3>
-              <div
-                className="research-content text-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: markdownToHtml(report.content) }}
-              />
-              {report.tweet_refs?.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  <p className="text-[10px] uppercase tracking-wide text-[#F5EFE0]/45 font-[var(--font-oswald)]">
-                    Tweets
-                  </p>
-                  {report.tweet_refs.map((t: any) => (
-                    <a
-                      key={t.twitter_id}
-                      href={`https://twitter.com/${t.author_handle}/status/${t.twitter_id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block p-2 rounded bg-[#141210] border border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17]"
-                    >
-                      <div className="flex items-center gap-2 mb-1 flex-wrap text-[11px]">
-                        <span className="text-[#B08D57]">@{t.author_handle}</span>
-                        {t.author_followers != null && (
-                          <span className="text-[#F5EFE0]/40">{t.author_followers.toLocaleString()} followers</span>
-                        )}
-                        <span className="text-[#F5EFE0]/40 ml-auto">
-                          {t.likes}❤ {t.retweets}🔁
-                        </span>
-                      </div>
-                      <p
-                        className="text-xs text-[#F5EFE0]/70 line-clamp-3"
-                        dangerouslySetInnerHTML={{ __html: enrichTweetHtml(t.content) }}
-                      />
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
           )}
         </>
       )}

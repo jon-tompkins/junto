@@ -19,9 +19,15 @@ function pickAuthor(raw: any): { handle: string; name: string | null; followers:
   };
 }
 
+// Qualifying tweets for the day: real posts (no retweets) with substance.
+// Their count is the day's mention VOLUME (pre-slice), distinct from the
+// top-N we actually feed the summary.
+function qualifyTweets(tweets: FetchedTweet[]): FetchedTweet[] {
+  return tweets.filter((t) => !t.is_retweet && t.content?.length > 20);
+}
+
 function rankTweets(tweets: FetchedTweet[]): FetchedTweet[] {
   return [...tweets]
-    .filter((t) => !t.is_retweet && t.content?.length > 20)
     .map((t) => {
       const a = pickAuthor(t.raw_data);
       const followerWeight = Math.log10(Math.max(1, a.followers ?? 0) + 10);
@@ -116,7 +122,7 @@ Be specific and factual. Don't pad. Don't repeat the tweet count.`;
 export async function generateTickerReport(
   ticker: string,
   opts: { date?: string } = {}
-): Promise<{ ticker: string; date: string; tweetCount: number }> {
+): Promise<{ ticker: string; date: string; tweetCount: number; mentionCount: number }> {
   const upper = ticker.toUpperCase();
   const reportDate = opts.date || new Date().toISOString().slice(0, 10);
 
@@ -126,7 +132,11 @@ export async function generateTickerReport(
     throw new Error(`No tweets found for $${upper}`);
   }
 
-  const ranked = rankTweets(fetched);
+  // Day's mention volume (pre-slice, capped by MAX_TWEETS_FETCH) vs the top-N
+  // we rank down to and actually summarize.
+  const qualified = qualifyTweets(fetched);
+  const mentionCount = qualified.length;
+  const ranked = rankTweets(qualified);
   const refs = ranked.map(toTweetRef);
   const { summary, content } = await summarizeTweets(upper, refs);
 
@@ -136,13 +146,15 @@ export async function generateTickerReport(
     summary,
     content,
     tweet_refs: refs,
+    mention_count: mentionCount,
   });
 
   await upsertTickerSummary({
     ticker: upper,
     summary,
     tweet_count: refs.length,
+    mention_count: mentionCount,
   });
 
-  return { ticker: upper, date: reportDate, tweetCount: refs.length };
+  return { ticker: upper, date: reportDate, tweetCount: refs.length, mentionCount };
 }
