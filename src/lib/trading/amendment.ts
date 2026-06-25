@@ -12,12 +12,18 @@ import { alpacaForMandate } from './client';
 import { protectMandate } from './protection';
 import type { AmendmentKind } from './types';
 
-// Alpaca returns 404 / code 40410000 "order not found" when a stored
-// stop/target order id is stale (the OCO leg was replaced or expired at the
-// broker). We recover from this rather than hard-failing the amendment.
-function isOrderNotFound(err: any): boolean {
+// A stored stop/target order id can go stale two ways at Alpaca:
+//   - 404 / 40410000 "order not found"      → it was canceled or expired
+//   - 422 / 42210000 "order already replaced" → a prior replace superseded it
+//     (replace cancels the old id and mints a new one)
+// Either way the id no longer points at a live order, so we recover (re-attach)
+// instead of hard-failing the amendment.
+function isStaleOrderError(err: any): boolean {
   const m = String(err?.message || '');
-  return /\b404\b/.test(m) || /order not found/i.test(m) || /40410000/.test(m);
+  return (
+    /\b404\b/.test(m) || /order not found/i.test(m) || /40410000/.test(m) ||
+    /already replaced/i.test(m) || /42210000/.test(m)
+  );
 }
 
 const KIND_LABEL: Record<AmendmentKind, string> = {
@@ -137,13 +143,20 @@ export async function handleAmendmentCallback(params: {
       let needsReattach = !orderId;
       if (orderId) {
         try {
-          await alpaca.replaceOrder(
+          // Replace cancels the old order and mints a NEW one — capture its id so
+          // the trade row tracks the live order. Without this, the next move on
+          // this position would PATCH the dead id → 422 "order already replaced".
+          const replaced = await alpaca.replaceOrder(
             orderId,
             isStop ? { stop_price: amendment.new_value } : { limit_price: amendment.new_value },
           );
-          await updateTrade(trade.id, levelPatch);
+          const newId = (replaced as any)?.id || orderId;
+          await updateTrade(trade.id, {
+            ...levelPatch,
+            ...(isStop ? { stop_order_id: newId } : { target_order_id: newId }),
+          });
         } catch (err: any) {
-          if (!isOrderNotFound(err)) throw err;
+          if (!isStaleOrderError(err)) throw err;
           needsReattach = true;
         }
       }
