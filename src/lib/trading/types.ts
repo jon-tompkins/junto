@@ -19,6 +19,10 @@ export interface Mandate {
   // suggest; the agent key (encrypted) is only needed to execute.
   hl_wallet_address: string | null;
   hl_agent_secret: string | null;
+  // Leverage cap for HL orders — we set this before each order so positions
+  // open at controlled leverage (NOT the asset's max), keeping liquidation
+  // outside our stop. Default 3x.
+  hl_max_leverage: number;
   // Optional per-mandate Telegram chat for suggestions (group/channel id as
   // text; negative for groups). Falls back to the user's DM when null.
   telegram_chat_id: string | null;

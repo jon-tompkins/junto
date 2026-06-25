@@ -125,6 +125,9 @@ export interface HyperliquidConfig {
   // Approved agent (API) wallet key used to sign orders. Can trade but not
   // withdraw. Required only for write methods.
   agentPrivateKey?: `0x${string}` | null;
+  // Leverage cap applied (cross) to an asset before opening — so positions
+  // don't inherit the asset's max leverage. Default 3x.
+  maxLeverage?: number | null;
 }
 
 export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
@@ -226,6 +229,15 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
 
       const mid = await this.getLastTrade(params.symbol);
       if (mid == null) throw new Error(`No price for ${params.symbol}`);
+
+      // Set leverage (cross) BEFORE the order so the position opens at our cap,
+      // not the asset's default max — keeps liquidation outside our stop.
+      // Best-effort: a failure here shouldn't block the order (HL clamps to the
+      // asset's max if ours is higher).
+      const cap = Math.max(1, Math.floor(cfg.maxLeverage ?? 3));
+      try {
+        await signAndSend({ type: 'updateLeverage', asset: asset.index, isCross: true, leverage: cap });
+      } catch { /* non-fatal; fall back to current leverage */ }
 
       const isBuy = params.side === 'buy';
       const slipPx = isBuy ? mid * (1 + MARKET_SLIPPAGE) : mid * (1 - MARKET_SLIPPAGE);

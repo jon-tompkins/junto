@@ -137,6 +137,7 @@ export interface MandateAlpacaCreds {
   alpaca_secret?: string | null;
   hl_wallet_address?: string | null;
   hl_agent_secret?: string | null;
+  hl_max_leverage?: number | null;
   mode?: 'paper' | 'live' | null;
 }
 
@@ -153,6 +154,7 @@ export function alpacaForMandate(mandate: MandateAlpacaCreds): AlpacaClient {
       walletAddress: mandate.hl_wallet_address,
       mode: mandate.mode ?? null,
       agentPrivateKey: decryptSecret(mandate.hl_agent_secret) as `0x${string}` | null,
+      maxLeverage: mandate.hl_max_leverage ?? 3,
     });
   }
   if (mandate.alpaca_account_id) {
