@@ -1,4 +1,5 @@
 import { getSupabase } from './client';
+import { extractTickers } from '@/lib/utils/tickers';
 import type { NewsletterRun, NewsletterRunStatus } from '@/types';
 
 const supabase = () => getSupabase();
@@ -19,6 +20,7 @@ export async function storeRun(run: {
       newsletter_id: run.newsletter_id,
       content: run.content ?? null,
       subject: run.subject || null,
+      tickers: extractTickers(run.content),
       model_used: run.model_used || null,
       tokens_used: run.tokens_used || {},
       metadata: run.metadata || {},
