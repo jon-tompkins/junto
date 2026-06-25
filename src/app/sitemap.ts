@@ -15,6 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   let newsletterPages: MetadataRoute.Sitemap = [];
+  let sourcePages: MetadataRoute.Sitemap = [];
 
   try {
     const supabase = getSupabase();
@@ -36,5 +37,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Don't fail sitemap generation if DB is unavailable
   }
 
-  return [...staticPages, ...newsletterPages];
+  try {
+    const supabase = getSupabase();
+
+    // Per-analyst pages (/sources/[handle]). Only Twitter sources that are
+    // active AND have a synthesized analyst profile — those pages have real,
+    // indexable content (positions, stances, track record). This is the
+    // programmatic-SEO surface: ~130 unique analyst pages on data we already
+    // generate, none of which were previously in the sitemap.
+    const { data: profiles } = await supabase
+      .from('source_analyst_profiles')
+      .select('sources!inner(handle_or_url, type, is_active)')
+      .eq('sources.type', 'twitter')
+      .eq('sources.is_active', true)
+      .limit(1000);
+
+    const seen = new Set<string>();
+    sourcePages = (profiles || [])
+      .map((row: any) => row.sources?.handle_or_url as string | undefined)
+      .filter((h): h is string => {
+        if (!h) return false;
+        const k = h.toLowerCase();
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      })
+      .map((handle) => ({
+        url: `${baseUrl}/sources/${encodeURIComponent(handle)}`,
+        lastModified: new Date(),
+        changeFrequency: 'daily' as const,
+        priority: 0.7,
+      }));
+  } catch {
+    // Don't fail sitemap generation if DB is unavailable
+  }
+
+  return [...staticPages, ...newsletterPages, ...sourcePages];
 }
