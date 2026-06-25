@@ -56,7 +56,7 @@ Allowed amendments:
 - "target_move": move the take-profit limit price.
 - "close": exit the entire position at market. Use when a strong "exit" signal arrives or thesis is clearly broken.
 
-Be conservative. It is fine to return an empty list. Do NOT propose the same value that's already in place. Tightening stops in your favor is fine; loosening stops (giving more room to lose) requires a clear signal.
+Be conservative. It is fine to return an empty list. Do NOT propose the same value that's already in place, and do NOT propose a stop/target move smaller than 2% from its current level — small nudges aren't worth an amendment. Tightening stops in your favor is fine; loosening stops (giving more room to lose) requires a clear signal.
 
 Output strict JSON only:
 { "amendments": [

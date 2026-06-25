@@ -323,8 +323,9 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
             amend.kind === 'stop_move' ? trade.stop_price
             : amend.kind === 'target_move' ? trade.target_price
             : null;
-          // Skip if the proposed value is essentially unchanged
-          if (oldValue != null && amend.new_value != null && Math.abs(oldValue - amend.new_value) / oldValue < 0.005) continue;
+          // Skip moves smaller than 2% — not worth a stop/target nudge or the
+          // approval ping (per Jon: don't propose sub-2% adjustments).
+          if (oldValue != null && amend.new_value != null && Math.abs(oldValue - amend.new_value) / oldValue < 0.02) continue;
 
           const amendmentId = await createPendingAmendment({
             tradeId: trade.id,

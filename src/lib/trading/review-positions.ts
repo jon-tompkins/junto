@@ -82,7 +82,7 @@ For each position, decide whether to amend it. Allowed amendments:
 - "target_move": move the take-profit limit price (e.g. extend the target on a position whose thesis has strengthened, or pull it in if the move is largely played out).
 - "close": exit the entire position at market. Use when the thesis is clearly broken, the invalidation is hit, or a learned lesson says cut it.
 
-Be conservative — most positions on most days need NO change, and returning an empty list is the correct and common answer. Only propose an amendment when there is a concrete, stateable reason grounded in the thesis, the journal, the price action, or a learned lesson. Never propose the value that's already in place.
+Be conservative — most positions on most days need NO change, and returning an empty list is the correct and common answer. Only propose an amendment when there is a concrete, stateable reason grounded in the thesis, the journal, the price action, or a learned lesson. Never propose the value that's already in place, and never propose a stop/target move smaller than 2% from its current level — small nudges aren't worth it.
 
 Output strict JSON only:
 { "amendments": [
