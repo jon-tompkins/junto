@@ -11,6 +11,7 @@ import {
   markTweetsProcessed,
 } from './db';
 import { loadJuntoSnapshot, extractSignals } from './extract';
+import { isWalletJunto, loadWalletSignals } from './extract-wallets';
 import { decideTrades } from './decide';
 import { suggestPortfolioAdjustments } from './adjustments';
 import { decideAmendments } from './decide-amendments';
@@ -170,11 +171,22 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
   let signals;
   let reviewedTwitterIds: string[] = [];
   try {
-    const snapshot = await loadJuntoSnapshot(mandate.junto_id, mandate.id);
-    result.tweetsReviewed = snapshot.tweetCount;
-    reviewedTwitterIds = snapshot.reviewedTwitterIds;
-    signals = await extractSignals(mandate, snapshot);
-    result.signals = signals.length;
+    // One junto TYPE per mandate: a wallet junto (HL whale addresses) yields
+    // structured position-diff signals; a twitter junto yields tweet-extracted
+    // signals. Both feed the same decide step.
+    if (await isWalletJunto(mandate.junto_id)) {
+      const ws = await loadWalletSignals(mandate);
+      result.tweetsReviewed = ws.eventCount;
+      reviewedTwitterIds = ws.reviewedEventIds;
+      signals = ws.signals;
+      result.signals = signals.length;
+    } else {
+      const snapshot = await loadJuntoSnapshot(mandate.junto_id, mandate.id);
+      result.tweetsReviewed = snapshot.tweetCount;
+      reviewedTwitterIds = snapshot.reviewedTwitterIds;
+      signals = await extractSignals(mandate, snapshot);
+      result.signals = signals.length;
+    }
   } catch (err: any) {
     result.errors.push(`extract: ${err.message}`);
     await persist();
