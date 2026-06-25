@@ -39,6 +39,51 @@ export async function generateMetadata({ params }: { params: Promise<{ handle: s
   };
 }
 
-export default function SourceLayout({ children }: { children: React.ReactNode }) {
-  return children;
+export default async function SourceLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ handle: string }>;
+}) {
+  // Emit schema.org ProfilePage/Person JSON-LD so search engines parse each
+  // analyst page as a real entity (name, X profile) → eligible for richer
+  // results and better entity association. Server-rendered, best-effort.
+  const { handle } = await params;
+  const clean = handle.replace('@', '');
+  let jsonLd: Record<string, unknown> | null = null;
+  try {
+    const profile = await getProfileByHandle(clean);
+    if (profile) {
+      const h = profile.source.handle_or_url;
+      const name = profile.source.display_name || `@${h}`;
+      jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'ProfilePage',
+        dateModified: (profile as any).last_updated || undefined,
+        mainEntity: {
+          '@type': 'Person',
+          name,
+          alternateName: `@${h}`,
+          url: `https://www.myjunto.xyz/sources/${encodeURIComponent(h)}`,
+          sameAs: [`https://x.com/${h}`],
+          ...(profile.summary ? { description: String(profile.summary).slice(0, 300) } : {}),
+        },
+      };
+    }
+  } catch {
+    // JSON-LD is optional enrichment; never block render.
+  }
+
+  return (
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+      {children}
+    </>
+  );
 }
