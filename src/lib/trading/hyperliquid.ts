@@ -133,9 +133,34 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
   if (!user) throw new Error('Hyperliquid wallet address not configured');
   const isMainnet = cfg.mode === 'live';
 
-  const stage3 = (name: string) => (): never => {
-    throw new Error(`Hyperliquid.${name} is not implemented yet (Stage 3).`);
+  const requireKey = (): `0x${string}` => {
+    if (!cfg.agentPrivateKey) {
+      throw new Error('Hyperliquid agent private key not configured — cannot place orders.');
+    }
+    return cfg.agentPrivateKey;
   };
+
+  // Sign an L1 action with the agent key and POST it to /exchange.
+  async function signAndSend<T>(action: Record<string, unknown>): Promise<T> {
+    const privateKey = requireKey();
+    const nonce = Date.now();
+    const signature = await signL1Action({ privateKey, action, nonce, isMainnet });
+    return exchange<T>(url, { action, nonce, signature, vaultAddress: null });
+  }
+
+  async function getMid(symbol: string): Promise<number | null> {
+    try {
+      const mids = await info<HlAllMids>(url, { type: 'allMids' });
+      const px = mids[symbol];
+      return px != null ? Number(px) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function rawOpenOrders(): Promise<HlFrontendOrder[]> {
+    return info<HlFrontendOrder[]>(url, { type: 'frontendOpenOrders', user });
+  }
 
   return {
     async getAccount(): Promise<AlpacaAccount> {
@@ -245,14 +270,168 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
       };
     },
 
-    // --- Stage 3: remaining writes (close, OCO protection, amendments) ---
-    getOrder: stage3('getOrder'),
-    cancelOrder: stage3('cancelOrder'),
-    submitBracketOrder: stage3('submitBracketOrder'),
-    replaceOrder: stage3('replaceOrder'),
-    closePosition: stage3('closePosition'),
-    listOpenOrders: stage3('listOpenOrders'),
-    submitOcoExit: stage3('submitOcoExit'),
+    // --- Stage 3: order management (close, OCO protection, amendments) ---
+
+    async getOrder(id: string): Promise<AlpacaOrder> {
+      const all = await rawOpenOrders();
+      const o = all.find((x) => String(x.oid) === String(id));
+      return o
+        ? mapHlOrder(o)
+        : { id: String(id), symbol: '', qty: '0', filled_qty: '0', side: 'sell', status: 'closed', filled_avg_price: null };
+    },
+
+    async listOpenOrders(symbol?: string): Promise<AlpacaOrder[]> {
+      const all = await rawOpenOrders();
+      return (symbol ? all.filter((o) => o.coin === symbol) : all).map(mapHlOrder);
+    },
+
+    async cancelOrder(id: string): Promise<void> {
+      const all = await rawOpenOrders();
+      const o = all.find((x) => String(x.oid) === String(id));
+      if (!o) return; // already gone
+      const assets = await assetIndexMap(cfg.mode);
+      const a = assets.get(o.coin)?.index;
+      if (a == null) throw new Error(`Unknown Hyperliquid asset for cancel: ${o.coin}`);
+      const resp = await signAndSend<{ data: { statuses: (string | { error?: string })[] } }>({
+        type: 'cancel',
+        cancels: [{ a, o: Number(id) }],
+      });
+      const st = resp.data.statuses?.[0];
+      if (st && typeof st === 'object' && st.error) throw new Error(`Hyperliquid cancel rejected: ${st.error}`);
+    },
+
+    // Reduce-only IOC market to flatten the whole position.
+    async closePosition(symbol: string): Promise<AlpacaOrder> {
+      const assets = await assetIndexMap(cfg.mode);
+      const asset = assets.get(symbol);
+      if (!asset) throw new Error(`Unknown Hyperliquid asset: ${symbol}`);
+      const state = await info<HlClearinghouseState>(url, { type: 'clearinghouseState', user });
+      const pos = state.assetPositions.find((p) => p.position.coin === symbol);
+      const szi = pos ? Number(pos.position.szi) : 0;
+      if (!szi) {
+        return { id: '', symbol, qty: '0', filled_qty: '0', side: 'sell', status: 'closed', filled_avg_price: null };
+      }
+      const isBuy = szi < 0; // short -> buy to close
+      const mid = await getMid(symbol);
+      if (mid == null) throw new Error(`No price for ${symbol}`);
+      const slipPx = isBuy ? mid * (1 + MARKET_SLIPPAGE) : mid * (1 - MARKET_SLIPPAGE);
+      const px = formatPrice(slipPx, asset.szDecimals);
+      const sz = formatSize(Math.abs(szi), asset.szDecimals);
+      const resp = await signAndSend<{ data: { statuses: HlOrderStatus[] } }>({
+        type: 'order',
+        orders: [{ a: asset.index, b: isBuy, p: px, s: sz, r: true, t: { limit: { tif: 'Ioc' } } }],
+        grouping: 'na',
+      });
+      const status = resp.data.statuses[0];
+      if (status?.error) throw new Error(`Hyperliquid close rejected: ${status.error}`);
+      const filled = status?.filled;
+      const oid = filled?.oid ?? status?.resting?.oid;
+      return {
+        id: oid != null ? String(oid) : '',
+        symbol,
+        qty: sz,
+        filled_qty: filled ? String(filled.totalSz) : '0',
+        side: isBuy ? 'buy' : 'sell',
+        status: filled ? 'filled' : 'new',
+        filled_avg_price: filled ? String(filled.avgPx) : null,
+      };
+    },
+
+    // Attach reduce-only OCO TP+SL to the position (grouping positionTpsl =
+    // one-cancels-other, auto-linked to the position). `side` is the exit side.
+    async submitOcoExit(params: {
+      symbol: string;
+      qty: number;
+      side: 'buy' | 'sell';
+      stopPrice: number;
+      limitPrice: number;
+      clientOrderId?: string;
+    }): Promise<AlpacaOrder> {
+      const assets = await assetIndexMap(cfg.mode);
+      const asset = assets.get(params.symbol);
+      if (!asset) throw new Error(`Unknown Hyperliquid asset: ${params.symbol}`);
+      const isBuy = params.side === 'buy';
+      const sz = formatSize(params.qty, asset.szDecimals);
+      const tpTrig = formatPrice(params.limitPrice, asset.szDecimals);
+      const slTrig = formatPrice(params.stopPrice, asset.szDecimals);
+      // isMarket triggers fill at market on trigger; `p` is the worst price, so
+      // push it toward fill (sell -> lower, buy -> higher).
+      const cushion = (px: number) => (isBuy ? px * (1 + MARKET_SLIPPAGE) : px * (1 - MARKET_SLIPPAGE));
+      const tpP = formatPrice(cushion(params.limitPrice), asset.szDecimals);
+      const slP = formatPrice(cushion(params.stopPrice), asset.szDecimals);
+      const resp = await signAndSend<{ data: { statuses: HlOrderStatus[] } }>({
+        type: 'order',
+        orders: [
+          { a: asset.index, b: isBuy, p: tpP, s: sz, r: true, t: { trigger: { isMarket: true, triggerPx: tpTrig, tpsl: 'tp' } } },
+          { a: asset.index, b: isBuy, p: slP, s: sz, r: true, t: { trigger: { isMarket: true, triggerPx: slTrig, tpsl: 'sl' } } },
+        ],
+        grouping: 'positionTpsl',
+      });
+      const statuses = resp.data.statuses || [];
+      const err = statuses.find((s) => s?.error);
+      if (err) throw new Error(`Hyperliquid OCO rejected: ${err.error}`);
+      const oidOf = (s?: HlOrderStatus) => s?.resting?.oid ?? s?.filled?.oid;
+      // Parent with legs so the protector captures both leg ids (stop + target).
+      return {
+        id: oidOf(statuses[0]) != null ? String(oidOf(statuses[0])) : '',
+        symbol: params.symbol,
+        qty: sz,
+        filled_qty: '0',
+        side: params.side,
+        status: 'open',
+        order_class: 'oco',
+        legs: [
+          { id: String(oidOf(statuses[0]) ?? ''), symbol: params.symbol, qty: sz, filled_qty: '0', side: params.side, status: 'open', type: 'limit', limit_price: tpTrig, filled_avg_price: null },
+          { id: String(oidOf(statuses[1]) ?? ''), symbol: params.symbol, qty: sz, filled_qty: '0', side: params.side, status: 'open', type: 'stop', stop_price: slTrig, filled_avg_price: null },
+        ],
+        filled_avg_price: null,
+      };
+    },
+
+    // Move an existing trigger order (stop/target) to a new level via HL modify.
+    async replaceOrder(id: string, patch: { stop_price?: number; limit_price?: number; qty?: number }): Promise<AlpacaOrder> {
+      const all = await rawOpenOrders();
+      const o = all.find((x) => String(x.oid) === String(id));
+      if (!o) throw new Error(`Hyperliquid order ${id} not found (already replaced or filled)`);
+      const assets = await assetIndexMap(cfg.mode);
+      const meta = assets.get(o.coin);
+      if (!meta) throw new Error(`Unknown Hyperliquid asset: ${o.coin}`);
+      const b = o.side === 'B';
+      const tpsl: 'tp' | 'sl' = o.tpsl === 'tp' || o.tpsl === 'sl'
+        ? o.tpsl
+        : patch.stop_price != null ? 'sl' : 'tp';
+      const newLevel = patch.stop_price ?? patch.limit_price;
+      if (newLevel == null) throw new Error('replaceOrder: no new price provided');
+      const triggerPx = formatPrice(newLevel, meta.szDecimals);
+      const worst = b ? newLevel * (1 + MARKET_SLIPPAGE) : newLevel * (1 - MARKET_SLIPPAGE);
+      const p = formatPrice(worst, meta.szDecimals);
+      const s = formatSize(patch.qty ?? Number(o.sz), meta.szDecimals);
+      const resp = await signAndSend<{ data: { statuses: HlOrderStatus[] } }>({
+        type: 'modify',
+        oid: Number(id),
+        order: { a: meta.index, b, p, s, r: true, t: { trigger: { isMarket: true, triggerPx, tpsl } } },
+      });
+      const status = resp.data.statuses?.[0];
+      if (status?.error) throw new Error(`Hyperliquid modify rejected: ${status.error}`);
+      const newOid = status?.resting?.oid ?? status?.filled?.oid ?? Number(id);
+      return {
+        id: String(newOid),
+        symbol: o.coin,
+        qty: s,
+        filled_qty: '0',
+        side: b ? 'buy' : 'sell',
+        status: 'open',
+        type: tpsl === 'sl' ? 'stop' : 'limit',
+        stop_price: tpsl === 'sl' ? triggerPx : null,
+        limit_price: tpsl === 'tp' ? triggerPx : null,
+        filled_avg_price: null,
+      };
+    },
+
+    // Not used on the HL path (entries go through submitMarketOrder + protect).
+    submitBracketOrder(): Promise<AlpacaOrder> {
+      throw new Error('Hyperliquid: bracket entries unsupported — use market order + submitOcoExit.');
+    },
   };
 }
 
@@ -260,6 +439,39 @@ interface HlOrderStatus {
   resting?: { oid: number };
   filled?: { oid: number; totalSz: string; avgPx: string };
   error?: string;
+}
+
+// HL `frontendOpenOrders` item (fields we use). side 'A'=ask(sell), 'B'=bid(buy).
+interface HlFrontendOrder {
+  coin: string;
+  oid: number;
+  side: 'A' | 'B';
+  limitPx: string;
+  sz: string;
+  isTrigger: boolean;
+  triggerPx: string;
+  tpsl?: 'tp' | 'sl' | '';
+}
+
+// Map an HL open order into the AlpacaOrder shape the protection reconciler
+// reads. A stop trigger -> type 'stop' + stop_price; a take-profit trigger or a
+// plain limit -> type 'limit' + limit_price, so hasStop/hasLimit checks work.
+function mapHlOrder(o: HlFrontendOrder): AlpacaOrder {
+  const side: 'buy' | 'sell' = o.side === 'A' ? 'sell' : 'buy';
+  const isStop = o.isTrigger && o.tpsl === 'sl';
+  const limitPx = o.isTrigger ? o.triggerPx : o.limitPx;
+  return {
+    id: String(o.oid),
+    symbol: o.coin,
+    qty: o.sz,
+    filled_qty: '0',
+    side,
+    status: 'open',
+    type: isStop ? 'stop' : 'limit',
+    stop_price: isStop ? o.triggerPx : null,
+    limit_price: isStop ? null : limitPx,
+    filled_avg_price: null,
+  };
 }
 
 // Asset metadata (szDecimals, maxLeverage) — needed in Stage 2 to convert a USD
