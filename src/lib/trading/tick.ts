@@ -103,11 +103,17 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     }
   }
 
+  // Reconcile + protect rely on order-management writes (listOpenOrders/OCO)
+  // that the Hyperliquid driver doesn't implement yet (Stage 3). HL mandates
+  // are suggestion-only (no positions ever open), so there's nothing to
+  // reconcile or protect — skip both to avoid noisy Stage-3 errors.
+  const supportsOrderMgmt = mandate.broker !== 'hyperliquid';
+
   // Alpaca → DB drift correction. Runs after monitor (so trades it just
   // closed are no longer 'open') and before protect (so the protector sees
   // corrected qty/levels). Failures are non-fatal.
   try {
-    await reconcileMandate(mandate.id);
+    if (supportsOrderMgmt) await reconcileMandate(mandate.id);
   } catch (err: any) {
     result.errors.push(`reconcile: ${err.message}`);
   }
@@ -344,7 +350,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
   // newly-filled entries from this tick, and re-attaches stops for any
   // position whose legs have expired or were canceled out-of-band.
   try {
-    await protectMandate(mandate.id);
+    if (supportsOrderMgmt) await protectMandate(mandate.id);
   } catch (err: any) {
     result.errors.push(`protect: ${err.message}`);
   }
