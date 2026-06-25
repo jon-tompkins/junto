@@ -42,8 +42,10 @@ export async function requestAmendmentApproval(params: {
   newValue: number | null;
   rationale: string;
   sourceUrls?: string[];
+  chatIdOverride?: string | null;
 }): Promise<void> {
-  const chatId = await getUserTelegramChatId(params.userId);
+  const override = params.chatIdOverride ? Number(params.chatIdOverride) : null;
+  const chatId = override && !Number.isNaN(override) ? override : await getUserTelegramChatId(params.userId);
   if (!chatId) {
     await updateAmendment(params.amendmentId, {
       status: 'skipped',

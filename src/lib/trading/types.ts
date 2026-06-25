@@ -15,6 +15,13 @@ export interface Mandate {
   alpaca_secret: string | null;
   account_kind: 'byo_keys' | 'managed';
   alpaca_account_id: string | null;
+  // Hyperliquid (broker='hyperliquid'): wallet address is enough to read +
+  // suggest; the agent key (encrypted) is only needed to execute.
+  hl_wallet_address: string | null;
+  hl_agent_secret: string | null;
+  // Optional per-mandate Telegram chat for suggestions (group/channel id as
+  // text; negative for groups). Falls back to the user's DM when null.
+  telegram_chat_id: string | null;
   status: 'active' | 'paused' | 'archived';
   learnings: string | null;
   learnings_updated_at: string | null;

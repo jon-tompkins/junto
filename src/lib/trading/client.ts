@@ -3,6 +3,7 @@
 // (white-label managed accounts) depending on mandate.account_kind.
 
 import { makeAlpaca, assertLiveAllowed, type AlpacaClient, type AlpacaAccount, type AlpacaClock, type AlpacaPosition, type AlpacaOrder } from './alpaca';
+import { makeHyperliquid } from './hyperliquid';
 import { decryptSecret } from './crypto';
 
 interface BrokerAuth {
@@ -129,14 +130,31 @@ export function makeManagedAlpaca(accountId: string): AlpacaClient {
 }
 
 export interface MandateAlpacaCreds {
+  broker?: string | null;
   account_kind?: string | null;
   alpaca_account_id?: string | null;
   alpaca_key_id?: string | null;
   alpaca_secret?: string | null;
+  hl_wallet_address?: string | null;
+  hl_agent_secret?: string | null;
   mode?: 'paper' | 'live' | null;
 }
 
+// Returns an AlpacaClient-shaped driver for the mandate's broker. The whole
+// trade stack (tick/monitor/reconcile/protection) consumes this interface, so
+// Hyperliquid is a drop-in driver swap.
 export function alpacaForMandate(mandate: MandateAlpacaCreds): AlpacaClient {
+  if (mandate.broker === 'hyperliquid') {
+    if (!mandate.hl_wallet_address) {
+      throw new Error('Hyperliquid mandate missing wallet address');
+    }
+    assertLiveAllowed(mandate.mode);
+    return makeHyperliquid({
+      walletAddress: mandate.hl_wallet_address,
+      mode: mandate.mode ?? null,
+      agentPrivateKey: decryptSecret(mandate.hl_agent_secret) as `0x${string}` | null,
+    });
+  }
   if (mandate.alpaca_account_id) {
     assertLiveAllowed(mandate.mode);
     return makeManagedAlpaca(mandate.alpaca_account_id);

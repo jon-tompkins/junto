@@ -252,6 +252,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
       await requestApproval({
         userId: mandate.user_id,
         mandateName: mandate.name,
+        chatIdOverride: mandate.telegram_chat_id,
         tradeId,
         decision,
         entryPrice: lastPrice,
@@ -319,6 +320,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
           await requestAmendmentApproval({
             userId: mandate.user_id,
             mandateName: mandate.name,
+            chatIdOverride: mandate.telegram_chat_id,
             ticker: trade.ticker,
             amendmentId,
             kind: amend.kind,

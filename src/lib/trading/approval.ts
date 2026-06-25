@@ -10,8 +10,11 @@ export async function requestApproval(params: {
   tradeId: string;
   decision: TradeDecision;
   entryPrice: number;
+  chatIdOverride?: string | null;
 }): Promise<void> {
-  const chatId = await getUserTelegramChatId(params.userId);
+  // Per-mandate chat override (e.g. a dedicated HL group) wins; else the user's DM.
+  const override = params.chatIdOverride ? Number(params.chatIdOverride) : null;
+  const chatId = override && !Number.isNaN(override) ? override : await getUserTelegramChatId(params.userId);
   if (!chatId) {
     await addJournalEntry({
       tradeId: params.tradeId,
@@ -129,6 +132,22 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
 
   const mandate = await getMandateById(trade.mandate_id);
   if (!mandate) return { ok: false, message: 'Mandate missing.' };
+
+  // SAFETY GATE: Hyperliquid mandates are suggestion-only for now. Execution
+  // stays off until Stage 3 (close/SL-TP/cancel) lands, an agent key is set,
+  // and execution is explicitly enabled. Approving just records intent.
+  if (mandate.broker === 'hyperliquid') {
+    await updateTrade(tradeId, { status: 'cancelled' });
+    await addJournalEntry({
+      tradeId,
+      kind: 'entry',
+      content: '[HL suggestion-only — execution not yet enabled; not submitted]',
+    });
+    return {
+      ok: false,
+      message: `🚧 ${trade.ticker}: Hyperliquid execution isn't enabled yet — this mandate is suggestion-only. (Turns on once Stage 3 + agent key are in.)`,
+    };
+  }
 
   try {
     const alpaca = alpacaForMandate(mandate);

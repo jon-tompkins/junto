@@ -127,9 +127,22 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
+  const broker: string = body.broker || 'alpaca';
+  const isHl = broker === 'hyperliquid';
+
+  // Hyperliquid mandate: needs a wallet address (read/suggest). Agent key is
+  // optional here — only required later to execute.
+  const hlWalletAddress: string | null = isHl ? String(body.hl_wallet_address || '').trim() || null : null;
+  if (isHl && !hlWalletAddress) {
+    return NextResponse.json({ error: 'Hyperliquid mandate requires hl_wallet_address' }, { status: 400 });
+  }
+  if (isHl && hlWalletAddress && !/^0x[0-9a-fA-F]{40}$/.test(hlWalletAddress)) {
+    return NextResponse.json({ error: 'hl_wallet_address must be a 0x… 40-hex address' }, { status: 400 });
+  }
+
   const accountKind: 'byo_keys' | 'managed' = body.account_kind === 'managed' ? 'managed' : 'byo_keys';
   let alpacaAccountId: string | null = null;
-  if (accountKind === 'managed') {
+  if (accountKind === 'managed' && !isHl) {
     const { data: u } = await supabase
       .from('users')
       .select('alpaca_account_id')
@@ -156,15 +169,18 @@ export async function POST(req: NextRequest) {
       daily_loss_limit_pct: Number(body.daily_loss_limit_pct) || 3,
       allowed_tickers: body.allowed_tickers || null,
       blocked_tickers: body.blocked_tickers || null,
-      broker: body.broker || 'alpaca',
+      broker,
       mode: body.mode || 'paper',
       account_kind: accountKind,
       alpaca_account_id: alpacaAccountId,
-      alpaca_key_id: accountKind === 'byo_keys' ? (body.alpaca_key_id || null) : null,
+      alpaca_key_id: accountKind === 'byo_keys' && !isHl ? (body.alpaca_key_id || null) : null,
       alpaca_secret:
-        accountKind === 'byo_keys' && body.alpaca_secret
+        accountKind === 'byo_keys' && !isHl && body.alpaca_secret
           ? encryptSecret(String(body.alpaca_secret))
           : null,
+      hl_wallet_address: hlWalletAddress,
+      hl_agent_secret: isHl && body.hl_agent_secret ? encryptSecret(String(body.hl_agent_secret)) : null,
+      telegram_chat_id: body.telegram_chat_id ? String(body.telegram_chat_id).trim() : null,
       status: 'active',
     })
     .select('*')
