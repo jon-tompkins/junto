@@ -383,9 +383,21 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
       const err = statuses.find((s) => s?.error);
       if (err) throw new Error(`Hyperliquid OCO rejected: ${err.error}`);
       const oidOf = (s?: HlOrderStatus) => s?.resting?.oid ?? s?.filled?.oid;
+      let tpOid = oidOf(statuses[0]);
+      let slOid = oidOf(statuses[1]);
+      // positionTpsl responses don't always surface resting oids — read them
+      // back from the venue so the trade row stores real leg ids (needed for
+      // later amend/cancel).
+      if (tpOid == null || slOid == null) {
+        try {
+          const live = (await rawOpenOrders()).filter((o) => o.coin === params.symbol && o.isTrigger);
+          tpOid = tpOid ?? live.find((o) => o.tpsl === 'tp')?.oid;
+          slOid = slOid ?? live.find((o) => o.tpsl === 'sl')?.oid;
+        } catch { /* best-effort */ }
+      }
       // Parent with legs so the protector captures both leg ids (stop + target).
       return {
-        id: oidOf(statuses[0]) != null ? String(oidOf(statuses[0])) : '',
+        id: tpOid != null ? String(tpOid) : '',
         symbol: params.symbol,
         qty: sz,
         filled_qty: '0',
@@ -393,8 +405,8 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
         status: 'open',
         order_class: 'oco',
         legs: [
-          { id: String(oidOf(statuses[0]) ?? ''), symbol: params.symbol, qty: sz, filled_qty: '0', side: params.side, status: 'open', type: 'limit', limit_price: tpTrig, filled_avg_price: null },
-          { id: String(oidOf(statuses[1]) ?? ''), symbol: params.symbol, qty: sz, filled_qty: '0', side: params.side, status: 'open', type: 'stop', stop_price: slTrig, filled_avg_price: null },
+          { id: tpOid != null ? String(tpOid) : '', symbol: params.symbol, qty: sz, filled_qty: '0', side: params.side, status: 'open', type: 'limit', limit_price: tpTrig, filled_avg_price: null },
+          { id: slOid != null ? String(slOid) : '', symbol: params.symbol, qty: sz, filled_qty: '0', side: params.side, status: 'open', type: 'stop', stop_price: slTrig, filled_avg_price: null },
         ],
         filled_avg_price: null,
       };

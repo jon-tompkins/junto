@@ -237,7 +237,12 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
       const isHlMandate = mandate.broker === 'hyperliquid';
       let qty: number;
       if (isHlMandate) {
-        if (decision.notional_usd < 10) {
+        // Margin-based sizing: decision.notional_usd is the capital (margin) to
+        // commit — % of collateral. Leverage scales it into actual exposure, so
+        // a $100 budget at 3x is a $300 notional position using $100 of margin.
+        const leverage = Math.max(1, mandate.hl_max_leverage ?? 3);
+        const exposureNotional = decision.notional_usd * leverage;
+        if (exposureNotional < 10) {
           await logSignal({
             mandateId: mandate.id,
             signal: { ticker: decision.ticker, direction: decision.side, conviction: decision.conviction, source_urls: decision.source_urls },
@@ -246,7 +251,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
           });
           continue;
         }
-        qty = decision.notional_usd / lastPrice; // fractional; driver formats to szDecimals
+        qty = exposureNotional / lastPrice; // fractional; driver formats to szDecimals
       } else {
         qty = Math.max(1, Math.floor(decision.notional_usd / lastPrice));
       }

@@ -212,7 +212,40 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
     });
     await updateSignalForTrade(tradeId, { decision: 'submitted', decisionReason: 'user_approved' });
 
-    return { ok: true, message: `📤 Submitted ${trade.ticker} — awaiting fill confirmation.` };
+    // Hyperliquid: attach the stop/target OCO INLINE right now. HL trigger
+    // orders are GTC (they don't expire like Alpaca's day-TIF bracket legs), so
+    // there's no reason to leave the position naked until the next tick — the
+    // protect sweep stays as the backstop. Best-effort: a failure here doesn't
+    // fail the approval (the position is open; protect will retry).
+    let protectedNote = '';
+    if (mandate.broker === 'hyperliquid' && trade.stop_price && trade.target_price) {
+      try {
+        const exitSide = trade.side === 'long' ? 'sell' : 'buy';
+        const qty = Number(order.filled_qty) > 0 ? Number(order.filled_qty) : Number(trade.qty);
+        const oco = await alpaca.submitOcoExit({
+          symbol: trade.ticker,
+          qty,
+          side: exitSide,
+          stopPrice: Number(trade.stop_price),
+          limitPrice: Number(trade.target_price),
+          clientOrderId: `protect-${tradeId}`,
+        });
+        const legs = oco.legs || [];
+        const stopLeg = legs.find((l) => l.type === 'stop' || l.type === 'stop_limit');
+        const targetLeg = legs.find((l) => l.type === 'limit');
+        await updateTrade(tradeId, {
+          status: 'open',
+          stop_order_id: stopLeg?.id || null,
+          target_order_id: targetLeg?.id || null,
+        });
+        await addJournalEntry({ tradeId, kind: 'daily', content: `[protection attached inline: stop ${trade.stop_price}, target ${trade.target_price}]` });
+        protectedNote = ' (stop+target attached)';
+      } catch (e: any) {
+        await addJournalEntry({ tradeId, kind: 'daily', content: `[inline protection failed: ${String(e?.message).slice(0, 150)} — protect tick will retry]` });
+      }
+    }
+
+    return { ok: true, message: `📤 Submitted ${trade.ticker} — awaiting fill confirmation.${protectedNote}` };
   } catch (err: any) {
     await updateTrade(tradeId, { status: 'rejected' });
     await addJournalEntry({
