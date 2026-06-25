@@ -159,6 +159,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // Utility: report this chat's id. Works in groups (slash commands reach the
+  // bot even in privacy mode) — used to wire a mandate's telegram_chat_id to a
+  // dedicated group/channel.
+  if (/^\/(chatid|id)(?:@\w+)?\s*$/i.test(text)) {
+    await sendTelegramMessage(
+      chatId,
+      `This chat's id is:\n<code>${chatId}</code>\n\nGive it to your assistant to route a mandate's trade suggestions here.`,
+    );
+    return NextResponse.json({ ok: true });
+  }
+
   if (/^\/help(?:@\w+)?\s*$/i.test(text)) {
     await sendTelegramMessage(
       chatId,
