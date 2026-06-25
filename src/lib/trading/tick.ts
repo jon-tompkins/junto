@@ -229,7 +229,27 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
         continue;
       }
 
-      const qty = Math.max(1, Math.floor(decision.notional_usd / lastPrice));
+      // Sizing differs by venue: equities (Alpaca) trade in whole shares with a
+      // sensible min of 1; crypto perps (Hyperliquid) trade FRACTIONAL coin
+      // units, so flooring to an int and forcing min-1 turns a $100 idea on a
+      // $59k coin into a 1-BTC ($59k) order. For HL keep the fractional qty
+      // (the driver rounds to szDecimals) and skip if it's below HL's ~$10 min.
+      const isHlMandate = mandate.broker === 'hyperliquid';
+      let qty: number;
+      if (isHlMandate) {
+        if (decision.notional_usd < 10) {
+          await logSignal({
+            mandateId: mandate.id,
+            signal: { ticker: decision.ticker, direction: decision.side, conviction: decision.conviction, source_urls: decision.source_urls },
+            decision: 'skipped_guideline',
+            decisionReason: 'below_min_notional',
+          });
+          continue;
+        }
+        qty = decision.notional_usd / lastPrice; // fractional; driver formats to szDecimals
+      } else {
+        qty = Math.max(1, Math.floor(decision.notional_usd / lastPrice));
+      }
       const stopPrice = decision.side === 'long'
         ? lastPrice * (1 - decision.stop_pct / 100)
         : lastPrice * (1 + decision.stop_pct / 100);
