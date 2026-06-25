@@ -129,6 +129,66 @@ export async function getRecentDeliveredRuns(
   return data || [];
 }
 
+export interface PublicArchiveRun {
+  id: string;
+  newsletter_id: string;
+  newsletter_name: string;
+  subject: string | null;
+  generated_at: string;
+  tickers: string[];
+}
+
+// Public dispatch archive: delivered runs that belong to PUBLIC newsletters.
+// Used by the sitemap and the per-issue permalink/ticker pages. Private/paid
+// newsletters never enter the public index.
+export async function getPublicDeliveredRuns(limit = 2000): Promise<PublicArchiveRun[]> {
+  const { data, error } = await supabase()
+    .from('newsletter_runs')
+    .select('id, newsletter_id, subject, generated_at, tickers, newsletters_v2!inner(name, is_public)')
+    .eq('status', 'delivered')
+    .eq('newsletters_v2.is_public', true)
+    .not('content', 'is', null)
+    .order('generated_at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error('[newsletter-runs] getPublicDeliveredRuns failed:', error);
+    return [];
+  }
+  return (data || []).map((r: any) => ({
+    id: r.id,
+    newsletter_id: r.newsletter_id,
+    newsletter_name: r.newsletters_v2?.name ?? 'Dispatch',
+    subject: r.subject,
+    generated_at: r.generated_at,
+    tickers: r.tickers ?? [],
+  }));
+}
+
+// Public dispatches that mention a given ticker, newest first. Powers the
+// /tickers/[ticker] search/coverage page.
+export async function getPublicRunsByTicker(ticker: string, limit = 60): Promise<PublicArchiveRun[]> {
+  const { data, error } = await supabase()
+    .from('newsletter_runs')
+    .select('id, newsletter_id, subject, generated_at, tickers, newsletters_v2!inner(name, is_public)')
+    .eq('status', 'delivered')
+    .eq('newsletters_v2.is_public', true)
+    .contains('tickers', [ticker.toUpperCase()])
+    .order('generated_at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error('[newsletter-runs] getPublicRunsByTicker failed:', error);
+    return [];
+  }
+  return (data || []).map((r: any) => ({
+    id: r.id,
+    newsletter_id: r.newsletter_id,
+    newsletter_name: r.newsletters_v2?.name ?? 'Dispatch',
+    subject: r.subject,
+    generated_at: r.generated_at,
+    tickers: r.tickers ?? [],
+  }));
+}
+
 // Returns the last N runs across ALL newsletters — useful for admin health checks.
 export async function getRecentRuns(limit: number = 50): Promise<NewsletterRun[]> {
   const { data, error } = await supabase()

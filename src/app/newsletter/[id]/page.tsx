@@ -597,6 +597,11 @@ export default function NewsletterDetailPage() {
                         </svg>
                       </div>
                     </button>
+                    <div className="px-4 pb-2 -mt-1">
+                      <Link href={`/newsletter/${id}/${run.id}`} className="text-[11px] text-[#B08D57] hover:underline">
+                        View &amp; share this issue →
+                      </Link>
+                    </div>
                     {expandedRunId === run.id && (
                       <div className="border-t border-[rgba(176,141,87,0.18)] p-6">
                         <div

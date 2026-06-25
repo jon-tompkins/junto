@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { getSupabase } from '@/lib/db/client';
+import { getPublicDeliveredRuns } from '@/lib/db/newsletter-runs';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://www.myjunto.xyz';
@@ -72,5 +73,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Don't fail sitemap generation if DB is unavailable
   }
 
-  return [...staticPages, ...newsletterPages, ...sourcePages];
+  let dispatchPages: MetadataRoute.Sitemap = [];
+  let tickerPages: MetadataRoute.Sitemap = [];
+
+  try {
+    // Per-issue dispatch permalinks (public newsletters only) + the per-ticker
+    // coverage pages they generate. One query feeds both surfaces.
+    const runs = await getPublicDeliveredRuns(2000);
+
+    dispatchPages = runs.map((r) => ({
+      url: `${baseUrl}/newsletter/${r.newsletter_id}/${r.id}`,
+      lastModified: r.generated_at ? new Date(r.generated_at) : new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    }));
+
+    const tickers = new Set<string>();
+    for (const r of runs) for (const t of r.tickers || []) tickers.add(t);
+    tickerPages = [...tickers].map((t) => ({
+      url: `${baseUrl}/tickers/${encodeURIComponent(t)}`,
+      lastModified: new Date(),
+      changeFrequency: 'daily' as const,
+      priority: 0.7,
+    }));
+  } catch {
+    // Don't fail sitemap generation if DB is unavailable
+  }
+
+  return [...staticPages, ...newsletterPages, ...sourcePages, ...dispatchPages, ...tickerPages];
 }
