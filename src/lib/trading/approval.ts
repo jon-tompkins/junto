@@ -133,20 +133,22 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
   const mandate = await getMandateById(trade.mandate_id);
   if (!mandate) return { ok: false, message: 'Mandate missing.' };
 
-  // SAFETY GATE: Hyperliquid mandates are suggestion-only for now. Execution
-  // stays off until Stage 3 (close/SL-TP/cancel) lands, an agent key is set,
-  // and execution is explicitly enabled. Approving just records intent.
+  // SAFETY GATE for Hyperliquid. Execution is allowed ONLY on testnet
+  // (mode='paper') AND when an agent key is set. Mainnet is hard-blocked here
+  // (belt-and-suspenders on top of assertLiveAllowed in the driver); a mandate
+  // with no agent key stays suggestion-only.
   if (mandate.broker === 'hyperliquid') {
-    await updateTrade(tradeId, { status: 'cancelled' });
-    await addJournalEntry({
-      tradeId,
-      kind: 'entry',
-      content: '[HL suggestion-only — execution not yet enabled; not submitted]',
-    });
-    return {
-      ok: false,
-      message: `🚧 ${trade.ticker}: Hyperliquid execution isn't enabled yet — this mandate is suggestion-only. (Turns on once Stage 3 + agent key are in.)`,
-    };
+    if (mandate.mode !== 'paper') {
+      await updateTrade(tradeId, { status: 'cancelled' });
+      await addJournalEntry({ tradeId, kind: 'entry', content: '[HL mainnet execution disabled — not submitted]' });
+      return { ok: false, message: `🚧 ${trade.ticker}: Hyperliquid mainnet execution is disabled (testnet only for now).` };
+    }
+    if (!mandate.hl_agent_secret) {
+      await updateTrade(tradeId, { status: 'cancelled' });
+      await addJournalEntry({ tradeId, kind: 'entry', content: '[HL suggestion-only — no agent key set; not submitted]' });
+      return { ok: false, message: `🚧 ${trade.ticker}: suggestion-only — no agent key set for this mandate yet.` };
+    }
+    // paper + agent key present → fall through and execute on testnet.
   }
 
   try {
