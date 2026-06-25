@@ -57,7 +57,11 @@ export async function reproposeTrade(tradeId: string): Promise<ReproposeResult |
   }
 
   const originalNotional = Number(trade.qty) * proposalPrice;
-  const newQty = Math.max(1, Math.floor(originalNotional / livePrice));
+  // HL perps size fractionally; equities round to whole shares (min 1). Forcing
+  // min-1 on a high-priced perp would massively oversize — see tick.ts sizing.
+  const newQty = mandate.broker === 'hyperliquid'
+    ? originalNotional / livePrice
+    : Math.max(1, Math.floor(originalNotional / livePrice));
 
   const newStop = trade.side === 'long'
     ? livePrice * (1 - stopPct / 100)
