@@ -21,6 +21,10 @@
       "schedule": "30 13 * * *"
     },
     {
+      "path": "/api/cron/hl-wallet-poll",
+      "schedule": "*/20 * * * *"
+    },
+    {
       "path": "/api/cron/personal-dispatch",
       "schedule": "0 14 * * *"
     },
