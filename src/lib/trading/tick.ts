@@ -12,6 +12,7 @@ import {
 } from './db';
 import { loadJuntoSnapshot, extractSignals } from './extract';
 import { isWalletJunto, loadWalletSignals } from './extract-wallets';
+import { getHyperliquidMeta } from './hyperliquid';
 import { decideTrades } from './decide';
 import { suggestPortfolioAdjustments } from './adjustments';
 import { decideAmendments } from './decide-amendments';
@@ -216,8 +217,30 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
 
   const alpaca = alpacaForMandate(mandate);
 
+  // For HL mandates, build the set of delisted/halted coins once so we never
+  // generate a proposal card that the venue will only reject ("Trading is
+  // halted"). Non-fatal if the meta fetch fails — fall back to no filter.
+  const delistedHl = new Set<string>();
+  if (mandate.broker === 'hyperliquid') {
+    try {
+      const universe = await getHyperliquidMeta(mandate.mode);
+      for (const a of universe) if (a.isDelisted) delistedHl.add(a.name.toUpperCase());
+    } catch {
+      /* best-effort; venue still rejects on submit as backstop */
+    }
+  }
+
   for (const decision of decisions) {
     try {
+      if (delistedHl.has(decision.ticker.toUpperCase())) {
+        await logSignal({
+          mandateId: mandate.id,
+          signal: { ticker: decision.ticker, direction: decision.side, conviction: decision.conviction, source_urls: decision.source_urls },
+          decision: 'skipped_guideline',
+          decisionReason: 'delisted_asset',
+        });
+        continue;
+      }
       const lastPrice = await alpaca.getLastTrade(decision.ticker);
       if (!lastPrice || lastPrice <= 0) {
         await logSignal({

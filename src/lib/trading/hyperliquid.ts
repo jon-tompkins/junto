@@ -69,6 +69,10 @@ export interface HlAssetMeta {
   name: string;
   szDecimals: number;
   maxLeverage: number;
+  // Set by HL when an asset is removed from trading. Orders on a delisted coin
+  // are rejected venue-side ("Trading is halted"), so we filter these out
+  // before ever generating a proposal card.
+  isDelisted?: boolean;
 }
 
 interface HlMeta {
