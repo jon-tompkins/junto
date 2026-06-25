@@ -3,7 +3,10 @@ import { runTick } from '@/lib/trading/tick';
 import type { TickWindow } from '@/lib/trading/types';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+// Mandates are processed sequentially, each running extract + decide LLM calls;
+// with >1 active mandate this can exceed 60s. Bump to the Pro max for headroom.
+// (If the mandate count grows large, move to parallel / per-mandate invocations.)
+export const maxDuration = 300;
 
 // Trade tick — runs 5x per US trading day:
 //   13:35 UTC (09:35 ET) — post-open
