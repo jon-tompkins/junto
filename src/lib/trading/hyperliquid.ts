@@ -492,7 +492,11 @@ interface HlFrontendOrder {
   sz: string;
   isTrigger: boolean;
   triggerPx: string;
-  tpsl?: 'tp' | 'sl' | '';
+  // NB: frontendOpenOrders returns tpsl=null for both legs of an OCO — it is
+  // NOT a reliable stop/target discriminator. orderType ("Stop Market" /
+  // "Take Profit Market") is, so classification keys off that.
+  tpsl?: 'tp' | 'sl' | '' | null;
+  orderType?: string;
 }
 
 // Map an HL open order into the AlpacaOrder shape the protection reconciler
@@ -500,7 +504,11 @@ interface HlFrontendOrder {
 // plain limit -> type 'limit' + limit_price, so hasStop/hasLimit checks work.
 function mapHlOrder(o: HlFrontendOrder): AlpacaOrder {
   const side: 'buy' | 'sell' = o.side === 'A' ? 'sell' : 'buy';
-  const isStop = o.isTrigger && o.tpsl === 'sl';
+  // Classify by orderType first ("Stop ..." vs "Take Profit ..."), since HL
+  // returns tpsl=null in frontendOpenOrders. Without this, a stop-loss leg gets
+  // mistyped as a limit/target and reconcile copies its price into target_price.
+  const ot = (o.orderType || '').toLowerCase();
+  const isStop = o.isTrigger && (ot.startsWith('stop') || (!ot && o.tpsl === 'sl'));
   const limitPx = o.isTrigger ? o.triggerPx : o.limitPx;
   return {
     id: String(o.oid),
