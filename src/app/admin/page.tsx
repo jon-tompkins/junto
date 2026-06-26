@@ -256,6 +256,12 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-2 text-xs">
               <span className="text-[#F5EFE0]/35 uppercase tracking-wider font-[var(--font-oswald)]">Tools</span>
               <Link
+                href="/admin/backlog"
+                className="px-3 py-1.5 rounded border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/80 hover:text-[#B08D57] hover:border-[#B08D57] transition"
+              >
+                Backlog →
+              </Link>
+              <Link
                 href="/admin/analytics"
                 className="px-3 py-1.5 rounded border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/80 hover:text-[#B08D57] hover:border-[#B08D57] transition"
               >
