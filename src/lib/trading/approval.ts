@@ -11,6 +11,10 @@ export async function requestApproval(params: {
   decision: TradeDecision;
   entryPrice: number;
   chatIdOverride?: string | null;
+  // For leveraged venues (Hyperliquid): leverage multiplier so the card can
+  // show real position size (margin × leverage) and the leveraged P/L impact
+  // of the stop/target, not just the raw price move.
+  leverage?: number | null;
 }): Promise<void> {
   // Per-mandate chat override (e.g. a dedicated HL group) wins; else the user's DM.
   const override = params.chatIdOverride ? Number(params.chatIdOverride) : null;
@@ -31,11 +35,24 @@ export async function requestApproval(params: {
     ? params.entryPrice * (1 + params.decision.target_pct / 100)
     : params.entryPrice * (1 - params.decision.target_pct / 100);
 
+  // Leverage-aware sizing + risk. On Hyperliquid decision.notional_usd is the
+  // MARGIN committed; the actual position is margin × leverage, and a stop/
+  // target price move is amplified by leverage on that margin. Spell both out
+  // so a "+20% target" can't be mistaken for the return on capital.
+  const lev = params.leverage && params.leverage > 1 ? params.leverage : 1;
+  const margin = params.decision.notional_usd;
+  const sizeLine = lev > 1
+    ? `Size: ~$${(margin * lev).toFixed(0)} notional · $${margin.toFixed(0)} margin · ${lev}x @ ~$${params.entryPrice.toFixed(2)}`
+    : `Notional: $${margin.toFixed(0)} @ ~$${params.entryPrice.toFixed(2)}`;
+  const riskLine = lev > 1
+    ? `Stop: $${stopPrice.toFixed(2)} (−${params.decision.stop_pct}% px · −${(params.decision.stop_pct * lev).toFixed(0)}% on margin)\nTarget: $${targetPrice.toFixed(2)} (+${params.decision.target_pct}% px · +${(params.decision.target_pct * lev).toFixed(0)}% on margin)`
+    : `Stop: $${stopPrice.toFixed(2)} (-${params.decision.stop_pct}%)  Target: $${targetPrice.toFixed(2)} (+${params.decision.target_pct}%)`;
+
   const body = `🤖 <b>Trade proposal</b> — ${escapeHtml(params.mandateName)}
 
 <b>${params.decision.side === 'long' ? 'BUY' : 'SHORT'} ${escapeHtml(params.decision.ticker)}</b>${params.decision.sector ? ` (${params.decision.sector})` : ''}
-Notional: $${params.decision.notional_usd.toFixed(0)} @ ~$${params.entryPrice.toFixed(2)}
-Stop: $${stopPrice.toFixed(2)} (-${params.decision.stop_pct}%)  Target: $${targetPrice.toFixed(2)} (+${params.decision.target_pct}%)
+${sizeLine}
+${riskLine}
 Hold: ~${params.decision.expected_hold_days}d  Conviction: ${params.decision.conviction}/5
 
 <b>Thesis:</b> ${escapeHtml(params.decision.entry_thesis)}
@@ -270,21 +287,39 @@ function escapeHtml(s: string): string {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// Derive a human label from a source URL: @handle for tweets, a shortened
+// 0xabcd…wxyz for wallet/explorer links, else the hostname — never a bare
+// "source N", so the reader can see WHO the signal came from at a glance.
+function sourceLabel(url: string): string {
+  const tw = /(?:x|twitter)\.com\/([^/?#]+)/i.exec(url);
+  if (tw) return `@${tw[1]}`;
+  // Wallet address anywhere in the path (hypurrscan, etherscan, arbiscan, etc.)
+  const addr = /(0x[0-9a-fA-F]{6,})/.exec(url);
+  if (addr) {
+    const a = addr[1];
+    return `${a.slice(0, 6)}…${a.slice(-4)}`;
+  }
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return 'source';
+  }
+}
+
 function formatSources(urls?: string[]): string {
   if (!urls || urls.length === 0) return '';
-  // Dedupe by display label: the same handle (or identical URL) must not
-  // render as multiple chips. Several distinct tweets from one author all
-  // show "@handle", so collapse to the first. Keep first-seen order.
+  // Dedupe by display label: the same handle/wallet must not render as
+  // multiple chips. Several distinct tweets from one author all show
+  // "@handle", so collapse to the first. Keep first-seen order.
   const seen = new Set<string>();
   const links: string[] = [];
   for (const url of urls) {
     if (typeof url !== 'string' || !url) continue;
-    const m = /(?:x|twitter)\.com\/([^/?#]+)/i.exec(url);
-    const label = m ? `@${m[1]}` : url;
+    const label = sourceLabel(url);
     const key = label.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    links.push(`<a href="${escapeHtml(url)}">${m ? `@${escapeHtml(m[1])}` : `source ${links.length + 1}`}</a>`);
+    links.push(`<a href="${escapeHtml(url)}">${escapeHtml(label)}</a>`);
     if (links.length >= 5) break;
   }
   return links.length ? `\n\n<b>Sources:</b> ${links.join(' · ')}` : '';

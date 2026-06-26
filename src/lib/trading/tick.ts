@@ -317,6 +317,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
         tradeId,
         decision,
         entryPrice: lastPrice,
+        leverage: mandate.broker === 'hyperliquid' ? Math.max(1, mandate.hl_max_leverage ?? 3) : 1,
       });
 
       result.proposed++;

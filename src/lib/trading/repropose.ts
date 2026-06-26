@@ -124,6 +124,7 @@ export async function reproposeTrade(tradeId: string): Promise<ReproposeResult |
     tradeId: newTradeId,
     decision,
     entryPrice: livePrice,
+    leverage: mandate.broker === 'hyperliquid' ? Math.max(1, mandate.hl_max_leverage ?? 3) : 1,
   });
 
   return { ok: true, newTradeId, ticker: trade.ticker, proposalPrice: livePrice, qty: newQty };
