@@ -40,13 +40,14 @@ export async function POST(req: NextRequest) {
   // szDecimals). Alpaca stays whole-share.
   const isHl = mandate.broker === 'hyperliquid';
   let qty: number;
+  let notional: number;
   if (isHl) {
     const lev = Math.max(1, mandate.hl_max_leverage ?? 3);
     const marginBudget = Math.max(4, mandate.capital_allotted_usd * (mandate.max_position_pct / 100));
-    const notional = Math.max(10, marginBudget * lev);
+    notional = Math.max(10, marginBudget * lev);
     qty = notional / lastPrice;
   } else {
-    const notional = Math.min(500, mandate.capital_allotted_usd * 0.05);
+    notional = Math.min(500, mandate.capital_allotted_usd * 0.05);
     qty = Math.max(1, Math.floor(notional / lastPrice));
   }
   const stopPct = 2;
