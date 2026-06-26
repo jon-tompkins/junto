@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
+import { STYLE_OPTIONS } from '@/lib/trading/styles';
 
 interface MandateRow {
   id: string;
@@ -63,6 +64,7 @@ export default function AdminTradingPage() {
     max_sector_concentration_pct: '',
     idleness_days_threshold: '',
     guidelines: '',
+    style: '',
     broker: 'alpaca' as 'alpaca' | 'hyperliquid',
     account_kind: 'byo_keys' as 'byo_keys' | 'managed',
     alpaca_key_id: '',
@@ -156,7 +158,7 @@ export default function AdminTradingPage() {
       if (data.mandate) {
         setMandates(prev => [{ ...data.mandate, stats: { open: 0, closed: 0, pnl: 0, unrealized: null } }, ...prev]);
         setShowCreate(false);
-        setForm({ name: '', junto_id: '', capital_allotted_usd: '1000', max_position_pct: '10', daily_loss_limit_pct: '3', max_single_position_pct: '', max_top3_concentration_pct: '', max_sector_concentration_pct: '', idleness_days_threshold: '', guidelines: '', broker: 'alpaca', account_kind: 'byo_keys', alpaca_key_id: '', alpaca_secret: '', hl_wallet_address: '', hl_agent_secret: '', hl_max_leverage: '3', telegram_chat_id: '', mode: 'paper' });
+        setForm({ name: '', junto_id: '', capital_allotted_usd: '1000', max_position_pct: '10', daily_loss_limit_pct: '3', max_single_position_pct: '', max_top3_concentration_pct: '', max_sector_concentration_pct: '', idleness_days_threshold: '', guidelines: '', style: '', broker: 'alpaca', account_kind: 'byo_keys', alpaca_key_id: '', alpaca_secret: '', hl_wallet_address: '', hl_agent_secret: '', hl_max_leverage: '3', telegram_chat_id: '', mode: 'paper' });
         setCreateType(null);
       } else {
         setError(data.error || 'Failed to create');
@@ -503,6 +505,12 @@ export default function AdminTradingPage() {
               </div>
             )
             }
+            <Field label="Style">
+              <select value={form.style} onChange={e => setForm({ ...form, style: e.target.value })} className={inputCls}>
+                <option value="">No style — mandate only</option>
+                {STYLE_OPTIONS.map(s => <option key={s.key} value={s.key}>{s.name} — {s.tagline}</option>)}
+              </select>
+            </Field>
             <Field label="Guidelines (natural language)">
               <textarea
                 value={form.guidelines}

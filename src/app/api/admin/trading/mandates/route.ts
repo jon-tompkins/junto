@@ -182,6 +182,7 @@ export async function POST(req: NextRequest) {
       hl_agent_secret: isHl && body.hl_agent_secret ? encryptSecret(String(body.hl_agent_secret)) : null,
       hl_max_leverage: isHl ? Math.min(Math.max(Number(body.hl_max_leverage) || 3, 1), 20) : 3,
       telegram_chat_id: body.telegram_chat_id ? String(body.telegram_chat_id).trim() : null,
+      style: body.style || null,
       status: 'active',
     })
     .select('*')

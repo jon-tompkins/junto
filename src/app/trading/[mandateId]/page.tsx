@@ -20,6 +20,11 @@ interface Mandate {
   blocked_tickers: string[] | null;
   status: string;
   mode: string;
+  broker: string;
+  telegram_chat_id: string | null;
+  hl_wallet_address: string | null;
+  hl_max_leverage: number | null;
+  hl_has_agent_key: boolean;
   learnings: string | null;
   learnings_updated_at: string | null;
   use_learnings: boolean;
@@ -151,14 +156,19 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const [saving, setSaving] = useState(false);
   const [editingSettings, setEditingSettings] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [juntos, setJuntos] = useState<Array<{ id: string; name: string }>>([]);
   const [settingsDraft, setSettingsDraft] = useState({
     name: '',
+    junto_id: '',
     capital_allotted_usd: '',
     max_position_pct: '',
     daily_loss_limit_pct: '',
-    mode: 'paper' as 'paper' | 'live',
     allowed_tickers: '',
     blocked_tickers: '',
+    telegram_chat_id: '',
+    hl_wallet_address: '',
+    hl_max_leverage: '',
+    hl_agent_secret: '',
   });
   const [sendingTest, setSendingTest] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
@@ -310,6 +320,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         setAccount(data.account || { equity: null, cash: null });
       })
       .finally(() => setLoading(false));
+    fetch('/api/juntos/public').then(r => r.ok ? r.json() : { juntos: [] }).then(j => setJuntos(j.juntos || [])).catch(() => {});
   }, [status, mandateId]);
 
   // Live polling — refresh positions + account every 15s while tab is visible.
@@ -366,12 +377,16 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     if (!mandate) return;
     setSettingsDraft({
       name: mandate.name,
+      junto_id: mandate.junto_id || '',
       capital_allotted_usd: String(mandate.capital_allotted_usd),
       max_position_pct: String(mandate.max_position_pct),
       daily_loss_limit_pct: String(mandate.daily_loss_limit_pct),
-      mode: (mandate.mode === 'live' ? 'live' : 'paper'),
       allowed_tickers: (mandate.allowed_tickers || []).join(', '),
       blocked_tickers: (mandate.blocked_tickers || []).join(', '),
+      telegram_chat_id: mandate.telegram_chat_id || '',
+      hl_wallet_address: mandate.hl_wallet_address || '',
+      hl_max_leverage: mandate.hl_max_leverage != null ? String(mandate.hl_max_leverage) : '3',
+      hl_agent_secret: '',
     });
     setEditingSettings(true);
   }
@@ -383,18 +398,27 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     };
     setSavingSettings(true);
     try {
+      // broker and mode are deliberately omitted — locked after creation.
+      const payload: Record<string, unknown> = {
+        name: settingsDraft.name.trim(),
+        junto_id: settingsDraft.junto_id || null,
+        capital_allotted_usd: Number(settingsDraft.capital_allotted_usd) || 0,
+        max_position_pct: Number(settingsDraft.max_position_pct) || 0,
+        daily_loss_limit_pct: Number(settingsDraft.daily_loss_limit_pct) || 0,
+        allowed_tickers: parseTickers(settingsDraft.allowed_tickers),
+        blocked_tickers: parseTickers(settingsDraft.blocked_tickers),
+        telegram_chat_id: settingsDraft.telegram_chat_id.trim() || null,
+      };
+      if (mandate?.broker === 'hyperliquid') {
+        payload.hl_wallet_address = settingsDraft.hl_wallet_address.trim();
+        payload.hl_max_leverage = Number(settingsDraft.hl_max_leverage) || 3;
+        // Only send the agent key when the user typed a new one (blank = keep existing).
+        if (settingsDraft.hl_agent_secret.trim()) payload.hl_agent_secret = settingsDraft.hl_agent_secret.trim();
+      }
       const res = await fetch(`/api/admin/trading/mandates/${mandateId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: settingsDraft.name.trim(),
-          capital_allotted_usd: Number(settingsDraft.capital_allotted_usd) || 0,
-          max_position_pct: Number(settingsDraft.max_position_pct) || 0,
-          daily_loss_limit_pct: Number(settingsDraft.daily_loss_limit_pct) || 0,
-          mode: settingsDraft.mode,
-          allowed_tickers: parseTickers(settingsDraft.allowed_tickers),
-          blocked_tickers: parseTickers(settingsDraft.blocked_tickers),
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.mandate) {
@@ -725,11 +749,20 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                 {!editingSettings ? (
                   <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 text-sm">
                     <SettingRow label="Name" value={mandate.name} />
-                    <SettingRow label="Mode" value={mandate.mode} />
+                    <SettingRow label="Broker (locked)" value={mandate.broker || 'alpaca'} />
+                    <SettingRow label="Network (locked)" value={mandate.mode === 'live' ? 'mainnet · live' : 'testnet · paper'} />
                     <SettingRow label="Status" value={mandate.status} />
                     <SettingRow label="Capital" value={fmtUsd(mandate.capital_allotted_usd)} />
                     <SettingRow label="Max position" value={`${mandate.max_position_pct}%`} />
                     <SettingRow label="Daily loss limit" value={`${mandate.daily_loss_limit_pct}%`} />
+                    <SettingRow label="Telegram chat" value={mandate.telegram_chat_id || '— your DM —'} />
+                    {mandate.broker === 'hyperliquid' && (
+                      <>
+                        <SettingRow label="HL wallet" value={mandate.hl_wallet_address || '— none —'} wide />
+                        <SettingRow label="Max leverage" value={`${mandate.hl_max_leverage ?? 3}x`} />
+                        <SettingRow label="Agent key" value={mandate.hl_has_agent_key ? '✓ set (suggestion+execute)' : '— not set (suggestion-only) —'} />
+                      </>
+                    )}
                     <SettingRow
                       label="Allowed tickers"
                       value={mandate.allowed_tickers?.length ? mandate.allowed_tickers.join(', ') : '— any —'}
@@ -742,31 +775,52 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                     />
                   </dl>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <SettingField label="Name">
-                      <input value={settingsDraft.name} onChange={e => setSettingsDraft({ ...settingsDraft, name: e.target.value })} className={settingInputCls} />
-                    </SettingField>
-                    <SettingField label="Mode">
-                      <select value={settingsDraft.mode} onChange={e => setSettingsDraft({ ...settingsDraft, mode: e.target.value as 'paper' | 'live' })} className={settingInputCls}>
-                        <option value="paper">Paper</option>
-                        <option value="live">Live</option>
-                      </select>
-                    </SettingField>
-                    <SettingField label="Capital (USD)">
-                      <input type="number" value={settingsDraft.capital_allotted_usd} onChange={e => setSettingsDraft({ ...settingsDraft, capital_allotted_usd: e.target.value })} className={settingInputCls} />
-                    </SettingField>
-                    <SettingField label="Max position %">
-                      <input type="number" value={settingsDraft.max_position_pct} onChange={e => setSettingsDraft({ ...settingsDraft, max_position_pct: e.target.value })} className={settingInputCls} />
-                    </SettingField>
-                    <SettingField label="Daily loss limit %">
-                      <input type="number" value={settingsDraft.daily_loss_limit_pct} onChange={e => setSettingsDraft({ ...settingsDraft, daily_loss_limit_pct: e.target.value })} className={settingInputCls} />
-                    </SettingField>
-                    <SettingField label="Allowed tickers (comma-sep, blank = any)">
-                      <input value={settingsDraft.allowed_tickers} onChange={e => setSettingsDraft({ ...settingsDraft, allowed_tickers: e.target.value })} placeholder="AAPL, MSFT, NVDA" className={settingInputCls} />
-                    </SettingField>
-                    <SettingField label="Blocked tickers (comma-sep)">
-                      <input value={settingsDraft.blocked_tickers} onChange={e => setSettingsDraft({ ...settingsDraft, blocked_tickers: e.target.value })} placeholder="TSLA, GME" className={settingInputCls} />
-                    </SettingField>
+                  <div className="space-y-3">
+                    <p className="text-[11px] text-parchment/30">
+                      Broker (<span className="font-mono">{mandate.broker || 'alpaca'}</span>) and network (<span className="font-mono">{mandate.mode === 'live' ? 'mainnet/live' : 'testnet/paper'}</span>) are fixed at creation and can&apos;t be changed here.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <SettingField label="Name">
+                        <input value={settingsDraft.name} onChange={e => setSettingsDraft({ ...settingsDraft, name: e.target.value })} className={settingInputCls} />
+                      </SettingField>
+                      <SettingField label="Junto">
+                        <select value={settingsDraft.junto_id} onChange={e => setSettingsDraft({ ...settingsDraft, junto_id: e.target.value })} className={settingInputCls}>
+                          <option value="">— none —</option>
+                          {juntos.map(j => <option key={j.id} value={j.id}>{j.name}</option>)}
+                        </select>
+                      </SettingField>
+                      <SettingField label="Capital (USD)">
+                        <input type="number" value={settingsDraft.capital_allotted_usd} onChange={e => setSettingsDraft({ ...settingsDraft, capital_allotted_usd: e.target.value })} className={settingInputCls} />
+                      </SettingField>
+                      <SettingField label="Max position %">
+                        <input type="number" value={settingsDraft.max_position_pct} onChange={e => setSettingsDraft({ ...settingsDraft, max_position_pct: e.target.value })} className={settingInputCls} />
+                      </SettingField>
+                      <SettingField label="Daily loss limit %">
+                        <input type="number" value={settingsDraft.daily_loss_limit_pct} onChange={e => setSettingsDraft({ ...settingsDraft, daily_loss_limit_pct: e.target.value })} className={settingInputCls} />
+                      </SettingField>
+                      <SettingField label="Telegram chat ID (blank = your DM)">
+                        <input value={settingsDraft.telegram_chat_id} onChange={e => setSettingsDraft({ ...settingsDraft, telegram_chat_id: e.target.value })} placeholder="-100… for a group" className={settingInputCls} />
+                      </SettingField>
+                      <SettingField label="Allowed tickers (comma-sep, blank = any)">
+                        <input value={settingsDraft.allowed_tickers} onChange={e => setSettingsDraft({ ...settingsDraft, allowed_tickers: e.target.value })} placeholder="AAPL, MSFT, NVDA" className={settingInputCls} />
+                      </SettingField>
+                      <SettingField label="Blocked tickers (comma-sep)">
+                        <input value={settingsDraft.blocked_tickers} onChange={e => setSettingsDraft({ ...settingsDraft, blocked_tickers: e.target.value })} placeholder="TSLA, GME" className={settingInputCls} />
+                      </SettingField>
+                    </div>
+                    {mandate.broker === 'hyperliquid' && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-brass/18">
+                        <SettingField label="HL wallet address">
+                          <input value={settingsDraft.hl_wallet_address} onChange={e => setSettingsDraft({ ...settingsDraft, hl_wallet_address: e.target.value })} placeholder="0x…40 hex" className={settingInputCls} />
+                        </SettingField>
+                        <SettingField label="Max leverage (x)">
+                          <input type="number" min={1} max={20} value={settingsDraft.hl_max_leverage} onChange={e => setSettingsDraft({ ...settingsDraft, hl_max_leverage: e.target.value })} className={settingInputCls} />
+                        </SettingField>
+                        <SettingField label={mandate.hl_has_agent_key ? 'Replace agent key (blank = keep current)' : 'Agent key (blank = suggestion-only)'}>
+                          <input type="password" value={settingsDraft.hl_agent_secret} onChange={e => setSettingsDraft({ ...settingsDraft, hl_agent_secret: e.target.value })} placeholder={mandate.hl_has_agent_key ? '•••••• stored' : '0x… private key'} className={settingInputCls} />
+                        </SettingField>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

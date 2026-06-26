@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getTradingAccess, getAccessibleMandate } from '@/lib/trading/access';
 import { getSupabase } from '@/lib/db/client';
 import { alpacaForMandate } from '@/lib/trading/client';
+import { encryptSecret } from '@/lib/trading/crypto';
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const access = await getTradingAccess();
@@ -125,7 +126,15 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   };
 
   return NextResponse.json({
-    mandate: { ...mandate, junto_name: juntoRow?.name || null, alpaca_key_id: undefined, alpaca_secret: undefined },
+    mandate: {
+      ...mandate,
+      junto_name: juntoRow?.name || null,
+      alpaca_key_id: undefined,
+      alpaca_secret: undefined,
+      // Never ship the (encrypted) agent key to the client — expose only presence.
+      hl_agent_secret: undefined,
+      hl_has_agent_key: !!mandate.hl_agent_secret,
+    },
     junto,
     broker,
     trades: tradesRes.data || [],
@@ -147,12 +156,40 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const supabase = getSupabase();
 
   const patch: any = { updated_at: new Date().toISOString() };
+  // NOTE: broker and mode are intentionally NOT editable post-creation — they
+  // change the execution venue/network (testnet↔mainnet, real money) and must be
+  // fixed at create time. Everything else from the create form is editable here.
   const fields = [
     'name', 'guidelines', 'capital_allotted_usd', 'max_position_pct',
     'daily_loss_limit_pct', 'allowed_tickers', 'blocked_tickers',
-    'junto_id', 'status', 'mode', 'use_learnings', 'style',
+    'junto_id', 'status', 'use_learnings', 'style', 'telegram_chat_id',
   ];
   for (const f of fields) if (body[f] !== undefined) patch[f] = body[f];
+
+  // telegram_chat_id: trim, allow clearing to null
+  if (body.telegram_chat_id !== undefined) {
+    const tg = String(body.telegram_chat_id).trim();
+    patch.telegram_chat_id = tg || null;
+  }
+
+  // Hyperliquid-only fields — only meaningful when this mandate is an HL mandate.
+  if (mandate.broker === 'hyperliquid') {
+    if (body.hl_wallet_address !== undefined) {
+      const w = String(body.hl_wallet_address).trim();
+      if (w && !/^0x[0-9a-fA-F]{40}$/.test(w)) {
+        return NextResponse.json({ error: 'hl_wallet_address must be a 0x… 40-hex address' }, { status: 400 });
+      }
+      patch.hl_wallet_address = w || null;
+    }
+    if (body.hl_max_leverage !== undefined) {
+      patch.hl_max_leverage = Math.min(Math.max(Number(body.hl_max_leverage) || 3, 1), 20);
+    }
+    // Agent key: only update when a non-empty value is sent (so saving other
+    // fields never wipes the stored key). Encrypt before persisting.
+    if (typeof body.hl_agent_secret === 'string' && body.hl_agent_secret.trim()) {
+      patch.hl_agent_secret = encryptSecret(body.hl_agent_secret.trim());
+    }
+  }
 
   const { data, error } = await supabase
     .from('trading_mandates')
