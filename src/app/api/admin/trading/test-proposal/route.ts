@@ -66,6 +66,9 @@ export async function POST(req: NextRequest) {
 
   await requestApproval({
     userId: mandate.user_id,
+    // Route to the mandate's dedicated chat/group when set (same as real ticks);
+    // falls back to the user's DM when null.
+    chatIdOverride: mandate.telegram_chat_id,
     mandateName: mandate.name,
     tradeId,
     decision: {
