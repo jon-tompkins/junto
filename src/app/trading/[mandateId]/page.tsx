@@ -73,6 +73,32 @@ function fmtUsd(n: number | null): string {
   return `${sign}$${Math.abs(n).toFixed(2)}`;
 }
 
+type DayPlPos = {
+  qty?: number;
+  side?: 'long' | 'short';
+  current_price: number;
+  unrealized_pl: number;
+  unrealized_intraday_pl?: number;
+  prev_day_px?: number | null;
+};
+
+// Day P/L per position. Alpaca supplies a real intraday number — trust it.
+// Hyperliquid has no session/intraday concept, so we derive it: a position
+// opened within the last 24h has only made its since-entry P/L today; an older
+// hold's day move is the 24h price change (current vs prevDayPx). Returns null
+// when we genuinely can't tell (rendered as "—" rather than a misleading $0).
+function dayPlFor(pos: DayPlPos, entryAt: string | null | undefined): number | null {
+  const isHl = pos.prev_day_px !== undefined; // only the HL driver sets this
+  if (!isHl) return pos.unrealized_intraday_pl ?? null;
+  const heldUnder24h = entryAt && (Date.now() - new Date(entryAt).getTime() < 86_400_000);
+  if (heldUnder24h) return pos.unrealized_pl ?? 0;
+  if (pos.prev_day_px && pos.current_price) {
+    const signedQty = (pos.side === 'short' ? -1 : 1) * (pos.qty || 0);
+    return (pos.current_price - pos.prev_day_px) * signedQty;
+  }
+  return null;
+}
+
 export default function MandateDetailPage({ params }: { params: Promise<{ mandateId: string }> }) {
   const { mandateId } = use(params);
   const { status } = useSession();
@@ -95,6 +121,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     current_price: number;
     unrealized_pl: number;
     unrealized_intraday_pl?: number;
+    prev_day_px?: number | null;
     live_stop?: number | null;
     live_target?: number | null;
     has_stop?: boolean;
@@ -398,7 +425,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     trade: dbOpenByTicker.get(ticker) || null,
   }));
   const totalUnrealized = Object.values(positions).reduce((sum, p) => sum + (p.unrealized_pl || 0), 0);
-  const totalDayPl = Object.values(positions).reduce((sum, p) => sum + (p.unrealized_intraday_pl || 0), 0);
+  const totalDayPl = openRows.reduce((sum, { pos, trade }) => sum + (dayPlFor(pos, trade?.entry_at) ?? 0), 0);
   const realizedTotal = closedTrades.reduce((sum, t) => sum + (Number(t.realized_pnl_usd) || 0), 0);
   const positionEquity = Object.values(positions).reduce((sum, p) => sum + ((p.qty || 0) * (p.current_price || 0)), 0);
   const cashPct = account.equity && account.equity > 0 && account.cash != null
@@ -780,11 +807,14 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
 
         {/* Trading Thoughts — the engine's self-authored learnings */}
         <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded mb-6">
-          <button
+          <div
+            role="button"
+            tabIndex={0}
             onClick={() => setLearningsOpen(o => !o)}
-            className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-[rgba(176,141,87,0.04)]"
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLearningsOpen(o => !o); } }}
+            className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left cursor-pointer hover:bg-[rgba(176,141,87,0.04)]"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0 flex-wrap">
               <span className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">
                 Trading Thoughts
                 {mandate.use_learnings && (
@@ -797,7 +827,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                   : 'not generated yet'}
               </span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 shrink-0">
               <button
                 onClick={e => { e.stopPropagation(); regenerateLearnings(); }}
                 disabled={regenLearnings || (() => {
@@ -819,7 +849,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               </button>
               <span className="text-[#F5EFE0]/45 text-xs">{learningsOpen ? '▾' : '▸'}</span>
             </div>
-          </button>
+          </div>
 
           {learningsOpen && (
             <div className="px-5 pb-5 border-t border-[rgba(176,141,87,0.18)] pt-5 space-y-4">
@@ -1054,6 +1084,7 @@ interface OpenRow {
     current_price: number;
     unrealized_pl: number;
     unrealized_intraday_pl?: number;
+    prev_day_px?: number | null;
     live_stop?: number | null;
     live_target?: number | null;
     has_stop?: boolean;
@@ -1090,7 +1121,7 @@ function OpenPositionsTable({ rows, agreement }: { rows: OpenRow[]; agreement: R
           const stop = pos.live_stop ?? trade?.stop_price ?? null;
           const target = pos.live_target ?? trade?.target_price ?? null;
           const unrealized = pos.unrealized_pl;
-          const dayPl = pos.unrealized_intraday_pl ?? null;
+          const dayPl = dayPlFor(pos, trade?.entry_at);
           const statusBadge = !trade
             ? { label: 'untracked', color: '#B08D57' }
             : { label: 'open', color: '#F5EFE0' };

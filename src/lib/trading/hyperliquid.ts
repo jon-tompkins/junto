@@ -188,10 +188,23 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
     },
 
     async getPositions(): Promise<AlpacaPosition[]> {
-      const [state, mids] = await Promise.all([
+      const [state, mids, metaCtx] = await Promise.all([
         info<HlClearinghouseState>(url, { type: 'clearinghouseState', user }),
         info<HlAllMids>(url, { type: 'allMids' }),
+        // prevDayPx (price 24h ago) per coin — lets the UI derive a day P/L,
+        // since HL gives no broker-side intraday number. Best-effort.
+        info<[{ universe: { name: string }[] }, { prevDayPx: string }[]]>(url, {
+          type: 'metaAndAssetCtxs',
+        }).catch(() => null),
       ]);
+      const prevDayByCoin = new Map<string, string>();
+      if (metaCtx) {
+        const [m, ctxs] = metaCtx;
+        m.universe.forEach((a, i) => {
+          const px = ctxs[i]?.prevDayPx;
+          if (px) prevDayByCoin.set(a.name, px);
+        });
+      }
       return state.assetPositions.map(({ position: p }) => {
         const szi = Number(p.szi) || 0;
         return {
@@ -203,6 +216,7 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
           market_value: p.positionValue,
           unrealized_pl: p.unrealizedPnl,
           unrealized_plpc: p.returnOnEquity,
+          prev_day_px: prevDayByCoin.get(p.coin),
         };
       });
     },

@@ -75,6 +75,11 @@ export interface AlpacaPosition {
   market_value: string;
   unrealized_pl: string;
   unrealized_plpc: string;
+  // Alpaca supplies a real intraday P/L; Hyperliquid does not (it has no
+  // session concept), so for HL we expose prev_day_px (price 24h ago) and the
+  // UI derives day P/L = since-entry for fresh positions, else the 24h change.
+  unrealized_intraday_pl?: string;
+  prev_day_px?: string;
 }
 
 export interface AlpacaOrder {

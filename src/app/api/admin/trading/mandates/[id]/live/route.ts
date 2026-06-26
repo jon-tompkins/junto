@@ -21,6 +21,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     current_price: number;
     unrealized_pl: number;
     unrealized_intraday_pl: number;
+    prev_day_px: number | null;
     live_stop: number | null;
     live_target: number | null;
     has_stop: boolean;
@@ -70,6 +71,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         current_price: Number(p.current_price) || 0,
         unrealized_pl: Number(p.unrealized_pl) || 0,
         unrealized_intraday_pl: Number(p.unrealized_intraday_pl) || 0,
+        prev_day_px: p.prev_day_px != null ? Number(p.prev_day_px) : null,
         live_stop: stopBySym.get(sym) ?? null,
         live_target: targetBySym.get(sym) ?? null,
         has_stop: stopBySym.has(sym),
