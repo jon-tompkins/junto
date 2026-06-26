@@ -3,6 +3,7 @@ import { getTradingAccess, getAccessibleMandate } from '@/lib/trading/access';
 import { getSupabase } from '@/lib/db/client';
 import { alpacaForMandate } from '@/lib/trading/client';
 import { encryptSecret } from '@/lib/trading/crypto';
+import { getMandateOpenTickers } from '@/lib/trading/db';
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const access = await getTradingAccess();
@@ -48,12 +49,17 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   let account: { equity: number | null; cash: number | null } = { equity: null, cash: null };
   try {
     const alp = alpacaForMandate(mandate);
-    const [live, acc] = await Promise.all([
+    const [live, acc, ownTickers] = await Promise.all([
       alp.getPositions(),
       alp.getAccount().catch(() => null),
+      getMandateOpenTickers(mandate.id),
     ]);
+    // Scope to this mandate's own names — a shared broker account returns the
+    // whole book, but each mandate should only show what it opened.
     for (const p of live) {
-      positions[p.symbol.toUpperCase()] = {
+      const sym = p.symbol.toUpperCase();
+      if (!ownTickers.has(sym)) continue;
+      positions[sym] = {
         current_price: Number(p.current_price) || 0,
         unrealized_pl: Number(p.unrealized_pl) || 0,
       };

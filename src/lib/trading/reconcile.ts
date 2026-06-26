@@ -141,11 +141,24 @@ export async function reconcileMandate(mandateId: string): Promise<{
     }
   }
 
+  // Positions owned by OTHER mandates on the same shared broker account — don't
+  // flag those as untracked (they belong to a sibling mandate, not this one).
+  const otherOwned = new Set<string>();
+  {
+    const { data: others } = await supabase
+      .from('trades')
+      .select('ticker')
+      .neq('mandate_id', mandateId)
+      .in('status', ['open', 'submitted']);
+    for (const t of others || []) otherOwned.add(String(t.ticker).toUpperCase());
+  }
+
   // Surface broker positions we have no DB row for. Don't auto-adopt — these
   // are usually manual trades, transferred positions, or stale rows that need
   // a human call on whether to start tracking them.
   for (const [sym, pos] of posBySymbol) {
     if (trackedSymbols.has(sym)) continue;
+    if (otherOwned.has(sym)) continue; // belongs to a sibling mandate
     const qty = Math.floor(Math.abs(Number(pos.qty)));
     if (qty <= 0) continue;
     results.push({

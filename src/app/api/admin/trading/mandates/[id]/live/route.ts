@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTradingAccess, getAccessibleMandate } from '@/lib/trading/access';
 import { alpacaForMandate } from '@/lib/trading/client';
+import { getMandateOpenTickers } from '@/lib/trading/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,10 +31,11 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   let account: { equity: number | null; cash: number | null } = { equity: null, cash: null };
   try {
     const alp = alpacaForMandate(mandate as any);
-    const [acc, live, openOrders] = await Promise.all([
+    const [acc, live, openOrders, ownTickers] = await Promise.all([
       alp.getAccount().catch(() => null),
       alp.getPositions().catch(() => [] as any[]),
       alp.listOpenOrders().catch(() => [] as any[]),
+      getMandateOpenTickers(mandate.id),
     ]);
     if (acc) account = { equity: Number(acc.equity) || null, cash: Number(acc.cash) || null };
 
@@ -63,6 +65,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
 
     for (const p of live) {
       const sym = p.symbol.toUpperCase();
+      if (!ownTickers.has(sym)) continue; // shared account → only this mandate's names
       const rawQty = Number(p.qty) || 0;
       positions[sym] = {
         qty: Math.abs(rawQty),

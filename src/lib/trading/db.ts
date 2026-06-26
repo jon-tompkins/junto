@@ -336,6 +336,18 @@ export async function getProcessedTweetIds(
   return new Set((data || []).map((r: any) => r.twitter_id));
 }
 
+// Tickers this mandate currently owns (open or in-flight trades). Used to scope
+// a shared broker account's positions to the right mandate — two mandates on one
+// Alpaca account each see only their own names.
+export async function getMandateOpenTickers(mandateId: string): Promise<Set<string>> {
+  const { data } = await getSupabase()
+    .from('trades')
+    .select('ticker')
+    .eq('mandate_id', mandateId)
+    .in('status', ['open', 'submitted']);
+  return new Set((data || []).map((t: any) => String(t.ticker).toUpperCase()));
+}
+
 export async function markTweetsProcessed(
   mandateId: string,
   twitterIds: string[],

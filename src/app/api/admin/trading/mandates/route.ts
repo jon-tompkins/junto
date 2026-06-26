@@ -5,6 +5,14 @@ import { getUserTelegramChatId } from '@/lib/telegram/link';
 import { alpacaForMandate } from '@/lib/trading/client';
 import { encryptSecret } from '@/lib/trading/crypto';
 
+// Stable key for the underlying broker account so two mandates on one account
+// don't double-count its equity/cash in the rollup.
+function accountKey(m: any): string {
+  if (m.broker === 'hyperliquid') return `h:${m.hl_wallet_address || m.id}`;
+  if (m.account_kind === 'managed') return `m:${m.alpaca_account_id || m.id}`;
+  return `a:${m.alpaca_key_id || m.id}`;
+}
+
 export async function GET() {
   const access = await getTradingAccess();
   if (!access) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -23,7 +31,7 @@ export async function GET() {
 
   const [tradesRes, juntosRes] = await Promise.all([
     ids.length
-      ? supabase.from('trades').select('id, mandate_id, status, realized_pnl_usd').in('mandate_id', ids)
+      ? supabase.from('trades').select('id, mandate_id, status, realized_pnl_usd, ticker').in('mandate_id', ids)
       : Promise.resolve({ data: [] as any[] }),
     juntoIds.length
       ? supabase.from('juntos').select('id, name').in('id', juntoIds)
@@ -34,9 +42,15 @@ export async function GET() {
   for (const j of (juntosRes as any).data || []) juntoNameById.set(j.id, j.name);
 
   const statsByMandate = new Map<string, { open: number; closed: number; pnl: number; unrealized: number | null }>();
+  const tickersByMandate = new Map<string, Set<string>>();
   for (const t of (tradesRes as any).data || []) {
     const s = statsByMandate.get(t.mandate_id) || { open: 0, closed: 0, pnl: 0, unrealized: null };
     if (t.status === 'open' || t.status === 'pending' || t.status === 'submitted') s.open++;
+    if (t.status === 'open' || t.status === 'submitted') {
+      const set = tickersByMandate.get(t.mandate_id) || new Set<string>();
+      if (t.ticker) set.add(String(t.ticker).toUpperCase());
+      tickersByMandate.set(t.mandate_id, set);
+    }
     if (t.status === 'closed') {
       s.closed++;
       s.pnl += Number(t.realized_pnl_usd) || 0;
@@ -58,8 +72,10 @@ export async function GET() {
           alp.getAccount().catch(() => null),
           s.open > 0 ? alp.getPositions().catch(() => []) : Promise.resolve([]),
         ]);
-        if (positions.length > 0) {
-          s.unrealized = positions.reduce((sum, p) => sum + (Number(p.unrealized_pl) || 0), 0);
+        const own = tickersByMandate.get(m.id);
+        const scoped = own && own.size ? positions.filter((p: any) => own.has(String(p.symbol).toUpperCase())) : [];
+        if (scoped.length > 0) {
+          s.unrealized = scoped.reduce((sum, p) => sum + (Number(p.unrealized_pl) || 0), 0);
         }
         accountByMandate.set(m.id, {
           equity: account ? Number(account.equity) || null : null,
@@ -79,16 +95,23 @@ export async function GET() {
   let totalEquity = 0;
   let totalCash = 0;
   let hasAnyEquity = false;
+  const seenAccounts = new Set<string>();
   for (const m of mandates || []) {
     totalCapital += Number(m.capital_allotted_usd) || 0;
     const s = statsByMandate.get(m.id);
     if (s) {
       totalRealized += s.pnl;
-      if (s.unrealized != null) totalUnrealized += s.unrealized;
+      if (s.unrealized != null) totalUnrealized += s.unrealized; // scoped → safe to sum
     }
+    // Equity/cash are account-level — count each underlying account once so two
+    // mandates sharing an account don't double the portfolio equity.
     const a = accountByMandate.get(m.id);
-    if (a?.equity != null) { totalEquity += a.equity; hasAnyEquity = true; }
-    if (a?.cash != null) totalCash += a.cash;
+    const key = accountKey(m);
+    if (!seenAccounts.has(key)) {
+      seenAccounts.add(key);
+      if (a?.equity != null) { totalEquity += a.equity; hasAnyEquity = true; }
+      if (a?.cash != null) totalCash += a.cash;
+    }
   }
   const cashPct = hasAnyEquity && totalEquity > 0 ? (totalCash / totalEquity) * 100 : null;
 
