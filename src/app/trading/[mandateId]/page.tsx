@@ -412,16 +412,16 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         <Link href="/trading" className="text-xs text-[#F5EFE0]/45 hover:text-[#F5EFE0]">← All mandates</Link>
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-3 mb-6 sm:mb-8">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">{mandate.name}</h1>
-              <span className={`px-2 py-0.5 text-xs rounded font-mono tracking-wider ${mandate.mode === 'live' ? 'bg-[#e8453c]/20 text-[#e8453c] border border-[#e8453c]/40' : 'bg-[#3ecf6a]/20 text-[#3ecf6a] border border-[#3ecf6a]/40'}`}>{mandate.mode?.toUpperCase() || 'PAPER'}</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide break-words">{mandate.name}</h1>
+              <span className={`px-2 py-0.5 text-xs rounded font-mono tracking-wider whitespace-nowrap ${mandate.mode === 'live' ? 'bg-[#e8453c]/20 text-[#e8453c] border border-[#e8453c]/40' : 'bg-[#3ecf6a]/20 text-[#3ecf6a] border border-[#3ecf6a]/40'}`}>{mandate.mode?.toUpperCase() || 'PAPER'}</span>
             </div>
             <p className="text-sm text-[#F5EFE0]/45 mt-1">
               {mandate.junto_name || 'no junto'} · {mandate.mode} · {fmtUsd(mandate.capital_allotted_usd)} · {mandate.max_position_pct}% max position
             </p>
           </div>
-          <div className="flex gap-2 items-center flex-wrap">
+          <div className="flex gap-2 items-center flex-wrap sm:justify-end shrink-0">
             <button
               onClick={sendTestProposal}
               disabled={sendingTest}
@@ -520,15 +520,15 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             <>
               {awaitingApproval.length > 0 && (
                 <div className="bg-[#B08D57]/10 border border-[#B08D57]/50 rounded p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-sm font-semibold text-[#B08D57] mb-0.5">
                       {awaitingApproval.length} trade{awaitingApproval.length === 1 ? '' : 's'} awaiting approval
                     </div>
-                    <p className="text-xs text-[#F5EFE0]/60">
+                    <p className="text-xs text-[#F5EFE0]/60 truncate">
                       {awaitingApproval.map(t => `${t.ticker}`).join(', ')}
                     </p>
                   </div>
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="flex gap-2 flex-wrap shrink-0">
                     {awaitingApproval.slice(0, 3).map(t => (
                       <Link
                         key={t.id}
@@ -543,18 +543,18 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               )}
               {awaitingFill.length > 0 && (
                 <div className="bg-[#B08D57]/5 border border-[#B08D57]/25 rounded p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-block w-4 h-4 border-2 border-[#B08D57] border-t-transparent rounded-full animate-spin" />
-                    <div>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="inline-block w-4 h-4 border-2 border-[#B08D57] border-t-transparent rounded-full animate-spin shrink-0" />
+                    <div className="min-w-0">
                       <div className="text-sm font-semibold text-[#B08D57]/80 mb-0.5">
                         {awaitingFill.length} order{awaitingFill.length === 1 ? '' : 's'} submitted — confirming fill
                       </div>
-                      <p className="text-xs text-[#F5EFE0]/45">
+                      <p className="text-xs text-[#F5EFE0]/45 truncate">
                         {awaitingFill.map(t => `${t.ticker}`).join(', ')}
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="flex gap-2 flex-wrap shrink-0">
                     {awaitingFill.slice(0, 3).map(t => (
                       <Link
                         key={t.id}
