@@ -150,26 +150,47 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
   const mandate = await getMandateById(trade.mandate_id);
   if (!mandate) return { ok: false, message: 'Mandate missing.' };
 
-  // SAFETY GATE for Hyperliquid. Execution is allowed ONLY on testnet
-  // (mode='paper') AND when an agent key is set. Mainnet is hard-blocked here
-  // (belt-and-suspenders on top of assertLiveAllowed in the driver); a mandate
-  // with no agent key stays suggestion-only.
+  // SAFETY GATE for Hyperliquid. Execution requires an agent key (else the
+  // mandate is suggestion-only). Mainnet (mode='live') additionally requires
+  // the ALPACA_ALLOW_LIVE master switch — the same env kill-switch the driver
+  // enforces (assertLiveAllowed); flipping it off instantly halts all live
+  // execution. Testnet (mode='paper') runs whenever an agent key is present.
   if (mandate.broker === 'hyperliquid') {
-    if (mandate.mode !== 'paper') {
-      await updateTrade(tradeId, { status: 'cancelled' });
-      await addJournalEntry({ tradeId, kind: 'entry', content: '[HL mainnet execution disabled — not submitted]' });
-      return { ok: false, message: `🚧 ${trade.ticker}: Hyperliquid mainnet execution is disabled (testnet only for now).` };
-    }
     if (!mandate.hl_agent_secret) {
       await updateTrade(tradeId, { status: 'cancelled' });
       await addJournalEntry({ tradeId, kind: 'entry', content: '[HL suggestion-only — no agent key set; not submitted]' });
       return { ok: false, message: `🚧 ${trade.ticker}: suggestion-only — no agent key set for this mandate yet.` };
     }
-    // paper + agent key present → fall through and execute on testnet.
+    if (mandate.mode === 'live' && process.env.ALPACA_ALLOW_LIVE !== 'true') {
+      await updateTrade(tradeId, { status: 'cancelled' });
+      await addJournalEntry({ tradeId, kind: 'entry', content: '[HL live execution disabled — ALPACA_ALLOW_LIVE not set; not submitted]' });
+      return { ok: false, message: `🚧 ${trade.ticker}: live execution is disabled (master switch off).` };
+    }
   }
 
   try {
     const alpaca = alpacaForMandate(mandate);
+
+    // Notional sanity cap (real-money backstop). A position can never sanely
+    // exceed the account's full buying power (equity × leverage); if order
+    // notional blows past that, it's a sizing bug (cf. the 1-BTC incident),
+    // not a real trade — refuse it before it touches the account. HL margin
+    // would reject it anyway, but failing loud + early keeps the books clean.
+    if (mandate.broker === 'hyperliquid') {
+      const px = await alpaca.getLastTrade(trade.ticker).catch(() => null);
+      const acct = await alpaca.getAccount().catch(() => null);
+      const equity = acct ? Number(acct.equity) : null;
+      const lev = Math.max(1, mandate.hl_max_leverage ?? 3);
+      if (px && px > 0 && equity && equity > 0) {
+        const notional = Number(trade.qty) * px;
+        const ceiling = equity * lev * 1.1; // 10% headroom over full deployment
+        if (notional > ceiling) {
+          await updateTrade(tradeId, { status: 'cancelled' });
+          await addJournalEntry({ tradeId, kind: 'entry', content: `[blocked: order notional $${notional.toFixed(0)} exceeds cap $${ceiling.toFixed(0)} (equity $${equity.toFixed(0)} × ${lev}x) — likely sizing bug]` });
+          return { ok: false, message: `🛑 Blocked ${trade.ticker}: order size $${notional.toFixed(0)} exceeds the safety cap ($${ceiling.toFixed(0)}). Not submitted.` };
+        }
+      }
+    }
 
     const proposalPrice = trade.proposal_price ? Number(trade.proposal_price) : null;
     if (proposalPrice && proposalPrice > 0) {
