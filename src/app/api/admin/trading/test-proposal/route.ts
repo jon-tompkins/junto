@@ -33,8 +33,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Quote failed: ${err.message}` }, { status: 500 });
   }
 
-  const notional = Math.min(500, mandate.capital_allotted_usd * 0.05);
-  const qty = Math.max(1, Math.floor(notional / lastPrice));
+  // Size per broker. HL perps are fractional (qty in coin units) and margin-based
+  // — whole-share flooring would turn a $100 idea on BTC into 1 BTC (~$60k). Match
+  // the real engine: margin budget = max_position_pct% of capital, notional =
+  // budget × leverage (≥ HL's ~$10 min), qty = notional/price (driver rounds to
+  // szDecimals). Alpaca stays whole-share.
+  const isHl = mandate.broker === 'hyperliquid';
+  let qty: number;
+  if (isHl) {
+    const lev = Math.max(1, mandate.hl_max_leverage ?? 3);
+    const marginBudget = Math.max(4, mandate.capital_allotted_usd * (mandate.max_position_pct / 100));
+    const notional = Math.max(10, marginBudget * lev);
+    qty = notional / lastPrice;
+  } else {
+    const notional = Math.min(500, mandate.capital_allotted_usd * 0.05);
+    qty = Math.max(1, Math.floor(notional / lastPrice));
+  }
   const stopPct = 2;
   const targetPct = 4;
   const stopPrice = lastPrice * (1 - stopPct / 100);
@@ -53,7 +67,7 @@ export async function POST(req: NextRequest) {
   await addJournalEntry({
     tradeId,
     kind: 'entry',
-    content: `[TEST PROPOSAL] Synthetic trade injected from admin UI to verify the approval + broker flow. Not derived from junto signals. Approve to see whether Alpaca paper accepts the bracket order; skip to cancel.`,
+    content: `[TEST PROPOSAL] Synthetic trade injected from admin UI to verify the approval + broker flow. Not derived from junto signals. Approve to submit a real order on the mandate's broker; skip to cancel.`,
   });
 
   await logSignal({
