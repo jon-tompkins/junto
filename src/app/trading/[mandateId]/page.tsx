@@ -73,6 +73,17 @@ function fmtUsd(n: number | null): string {
   return `${sign}$${Math.abs(n).toFixed(2)}`;
 }
 
+// Single source of truth for P/L coloring across snapshot stats + tables so a
+// gain is always the same green, a loss the same red, and an unknown value the
+// neutral text colour (never a misleading green $0).
+const PL_POS = '#3ecf6a';
+const PL_NEG = '#e8453c';
+const PL_NEUTRAL = '#F5EFE0';
+function plColor(n: number | null | undefined): string {
+  if (n === null || n === undefined) return PL_NEUTRAL;
+  return n >= 0 ? PL_POS : PL_NEG;
+}
+
 type DayPlPos = {
   qty?: number;
   side?: 'long' | 'short';
@@ -520,22 +531,22 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             <SnapStat
               label="Day P/L"
               value={openRows.length === 0 ? '—' : fmtUsd(totalDayPl)}
-              accent={totalDayPl >= 0 ? '#3ecf6a' : '#e8453c'}
+              accent={openRows.length === 0 ? PL_NEUTRAL : plColor(totalDayPl)}
             />
             <SnapStat
               label="Unrealized"
               value={fmtUsd(totalUnrealized)}
-              accent={totalUnrealized >= 0 ? '#3ecf6a' : '#e8453c'}
+              accent={plColor(totalUnrealized)}
             />
             <SnapStat
               label="Realized"
               value={fmtUsd(realizedTotal)}
-              accent={realizedTotal >= 0 ? '#3ecf6a' : '#e8453c'}
+              accent={plColor(realizedTotal)}
             />
             <SnapStat
               label="Total P/L"
               value={fmtUsd(totalUnrealized + realizedTotal)}
-              accent={(totalUnrealized + realizedTotal) >= 0 ? '#3ecf6a' : '#e8453c'}
+              accent={plColor(totalUnrealized + realizedTotal)}
             />
           </div>
         </div>
@@ -1158,11 +1169,11 @@ function OpenPositionsTable({ rows, agreement }: { rows: OpenRow[]; agreement: R
                   <span className="text-[#F5EFE0]/45">{target ? `$${Number(target).toFixed(2)}` : '—'}</span>
                 )}
               </td>
-              <td className="py-2 pr-4 text-right font-mono" style={{ color: dayPl == null ? '#F5EFE0' : dayPl >= 0 ? '#3ecf6a' : '#e8453c' }}>
-                {dayPl == null ? '—' : `${dayPl < 0 ? '-' : ''}$${Math.abs(dayPl).toFixed(2)}`}
+              <td className="py-2 pr-4 text-right font-mono" style={{ color: plColor(dayPl) }}>
+                {fmtUsd(dayPl)}
               </td>
-              <td className="py-2 pr-4 text-right font-mono" style={{ color: unrealized >= 0 ? '#3ecf6a' : '#e8453c' }}>
-                {`${unrealized < 0 ? '-' : ''}$${Math.abs(unrealized).toFixed(2)}`}
+              <td className="py-2 pr-4 text-right font-mono" style={{ color: plColor(unrealized) }}>
+                {fmtUsd(unrealized)}
               </td>
               <td className="py-2 pr-4 text-xs" style={{ color: statusBadge.color }}>{statusBadge.label}</td>
             </tr>
@@ -1245,13 +1256,13 @@ function TradeTable({
               {showLive && (
                 <td
                   className="py-2 pr-4 text-right font-mono"
-                  style={{ color: !pos ? '#F5EFE0' : pos.unrealized_pl >= 0 ? '#3ecf6a' : '#e8453c' }}
+                  style={{ color: plColor(pos ? pos.unrealized_pl : null) }}
                 >
-                  {pos ? `${pos.unrealized_pl < 0 ? '-' : ''}$${Math.abs(pos.unrealized_pl).toFixed(2)}` : '—'}
+                  {pos ? fmtUsd(pos.unrealized_pl) : '—'}
                 </td>
               )}
-              <td className="py-2 pr-4 text-right font-mono" style={{ color: t.realized_pnl_usd === null ? '#F5EFE0' : t.realized_pnl_usd >= 0 ? '#3ecf6a' : '#e8453c' }}>
-                {t.realized_pnl_usd !== null ? `$${t.realized_pnl_usd.toFixed(2)}` : '—'}
+              <td className="py-2 pr-4 text-right font-mono" style={{ color: plColor(t.realized_pnl_usd) }}>
+                {fmtUsd(t.realized_pnl_usd)}
               </td>
               <td className="py-2 pr-4 text-xs text-[#F5EFE0]/60">{t.status}</td>
             </tr>
