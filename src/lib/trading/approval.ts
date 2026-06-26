@@ -200,9 +200,18 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
 
     // Set status to 'submitted' + stamp real order ID, then return immediately.
     // The monitor tick handles fill detection → 'open' status + protection.
+    // Capture the entry price the instant we have it: Hyperliquid IOC orders
+    // fill on submit and return filled_avg_price, so record it now — otherwise
+    // entry_price stays null and realized P/L can't be computed on close.
+    // (Alpaca market orders fill async; filled_avg_price is null here and the
+    // monitor backfills entry later, so this is a no-op for them.)
+    const entryFill = order.filled_avg_price ? Number(order.filled_avg_price) : null;
     await updateTrade(tradeId, {
       alpaca_order_id: order.id,
       status: 'submitted',
+      ...(entryFill && entryFill > 0
+        ? { entry_price: entryFill, execution_price: entryFill, entry_at: new Date().toISOString() }
+        : {}),
     });
 
     await addJournalEntry({
