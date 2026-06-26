@@ -12,6 +12,7 @@ import {
 } from './db';
 import { loadJuntoSnapshot, extractSignals } from './extract';
 import { isWalletJunto, loadWalletSignals } from './extract-wallets';
+import { isWebhookJunto, loadWebhookSignals } from './extract-webhooks';
 import { getHyperliquidMeta } from './hyperliquid';
 import { decideTrades } from './decide';
 import { suggestPortfolioAdjustments } from './adjustments';
@@ -172,6 +173,12 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     // signals. Both feed the same decide step.
     if (await isWalletJunto(mandate.junto_id)) {
       const ws = await loadWalletSignals(mandate);
+      result.tweetsReviewed = ws.eventCount;
+      reviewedTwitterIds = ws.reviewedEventIds;
+      signals = ws.signals;
+      result.signals = signals.length;
+    } else if (await isWebhookJunto(mandate.junto_id)) {
+      const ws = await loadWebhookSignals(mandate);
       result.tweetsReviewed = ws.eventCount;
       reviewedTwitterIds = ws.reviewedEventIds;
       signals = ws.signals;
