@@ -99,7 +99,11 @@ type DayPlPos = {
 // hold's day move is the 24h price change (current vs prevDayPx). Returns null
 // when we genuinely can't tell (rendered as "—" rather than a misleading $0).
 function dayPlFor(pos: DayPlPos, entryAt: string | null | undefined): number | null {
-  const isHl = pos.prev_day_px !== undefined; // only the HL driver sets this
+  // HL is identified by a real prevDayPx number (Alpaca serializes it as null).
+  // For Alpaca, trust the broker's real intraday number. NOTE: must check for a
+  // positive number, not `!== undefined` — the API sends null for Alpaca, and
+  // `null !== undefined` would misroute every Alpaca position into HL logic.
+  const isHl = typeof pos.prev_day_px === 'number' && pos.prev_day_px > 0;
   if (!isHl) return pos.unrealized_intraday_pl ?? null;
   const heldUnder24h = entryAt && (Date.now() - new Date(entryAt).getTime() < 86_400_000);
   if (heldUnder24h) return pos.unrealized_pl ?? 0;
