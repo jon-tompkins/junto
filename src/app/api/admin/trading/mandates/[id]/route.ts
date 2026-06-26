@@ -189,6 +189,15 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     if (typeof body.hl_agent_secret === 'string' && body.hl_agent_secret.trim()) {
       patch.hl_agent_secret = encryptSecret(body.hl_agent_secret.trim());
     }
+  } else if (mandate.account_kind === 'byo_keys') {
+    // Alpaca BYO keys — update only when provided (blank = keep current).
+    // Key ID + secret are a pair; rotate both together. Secret is encrypted.
+    if (typeof body.alpaca_key_id === 'string' && body.alpaca_key_id.trim()) {
+      patch.alpaca_key_id = body.alpaca_key_id.trim();
+    }
+    if (typeof body.alpaca_secret === 'string' && body.alpaca_secret.trim()) {
+      patch.alpaca_secret = encryptSecret(body.alpaca_secret.trim());
+    }
   }
 
   const { data, error } = await supabase

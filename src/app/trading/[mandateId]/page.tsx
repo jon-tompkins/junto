@@ -169,6 +169,8 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     hl_wallet_address: '',
     hl_max_leverage: '',
     hl_agent_secret: '',
+    alpaca_key_id: '',
+    alpaca_secret: '',
   });
   const [sendingTest, setSendingTest] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
@@ -387,6 +389,8 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
       hl_wallet_address: mandate.hl_wallet_address || '',
       hl_max_leverage: mandate.hl_max_leverage != null ? String(mandate.hl_max_leverage) : '3',
       hl_agent_secret: '',
+      alpaca_key_id: '',
+      alpaca_secret: '',
     });
     setEditingSettings(true);
   }
@@ -414,6 +418,10 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         payload.hl_max_leverage = Number(settingsDraft.hl_max_leverage) || 3;
         // Only send the agent key when the user typed a new one (blank = keep existing).
         if (settingsDraft.hl_agent_secret.trim()) payload.hl_agent_secret = settingsDraft.hl_agent_secret.trim();
+      } else if (broker?.account_kind === 'byo_keys') {
+        // Alpaca BYO keys — only send when typed (blank = keep current pair).
+        if (settingsDraft.alpaca_key_id.trim()) payload.alpaca_key_id = settingsDraft.alpaca_key_id.trim();
+        if (settingsDraft.alpaca_secret.trim()) payload.alpaca_secret = settingsDraft.alpaca_secret.trim();
       }
       const res = await fetch(`/api/admin/trading/mandates/${mandateId}`, {
         method: 'PATCH',
@@ -818,6 +826,16 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                         </SettingField>
                         <SettingField label={mandate.hl_has_agent_key ? 'Replace agent key (blank = keep current)' : 'Agent key (blank = suggestion-only)'}>
                           <input type="password" value={settingsDraft.hl_agent_secret} onChange={e => setSettingsDraft({ ...settingsDraft, hl_agent_secret: e.target.value })} placeholder={mandate.hl_has_agent_key ? '•••••• stored' : '0x… private key'} className={settingInputCls} />
+                        </SettingField>
+                      </div>
+                    )}
+                    {mandate.broker !== 'hyperliquid' && broker?.account_kind === 'byo_keys' && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-brass/18">
+                        <SettingField label={`Alpaca key ID${broker?.alpaca_key_id_last4 ? ` (current …${broker.alpaca_key_id_last4})` : ''}`}>
+                          <input value={settingsDraft.alpaca_key_id} onChange={e => setSettingsDraft({ ...settingsDraft, alpaca_key_id: e.target.value })} placeholder="PK… / AK…  (blank = keep)" className={settingInputCls} />
+                        </SettingField>
+                        <SettingField label="Alpaca secret (blank = keep current)">
+                          <input type="password" value={settingsDraft.alpaca_secret} onChange={e => setSettingsDraft({ ...settingsDraft, alpaca_secret: e.target.value })} placeholder="•••••• paste to rotate" className={settingInputCls} />
                         </SettingField>
                       </div>
                     )}
