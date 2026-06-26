@@ -63,9 +63,14 @@ export default function AdminTradingPage() {
     max_sector_concentration_pct: '',
     idleness_days_threshold: '',
     guidelines: '',
+    broker: 'alpaca' as 'alpaca' | 'hyperliquid',
     account_kind: 'byo_keys' as 'byo_keys' | 'managed',
     alpaca_key_id: '',
     alpaca_secret: '',
+    hl_wallet_address: '',
+    hl_agent_secret: '',
+    hl_max_leverage: '3',
+    telegram_chat_id: '',
     mode: 'paper' as 'paper' | 'live',
   });
   const [createType, setCreateType] = useState<'paper' | 'live' | null>(null);
@@ -151,7 +156,7 @@ export default function AdminTradingPage() {
       if (data.mandate) {
         setMandates(prev => [{ ...data.mandate, stats: { open: 0, closed: 0, pnl: 0, unrealized: null } }, ...prev]);
         setShowCreate(false);
-        setForm({ name: '', junto_id: '', capital_allotted_usd: '1000', max_position_pct: '10', daily_loss_limit_pct: '3', max_single_position_pct: '', max_top3_concentration_pct: '', max_sector_concentration_pct: '', idleness_days_threshold: '', guidelines: '', account_kind: 'byo_keys', alpaca_key_id: '', alpaca_secret: '', mode: 'paper' });
+        setForm({ name: '', junto_id: '', capital_allotted_usd: '1000', max_position_pct: '10', daily_loss_limit_pct: '3', max_single_position_pct: '', max_top3_concentration_pct: '', max_sector_concentration_pct: '', idleness_days_threshold: '', guidelines: '', broker: 'alpaca', account_kind: 'byo_keys', alpaca_key_id: '', alpaca_secret: '', hl_wallet_address: '', hl_agent_secret: '', hl_max_leverage: '3', telegram_chat_id: '', mode: 'paper' });
         setCreateType(null);
       } else {
         setError(data.error || 'Failed to create');
@@ -311,6 +316,39 @@ export default function AdminTradingPage() {
             <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-2 font-[var(--font-oswald)]">New mandate</h2>
 
             <div>
+              <span className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] block mb-2">Broker</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, broker: 'alpaca' })}
+                  className="flex-1 px-3 py-2 rounded text-xs uppercase tracking-wider transition"
+                  style={{
+                    background: form.broker === 'alpaca' ? '#B08D57' : '#080604',
+                    color: form.broker === 'alpaca' ? '#080604' : 'rgba(245,239,224,0.65)',
+                    border: '1px solid rgba(176,141,87,0.28)',
+                    fontFamily: 'var(--font-oswald)',
+                  }}
+                >
+                  Alpaca · stocks
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, broker: 'hyperliquid', account_kind: 'byo_keys' })}
+                  className="flex-1 px-3 py-2 rounded text-xs uppercase tracking-wider transition"
+                  style={{
+                    background: form.broker === 'hyperliquid' ? '#B08D57' : '#080604',
+                    color: form.broker === 'hyperliquid' ? '#080604' : 'rgba(245,239,224,0.65)',
+                    border: '1px solid rgba(176,141,87,0.28)',
+                    fontFamily: 'var(--font-oswald)',
+                  }}
+                >
+                  Hyperliquid · perps
+                </button>
+              </div>
+            </div>
+
+            {form.broker === 'alpaca' && (
+            <div>
               <span className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] block mb-2">Brokerage account</span>
               <div className="flex gap-2">
                 <button
@@ -349,6 +387,67 @@ export default function AdminTradingPage() {
                 </p>
               )}
             </div>
+            )}
+
+            {form.broker === 'hyperliquid' && (
+            <div className="space-y-3">
+              <div>
+                <span className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] block mb-2">Network</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, mode: 'paper' })}
+                    className="flex-1 px-3 py-2 rounded text-xs uppercase tracking-wider transition"
+                    style={{
+                      background: form.mode === 'paper' ? '#3ecf6a' : '#080604',
+                      color: form.mode === 'paper' ? '#080604' : 'rgba(245,239,224,0.65)',
+                      border: '1px solid rgba(176,141,87,0.28)',
+                      fontFamily: 'var(--font-oswald)',
+                    }}
+                  >
+                    Testnet · paper
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, mode: 'live' })}
+                    className="flex-1 px-3 py-2 rounded text-xs uppercase tracking-wider transition"
+                    style={{
+                      background: form.mode === 'live' ? '#e8453c' : '#080604',
+                      color: form.mode === 'live' ? '#080604' : 'rgba(245,239,224,0.65)',
+                      border: '1px solid rgba(176,141,87,0.28)',
+                      fontFamily: 'var(--font-oswald)',
+                    }}
+                  >
+                    Mainnet · live $
+                  </button>
+                </div>
+              </div>
+
+              {form.mode === 'live' && (
+                <div className="bg-[#e8453c]/10 border border-[#e8453c]/40 rounded p-3 text-[11px] text-[#F5EFE0]/70">
+                  <span className="font-semibold text-[#e8453c]">Live mainnet — real money.</span> Trades still require your Telegram approval before they execute. Execution also needs <code className="text-[#B08D57]">ALPACA_ALLOW_LIVE=true</code> set server-side; without it, orders stay suggestion-only.
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="HL wallet address">
+                  <input value={form.hl_wallet_address} onChange={e => setForm({ ...form, hl_wallet_address: e.target.value })} className={inputCls} placeholder="0x…40 hex" />
+                </Field>
+                <Field label="Max leverage (x)">
+                  <input type="number" min={1} max={20} value={form.hl_max_leverage} onChange={e => setForm({ ...form, hl_max_leverage: e.target.value })} className={inputCls} placeholder="3" />
+                </Field>
+              </div>
+              <Field label="Agent key (private key — optional)">
+                <input type="password" value={form.hl_agent_secret} onChange={e => setForm({ ...form, hl_agent_secret: e.target.value })} className={inputCls} placeholder="0x… leave blank for suggestion-only" />
+              </Field>
+              <p className="text-[11px] text-[#F5EFE0]/45 -mt-1">
+                Agent/API wallet key that can trade but <span className="text-[#F5EFE0]/70">cannot withdraw</span>. Generate it at Hyperliquid → More → API → Authorize. Leave blank to run suggestion-only (signals to Telegram, no execution). Stored encrypted.
+              </p>
+              <Field label="Telegram chat ID for alerts (optional)">
+                <input value={form.telegram_chat_id} onChange={e => setForm({ ...form, telegram_chat_id: e.target.value })} className={inputCls} placeholder="defaults to your DM" />
+              </Field>
+            </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Name">
@@ -388,7 +487,7 @@ export default function AdminTradingPage() {
                 </Field>
               </div>
             </div>
-            {form.account_kind === 'byo_keys' && (
+            {form.broker === 'alpaca' && form.account_kind === 'byo_keys' && (
               <div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field label="Alpaca key ID">
@@ -415,7 +514,7 @@ export default function AdminTradingPage() {
             </Field>
             <button
               onClick={createMandate}
-              disabled={creating || !form.name}
+              disabled={creating || !form.name || (form.broker === 'hyperliquid' && !/^0x[0-9a-fA-F]{40}$/.test(form.hl_wallet_address.trim()))}
               className="px-4 py-2 rounded bg-[#B08D57] text-[#080604] text-sm font-bold uppercase tracking-wide disabled:opacity-50"
             >
               {creating ? 'Creating…' : 'Create'}
