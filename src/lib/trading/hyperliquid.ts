@@ -171,16 +171,30 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
 
   return {
     async getAccount(): Promise<AlpacaAccount> {
-      const state = await info<HlClearinghouseState>(url, {
-        type: 'clearinghouseState',
-        user,
-      });
-      const equity = state.marginSummary.accountValue;
+      // Unified accounts: USDC collateral lives in the SPOT balance and is drawn
+      // for perps at order time, so the perp clearinghouseState reads $0 until a
+      // position is open. Fold spot USDC into equity/cash so sizing (everything is
+      // a % of equity) sees the real tradeable collateral. Summing perp + spot is
+      // correct whether or not HL has auto-moved margin into the perp wallet.
+      const [state, spot] = await Promise.all([
+        info<HlClearinghouseState>(url, { type: 'clearinghouseState', user }),
+        info<{ balances: { coin: string; total: string }[] }>(url, {
+          type: 'spotClearinghouseState',
+          user,
+        }).catch(() => ({ balances: [] as { coin: string; total: string }[] })),
+      ]);
+      const perpValue = Number(state.marginSummary.accountValue) || 0;
+      const perpWithdrawable = Number(state.withdrawable) || 0;
+      const spotUsdc = (spot.balances || [])
+        .filter((b) => b.coin === 'USDC')
+        .reduce((sum, b) => sum + (Number(b.total) || 0), 0);
+      const equity = String(perpValue + spotUsdc);
+      const cash = String(perpWithdrawable + spotUsdc);
       return {
         id: user,
         equity,
-        cash: state.withdrawable,
-        buying_power: state.withdrawable,
+        cash,
+        buying_power: cash,
         portfolio_value: equity,
         daytrade_count: 0,
         status: 'ACTIVE',
