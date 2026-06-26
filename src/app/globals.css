@@ -1,27 +1,65 @@
 @import "tailwindcss";
 
 /* ── Federalist Design System ─────────────────────────────────── */
+/* Palette lives as Tailwind theme colours, so `bg-surface`,
+ * `text-parchment/45`, `border-brass/28` all generate (opacity via
+ * color-mix included). :root holds the default/dark values; the light
+ * theme just OVERRIDES the same --color-* vars under [data-theme="light"],
+ * so every utility — opacity modifiers and all — flips live. (Note: plain
+ * @theme, NOT @theme inline — inline drops the opacity color-mix.) */
+/* Palette as RGB channel triplets (--t-*) consumed through the
+ * `<alpha-value>` placeholder. This is the one form where Tailwind's opacity
+ * modifiers (`text-parchment/45`) become real `rgb(... / .45)` AND stay
+ * runtime-swappable: flipping the channels under [data-theme] flips every
+ * utility, opacity included. Raw CSS / inline styles use rgb(var(--t-x)). */
+@theme {
+  --color-ink:       rgb(var(--t-ink));
+  --color-surface:   rgb(var(--t-surface));
+  --color-raised:    rgb(var(--t-raised));
+  --color-brass:     rgb(var(--t-brass));
+  --color-brasslit:  rgb(var(--t-brasslit));
+  --color-parchment: rgb(var(--t-parchment));
+  --color-navy:      rgb(var(--t-navy));
+  --color-oxblood:   rgb(var(--t-oxblood));
+  --color-bull:      rgb(var(--t-bull));
+  --color-bear:      rgb(var(--t-bear));
+}
+
 :root {
-  --color-ink:       #080604;
-  --color-surface:   #141210;
-  --color-raised:    #1c1a17;
-  --color-brass:     #B08D57;
-  --color-parchment: #F5EFE0;
-  --color-navy:      #1B2951;
-  --color-oxblood:   #722F37;
-  --color-bull:      #3ecf6a;
-  --color-bear:      #e8453c;
+  --t-ink:       8 6 4;
+  --t-surface:   20 18 16;
+  --t-raised:    28 26 23;
+  --t-brass:     176 141 87;
+  --t-brasslit:  201 163 106;
+  --t-parchment: 245 239 224;
+  --t-navy:      27 41 81;
+  --t-oxblood:   114 47 55;
+  --t-bull:      62 207 106;
+  --t-bear:      232 69 60;
 
   --border-main:  rgba(176,141,87,0.28);
   --border-inner: rgba(176,141,87,0.18);
+}
+
+/* Light theme — warm parchment, not stark white, to keep the brass-and-ink
+ * brand. Brass/bull/bear darkened for contrast on a light ground. */
+[data-theme="light"] {
+  --t-ink:       243 237 223;  /* page background */
+  --t-surface:   255 253 247;  /* cards */
+  --t-raised:    236 227 209;  /* raised / table headers */
+  --t-brass:     138 106 51;
+  --t-brasslit:  169 132 69;
+  --t-parchment: 42 33 24;     /* primary text — warm near-black */
+  --t-bull:      31 157 77;
+  --t-bear:      192 57 43;
 }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #080604;
-  color: #F5EFE0;
+  background-color: rgb(var(--t-ink));
+  color: rgb(var(--t-parchment));
   /* Honor iOS notch / home indicator when running as a standalone PWA */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
@@ -34,8 +72,8 @@ h1, h2, h3, h4 {
 }
 
 ::selection {
-  background-color: #B08D57;
-  color: #080604;
+  background-color: rgb(var(--t-brass));
+  color: rgb(var(--t-ink));
 }
 
 /* Subtle grain overlay on sections that use the .grain class */

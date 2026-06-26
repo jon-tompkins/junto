@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useEffect, useState, useRef } from 'react';
+import { ThemeToggle } from './theme-toggle';
 
 export function TopNav() {
   const { data: session } = useSession();
@@ -43,10 +44,10 @@ export function TopNav() {
 
   const creditColor =
     creditBalance !== null && creditBalance <= 50
-      ? '#e8453c'
+      ? 'rgb(var(--t-bear))'
       : creditBalance !== null && creditBalance <= 100
-        ? '#B08D57'
-        : '#3ecf6a';
+        ? 'rgb(var(--t-brass))'
+        : 'rgb(var(--t-bull))';
 
   const isActive = (path: string) =>
     pathname === path || pathname?.startsWith(path + '/');
@@ -57,8 +58,8 @@ export function TopNav() {
     <nav className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
       {/* Logo */}
       <Link href="/" className="text-2xl font-bold tracking-tight shrink-0" style={{ fontFamily: 'var(--font-oswald)' }}>
-        <span style={{ color: '#F5EFE0' }}>my</span>
-        <span style={{ color: '#B08D57' }}>junto</span>
+        <span style={{ color: 'rgb(var(--t-parchment))' }}>my</span>
+        <span style={{ color: 'rgb(var(--t-brass))' }}>junto</span>
       </Link>
 
       {/* Center nav links — desktop */}
@@ -72,7 +73,7 @@ export function TopNav() {
             href={href}
             className="text-sm transition"
             style={{
-              color: isActive(href) ? '#F5EFE0' : 'rgba(245,239,224,0.5)',
+              color: isActive(href) ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.5)',
               fontWeight: isActive(href) ? 500 : undefined,
             }}
           >
@@ -86,7 +87,7 @@ export function TopNav() {
             onClick={() => setDetailOpen(o => !o)}
             className="text-sm transition flex items-center gap-1"
             style={{
-              color: isDetailActive ? '#F5EFE0' : 'rgba(245,239,224,0.5)',
+              color: isDetailActive ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.5)',
               fontWeight: isDetailActive ? 500 : undefined,
             }}
           >
@@ -98,7 +99,7 @@ export function TopNav() {
           {detailOpen && (
             <div
               className="absolute left-0 mt-2 w-36 rounded-sm shadow-xl z-50 py-1"
-              style={{ background: '#141210', border: '1px solid rgba(176,141,87,0.28)' }}
+              style={{ background: 'rgb(var(--t-surface))', border: '1px solid rgb(var(--t-brass) / 0.28)' }}
             >
               {[
                 { href: '/juntos', label: 'Juntos' },
@@ -110,7 +111,7 @@ export function TopNav() {
                   href={href}
                   onClick={() => setDetailOpen(false)}
                   className="block px-3 py-2 text-sm transition hover:opacity-80"
-                  style={{ color: isActive(href) ? '#F5EFE0' : 'rgba(245,239,224,0.6)' }}
+                  style={{ color: isActive(href) ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.6)' }}
                 >
                   {label}
                 </Link>
@@ -123,7 +124,7 @@ export function TopNav() {
           href="/docs"
           className="text-sm transition"
           style={{
-            color: isActive('/docs') ? '#F5EFE0' : 'rgba(245,239,224,0.5)',
+            color: isActive('/docs') ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.5)',
             fontWeight: isActive('/docs') ? 500 : undefined,
           }}
         >
@@ -134,7 +135,7 @@ export function TopNav() {
           href="/demos"
           className="text-sm transition"
           style={{
-            color: isActive('/demos') ? '#F5EFE0' : 'rgba(245,239,224,0.5)',
+            color: isActive('/demos') ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.5)',
             fontWeight: isActive('/demos') ? 500 : undefined,
           }}
         >
@@ -147,7 +148,7 @@ export function TopNav() {
               href="/trading"
               className="text-sm transition"
               style={{
-                color: isActive('/trading') ? '#F5EFE0' : 'rgba(245,239,224,0.5)',
+                color: isActive('/trading') ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.5)',
                 fontWeight: isActive('/trading') ? 500 : undefined,
               }}
             >
@@ -158,7 +159,7 @@ export function TopNav() {
               href="/pricing"
               title="Upgrade to Operator to unlock trading"
               className="text-sm transition flex items-center gap-1.5"
-              style={{ color: 'rgba(245,239,224,0.3)' }}
+              style={{ color: 'rgb(var(--t-parchment) / 0.3)' }}
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c1.105 0 2 .895 2 2s-.895 2-2 2-2-.895-2-2 .895-2 2-2zm6-3V6a6 6 0 10-12 0v2a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2zM8 8V6a4 4 0 118 0v2H8z" />
@@ -171,6 +172,7 @@ export function TopNav() {
 
       {/* Right side: account */}
       <div className="flex items-center gap-3">
+        <ThemeToggle />
         {session?.user ? (
           <>
             {creditBalance !== null && (
@@ -187,16 +189,16 @@ export function TopNav() {
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 className="w-8 h-8 rounded-sm flex items-center justify-center text-sm transition"
-                style={{ background: '#1c1a17', color: 'rgba(245,239,224,0.7)', border: '1px solid rgba(176,141,87,0.28)' }}
+                style={{ background: 'rgb(var(--t-raised))', color: 'rgb(var(--t-parchment) / 0.7)', border: '1px solid rgb(var(--t-brass) / 0.28)' }}
               >
                 {session.user.name?.[0]?.toUpperCase() || session.user.email?.[0]?.toUpperCase() || '?'}
               </button>
               {menuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-48 rounded-sm shadow-xl z-50 py-1" style={{ background: '#141210', border: '1px solid rgba(176,141,87,0.28)' }}>
-                    <div className="px-3 py-2" style={{ borderBottom: '1px solid rgba(176,141,87,0.18)' }}>
-                      <p className="text-sm font-medium truncate" style={{ color: '#F5EFE0' }}>
+                  <div className="absolute right-0 mt-2 w-48 rounded-sm shadow-xl z-50 py-1" style={{ background: 'rgb(var(--t-surface))', border: '1px solid rgb(var(--t-brass) / 0.28)' }}>
+                    <div className="px-3 py-2" style={{ borderBottom: '1px solid rgb(var(--t-brass) / 0.18)' }}>
+                      <p className="text-sm font-medium truncate" style={{ color: 'rgb(var(--t-parchment))' }}>
                         {session.user.name || session.user.email}
                       </p>
                       {creditBalance !== null && (
@@ -217,18 +219,18 @@ export function TopNav() {
                         href={href}
                         onClick={() => setMenuOpen(false)}
                         className="block px-3 py-2 text-sm transition hover:opacity-80"
-                        style={{ color: (brass as boolean) ? '#B08D57' : 'rgba(245,239,224,0.7)' }}
+                        style={{ color: (brass as boolean) ? 'rgb(var(--t-brass))' : 'rgb(var(--t-parchment) / 0.7)' }}
                       >
                         {label}
                       </Link>
                     ))}
-                    <div className="mt-1 pt-1" style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}>
+                    <div className="mt-1 pt-1" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.18)' }}>
                       <button
                         onClick={() => signOut({ callbackUrl: '/' })}
                         className="block w-full text-left px-3 py-2 text-sm transition"
-                        style={{ color: 'rgba(245,239,224,0.35)' }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#e8453c'; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(245,239,224,0.35)'; }}
+                        style={{ color: 'rgb(var(--t-parchment) / 0.35)' }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgb(var(--t-bear))'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgb(var(--t-parchment) / 0.35)'; }}
                       >
                         Sign Out
                       </button>
@@ -240,13 +242,13 @@ export function TopNav() {
           </>
         ) : (
           <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm transition hidden sm:inline" style={{ color: 'rgba(245,239,224,0.5)' }}>
+            <Link href="/login" className="text-sm transition hidden sm:inline" style={{ color: 'rgb(var(--t-parchment) / 0.5)' }}>
               Sign In
             </Link>
             <Link
               href="/login"
               className="px-4 py-2 rounded-sm text-sm font-semibold transition uppercase tracking-wide"
-              style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}
+              style={{ background: 'rgb(var(--t-brass))', color: 'rgb(var(--t-ink))', fontFamily: 'var(--font-oswald)' }}
             >
               Get Started
             </Link>
@@ -257,7 +259,7 @@ export function TopNav() {
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
           className="md:hidden transition p-1"
-          style={{ color: 'rgba(245,239,224,0.5)' }}
+          style={{ color: 'rgb(var(--t-parchment) / 0.5)' }}
           aria-label="Toggle navigation"
         >
           {mobileOpen ? (
@@ -276,23 +278,23 @@ export function TopNav() {
       {mobileOpen && (
         <div className="fixed inset-0 z-[100] md:hidden">
           {/* Backdrop */}
-          <div className="absolute inset-0" style={{ background: 'rgba(8,6,4,0.85)', backdropFilter: 'blur(8px)' }} onClick={() => setMobileOpen(false)} />
+          <div className="absolute inset-0" style={{ background: 'rgb(var(--t-ink) / 0.85)', backdropFilter: 'blur(8px)' }} onClick={() => setMobileOpen(false)} />
 
           {/* Sheet */}
           <div
             className="absolute top-0 right-0 bottom-0 w-full max-w-xs z-10 flex flex-col"
-            style={{ background: '#0e0c09', borderLeft: '1px solid rgba(176,141,87,0.2)' }}
+            style={{ background: 'rgb(var(--t-surface))', borderLeft: '1px solid rgb(var(--t-brass) / 0.2)' }}
           >
             {/* Sheet header */}
-            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(176,141,87,0.12)' }}>
+            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgb(var(--t-brass) / 0.12)' }}>
               <Link href="/" onClick={() => setMobileOpen(false)} className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-oswald)' }}>
-                <span style={{ color: '#F5EFE0' }}>my</span>
-                <span style={{ color: '#B08D57' }}>junto</span>
+                <span style={{ color: 'rgb(var(--t-parchment))' }}>my</span>
+                <span style={{ color: 'rgb(var(--t-brass))' }}>junto</span>
               </Link>
               <button
                 onClick={() => setMobileOpen(false)}
                 className="p-1 transition"
-                style={{ color: 'rgba(245,239,224,0.4)' }}
+                style={{ color: 'rgb(var(--t-parchment) / 0.4)' }}
                 aria-label="Close"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -313,7 +315,7 @@ export function TopNav() {
 
               {/* Detail group */}
               <div className="mt-4 mb-1 px-3">
-                <span className="text-[10px] uppercase tracking-widest font-[var(--font-oswald)]" style={{ color: 'rgba(245,239,224,0.3)' }}>Detail</span>
+                <span className="text-[10px] uppercase tracking-widest font-[var(--font-oswald)]" style={{ color: 'rgb(var(--t-parchment) / 0.3)' }}>Detail</span>
               </div>
               <div className="space-y-0.5">
                 <MobileNavLink href="/juntos" label="Juntos" active={isActive('/juntos')} onClick={() => setMobileOpen(false)} indent />
@@ -336,7 +338,7 @@ export function TopNav() {
 
               {/* Account section */}
               {session?.user && (
-                <div className="mt-6 space-y-0.5" style={{ borderTop: '1px solid rgba(176,141,87,0.12)', paddingTop: '0.75rem' }}>
+                <div className="mt-6 space-y-0.5" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.12)', paddingTop: '0.75rem' }}>
                   <MobileNavLink href="/history" label="History" active={isActive('/history')} onClick={() => setMobileOpen(false)} muted />
                   <MobileNavLink href="/theses" label="Theses" active={isActive('/theses')} onClick={() => setMobileOpen(false)} muted />
                   <MobileNavLink href="/flows" label="Flows" active={isActive('/flows')} onClick={() => setMobileOpen(false)} muted />
@@ -348,11 +350,11 @@ export function TopNav() {
 
             {/* Sheet footer */}
             {session?.user && (
-              <div className="px-5 py-4" style={{ borderTop: '1px solid rgba(176,141,87,0.12)' }}>
+              <div className="px-5 py-4" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.12)' }}>
                 <button
                   onClick={() => { setMobileOpen(false); signOut({ callbackUrl: '/' }); }}
                   className="text-sm transition"
-                  style={{ color: 'rgba(245,239,224,0.35)' }}
+                  style={{ color: 'rgb(var(--t-parchment) / 0.35)' }}
                 >
                   Sign Out
                 </button>
@@ -388,8 +390,8 @@ function MobileNavLink({
       onClick={onClick}
       className="flex items-center gap-2 px-3 py-2.5 rounded-sm text-sm transition"
       style={{
-        color: active ? '#F5EFE0' : muted ? 'rgba(245,239,224,0.4)' : 'rgba(245,239,224,0.65)',
-        background: active ? 'rgba(176,141,87,0.1)' : undefined,
+        color: active ? 'rgb(var(--t-parchment))' : muted ? 'rgb(var(--t-parchment) / 0.4)' : 'rgb(var(--t-parchment) / 0.65)',
+        background: active ? 'rgb(var(--t-brass) / 0.1)' : undefined,
         paddingLeft: indent ? '1.25rem' : undefined,
       }}
     >

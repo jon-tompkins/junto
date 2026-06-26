@@ -108,8 +108,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
       <body className={`${spaceGrotesk.variable} ${oswald.variable} ${ibmPlexMono.variable}`}>
+        {/* Apply the saved theme before paint to avoid a flash of the wrong palette. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'dark');}catch(e){}`,
+          }}
+        />
         <AuthProvider>{children}</AuthProvider>
         <Suspense fallback={null}>
           <PageViewTracker />
