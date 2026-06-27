@@ -4,6 +4,7 @@ import { getSupabase } from '@/lib/db/client';
 import { alpacaForMandate } from '@/lib/trading/client';
 import { encryptSecret } from '@/lib/trading/crypto';
 import { getMandateOpenTickers } from '@/lib/trading/db';
+import { sliceUnrealized } from '@/lib/trading/pnl';
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const access = await getTradingAccess();
@@ -54,14 +55,34 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       alp.getAccount().catch(() => null),
       getMandateOpenTickers(mandate.id),
     ]);
+    // This mandate's open slices by ticker (entry/qty/side) — used to compute
+    // per-slice unrealized off the shared mark, not the broker's blended number.
+    const sliceByTicker = new Map<string, { entry: number; qty: number; side: string }>();
+    for (const t of (tradesRes.data || []) as any[]) {
+      if (t.status !== 'open') continue;
+      const sym = String(t.ticker).toUpperCase();
+      const prev = sliceByTicker.get(sym);
+      const qty = Number(t.qty) || 0;
+      const entry = Number(t.entry_price) || 0;
+      // If somehow >1 open slice on one mandate+ticker, qty-weight the entry.
+      if (prev) {
+        const totalQty = prev.qty + qty;
+        sliceByTicker.set(sym, { entry: totalQty ? (prev.entry * prev.qty + entry * qty) / totalQty : entry, qty: totalQty, side: t.side });
+      } else {
+        sliceByTicker.set(sym, { entry, qty, side: t.side });
+      }
+    }
     // Scope to this mandate's own names — a shared broker account returns the
     // whole book, but each mandate should only show what it opened.
     for (const p of live) {
       const sym = p.symbol.toUpperCase();
       if (!ownTickers.has(sym)) continue;
+      const mark = Number(p.current_price) || 0;
+      const slice = sliceByTicker.get(sym);
       positions[sym] = {
-        current_price: Number(p.current_price) || 0,
-        unrealized_pl: Number(p.unrealized_pl) || 0,
+        current_price: mark,
+        // Per-slice when we have the slice; fall back to broker blended otherwise.
+        unrealized_pl: slice ? sliceUnrealized(slice.side, slice.entry, slice.qty, mark) : Number(p.unrealized_pl) || 0,
       };
     }
     if (acc) account = { equity: Number(acc.equity) || null, cash: Number(acc.cash) || null };

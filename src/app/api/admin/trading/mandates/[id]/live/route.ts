@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTradingAccess, getAccessibleMandate } from '@/lib/trading/access';
 import { alpacaForMandate } from '@/lib/trading/client';
-import { getMandateOpenTickers } from '@/lib/trading/db';
+import { getSupabase } from '@/lib/db/client';
+import { sliceUnrealized } from '@/lib/trading/pnl';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,13 +32,28 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   let account: { equity: number | null; cash: number | null } = { equity: null, cash: null };
   try {
     const alp = alpacaForMandate(mandate as any);
-    const [acc, live, openOrders, ownTickers] = await Promise.all([
+    const [acc, live, openOrders, openTradesRes] = await Promise.all([
       alp.getAccount().catch(() => null),
       alp.getPositions().catch(() => [] as any[]),
       alp.listOpenOrders().catch(() => [] as any[]),
-      getMandateOpenTickers(mandate.id),
+      getSupabase().from('trades').select('ticker, entry_price, qty, side').eq('mandate_id', mandate.id).eq('status', 'open'),
     ]);
     if (acc) account = { equity: Number(acc.equity) || null, cash: Number(acc.cash) || null };
+
+    // This mandate's open slices by ticker (entry/qty/side) for per-slice P/L.
+    const sliceByTicker = new Map<string, { entry: number; qty: number; side: string }>();
+    for (const t of (openTradesRes.data || []) as any[]) {
+      const sym = String(t.ticker).toUpperCase();
+      const prev = sliceByTicker.get(sym);
+      const qty = Number(t.qty) || 0;
+      const entry = Number(t.entry_price) || 0;
+      if (prev) {
+        const totalQty = prev.qty + qty;
+        sliceByTicker.set(sym, { entry: totalQty ? (prev.entry * prev.qty + entry * qty) / totalQty : entry, qty: totalQty, side: t.side });
+      } else {
+        sliceByTicker.set(sym, { entry, qty, side: t.side });
+      }
+    }
 
     // Bucket open sell-side stop/limit orders by symbol so the UI can show what's
     // actually protecting each position at the broker (not just what's in the DB).
@@ -65,14 +81,17 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
 
     for (const p of live) {
       const sym = p.symbol.toUpperCase();
-      if (!ownTickers.has(sym)) continue; // shared account → only this mandate's names
+      const slice = sliceByTicker.get(sym);
+      if (!slice) continue; // shared account → only this mandate's names
       const rawQty = Number(p.qty) || 0;
+      const mark = Number(p.current_price) || 0;
       positions[sym] = {
-        qty: Math.abs(rawQty),
-        side: rawQty < 0 || (p.side && String(p.side).toLowerCase() === 'short') ? 'short' : 'long',
-        avg_entry_price: Number(p.avg_entry_price) || 0,
-        current_price: Number(p.current_price) || 0,
-        unrealized_pl: Number(p.unrealized_pl) || 0,
+        // Slice qty/entry/side from our books, not the broker's blended net.
+        qty: slice.qty || Math.abs(rawQty),
+        side: (slice.side === 'short' ? 'short' : 'long'),
+        avg_entry_price: slice.entry || Number(p.avg_entry_price) || 0,
+        current_price: mark,
+        unrealized_pl: slice.entry ? sliceUnrealized(slice.side, slice.entry, slice.qty, mark) : Number(p.unrealized_pl) || 0,
         unrealized_intraday_pl: Number(p.unrealized_intraday_pl) || 0,
         prev_day_px: p.prev_day_px != null ? Number(p.prev_day_px) : null,
         live_stop: stopBySym.get(sym) ?? null,

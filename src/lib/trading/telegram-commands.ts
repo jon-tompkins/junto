@@ -1,7 +1,15 @@
 import { getSupabase } from '@/lib/db/client';
 import { alpacaForMandate } from './client';
 import { getOpenTrades, updateTrade, addJournalEntry } from './db';
+import { sliceUnrealized } from './pnl';
 import type { Mandate } from './types';
+
+// Stable key for the underlying broker account (dedupe shared accounts).
+function acctKey(m: any): string {
+  if (m.broker === 'hyperliquid') return `h:${m.hl_wallet_address || m.id}`;
+  if (m.account_kind === 'managed') return `m:${m.alpaca_account_id || m.id}`;
+  return `a:${m.alpaca_key_id || m.id}`;
+}
 
 function escapeHtml(s: string): string {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -42,9 +50,23 @@ export async function buildPnlMessage(userId: string): Promise<string> {
     if (t.exit_at && new Date(t.exit_at) >= sinceToday) realizedToday += pnl;
   }
 
+  // Open slices per mandate for per-slice unrealized (broker blends shared names).
+  const { data: openRows } = await getSupabase()
+    .from('trades')
+    .select('mandate_id, ticker, entry_price, qty, side')
+    .in('mandate_id', ids)
+    .eq('status', 'open');
+  const slicesByMandate = new Map<string, Array<{ sym: string; entry: number; qty: number; side: string }>>();
+  for (const t of (openRows || []) as any[]) {
+    const arr = slicesByMandate.get(t.mandate_id) || [];
+    arr.push({ sym: String(t.ticker).toUpperCase(), entry: Number(t.entry_price) || 0, qty: Number(t.qty) || 0, side: t.side });
+    slicesByMandate.set(t.mandate_id, arr);
+  }
+
   let totalUnrealized = 0;
   let totalEquity = 0;
   let equityKnown = false;
+  const seenAccounts = new Set<string>();
   await Promise.all(mandates.map(async (m) => {
     try {
       const alp = alpacaForMandate(m);
@@ -52,8 +74,13 @@ export async function buildPnlMessage(userId: string): Promise<string> {
         alp.getAccount().catch(() => null),
         alp.getPositions().catch(() => []),
       ]);
-      if (acct) { totalEquity += Number(acct.equity) || 0; equityKnown = true; }
-      for (const p of positions) totalUnrealized += Number(p.unrealized_pl) || 0;
+      // Equity is account-level — count each underlying account once.
+      const key = acctKey(m);
+      if (acct && !seenAccounts.has(key)) { seenAccounts.add(key); totalEquity += Number(acct.equity) || 0; equityKnown = true; }
+      // Unrealized is per-slice off the shared mark.
+      const markBySym = new Map<string, number>();
+      for (const p of positions) markBySym.set(String(p.symbol).toUpperCase(), Number(p.current_price) || 0);
+      for (const sl of slicesByMandate.get(m.id) || []) totalUnrealized += sliceUnrealized(sl.side, sl.entry, sl.qty, markBySym.get(sl.sym) || 0);
     } catch { /* skip */ }
   }));
 

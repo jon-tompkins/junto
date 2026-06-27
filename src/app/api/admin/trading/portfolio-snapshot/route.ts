@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getTradingAccess } from '@/lib/trading/access';
 import { getSupabase } from '@/lib/db/client';
 import { alpacaForMandate } from '@/lib/trading/client';
+import { sliceUnrealized } from '@/lib/trading/pnl';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,20 +29,29 @@ export async function GET() {
   const { data: mandates, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Per-mandate owned tickers (open/in-flight) so unrealized is attributed to the
-  // mandate that opened each position, not the whole shared account.
+  // Per-mandate open slices (entry/qty/side by ticker) so unrealized is computed
+  // per mandate off the shared mark — never the broker's blended number.
   const ids = (mandates || []).map((m: any) => m.id);
-  const tickersByMandate = new Map<string, Set<string>>();
+  const slicesByMandate = new Map<string, Map<string, { entry: number; qty: number; side: string }>>();
   if (ids.length) {
     const { data: openTrades } = await supabase
       .from('trades')
-      .select('mandate_id, ticker')
+      .select('mandate_id, ticker, entry_price, qty, side')
       .in('mandate_id', ids)
-      .in('status', ['open', 'submitted']);
+      .eq('status', 'open');
     for (const t of openTrades || []) {
-      const set = tickersByMandate.get(t.mandate_id) || new Set<string>();
-      set.add(String(t.ticker).toUpperCase());
-      tickersByMandate.set(t.mandate_id, set);
+      const m = slicesByMandate.get(t.mandate_id) || new Map();
+      const sym = String(t.ticker).toUpperCase();
+      const prev = m.get(sym);
+      const qty = Number(t.qty) || 0;
+      const entry = Number(t.entry_price) || 0;
+      if (prev) {
+        const tot = prev.qty + qty;
+        m.set(sym, { entry: tot ? (prev.entry * prev.qty + entry * qty) / tot : entry, qty: tot, side: t.side });
+      } else {
+        m.set(sym, { entry, qty, side: t.side });
+      }
+      slicesByMandate.set(t.mandate_id, m);
     }
   }
 
@@ -55,12 +65,18 @@ export async function GET() {
           alp.getAccount().catch(() => null),
           alp.getPositions().catch(() => [] as any[]),
         ]);
-        const own = tickersByMandate.get(m.id);
-        const scoped = own && own.size ? positions.filter((p: any) => own.has(String(p.symbol).toUpperCase())) : [];
+        const slices = slicesByMandate.get(m.id);
+        let unrealized: number | null = null;
+        if (slices && slices.size) {
+          const markBySym = new Map<string, number>();
+          for (const p of positions) markBySym.set(String(p.symbol).toUpperCase(), Number(p.current_price) || 0);
+          unrealized = 0;
+          for (const [sym, sl] of slices) unrealized += sliceUnrealized(sl.side, sl.entry, sl.qty, markBySym.get(sym) || 0);
+        }
         snapByMandate.set(m.id, {
           equity: account ? Number(account.equity) || null : null,
           cash: account ? Number(account.cash) || null : null,
-          unrealized: scoped.length ? scoped.reduce((sum: number, p: any) => sum + (Number(p.unrealized_pl) || 0), 0) : null,
+          unrealized,
         });
       } catch {
         snapByMandate.set(m.id, { equity: null, cash: null, unrealized: null });

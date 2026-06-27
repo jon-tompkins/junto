@@ -4,6 +4,7 @@ import { getSupabase } from '@/lib/db/client';
 import { getUserTelegramChatId } from '@/lib/telegram/link';
 import { alpacaForMandate } from '@/lib/trading/client';
 import { encryptSecret } from '@/lib/trading/crypto';
+import { sliceUnrealized } from '@/lib/trading/pnl';
 
 // Stable key for the underlying broker account so two mandates on one account
 // don't double-count its equity/cash in the rollup.
@@ -31,7 +32,7 @@ export async function GET() {
 
   const [tradesRes, juntosRes] = await Promise.all([
     ids.length
-      ? supabase.from('trades').select('id, mandate_id, status, realized_pnl_usd, ticker').in('mandate_id', ids)
+      ? supabase.from('trades').select('id, mandate_id, status, realized_pnl_usd, ticker, entry_price, qty, side').in('mandate_id', ids)
       : Promise.resolve({ data: [] as any[] }),
     juntoIds.length
       ? supabase.from('juntos').select('id, name').in('id', juntoIds)
@@ -42,14 +43,24 @@ export async function GET() {
   for (const j of (juntosRes as any).data || []) juntoNameById.set(j.id, j.name);
 
   const statsByMandate = new Map<string, { open: number; closed: number; pnl: number; unrealized: number | null }>();
-  const tickersByMandate = new Map<string, Set<string>>();
+  // mandateId → ticker → slice (entry/qty/side), for per-slice unrealized P/L.
+  const slicesByMandate = new Map<string, Map<string, { entry: number; qty: number; side: string }>>();
   for (const t of (tradesRes as any).data || []) {
     const s = statsByMandate.get(t.mandate_id) || { open: 0, closed: 0, pnl: 0, unrealized: null };
     if (t.status === 'open' || t.status === 'pending' || t.status === 'submitted') s.open++;
-    if (t.status === 'open' || t.status === 'submitted') {
-      const set = tickersByMandate.get(t.mandate_id) || new Set<string>();
-      if (t.ticker) set.add(String(t.ticker).toUpperCase());
-      tickersByMandate.set(t.mandate_id, set);
+    if (t.status === 'open') {
+      const m = slicesByMandate.get(t.mandate_id) || new Map();
+      const sym = String(t.ticker).toUpperCase();
+      const prev = m.get(sym);
+      const qty = Number(t.qty) || 0;
+      const entry = Number(t.entry_price) || 0;
+      if (prev) {
+        const tot = prev.qty + qty;
+        m.set(sym, { entry: tot ? (prev.entry * prev.qty + entry * qty) / tot : entry, qty: tot, side: t.side });
+      } else {
+        m.set(sym, { entry, qty, side: t.side });
+      }
+      slicesByMandate.set(t.mandate_id, m);
     }
     if (t.status === 'closed') {
       s.closed++;
@@ -72,10 +83,13 @@ export async function GET() {
           alp.getAccount().catch(() => null),
           s.open > 0 ? alp.getPositions().catch(() => []) : Promise.resolve([]),
         ]);
-        const own = tickersByMandate.get(m.id);
-        const scoped = own && own.size ? positions.filter((p: any) => own.has(String(p.symbol).toUpperCase())) : [];
-        if (scoped.length > 0) {
-          s.unrealized = scoped.reduce((sum, p) => sum + (Number(p.unrealized_pl) || 0), 0);
+        const slices = slicesByMandate.get(m.id);
+        if (slices && slices.size) {
+          const markBySym = new Map<string, number>();
+          for (const p of positions) markBySym.set(String(p.symbol).toUpperCase(), Number(p.current_price) || 0);
+          let u = 0;
+          for (const [sym, sl] of slices) u += sliceUnrealized(sl.side, sl.entry, sl.qty, markBySym.get(sym) || 0);
+          s.unrealized = u;
         }
         accountByMandate.set(m.id, {
           equity: account ? Number(account.equity) || null : null,
