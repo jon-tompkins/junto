@@ -18,6 +18,7 @@
 
 import { alpacaForMandate } from './client';
 import { getSupabase } from '@/lib/db/client';
+import { siblingSlices } from './slices';
 
 export type ReconcileAction =
   | 'in_sync'
@@ -85,6 +86,15 @@ export async function reconcileMandate(mandateId: string): Promise<{
       if (!pos) {
         // monitor.ts will close this on its next pass — we just report.
         results.push({ ticker: sym, action: 'no_position', detail: 'Alpaca shows no live position; monitor will close on next tick' });
+        continue;
+      }
+
+      // Shared-account slice: the broker's NET qty and symbol-wide orders span
+      // multiple mandates, so syncing this slice's qty/levels off them would be
+      // wrong. protection.ts owns per-slice levels (by order id); skip net sync.
+      const siblings = await siblingSlices(mandate, sym, trade.id);
+      if (siblings.length > 0) {
+        results.push({ ticker: sym, action: 'in_sync', detail: 'slice (shared symbol) — net sync skipped' });
         continue;
       }
 

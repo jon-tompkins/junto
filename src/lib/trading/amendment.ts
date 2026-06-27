@@ -10,6 +10,7 @@ import {
 } from './db';
 import { alpacaForMandate } from './client';
 import { protectMandate } from './protection';
+import { closeSlice } from './slices';
 import type { AmendmentKind } from './types';
 
 // A stored stop/target order id can go stale two ways at Alpaca:
@@ -114,11 +115,19 @@ export async function handleAmendmentCallback(params: {
     const alpaca = alpacaForMandate(mandate);
 
     if (amendment.kind === 'close') {
-      await alpaca.closePosition(trade.ticker);
+      // Slice-aware: reduce just this slice when the symbol is shared on the
+      // account; full close when it's the sole holder (monitor finalizes that).
+      const { mode, exitPrice } = await closeSlice(mandate, trade);
+      if (mode === 'reduce') {
+        const realized = trade.entry_price && exitPrice != null
+          ? (trade.side === 'long' ? (exitPrice - trade.entry_price) * Number(trade.qty) : (trade.entry_price - exitPrice) * Number(trade.qty))
+          : null;
+        await updateTrade(trade.id, { status: 'closed', exit_price: exitPrice, exit_at: new Date().toISOString(), realized_pnl_usd: realized });
+      }
       await updateAmendment(amendmentId, {
         status: 'applied',
         applied_at: new Date().toISOString(),
-        applied_note: 'market close submitted',
+        applied_note: mode === 'reduce' ? 'slice reduced + closed' : 'market close submitted',
       });
       await addJournalEntry({
         tradeId: trade.id,

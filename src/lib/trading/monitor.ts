@@ -95,9 +95,47 @@ export async function monitorMandate(mandate: Mandate): Promise<{
       }
     }
 
+    // Per-slice exit: did THIS slice's own OCO leg fill? On a shared account the
+    // symbol position persists while a sibling slice is still open, so we can't
+    // rely on position-disappeared — detect via the slice's own stop/target order.
+    // (Also more precise than getLastTrade for the sole-slice case: real fill px.)
+    let sliceExitPrice: number | null = null;
+    for (const oid of [trade.stop_order_id, trade.target_order_id]) {
+      if (!oid) continue;
+      try {
+        const o = await alpaca.getOrder(oid);
+        if (o && o.status === 'filled') {
+          sliceExitPrice = o.filled_avg_price ? Number(o.filled_avg_price) : null;
+          break;
+        }
+      } catch { /* ignore */ }
+    }
+    if (sliceExitPrice != null) {
+      // OCO usually cancels the sibling leg itself; cancel defensively anyway.
+      for (const oid of [trade.stop_order_id, trade.target_order_id]) {
+        if (oid) { try { await alpaca.cancelOrder(oid); } catch { /* already gone */ } }
+      }
+      const realized = trade.entry_price
+        ? (trade.side === 'long'
+            ? (sliceExitPrice - trade.entry_price) * trade.qty
+            : (trade.entry_price - sliceExitPrice) * trade.qty)
+        : null;
+      await updateTrade(trade.id, {
+        status: 'closed',
+        exit_price: sliceExitPrice,
+        exit_at: new Date().toISOString(),
+        realized_pnl_usd: realized,
+      });
+      await writeExitAndPostMortem(trade.id, mandate);
+      closed++;
+      continue;
+    }
+
     const livePosition = positionsBySymbol.get(trade.ticker.toUpperCase());
 
-    // Position disappeared = closed (stop/target hit, manual close, etc.)
+    // Position disappeared = closed (stop/target hit, manual close, etc.) — the
+    // sole-holder fallback. With siblings the position won't vanish, so the
+    // per-slice check above is what closes each slice.
     if (!livePosition) {
       const exitPrice = await alpaca.getLastTrade(trade.ticker);
       const realized = exitPrice && trade.entry_price

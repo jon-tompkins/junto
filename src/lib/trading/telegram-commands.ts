@@ -2,6 +2,7 @@ import { getSupabase } from '@/lib/db/client';
 import { alpacaForMandate } from './client';
 import { getOpenTrades, updateTrade, addJournalEntry } from './db';
 import { sliceUnrealized } from './pnl';
+import { closeSlice } from './slices';
 import type { Mandate } from './types';
 
 // Stable key for the underlying broker account (dedupe shared accounts).
@@ -167,20 +168,25 @@ export async function closeTickerCommand(userId: string, ticker: string): Promis
     const matching = open.filter(t => t.ticker.toUpperCase() === sym && t.status === 'open');
     if (!matching.length) continue;
 
-    try {
-      const alp = alpacaForMandate(m);
-      await alp.closePosition(sym);
-      for (const t of matching) {
-        await updateTrade(t.id, { status: 'closed' });
-        await addJournalEntry({
-          tradeId: t.id,
-          kind: 'exit',
-          content: `[market-closed via Telegram /close ${sym}]`,
-        });
+    for (const t of matching) {
+      try {
+        // Slice-aware: reduces just this slice on a shared account, full-closes
+        // when it's the sole holder.
+        const { mode, exitPrice } = await closeSlice(m, t);
+        const patch: any = { status: 'closed' };
+        if (mode === 'reduce' && exitPrice != null) {
+          patch.exit_price = exitPrice;
+          patch.exit_at = new Date().toISOString();
+          patch.realized_pnl_usd = t.entry_price
+            ? (t.side === 'long' ? (exitPrice - Number(t.entry_price)) * Number(t.qty) : (Number(t.entry_price) - exitPrice) * Number(t.qty))
+            : null;
+        }
+        await updateTrade(t.id, patch);
+        await addJournalEntry({ tradeId: t.id, kind: 'exit', content: `[market-closed via Telegram /close ${sym}]` });
+        results.push(`✅ ${escapeHtml(m.name)}: closed ${sym} (${Number(t.qty)} sh, ${mode})`);
+      } catch (err: any) {
+        results.push(`❌ ${escapeHtml(m.name)}: ${(err?.message || 'broker error').slice(0, 150)}`);
       }
-      results.push(`✅ ${escapeHtml(m.name)}: closed ${matching.length} ${sym} (${matching.reduce((s, t) => s + Number(t.qty), 0)} sh)`);
-    } catch (err: any) {
-      results.push(`❌ ${escapeHtml(m.name)}: ${(err?.message || 'broker error').slice(0, 150)}`);
     }
   }
 
