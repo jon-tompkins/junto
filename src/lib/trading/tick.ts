@@ -46,8 +46,11 @@ export interface TickResult {
   };
 }
 
-export async function runTick(window: TickWindow): Promise<TickResult[]> {
-  const mandates = await getActiveMandates();
+export async function runTick(window: TickWindow, opts?: { broker?: string }): Promise<TickResult[]> {
+  const all = await getActiveMandates();
+  // Optional broker scope: lets HL mandates tick 24/7 (HL never closes) on their
+  // own cron while Alpaca mandates stay on the US-market-hours schedule.
+  const mandates = opts?.broker ? all.filter((m) => (m.broker || 'alpaca') === opts.broker) : all;
   const results: TickResult[] = [];
   for (const mandate of mandates) {
     results.push(await tickMandate(mandate, window));

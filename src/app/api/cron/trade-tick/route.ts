@@ -28,9 +28,12 @@ export async function POST(req: NextRequest) {
   }
 
   const window = (req.nextUrl.searchParams.get('window') as TickWindow | null) ?? inferWindowFromEt();
+  // Optional ?broker=hyperliquid|alpaca to scope which mandates run. HL ticks
+  // 24/7 on its own cron; Alpaca stays on the US-market-hours crons.
+  const broker = req.nextUrl.searchParams.get('broker') || undefined;
 
-  const results = await runTick(window);
-  return NextResponse.json({ ok: true, window, results });
+  const results = await runTick(window, broker ? { broker } : undefined);
+  return NextResponse.json({ ok: true, window, broker: broker ?? 'all', results });
 }
 
 export async function GET(req: NextRequest) {

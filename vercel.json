@@ -29,24 +29,28 @@
       "schedule": "0 14 * * *"
     },
     {
-      "path": "/api/cron/trade-tick",
+      "path": "/api/cron/trade-tick?broker=alpaca",
       "schedule": "35 13 * * 1-5"
     },
     {
-      "path": "/api/cron/trade-tick",
+      "path": "/api/cron/trade-tick?broker=alpaca",
       "schedule": "0 15 * * 1-5"
     },
     {
-      "path": "/api/cron/trade-tick",
+      "path": "/api/cron/trade-tick?broker=alpaca",
       "schedule": "30 16 * * 1-5"
     },
     {
-      "path": "/api/cron/trade-tick",
+      "path": "/api/cron/trade-tick?broker=alpaca",
       "schedule": "0 18 * * 1-5"
     },
     {
-      "path": "/api/cron/trade-tick",
+      "path": "/api/cron/trade-tick?broker=alpaca",
       "schedule": "55 19 * * 1-5"
+    },
+    {
+      "path": "/api/cron/trade-tick?window=midday&broker=hyperliquid",
+      "schedule": "0 * * * *"
     },
     {
       "path": "/api/cron/trade-reconcile",
