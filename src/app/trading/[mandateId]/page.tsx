@@ -1180,26 +1180,85 @@ interface OpenRow {
   trade: Trade | null;
 }
 
+type OpenSortKey = 'ticker' | 'side' | 'qty' | 'entry' | 'last' | 'mkt' | 'stop' | 'target' | 'day' | 'unrealized' | 'status';
+
+function openSortVal(row: OpenRow, key: OpenSortKey): number | string | null {
+  const { pos, trade, ticker } = row;
+  const qty = pos.qty ?? (trade?.qty != null ? Number(trade.qty) : null);
+  const last = pos.current_price ?? null;
+  switch (key) {
+    case 'ticker': return ticker;
+    case 'side': return pos.side || trade?.side || '';
+    case 'qty': return qty;
+    case 'entry': return pos.avg_entry_price ?? trade?.entry_price ?? null;
+    case 'last': return last;
+    case 'mkt': return qty != null && last ? qty * last : null;
+    case 'stop': return pos.live_stop ?? trade?.stop_price ?? null;
+    case 'target': return pos.live_target ?? trade?.target_price ?? null;
+    case 'day': return dayPlFor(pos, trade?.entry_at);
+    case 'unrealized': return pos.unrealized_pl ?? null;
+    case 'status': return trade ? 'open' : 'untracked';
+  }
+}
+
 function OpenPositionsTable({ rows, agreement }: { rows: OpenRow[]; agreement: Record<string, AgreeingSource[]> }) {
+  const [sortKey, setSortKey] = useState<OpenSortKey | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const clickSort = (k: OpenSortKey) => {
+    if (sortKey === k) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(k); setSortDir(k === 'ticker' || k === 'side' || k === 'status' ? 'asc' : 'desc'); }
+  };
+
+  const sorted = sortKey
+    ? [...rows].sort((a, b) => {
+        const av = openSortVal(a, sortKey);
+        const bv = openSortVal(b, sortKey);
+        // nulls always sort last, regardless of direction
+        if (av == null && bv == null) return 0;
+        if (av == null) return 1;
+        if (bv == null) return -1;
+        let cmp: number;
+        if (typeof av === 'number' && typeof bv === 'number') cmp = av - bv;
+        else cmp = String(av).localeCompare(String(bv));
+        return sortDir === 'asc' ? cmp : -cmp;
+      })
+    : rows;
+
+  const cols: { key: OpenSortKey; label: string; align?: 'right' }[] = [
+    { key: 'ticker', label: 'Ticker' },
+    { key: 'side', label: 'Side' },
+    { key: 'qty', label: 'Qty', align: 'right' },
+    { key: 'entry', label: 'Entry', align: 'right' },
+    { key: 'last', label: 'Last', align: 'right' },
+    { key: 'mkt', label: 'Mkt Value', align: 'right' },
+    { key: 'stop', label: 'Stop', align: 'right' },
+    { key: 'target', label: 'Target', align: 'right' },
+    { key: 'day', label: 'Day P&L', align: 'right' },
+    { key: 'unrealized', label: 'Unrealized', align: 'right' },
+    { key: 'status', label: 'Status' },
+  ];
+
   return (
     <table className="w-full text-sm min-w-[860px]">
       <thead className="text-left text-xs uppercase text-parchment/30 border-b border-brass/28 font-[var(--font-oswald)]">
         <tr>
-          <th className="py-2 pr-4">Ticker</th>
-          <th className="py-2 pr-4">Side</th>
-          <th className="py-2 pr-4 text-right">Qty</th>
-          <th className="py-2 pr-4 text-right">Entry</th>
-          <th className="py-2 pr-4 text-right">Last</th>
-          <th className="py-2 pr-4 text-right">Mkt Value</th>
-          <th className="py-2 pr-4 text-right">Stop</th>
-          <th className="py-2 pr-4 text-right">Target</th>
-          <th className="py-2 pr-4 text-right">Day P&amp;L</th>
-          <th className="py-2 pr-4 text-right">Unrealized</th>
-          <th className="py-2 pr-4">Status</th>
+          {cols.map(c => (
+            <th key={c.key} className={`py-2 pr-4 ${c.align === 'right' ? 'text-right' : ''}`}>
+              <button
+                type="button"
+                onClick={() => clickSort(c.key)}
+                className={`uppercase tracking-wider hover:text-parchment transition ${sortKey === c.key ? 'text-brass' : ''} ${c.align === 'right' ? 'flex-row-reverse' : ''} inline-flex items-center gap-1`}
+              >
+                {c.label}
+                <span className="text-[9px]">{sortKey === c.key ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}</span>
+              </button>
+            </th>
+          ))}
         </tr>
       </thead>
       <tbody>
-        {rows.map(({ ticker, pos, trade }) => {
+        {sorted.map(({ ticker, pos, trade }) => {
           const side = pos.side || trade?.side || '—';
           const qty = pos.qty ?? (trade?.qty != null ? Number(trade.qty) : null);
           const entry = pos.avg_entry_price ?? trade?.entry_price ?? null;
