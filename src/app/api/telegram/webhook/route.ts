@@ -11,7 +11,6 @@ import {
   closeTickerCommand,
   buildTicksMessage,
   requestMandateBind,
-  confirmMandateBind,
   unbindMandate,
 } from '@/lib/trading/telegram-commands';
 
@@ -99,25 +98,6 @@ export async function POST(req: NextRequest) {
           } catch (err: any) {
             console.error('[menu]', err);
             await sendTelegramMessage(chatId, `⚠️ Menu action failed: ${err?.message?.slice(0, 200) || 'unknown'}`);
-          }
-        }
-      }
-    } else if (cb.data?.startsWith('bind_confirm:') || cb.data?.startsWith('bind_cancel:')) {
-      await answerCallbackQuery(cb.id, 'Working…').catch(() => {});
-      const chatId = cb.message?.chat?.id;
-      const fromId = cb.from?.id;
-      const [action, mandateId] = cb.data.split(':');
-      const userId = fromId ? await getUserIdByTelegramChatId(fromId) : null;
-      if (chatId) {
-        if (cb.message) await editMessageReplyMarkup(chatId, cb.message.message_id).catch(() => {});
-        if (!userId) {
-          await sendTelegramMessage(chatId, '⚠️ Confirm from the account that owns this mandate (DM-link your Telegram first).');
-        } else {
-          try {
-            const body = await confirmMandateBind(userId, mandateId, chatId, action === 'bind_confirm');
-            await sendTelegramMessage(chatId, body);
-          } catch (err: any) {
-            await sendTelegramMessage(chatId, `⚠️ ${err?.message?.slice(0, 200) || 'Bind failed'}`);
           }
         }
       }

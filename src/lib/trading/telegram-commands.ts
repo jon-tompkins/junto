@@ -178,31 +178,20 @@ export async function requestMandateBind(userId: string, idArg: string, chatId: 
     pending_tg_requested_at: new Date().toISOString(),
   }).eq('id', m.id);
   if (error) return { text: `❌ ${error.message}` };
+  const base = (process.env.NEXTAUTH_URL || 'https://myjunto.xyz').replace(/\/$/, '');
   return {
-    text: `🔗 <b>Bind requested</b> — ${escapeHtml(m.name)} → this chat.\n\nConfirm to activate: tap below, or approve on the mandate page (Settings → Telegram).`,
+    text: `🔗 <b>Bind requested</b> — ${escapeHtml(m.name)} → this chat.\n\n` +
+      `⚠️ Not active yet. For security, you must approve this from your logged-in account: open the mandate on myjunto.xyz → Settings → <b>Confirm bind</b>.\n\n` +
+      `This makes sure only the signed-in owner can route cards to a chat.`,
     replyMarkup: { inline_keyboard: [[
-      { text: '✅ Confirm bind', callback_data: `bind_confirm:${m.id}` },
-      { text: '✖ Cancel', callback_data: `bind_cancel:${m.id}` },
+      { text: '🌐 Open mandate to confirm', url: `${base}/trading/${m.id}` },
     ]] },
   };
 }
 
-// Confirm/cancel a pending bind (from the TG inline button). Verifies ownership +
-// that the pending chat still matches where the button was tapped.
-export async function confirmMandateBind(userId: string, mandateId: string, chatId: number, confirm: boolean): Promise<string> {
-  const { data: m } = await getSupabase().from('trading_mandates').select('id, name, user_id, pending_tg_chat_id').eq('id', mandateId).maybeSingle();
-  if (!m) return 'Mandate not found.';
-  if (m.user_id !== userId) return '⚠️ Only the mandate owner can confirm this binding.';
-  if (!confirm) {
-    await getSupabase().from('trading_mandates').update({ pending_tg_chat_id: null, pending_tg_chat_title: null, pending_tg_requested_at: null, updated_at: new Date().toISOString() }).eq('id', mandateId);
-    return `Bind cancelled for <b>${escapeHtml(m.name)}</b>.`;
-  }
-  if (!m.pending_tg_chat_id || String(m.pending_tg_chat_id) !== String(chatId)) {
-    return '⚠️ That bind request is stale. Run <code>/bind</code> again here.';
-  }
-  await getSupabase().from('trading_mandates').update({ telegram_chat_id: String(chatId), pending_tg_chat_id: null, pending_tg_chat_title: null, pending_tg_requested_at: null, updated_at: new Date().toISOString() }).eq('id', mandateId);
-  return `✅ <b>${escapeHtml(m.name)}</b> is now bound to this chat. Proposals + amendments post here.`;
-}
+// Bind confirmation is intentionally WEB-ONLY (logged-in owner approves on the
+// mandate page) — see the PATCH confirm_binding path. No Telegram-side confirm,
+// so possessing a mandate id can never activate routing from chat alone.
 
 // /unbind <mandate-id> — clear routing (back to DM). Low-risk removal, immediate.
 export async function unbindMandate(userId: string, idArg: string): Promise<string> {
