@@ -114,6 +114,17 @@ export async function handleAmendmentCallback(params: {
     const alpaca = alpacaForMandate(mandate);
 
     if (amendment.kind === 'close') {
+      // Release the shares first: Alpaca won't DELETE a position whose qty is
+      // held by open protective orders → 403 "insufficient qty available". Cancel
+      // this symbol's exit-side orders (+ the stored OCO legs), let the hold
+      // release, THEN market-close.
+      const exitSide = trade.side === 'short' ? 'buy' : 'sell';
+      const openOrders = await alpaca.listOpenOrders().catch(() => [] as any[]);
+      const toCancel = openOrders.filter((o: any) => (o.symbol || '').toUpperCase() === trade.ticker.toUpperCase() && o.side === exitSide);
+      let cancelled = 0;
+      for (const o of toCancel) { try { await alpaca.cancelOrder(o.id); cancelled++; } catch { /* ignore */ } }
+      for (const oid of [trade.stop_order_id, trade.target_order_id]) { if (oid) { try { await alpaca.cancelOrder(oid); cancelled++; } catch { /* ignore */ } } }
+      if (cancelled > 0) await new Promise((r) => setTimeout(r, 2000));
       await alpaca.closePosition(trade.ticker);
       await updateAmendment(amendmentId, {
         status: 'applied',

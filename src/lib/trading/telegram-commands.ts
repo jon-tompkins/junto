@@ -169,6 +169,15 @@ export async function closeTickerCommand(userId: string, ticker: string): Promis
 
     try {
       const alp = alpacaForMandate(m);
+      // Release held shares first (open protective orders block a position DELETE
+      // with 403 "insufficient qty available"). Cancel this symbol's open orders,
+      // let the hold release, then market-close.
+      const openOrders = await alp.listOpenOrders().catch(() => [] as any[]);
+      let cancelled = 0;
+      for (const o of openOrders) {
+        if ((o.symbol || '').toUpperCase() === sym) { try { await alp.cancelOrder(o.id); cancelled++; } catch { /* ignore */ } }
+      }
+      if (cancelled > 0) await new Promise((r) => setTimeout(r, 2000));
       await alp.closePosition(sym);
       for (const t of matching) {
         await updateTrade(t.id, { status: 'closed' });
