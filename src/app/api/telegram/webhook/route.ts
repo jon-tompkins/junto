@@ -10,7 +10,9 @@ import {
   setMandateStatus,
   closeTickerCommand,
   buildTicksMessage,
-  bindMandateChat,
+  requestMandateBind,
+  confirmMandateBind,
+  unbindMandate,
 } from '@/lib/trading/telegram-commands';
 
 export const dynamic = 'force-dynamic';
@@ -100,6 +102,25 @@ export async function POST(req: NextRequest) {
           }
         }
       }
+    } else if (cb.data?.startsWith('bind_confirm:') || cb.data?.startsWith('bind_cancel:')) {
+      await answerCallbackQuery(cb.id, 'Working…').catch(() => {});
+      const chatId = cb.message?.chat?.id;
+      const fromId = cb.from?.id;
+      const [action, mandateId] = cb.data.split(':');
+      const userId = fromId ? await getUserIdByTelegramChatId(fromId) : null;
+      if (chatId) {
+        if (cb.message) await editMessageReplyMarkup(chatId, cb.message.message_id).catch(() => {});
+        if (!userId) {
+          await sendTelegramMessage(chatId, '⚠️ Confirm from the account that owns this mandate (DM-link your Telegram first).');
+        } else {
+          try {
+            const body = await confirmMandateBind(userId, mandateId, chatId, action === 'bind_confirm');
+            await sendTelegramMessage(chatId, body);
+          } catch (err: any) {
+            await sendTelegramMessage(chatId, `⚠️ ${err?.message?.slice(0, 200) || 'Bind failed'}`);
+          }
+        }
+      }
     } else {
       await answerCallbackQuery(cb.id);
     }
@@ -183,8 +204,8 @@ export async function POST(req: NextRequest) {
       `/pause &lt;name&gt; — pause a mandate\n` +
       `/resume &lt;name&gt; — resume a mandate\n` +
       `/close &lt;ticker&gt; — market-close any open position\n` +
-      `/bind &lt;mandate&gt; — (in a group) route that mandate's cards here\n` +
-      `/unbind &lt;mandate&gt; — send its cards back to your DM\n` +
+      `/bind &lt;mandate-id&gt; — (in a group) request routing that mandate's cards here (you confirm)\n` +
+      `/unbind &lt;mandate-id&gt; — send its cards back to your DM\n` +
       `/help — this menu\n` +
       `/start — link your Junto account\n\n` +
       `Trade proposals arrive here automatically. Tap ✅ Approve, ❌ Skip, or 🔄 Re-propose on the message itself.`,
@@ -206,8 +227,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
     try {
-      const body = await bindMandateChat(userId, arg, isBind ? chatId : null);
-      await sendTelegramMessage(chatId, body);
+      if (isBind) {
+        const res = await requestMandateBind(userId, arg, chatId, msg.chat?.title ?? null);
+        await sendTelegramMessage(chatId, res.text, { replyMarkup: res.replyMarkup });
+      } else {
+        await sendTelegramMessage(chatId, await unbindMandate(userId, arg));
+      }
     } catch (err: any) {
       await sendTelegramMessage(chatId, `⚠️ ${isBind ? 'Bind' : 'Unbind'} failed: ${err?.message?.slice(0, 200) || 'unknown'}`);
     }
@@ -260,7 +285,7 @@ export async function POST(req: NextRequest) {
 interface TelegramUpdate {
   message?: {
     text?: string;
-    chat?: { id: number };
+    chat?: { id: number; title?: string };
     from?: { id?: number; username?: string };
   };
   callback_query?: {

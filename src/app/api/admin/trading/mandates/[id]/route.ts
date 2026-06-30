@@ -182,6 +182,31 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const body = await req.json();
   const supabase = getSupabase();
 
+  // Two-sided bind handshake (web side): approve/reject a pending Telegram bind
+  // that was requested via /bind <id> in a group. Activating promotes the
+  // pending chat id to the live telegram_chat_id.
+  if (body.confirm_binding || body.reject_binding) {
+    const activate = !!body.confirm_binding;
+    if (activate && !mandate.pending_tg_chat_id) {
+      return NextResponse.json({ error: 'No pending bind to confirm.' }, { status: 400 });
+    }
+    const bindPatch: any = {
+      updated_at: new Date().toISOString(),
+      pending_tg_chat_id: null,
+      pending_tg_chat_title: null,
+      pending_tg_requested_at: null,
+    };
+    if (activate) bindPatch.telegram_chat_id = String(mandate.pending_tg_chat_id);
+    const { data, error } = await supabase
+      .from('trading_mandates')
+      .update(bindPatch)
+      .eq('id', id)
+      .select('*')
+      .single();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ mandate: data });
+  }
+
   const patch: any = { updated_at: new Date().toISOString() };
   // NOTE: broker and mode are intentionally NOT editable post-creation — they
   // change the execution venue/network (testnet↔mainnet, real money) and must be

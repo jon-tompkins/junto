@@ -153,25 +153,63 @@ export async function setMandateStatus(
   return `${verb} <b>${escapeHtml(m.name)}</b>.`;
 }
 
-// /bind <mandate> (run in a group) / /unbind <mandate> — route a mandate's cards
-// to the chat the command was sent from (captures the live chat id, no pasting).
-export async function bindMandateChat(userId: string, query: string, chatId: number | null): Promise<string> {
-  const mandates = await loadUserMandates(userId);
-  if (!mandates.length) return 'No mandates.';
-  const q = query.trim().toLowerCase();
-  if (!q) return `Usage: <code>/${chatId != null ? 'bind' : 'unbind'} &lt;mandate name&gt;</code>${chatId != null ? ' — run inside the group you want its cards in.' : ''}`;
-  const matches = mandates.filter(m => m.name.toLowerCase().includes(q));
-  if (matches.length === 0) return `No mandate matches "${escapeHtml(query)}".`;
-  if (matches.length > 1) return `Ambiguous — "${escapeHtml(query)}" matches: ${matches.map(m => m.name).join(', ')}`;
-  const m = matches[0];
-  const { error } = await getSupabase()
-    .from('trading_mandates')
-    .update({ telegram_chat_id: chatId != null ? String(chatId) : null, updated_at: new Date().toISOString() })
-    .eq('id', m.id);
-  if (error) return `❌ ${error.message}`;
-  return chatId != null
-    ? `✅ <b>${escapeHtml(m.name)}</b> bound to this chat (<code>${chatId}</code>). Its proposals + amendments will post here.`
-    : `✅ <b>${escapeHtml(m.name)}</b> unbound — its cards go back to your DM.`;
+// Match one of the user's mandates by id-prefix (names collide; ids don't). The
+// web shows the exact `/bind <id>` command to copy, so users never type a UUID.
+async function matchMandateById(userId: string, idArg: string): Promise<{ ok: true; m: any } | { ok: false; msg: string }> {
+  const id = idArg.trim().toLowerCase();
+  if (!id) return { ok: false, msg: 'Usage: <code>/bind &lt;mandate-id&gt;</code> — copy the exact command from the mandate page (Settings → Telegram).' };
+  const { data: mandates } = await getSupabase().from('trading_mandates').select('id, name, user_id, pending_tg_chat_id').eq('user_id', userId);
+  const matches = (mandates || []).filter((m: any) => String(m.id).toLowerCase().startsWith(id));
+  if (matches.length === 0) return { ok: false, msg: `No mandate of yours matches id <code>${escapeHtml(idArg)}</code>. Copy the bind command from the mandate page.` };
+  if (matches.length > 1) return { ok: false, msg: 'Ambiguous id — use more characters.' };
+  return { ok: true, m: matches[0] };
+}
+
+// /bind <mandate-id> in a group: RECORD a pending binding (does not activate). The
+// owner confirms it via the inline button or on the web mandate page.
+export async function requestMandateBind(userId: string, idArg: string, chatId: number, chatTitle: string | null):
+  Promise<{ text: string; replyMarkup?: import('@/lib/telegram/client').InlineKeyboardMarkup }> {
+  const r = await matchMandateById(userId, idArg);
+  if (!r.ok) return { text: r.msg };
+  const m = r.m;
+  const { error } = await getSupabase().from('trading_mandates').update({
+    pending_tg_chat_id: String(chatId),
+    pending_tg_chat_title: chatTitle || null,
+    pending_tg_requested_at: new Date().toISOString(),
+  }).eq('id', m.id);
+  if (error) return { text: `❌ ${error.message}` };
+  return {
+    text: `🔗 <b>Bind requested</b> — ${escapeHtml(m.name)} → this chat.\n\nConfirm to activate: tap below, or approve on the mandate page (Settings → Telegram).`,
+    replyMarkup: { inline_keyboard: [[
+      { text: '✅ Confirm bind', callback_data: `bind_confirm:${m.id}` },
+      { text: '✖ Cancel', callback_data: `bind_cancel:${m.id}` },
+    ]] },
+  };
+}
+
+// Confirm/cancel a pending bind (from the TG inline button). Verifies ownership +
+// that the pending chat still matches where the button was tapped.
+export async function confirmMandateBind(userId: string, mandateId: string, chatId: number, confirm: boolean): Promise<string> {
+  const { data: m } = await getSupabase().from('trading_mandates').select('id, name, user_id, pending_tg_chat_id').eq('id', mandateId).maybeSingle();
+  if (!m) return 'Mandate not found.';
+  if (m.user_id !== userId) return '⚠️ Only the mandate owner can confirm this binding.';
+  if (!confirm) {
+    await getSupabase().from('trading_mandates').update({ pending_tg_chat_id: null, pending_tg_chat_title: null, pending_tg_requested_at: null, updated_at: new Date().toISOString() }).eq('id', mandateId);
+    return `Bind cancelled for <b>${escapeHtml(m.name)}</b>.`;
+  }
+  if (!m.pending_tg_chat_id || String(m.pending_tg_chat_id) !== String(chatId)) {
+    return '⚠️ That bind request is stale. Run <code>/bind</code> again here.';
+  }
+  await getSupabase().from('trading_mandates').update({ telegram_chat_id: String(chatId), pending_tg_chat_id: null, pending_tg_chat_title: null, pending_tg_requested_at: null, updated_at: new Date().toISOString() }).eq('id', mandateId);
+  return `✅ <b>${escapeHtml(m.name)}</b> is now bound to this chat. Proposals + amendments post here.`;
+}
+
+// /unbind <mandate-id> — clear routing (back to DM). Low-risk removal, immediate.
+export async function unbindMandate(userId: string, idArg: string): Promise<string> {
+  const r = await matchMandateById(userId, idArg);
+  if (!r.ok) return r.msg.replace('/bind', '/unbind');
+  await getSupabase().from('trading_mandates').update({ telegram_chat_id: null, pending_tg_chat_id: null, pending_tg_chat_title: null, updated_at: new Date().toISOString() }).eq('id', r.m.id);
+  return `✅ <b>${escapeHtml(r.m.name)}</b> unbound — cards go back to your DM.`;
 }
 
 // /close <ticker> — market-close any open trades in this ticker across all mandates.

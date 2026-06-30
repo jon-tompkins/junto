@@ -22,6 +22,9 @@ interface Mandate {
   mode: string;
   broker: string;
   telegram_chat_id: string | null;
+  pending_tg_chat_id: string | null;
+  pending_tg_chat_title: string | null;
+  pending_tg_requested_at: string | null;
   hl_wallet_address: string | null;
   hl_max_leverage: number | null;
   hl_has_agent_key: boolean;
@@ -438,6 +441,21 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     }
   }
 
+  async function resolveBinding(confirm: boolean) {
+    setSavingSettings(true);
+    try {
+      const res = await fetch(`/api/admin/trading/mandates/${mandateId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(confirm ? { confirm_binding: true } : { reject_binding: true }),
+      });
+      const data = await res.json();
+      if (data.mandate) setMandate(m => m ? { ...m, ...data.mandate } : data.mandate);
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
   async function changeStatus(s: 'active' | 'paused' | 'archived') {
     const res = await fetch(`/api/admin/trading/mandates/${mandateId}`, {
       method: 'PATCH',
@@ -741,6 +759,22 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                 )}
               </div>
 
+              {/* Pending Telegram bind — requested via /bind <id> in a group */}
+              {mandate.pending_tg_chat_id && (
+                <div className="rounded-lg border border-brass/40 bg-brass/10 p-3 text-sm">
+                  <div className="font-[var(--font-oswald)] text-brass mb-1">🔗 Telegram bind requested</div>
+                  <p className="text-parchment/70">
+                    Route this mandate&apos;s cards to{' '}
+                    <span className="font-semibold">{mandate.pending_tg_chat_title || `chat ${mandate.pending_tg_chat_id}`}</span>{' '}
+                    (<span className="font-mono text-xs">{mandate.pending_tg_chat_id}</span>)?
+                  </p>
+                  <div className="flex gap-2 mt-2">
+                    <button onClick={() => resolveBinding(true)} disabled={savingSettings} className="text-xs px-3 py-1 rounded bg-brass text-ink font-semibold disabled:opacity-50">Confirm bind</button>
+                    <button onClick={() => resolveBinding(false)} disabled={savingSettings} className="text-xs px-3 py-1 rounded border border-parchment/25 text-parchment/60 disabled:opacity-50">Reject</button>
+                  </div>
+                </div>
+              )}
+
               {/* Mandate config */}
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -786,6 +820,10 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                   <div className="space-y-3">
                     <p className="text-[11px] text-parchment/30">
                       Broker (<span className="font-mono">{mandate.broker || 'alpaca'}</span>) and network (<span className="font-mono">{mandate.mode === 'live' ? 'mainnet/live' : 'testnet/paper'}</span>) are fixed at creation and can&apos;t be changed here.
+                    </p>
+                    <p className="text-[11px] text-parchment/30">
+                      To route cards to a Telegram group: add the bot to the group, then send{' '}
+                      <code className="font-mono text-parchment/55">/bind {String(mandate.id).slice(0, 8)}</code> there and confirm the request that appears here.
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <SettingField label="Name">
