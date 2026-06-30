@@ -10,6 +10,7 @@ import {
 } from './db';
 import { alpacaForMandate } from './client';
 import { protectMandate } from './protection';
+import { sendMandateCard } from '@/lib/telegram/mandate-card';
 import type { AmendmentKind } from './types';
 
 // A stored stop/target order id can go stale two ways at Alpaca:
@@ -44,16 +45,6 @@ export async function requestAmendmentApproval(params: {
   sourceUrls?: string[];
   chatIdOverride?: string | null;
 }): Promise<void> {
-  const override = params.chatIdOverride ? Number(params.chatIdOverride) : null;
-  const chatId = override && !Number.isNaN(override) ? override : await getUserTelegramChatId(params.userId);
-  if (!chatId) {
-    await updateAmendment(params.amendmentId, {
-      status: 'skipped',
-      applied_note: 'no telegram linked',
-    });
-    return;
-  }
-
   const movement = params.kind === 'close'
     ? `<b>Close ${escapeHtml(params.ticker)}</b> at market`
     : `<b>${KIND_LABEL[params.kind]} on ${escapeHtml(params.ticker)}</b>\n$${(params.oldValue ?? 0).toFixed(2)} → $${(params.newValue ?? 0).toFixed(2)}`;
@@ -67,7 +58,10 @@ ${movement}
   const base = (process.env.NEXTAUTH_URL || 'https://myjunto.xyz').replace(/\/$/, '');
   const positionUrl = `${base}/positions/${encodeURIComponent(params.ticker)}`;
 
-  await sendTelegramMessage(chatId, body, {
+  const sent = await sendMandateCard({
+    userId: params.userId,
+    chatIdOverride: params.chatIdOverride,
+    body,
     replyMarkup: {
       inline_keyboard: [
         [
@@ -80,6 +74,9 @@ ${movement}
       ],
     },
   });
+  if (!sent) {
+    await updateAmendment(params.amendmentId, { status: 'skipped', applied_note: 'no telegram linked' });
+  }
 }
 
 export async function handleAmendmentCallback(params: {

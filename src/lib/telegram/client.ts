@@ -14,6 +14,14 @@ interface TgResponse<T> {
   result?: T;
   description?: string;
   error_code?: number;
+  parameters?: { migrate_to_chat_id?: number; retry_after?: number };
+}
+
+// Error thrown on a non-ok Telegram response, with the raw payload attached so
+// callers can react to e.g. parameters.migrate_to_chat_id (group→supergroup).
+export interface TelegramApiError extends Error {
+  errorCode?: number;
+  migrateToChatId?: number;
 }
 
 async function tgCall<T>(method: string, body: Record<string, unknown>): Promise<T> {
@@ -25,7 +33,10 @@ async function tgCall<T>(method: string, body: Record<string, unknown>): Promise
   });
   const data = (await res.json()) as TgResponse<T>;
   if (!data.ok) {
-    throw new Error(`Telegram ${method} failed: ${data.error_code} ${data.description}`);
+    const err = new Error(`Telegram ${method} failed: ${data.error_code} ${data.description}`) as TelegramApiError;
+    err.errorCode = data.error_code;
+    err.migrateToChatId = data.parameters?.migrate_to_chat_id;
+    throw err;
   }
   return data.result as T;
 }

@@ -153,6 +153,27 @@ export async function setMandateStatus(
   return `${verb} <b>${escapeHtml(m.name)}</b>.`;
 }
 
+// /bind <mandate> (run in a group) / /unbind <mandate> — route a mandate's cards
+// to the chat the command was sent from (captures the live chat id, no pasting).
+export async function bindMandateChat(userId: string, query: string, chatId: number | null): Promise<string> {
+  const mandates = await loadUserMandates(userId);
+  if (!mandates.length) return 'No mandates.';
+  const q = query.trim().toLowerCase();
+  if (!q) return `Usage: <code>/${chatId != null ? 'bind' : 'unbind'} &lt;mandate name&gt;</code>${chatId != null ? ' — run inside the group you want its cards in.' : ''}`;
+  const matches = mandates.filter(m => m.name.toLowerCase().includes(q));
+  if (matches.length === 0) return `No mandate matches "${escapeHtml(query)}".`;
+  if (matches.length > 1) return `Ambiguous — "${escapeHtml(query)}" matches: ${matches.map(m => m.name).join(', ')}`;
+  const m = matches[0];
+  const { error } = await getSupabase()
+    .from('trading_mandates')
+    .update({ telegram_chat_id: chatId != null ? String(chatId) : null, updated_at: new Date().toISOString() })
+    .eq('id', m.id);
+  if (error) return `❌ ${error.message}`;
+  return chatId != null
+    ? `✅ <b>${escapeHtml(m.name)}</b> bound to this chat (<code>${chatId}</code>). Its proposals + amendments will post here.`
+    : `✅ <b>${escapeHtml(m.name)}</b> unbound — its cards go back to your DM.`;
+}
+
 // /close <ticker> — market-close any open trades in this ticker across all mandates.
 export async function closeTickerCommand(userId: string, ticker: string): Promise<string> {
   const sym = ticker.trim().toUpperCase().replace(/^\$/, '');

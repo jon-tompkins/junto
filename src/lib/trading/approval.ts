@@ -1,5 +1,6 @@
 import { sendTelegramMessage, type InlineKeyboardMarkup } from '@/lib/telegram/client';
 import { getUserTelegramChatId } from '@/lib/telegram/link';
+import { sendMandateCard } from '@/lib/telegram/mandate-card';
 import { getMandateById, getTradeById, updateTrade, addJournalEntry, updateSignalForTrade, claimTradeForSubmit } from './db';
 import { alpacaForMandate } from './client';
 import type { TradeDecision } from './types';
@@ -16,18 +17,6 @@ export async function requestApproval(params: {
   // of the stop/target, not just the raw price move.
   leverage?: number | null;
 }): Promise<void> {
-  // Per-mandate chat override (e.g. a dedicated HL group) wins; else the user's DM.
-  const override = params.chatIdOverride ? Number(params.chatIdOverride) : null;
-  const chatId = override && !Number.isNaN(override) ? override : await getUserTelegramChatId(params.userId);
-  if (!chatId) {
-    await addJournalEntry({
-      tradeId: params.tradeId,
-      kind: 'entry',
-      content: '[awaiting approval — user has no telegram linked, trade will not auto-submit]',
-    });
-    return;
-  }
-
   const stopPrice = params.decision.side === 'long'
     ? params.entryPrice * (1 - params.decision.stop_pct / 100)
     : params.entryPrice * (1 + params.decision.stop_pct / 100);
@@ -61,7 +50,10 @@ Hold: ~${params.decision.expected_hold_days}d  Conviction: ${params.decision.con
 
   const positionUrl = positionPageUrl(params.decision.ticker);
 
-  await sendTelegramMessage(chatId, body, {
+  const sent = await sendMandateCard({
+    userId: params.userId,
+    chatIdOverride: params.chatIdOverride,
+    body,
     replyMarkup: {
       inline_keyboard: [
         [
@@ -74,6 +66,13 @@ Hold: ~${params.decision.expected_hold_days}d  Conviction: ${params.decision.con
       ],
     },
   });
+  if (!sent) {
+    await addJournalEntry({
+      tradeId: params.tradeId,
+      kind: 'entry',
+      content: '[awaiting approval — user has no telegram linked, trade will not auto-submit]',
+    });
+  }
 }
 
 function positionPageUrl(ticker: string): string {

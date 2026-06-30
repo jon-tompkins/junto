@@ -10,6 +10,7 @@ import {
   setMandateStatus,
   closeTickerCommand,
   buildTicksMessage,
+  bindMandateChat,
 } from '@/lib/trading/telegram-commands';
 
 export const dynamic = 'force-dynamic';
@@ -182,10 +183,34 @@ export async function POST(req: NextRequest) {
       `/pause &lt;name&gt; — pause a mandate\n` +
       `/resume &lt;name&gt; — resume a mandate\n` +
       `/close &lt;ticker&gt; — market-close any open position\n` +
+      `/bind &lt;mandate&gt; — (in a group) route that mandate's cards here\n` +
+      `/unbind &lt;mandate&gt; — send its cards back to your DM\n` +
       `/help — this menu\n` +
       `/start — link your Junto account\n\n` +
       `Trade proposals arrive here automatically. Tap ✅ Approve, ❌ Skip, or 🔄 Re-propose on the message itself.`,
     );
+    return NextResponse.json({ ok: true });
+  }
+
+  // /bind <mandate> (run inside the target group) / /unbind <mandate>. Resolves
+  // the user by the SENDER's id (their DM-linked id), not the chat id — so it works
+  // from inside a group whose chat id isn't itself linked. Captures the live chat id.
+  const bindMatch = /^\/(bind|unbind)(?:@\w+)?(?:\s+(.+))?$/i.exec(text);
+  if (bindMatch) {
+    const isBind = bindMatch[1].toLowerCase() === 'bind';
+    const arg = (bindMatch[2] || '').trim();
+    const fromId = msg.from?.id;
+    const userId = fromId ? await getUserIdByTelegramChatId(fromId) : null;
+    if (!userId) {
+      await sendTelegramMessage(chatId, '⚠️ Link your account first: DM the bot <code>/start &lt;code&gt;</code> from myjunto.xyz → Settings → Link Telegram, then run this again.');
+      return NextResponse.json({ ok: true });
+    }
+    try {
+      const body = await bindMandateChat(userId, arg, isBind ? chatId : null);
+      await sendTelegramMessage(chatId, body);
+    } catch (err: any) {
+      await sendTelegramMessage(chatId, `⚠️ ${isBind ? 'Bind' : 'Unbind'} failed: ${err?.message?.slice(0, 200) || 'unknown'}`);
+    }
     return NextResponse.json({ ok: true });
   }
 
@@ -236,7 +261,7 @@ interface TelegramUpdate {
   message?: {
     text?: string;
     chat?: { id: number };
-    from?: { username?: string };
+    from?: { id?: number; username?: string };
   };
   callback_query?: {
     id: string;
