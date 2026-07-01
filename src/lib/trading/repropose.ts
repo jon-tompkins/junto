@@ -124,6 +124,9 @@ export async function reproposeTrade(tradeId: string): Promise<ReproposeResult |
     tradeId: newTradeId,
     decision,
     entryPrice: livePrice,
+    // Route to the mandate's bound chat (group), same as the original tick
+    // proposal — without this a re-propose falls back to the user's DM.
+    chatIdOverride: mandate.telegram_chat_id,
     leverage: mandate.broker === 'hyperliquid' ? Math.max(1, mandate.hl_max_leverage ?? 3) : 1,
   });
 
