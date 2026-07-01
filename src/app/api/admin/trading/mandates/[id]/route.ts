@@ -5,6 +5,11 @@ import { alpacaForMandate } from '@/lib/trading/client';
 import { encryptSecret } from '@/lib/trading/crypto';
 import { getMandateOpenTickers } from '@/lib/trading/db';
 import { sliceUnrealized } from '@/lib/trading/pnl';
+import { sendTelegramMessage } from '@/lib/telegram/client';
+
+function escapeHtml(s: string): string {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const access = await getTradingAccess();
@@ -205,7 +210,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       pending_tg_chat_title: null,
       pending_tg_requested_at: null,
     };
-    if (activate) bindPatch.telegram_chat_id = String(mandate.pending_tg_chat_id);
+    const boundChatId = activate ? String(mandate.pending_tg_chat_id) : null;
+    if (boundChatId) bindPatch.telegram_chat_id = boundChatId;
     const { data, error } = await supabase
       .from('trading_mandates')
       .update(bindPatch)
@@ -213,6 +219,16 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       .select('*')
       .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    // Announce activation in the newly-bound chat so the group sees it's live.
+    if (boundChatId) {
+      const chatNum = Number(boundChatId);
+      if (Number.isFinite(chatNum)) {
+        await sendTelegramMessage(
+          chatNum,
+          `✅ <b>${escapeHtml(mandate.name)}</b> is now bound to this chat.\n\nIts trade proposals + amendments will post here. Use <code>/unbind ${String(mandate.id).slice(0, 8)}</code> to route them back to your DM.`,
+        ).catch(() => { /* best-effort; DB is already updated */ });
+      }
+    }
     return NextResponse.json({ mandate: data });
   }
 
