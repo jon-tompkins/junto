@@ -47,6 +47,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   // price + unrealized P&L per open ticker and the snapshot shows real
   // equity/cash on first render (not just after the 15s poll kicks in).
   const positions: Record<string, { current_price: number; unrealized_pl: number }> = {};
+  // Asset trailing-performance reference closes (24h/1W/1Y ago) keyed by ticker —
+  // the client divides live price by these to render the % Return column.
+  let perfRefs: Record<string, { d1: number | null; w1: number | null; y1: number | null }> = {};
   let account: { equity: number | null; cash: number | null } = { equity: null, cash: null };
   try {
     const alp = alpacaForMandate(mandate);
@@ -86,8 +89,13 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       };
     }
     if (acc) account = { equity: Number(acc.equity) || null, cash: Number(acc.cash) || null };
+    // Trailing performance for the mandate's own open names (one batched call).
+    const openSyms = Object.keys(positions);
+    if (openSyms.length) {
+      perfRefs = await alp.getReturnRefs(openSyms).catch(() => ({}));
+    }
   } catch {
-    // leave positions + account empty
+    // leave positions + account + perfRefs empty
   }
 
   const juntoRow = (juntoRes as any).data;
@@ -168,6 +176,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     signals: signalsRes.data || [],
     ticks: ticksRes.data || [],
     positions,
+    perfRefs,
     agreement,
     account,
   });

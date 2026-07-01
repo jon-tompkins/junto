@@ -151,6 +151,9 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     has_target?: boolean;
   }>>({});
   const [agreement, setAgreement] = useState<Record<string, AgreeingSource[]>>({});
+  // Asset trailing-performance reference closes (24h/1W/1Y ago) per ticker. Set
+  // once from the initial load; the % is computed live against polled prices.
+  const [perfRefs, setPerfRefs] = useState<Record<string, { d1: number | null; w1: number | null; y1: number | null }>>({});
   const [signals, setSignals] = useState<Signal[]>([]);
   const [ticks, setTicks] = useState<TickRun[]>([]);
   const [loading, setLoading] = useState(true);
@@ -319,6 +322,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         setTrades(data.trades || []);
         setPositions(data.positions || {});
         setAgreement(data.agreement || {});
+        setPerfRefs(data.perfRefs || {});
         setSignals(data.signals || []);
         setTicks(data.ticks || []);
         setDraftGuidelines(data.mandate?.guidelines || '');
@@ -1015,7 +1019,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             <p className="text-sm text-parchment/30">No open positions.</p>
           ) : (
             <div className="overflow-x-auto -mx-5 px-5">
-              <OpenPositionsTable rows={openRows} agreement={agreement} />
+              <OpenPositionsTable rows={openRows} agreement={agreement} perfRefs={perfRefs} />
             </div>
           )}
         </div>
@@ -1218,7 +1222,17 @@ interface OpenRow {
   trade: Trade | null;
 }
 
-type OpenSortKey = 'ticker' | 'side' | 'qty' | 'entry' | 'last' | 'mkt' | 'stop' | 'target' | 'day' | 'unrealized' | 'status';
+type OpenSortKey = 'ticker' | 'side' | 'qty' | 'entry' | 'last' | 'ret' | 'mkt' | 'stop' | 'target' | 'day' | 'unrealized' | 'status';
+
+type PerfTf = '24h' | '1W' | '1Y';
+type PerfRefMap = Record<string, { d1: number | null; w1: number | null; y1: number | null }>;
+
+// Asset price performance over the selected window: (live − reference) / reference.
+function assetReturnPct(last: number | null | undefined, refs: PerfRefMap[string] | undefined, tf: PerfTf): number | null {
+  const ref = !refs ? null : tf === '24h' ? refs.d1 : tf === '1W' ? refs.w1 : refs.y1;
+  if (last == null || ref == null || ref <= 0) return null;
+  return ((last - ref) / ref) * 100;
+}
 
 function openSortVal(row: OpenRow, key: OpenSortKey): number | string | null {
   const { pos, trade, ticker } = row;
@@ -1230,6 +1244,7 @@ function openSortVal(row: OpenRow, key: OpenSortKey): number | string | null {
     case 'qty': return qty;
     case 'entry': return pos.avg_entry_price ?? trade?.entry_price ?? null;
     case 'last': return last;
+    case 'ret': return null; // computed in-component (needs perfRefs + timeframe)
     case 'mkt': return qty != null && last ? qty * last : null;
     case 'stop': return pos.live_stop ?? trade?.stop_price ?? null;
     case 'target': return pos.live_target ?? trade?.target_price ?? null;
@@ -1239,19 +1254,23 @@ function openSortVal(row: OpenRow, key: OpenSortKey): number | string | null {
   }
 }
 
-function OpenPositionsTable({ rows, agreement }: { rows: OpenRow[]; agreement: Record<string, AgreeingSource[]> }) {
+function OpenPositionsTable({ rows, agreement, perfRefs }: { rows: OpenRow[]; agreement: Record<string, AgreeingSource[]>; perfRefs: PerfRefMap }) {
   const [sortKey, setSortKey] = useState<OpenSortKey | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [tf, setTf] = useState<PerfTf>('24h');
 
   const clickSort = (k: OpenSortKey) => {
     if (sortKey === k) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
     else { setSortKey(k); setSortDir(k === 'ticker' || k === 'side' || k === 'status' ? 'asc' : 'desc'); }
   };
 
+  const valFor = (row: OpenRow, key: OpenSortKey): number | string | null =>
+    key === 'ret' ? assetReturnPct(row.pos.current_price, perfRefs[row.ticker], tf) : openSortVal(row, key);
+
   const sorted = sortKey
     ? [...rows].sort((a, b) => {
-        const av = openSortVal(a, sortKey);
-        const bv = openSortVal(b, sortKey);
+        const av = valFor(a, sortKey);
+        const bv = valFor(b, sortKey);
         // nulls always sort last, regardless of direction
         if (av == null && bv == null) return 0;
         if (av == null) return 1;
@@ -1269,6 +1288,7 @@ function OpenPositionsTable({ rows, agreement }: { rows: OpenRow[]; agreement: R
     { key: 'qty', label: 'Qty', align: 'right' },
     { key: 'entry', label: 'Entry', align: 'right' },
     { key: 'last', label: 'Last', align: 'right' },
+    { key: 'ret', label: `Return (${tf})`, align: 'right' },
     { key: 'mkt', label: 'Mkt Value', align: 'right' },
     { key: 'stop', label: 'Stop', align: 'right' },
     { key: 'target', label: 'Target', align: 'right' },
@@ -1278,7 +1298,21 @@ function OpenPositionsTable({ rows, agreement }: { rows: OpenRow[]; agreement: R
   ];
 
   return (
-    <table className="w-full text-sm min-w-[860px]">
+    <>
+    <div className="flex items-center justify-end gap-1 mb-2">
+      <span className="text-[10px] uppercase tracking-wider text-parchment/30 mr-1">Return</span>
+      {(['24h', '1W', '1Y'] as PerfTf[]).map(t => (
+        <button
+          key={t}
+          type="button"
+          onClick={() => setTf(t)}
+          className={`text-[11px] px-2 py-0.5 rounded border transition ${tf === t ? 'border-brass text-brass bg-brass/10' : 'border-brass/20 text-parchment/45 hover:text-parchment/70'}`}
+        >
+          {t}
+        </button>
+      ))}
+    </div>
+    <table className="w-full text-sm min-w-[960px]">
       <thead className="text-left text-xs uppercase text-parchment/30 border-b border-brass/28 font-[var(--font-oswald)]">
         <tr>
           {cols.map(c => (
@@ -1301,6 +1335,7 @@ function OpenPositionsTable({ rows, agreement }: { rows: OpenRow[]; agreement: R
           const qty = pos.qty ?? (trade?.qty != null ? Number(trade.qty) : null);
           const entry = pos.avg_entry_price ?? trade?.entry_price ?? null;
           const last = pos.current_price;
+          const ret = assetReturnPct(last, perfRefs[ticker], tf);
           const marketValue = qty != null && last ? qty * last : null;
           const stop = pos.live_stop ?? trade?.stop_price ?? null;
           const target = pos.live_target ?? trade?.target_price ?? null;
@@ -1327,6 +1362,9 @@ function OpenPositionsTable({ rows, agreement }: { rows: OpenRow[]; agreement: R
               <td className="py-2 pr-4 text-right font-mono text-parchment/70">{qty ?? '—'}</td>
               <td className="py-2 pr-4 text-right font-mono text-parchment/70">{entry ? `$${Number(entry).toFixed(2)}` : '—'}</td>
               <td className="py-2 pr-4 text-right font-mono text-parchment">{last ? `$${Number(last).toFixed(2)}` : '—'}</td>
+              <td className="py-2 pr-4 text-right font-mono" style={{ color: ret == null ? undefined : plColor(ret) }}>
+                {ret == null ? <span className="text-parchment/30">—</span> : `${ret >= 0 ? '+' : ''}${ret.toFixed(2)}%`}
+              </td>
               <td className="py-2 pr-4 text-right font-mono text-parchment/70">{marketValue != null ? fmtUsd(marketValue) : '—'}</td>
               <td className="py-2 pr-4 text-right font-mono">
                 {stopWarn ? (
@@ -1354,6 +1392,7 @@ function OpenPositionsTable({ rows, agreement }: { rows: OpenRow[]; agreement: R
         })}
       </tbody>
     </table>
+    </>
   );
 }
 

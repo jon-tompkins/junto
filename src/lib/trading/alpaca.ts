@@ -1,6 +1,8 @@
 // Thin Alpaca REST wrapper. v0 uses a single set of env-level keys (admin only).
 // v1 will accept per-mandate keys via OAuth.
 
+import { perfRefsFromCloses, type PerfRefs } from './pnl';
+
 interface AlpacaCreds {
   keyId: string;
   secret: string;
@@ -137,6 +139,31 @@ export function makeAlpaca(override?: { keyId?: string | null; secret?: string |
       } catch {
         return null;
       }
+    },
+
+    // Trailing-performance reference closes (24h/1W/1Y ago) for a set of symbols,
+    // in ONE batched daily-bars request. Best-effort: any failure yields nulls so
+    // the UI degrades to "—" rather than erroring. IEX feed (free tier).
+    async getReturnRefs(symbols: string[]): Promise<Record<string, PerfRefs>> {
+      const out: Record<string, PerfRefs> = {};
+      const syms = Array.from(new Set(symbols.filter(Boolean)));
+      if (!syms.length) return out;
+      const now = Date.now();
+      try {
+        const start = new Date(now - 400 * 864e5).toISOString().slice(0, 10);
+        const data = await call<{ bars: Record<string, { t: string; c: number }[]> }>(
+          { ...creds, baseUrl: 'https://data.alpaca.markets' },
+          'GET',
+          `/v2/stocks/bars?symbols=${syms.join(',')}&timeframe=1Day&start=${start}&adjustment=split&limit=10000&feed=iex`,
+        );
+        for (const sym of syms) {
+          const bars = (data.bars?.[sym] || []).map((b) => ({ t: Date.parse(b.t), c: b.c }));
+          out[sym] = perfRefsFromCloses(bars, now);
+        }
+      } catch {
+        for (const sym of syms) out[sym] = { d1: null, w1: null, y1: null };
+      }
+      return out;
     },
 
     submitBracketOrder(params: {

@@ -19,6 +19,7 @@ import {
   type AlpacaPosition,
 } from './alpaca';
 import { signL1Action, formatPrice, formatSize } from './hyperliquid-sign';
+import { perfRefsFromCloses, type PerfRefs } from './pnl';
 
 // Marketable-limit slippage cushion. HL has no true market order; a "market"
 // buy is an IOC limit priced through the book. 5% guarantees a fill at the
@@ -249,6 +250,29 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
       } catch {
         return null;
       }
+    },
+
+    // Trailing-performance reference closes (24h/1W/1Y ago) per coin, via daily
+    // candles. Best-effort per coin: a failure yields nulls so the UI shows "—".
+    async getReturnRefs(symbols: string[]): Promise<Record<string, PerfRefs>> {
+      const out: Record<string, PerfRefs> = {};
+      const now = Date.now();
+      const start = now - 400 * 864e5;
+      await Promise.all(
+        Array.from(new Set(symbols.filter(Boolean))).map(async (coin) => {
+          try {
+            const candles = await info<{ t: number; c: string }[]>(url, {
+              type: 'candleSnapshot',
+              req: { coin, interval: '1d', startTime: start, endTime: now },
+            });
+            const bars = (candles || []).map((c) => ({ t: c.t, c: Number(c.c) }));
+            out[coin] = perfRefsFromCloses(bars, now);
+          } catch {
+            out[coin] = { d1: null, w1: null, y1: null };
+          }
+        }),
+      );
+      return out;
     },
 
     async submitMarketOrder(params): Promise<AlpacaOrder> {

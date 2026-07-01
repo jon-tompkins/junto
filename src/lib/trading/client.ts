@@ -5,6 +5,7 @@
 import { makeAlpaca, assertLiveAllowed, type AlpacaClient, type AlpacaAccount, type AlpacaClock, type AlpacaPosition, type AlpacaOrder } from './alpaca';
 import { makeHyperliquid } from './hyperliquid';
 import { decryptSecret } from './crypto';
+import { perfRefsFromCloses, type PerfRefs } from './pnl';
 
 interface BrokerAuth {
   basic: string;
@@ -65,6 +66,27 @@ export function makeManagedAlpaca(accountId: string): AlpacaClient {
       } catch {
         return null;
       }
+    },
+
+    async getReturnRefs(symbols: string[]): Promise<Record<string, PerfRefs>> {
+      const out: Record<string, PerfRefs> = {};
+      const syms = Array.from(new Set(symbols.filter(Boolean)));
+      if (!syms.length) return out;
+      const now = Date.now();
+      try {
+        const start = new Date(now - 400 * 864e5).toISOString().slice(0, 10);
+        const data = await brokerFetch<{ bars: Record<string, { t: string; c: number }[]> }>(
+          'GET',
+          `/v1/marketdata/stocks/bars?symbols=${syms.join(',')}&timeframe=1Day&start=${start}&adjustment=split&limit=10000`,
+        );
+        for (const sym of syms) {
+          const bars = (data.bars?.[sym] || []).map((b) => ({ t: Date.parse(b.t), c: b.c }));
+          out[sym] = perfRefsFromCloses(bars, now);
+        }
+      } catch {
+        for (const sym of syms) out[sym] = { d1: null, w1: null, y1: null };
+      }
+      return out;
     },
 
     submitBracketOrder(params) {
