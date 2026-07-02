@@ -10,6 +10,8 @@ export interface PositionEntry {
   entry_price?: number;
   aliases?: string[];      // common/full names (e.g. ["BlackBerry"] for BB) — used to
                            // detect raw-text mentions (incl. retweets) for staleness
+  asset_class?: 'equity' | 'crypto' | 'sector'; // equity/crypto = tradeable single
+                           // name; sector = theme/concept ("AI", "biotech")
 }
 
 export interface CallOutcome {

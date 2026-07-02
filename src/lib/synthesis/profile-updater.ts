@@ -128,7 +128,8 @@ Output schema — do NOT include a "since" date, that is managed externally:
       "stance": "bullish" | "bearish" | "neutral" | "cautious",
       "note": "optional brief context — only if tweet provides specific reason or target",
       "mentioned_in_tweets": true | false,  // true if these new tweets explicitly reference this position
-      "aliases": ["full/common names for this asset, e.g. \"BlackBerry\" for BB, \"Bitcoin\" for BTC — 1-3 names, omit for obvious sectors"]
+      "aliases": ["full/common names for this asset, e.g. \"BlackBerry\" for BB, \"Bitcoin\" for BTC — 1-3 names, omit for obvious sectors"],
+      "asset_class": "equity" | "crypto" | "sector"  // equity = a stock ticker, crypto = a coin/token, sector = a theme/concept ("AI", "biotech", "uranium")
     }
   }
 }`,
@@ -159,7 +160,7 @@ Output schema — do NOT include a "since" date, that is managed externally:
     .map((b) => b.text)
     .join('');
 
-  let parsed: { summary: string | null; positions: Record<string, { stance: PositionEntry['stance']; note?: string; mentioned_in_tweets?: boolean; aliases?: string[] }> };
+  let parsed: { summary: string | null; positions: Record<string, { stance: PositionEntry['stance']; note?: string; mentioned_in_tweets?: boolean; aliases?: string[]; asset_class?: PositionEntry['asset_class'] }> };
   try {
     const stripped = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
     const match = stripped.match(/\{[\s\S]*\}/);
@@ -241,6 +242,7 @@ Output schema — do NOT include a "since" date, that is managed externally:
         ...(entry_price != null ? { entry_price } : {}),
         ...(prev?.target_price != null ? { target_price: prev.target_price } : {}),
         ...(aliases.length ? { aliases } : {}),
+        ...((pos.asset_class || prev?.asset_class) ? { asset_class: pos.asset_class || prev?.asset_class } : {}),
       };
     }),
   );

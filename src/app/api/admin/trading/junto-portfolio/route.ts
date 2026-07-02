@@ -13,12 +13,23 @@ const STALE_DAYS = 30;
 // Only real tradeable tickers — exclude sector/theme keys ("biotech", "uranium",
 // "semiconductors"). Cashtag-shaped: 1-6 uppercase letters + optional .XX suffix.
 const TICKER_RE = /^[A-Z]{1,6}(\.[A-Z]{1,3})?$/;
+// Uppercase concept/theme labels that pass TICKER_RE but aren't tradeable single
+// names ("AI" the concept, not $AI). Used only when asset_class isn't tagged yet.
+const CONCEPT_DENY = new Set(['AI', 'DEFI', 'NFT', 'NFTS', 'RWA', 'RWAS', 'MEME', 'MEMES', 'ALT', 'ALTS', 'ALTCOINS', 'WEB3', 'DEX', 'CEX', 'TRADFI', 'CEFI']);
 
 interface PositionEntry {
   stance: 'bullish' | 'bearish' | 'neutral' | 'cautious';
   since: string;
   last_mentioned?: string;
   conviction?: number;
+  asset_class?: 'equity' | 'crypto' | 'sector';
+}
+
+// Equities + crypto only. Prefer the model's asset_class tag; fall back to the
+// ticker-shape + concept denylist heuristic for positions not yet re-tagged.
+function isTradeable(ticker: string, pos: PositionEntry): boolean {
+  if (pos.asset_class) return pos.asset_class === 'equity' || pos.asset_class === 'crypto';
+  return TICKER_RE.test(ticker) && !CONCEPT_DENY.has(ticker);
 }
 
 function isFresh(pos: PositionEntry): boolean {
@@ -78,7 +89,7 @@ export async function GET(req: NextRequest) {
     const positions = (prof.positions || {}) as Record<string, PositionEntry>;
     for (const [rawTicker, pos] of Object.entries(positions)) {
       const ticker = rawTicker.toUpperCase();
-      if (!TICKER_RE.test(ticker)) continue; // skip sectors/themes
+      if (!isTradeable(ticker, pos)) continue; // equities + crypto only (drop sectors/concepts)
       if (!isFresh(pos)) continue; // fresh only
       const conv = Math.max(1, Math.min(5, pos.conviction ?? 1));
       const dir = pos.stance === 'bullish' ? 1 : pos.stance === 'bearish' ? -1 : 0;
