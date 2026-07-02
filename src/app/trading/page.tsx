@@ -52,6 +52,7 @@ export default function AdminTradingPage() {
   const [ticking, setTicking] = useState(false);
   const [tickResult, setTickResult] = useState<string | null>(null);
   const [telegramLinked, setTelegramLinked] = useState<boolean | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -165,6 +166,27 @@ export default function AdminTradingPage() {
       }
     } finally {
       setCreating(false);
+    }
+  }
+
+  // Pause/resume a mandate from the list without opening it. Card is a <Link>,
+  // so the button must stop the click from navigating.
+  async function toggleStatus(e: React.MouseEvent, m: MandateRow) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (m.status === 'archived') return;
+    const next = m.status === 'active' ? 'paused' : 'active';
+    setTogglingId(m.id);
+    try {
+      const res = await fetch(`/api/admin/trading/mandates/${m.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: next }),
+      });
+      const data = await res.json();
+      if (data.mandate) setMandates(prev => prev.map(x => x.id === m.id ? { ...x, status: data.mandate.status } : x));
+    } finally {
+      setTogglingId(null);
     }
   }
 
@@ -548,11 +570,28 @@ export default function AdminTradingPage() {
                       <span className={`px-1.5 py-px rounded text-[10px] font-mono ${m.mode === 'live' ? 'bg-[#e8453c]/20 text-[#e8453c]' : 'bg-[#3ecf6a]/20 text-[#3ecf6a]'}`}>{m.mode}</span>
                     </div>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded font-[var(--font-oswald)] uppercase tracking-wide ${
-                    m.status === 'active' ? 'bg-[#3ecf6a]/20 text-[#3ecf6a]' :
-                    m.status === 'paused' ? 'bg-[#B08D57]/20 text-[#B08D57]' :
-                    'bg-[#F5EFE0]/10 text-[#F5EFE0]/40'
-                  }`}>{m.status}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-0.5 rounded font-[var(--font-oswald)] uppercase tracking-wide ${
+                      m.status === 'active' ? 'bg-[#3ecf6a]/20 text-[#3ecf6a]' :
+                      m.status === 'paused' ? 'bg-[#B08D57]/20 text-[#B08D57]' :
+                      'bg-[#F5EFE0]/10 text-[#F5EFE0]/40'
+                    }`}>{m.status}</span>
+                    {m.status !== 'archived' && (
+                      <button
+                        type="button"
+                        onClick={(e) => toggleStatus(e, m)}
+                        disabled={togglingId === m.id}
+                        title={m.status === 'active' ? 'Pause — stop new proposals + activity' : 'Resume activity'}
+                        className={`text-xs px-2 py-0.5 rounded border transition disabled:opacity-40 ${
+                          m.status === 'active'
+                            ? 'border-[#B08D57]/40 text-[#B08D57] hover:bg-[#B08D57]/10'
+                            : 'border-[#3ecf6a]/40 text-[#3ecf6a] hover:bg-[#3ecf6a]/10'
+                        }`}
+                      >
+                        {togglingId === m.id ? '…' : m.status === 'active' ? '❚❚ Pause' : '▶ Resume'}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mt-4 text-xs">
                   <Stat label="Capital" value={fmtUsd(m.capital_allotted_usd)} />
