@@ -32,6 +32,9 @@ export async function GET(req: NextRequest) {
   if (!(await isAdminSession())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const juntoId = req.nextUrl.searchParams.get('juntoId');
   const value = Math.max(0, Number(req.nextUrl.searchParams.get('value')) || 10000);
+  // Optional cap on number of holdings — keep the top-N by conviction, then
+  // re-normalize weights across the kept set. 0/absent = unlimited.
+  const maxPositions = Math.max(0, Math.floor(Number(req.nextUrl.searchParams.get('maxPositions')) || 0));
   if (!juntoId) return NextResponse.json({ error: 'juntoId required' }, { status: 400 });
 
   const supabase = getSupabase();
@@ -90,8 +93,13 @@ export async function GET(req: NextRequest) {
   }
 
   // Weight by |net| — a ticker where the junto is split nets down; strong
-  // one-sided conviction dominates. Normalize to 100% of portfolio value.
-  const aggs = [...byTicker.values()].filter((a) => a.net !== 0);
+  // one-sided conviction dominates. Cap to top-N (if requested) BEFORE weighting
+  // so the kept set re-normalizes cleanly to 100% of portfolio value.
+  let aggs = [...byTicker.values()]
+    .filter((a) => a.net !== 0)
+    .sort((x, y) => Math.abs(y.net) - Math.abs(x.net));
+  const totalCandidates = aggs.length;
+  if (maxPositions > 0) aggs = aggs.slice(0, maxPositions);
   const totalAbs = aggs.reduce((sum, a) => sum + Math.abs(a.net), 0);
 
   const holdings = aggs
@@ -112,8 +120,12 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     junto: { id: junto.id, name: junto.name },
     portfolio_value: value,
+    max_positions: maxPositions || null,
     source_count: sources.length,
     holding_count: holdings.length,
+    // How many fresh directional names existed before the cap — so the UI can
+    // say "showing top 10 of 23".
+    candidate_count: totalCandidates,
     holdings,
     generated_at: new Date().toISOString(),
   });

@@ -17,8 +17,10 @@ interface Holding {
 interface Result {
   junto: { id: string; name: string };
   portfolio_value: number;
+  max_positions: number | null;
   source_count: number;
   holding_count: number;
+  candidate_count: number;
   holdings: Holding[];
   generated_at: string;
 }
@@ -32,6 +34,7 @@ export default function JuntoPortfolioPage() {
   const [juntos, setJuntos] = useState<Array<{ id: string; name: string }>>([]);
   const [juntoId, setJuntoId] = useState('');
   const [value, setValue] = useState('10000');
+  const [maxPositions, setMaxPositions] = useState('');
   const [result, setResult] = useState<Result | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +51,8 @@ export default function JuntoPortfolioPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/trading/junto-portfolio?juntoId=${juntoId}&value=${encodeURIComponent(value || '10000')}`);
+      const maxParam = maxPositions ? `&maxPositions=${encodeURIComponent(maxPositions)}` : '';
+      const res = await fetch(`/api/admin/trading/junto-portfolio?juntoId=${juntoId}&value=${encodeURIComponent(value || '10000')}${maxParam}`);
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Failed'); setResult(null); }
       else setResult(data);
@@ -98,6 +102,17 @@ export default function JuntoPortfolioPage() {
               className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] focus:outline-none focus:border-[#B08D57] w-[140px]"
             />
           </label>
+          <label className="block">
+            <span className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] block mb-1">Max positions</span>
+            <input
+              type="number"
+              min={1}
+              value={maxPositions}
+              onChange={(e) => setMaxPositions(e.target.value)}
+              placeholder="all"
+              className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] focus:outline-none focus:border-[#B08D57] w-[110px]"
+            />
+          </label>
           <button
             onClick={calculate}
             disabled={!juntoId || loading}
@@ -114,7 +129,11 @@ export default function JuntoPortfolioPage() {
             <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-[#F5EFE0]/50 mb-3">
               <span><b className="text-[#F5EFE0]/80">{result.junto.name}</b></span>
               <span>{result.source_count} sources</span>
-              <span>{result.holding_count} target names</span>
+              <span>
+                {result.max_positions && result.candidate_count > result.holding_count
+                  ? `top ${result.holding_count} of ${result.candidate_count} names`
+                  : `${result.holding_count} target names`}
+              </span>
               <span>value {fmtUsd(result.portfolio_value)}</span>
             </div>
             {result.holdings.length === 0 ? (
