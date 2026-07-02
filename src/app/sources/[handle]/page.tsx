@@ -393,7 +393,10 @@ export default function SourceProfilePage() {
                 </thead>
                 <tbody>
                   {positions.map(([ticker, pos]) => {
-                    const days = daysHeld(pos.since);
+                    // Staleness day-count must use the SAME clock as stalenessLevel()
+                    // — days since the position was last mentioned, not days since entry.
+                    // (Entry age via `since` made an actively-tweeted name look 37d stale.)
+                    const days = daysHeld(pos.last_mentioned || pos.since);
                     const quote = quotes[ticker];
                     const stanceSign = pos.stance === 'bearish' ? -1 : 1;
                     const ret =
