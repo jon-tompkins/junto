@@ -249,6 +249,12 @@ export default function AdminTradingPage() {
             <p className="text-sm text-[#F5EFE0]/45 mt-1">{mandates.length} mandates</p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Link
+              href="/trading/portfolio"
+              className="px-3 py-1.5 rounded text-sm bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/60 hover:text-[#F5EFE0] transition"
+            >
+              📊 Portfolio tool
+            </Link>
             <button
               onClick={() => runTick('midday')}
               disabled={ticking}
