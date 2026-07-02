@@ -8,6 +8,8 @@ export interface PositionEntry {
   note?: string;
   target_price?: number;
   entry_price?: number;
+  aliases?: string[];      // common/full names (e.g. ["BlackBerry"] for BB) — used to
+                           // detect raw-text mentions (incl. retweets) for staleness
 }
 
 export interface CallOutcome {

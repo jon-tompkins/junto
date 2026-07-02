@@ -16,6 +16,43 @@ interface ProfileUpdateResult {
   changed: boolean;
 }
 
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Cheap raw-text staleness check: the latest date (YYYY-MM-DD) in the batch where
+// this asset appears as a cashtag ($BB), a bare uppercase symbol (len ≥ 4, to limit
+// false hits), or any full/common name (e.g. "BlackBerry"). Runs independently of
+// the model's mentioned_in_tweets flag, so it catches retweets and name-only
+// mentions the model missed — the fix for "actively tweeted but shows stale".
+function latestRawMention(tweets: TweetInput[], ticker: string, aliases?: string[]): string | null {
+  const sym = ticker.toUpperCase();
+  const cashtag = new RegExp(`\\$${escapeRe(sym)}\\b`, 'i');
+  const bare = sym.length >= 4 && /^[A-Z.]+$/.test(sym) ? new RegExp(`\\b${escapeRe(sym)}\\b`) : null;
+  const aliasRes = (aliases || [])
+    .filter((a) => typeof a === 'string' && a.trim().length >= 4)
+    .map((a) => new RegExp(`\\b${escapeRe(a.trim())}\\b`, 'i'));
+  let latest = 0;
+  for (const t of tweets) {
+    const c = t.content || '';
+    if (cashtag.test(c) || (bare && bare.test(c)) || aliasRes.some((r) => r.test(c))) {
+      const ts = new Date(t.posted_at).getTime();
+      if (!Number.isNaN(ts) && ts > latest) latest = ts;
+    }
+  }
+  return latest ? new Date(latest).toISOString().split('T')[0] : null;
+}
+
+// Later of two ISO dates (either may be null/undefined).
+function maxDate(a?: string | null, b?: string | null): string | undefined {
+  const da = a ? new Date(a).getTime() : NaN;
+  const db = b ? new Date(b).getTime() : NaN;
+  if (Number.isNaN(da) && Number.isNaN(db)) return undefined;
+  if (Number.isNaN(da)) return b ?? undefined;
+  if (Number.isNaN(db)) return a ?? undefined;
+  return da >= db ? (a as string) : (b as string);
+}
+
 export async function updateSourceProfile(
   sourceId: string,
   handle: string,
@@ -90,7 +127,8 @@ Output schema — do NOT include a "since" date, that is managed externally:
     "<ticker or investable sector>": {
       "stance": "bullish" | "bearish" | "neutral" | "cautious",
       "note": "optional brief context — only if tweet provides specific reason or target",
-      "mentioned_in_tweets": true | false  // true if these new tweets explicitly reference this position
+      "mentioned_in_tweets": true | false,  // true if these new tweets explicitly reference this position
+      "aliases": ["full/common names for this asset, e.g. \"BlackBerry\" for BB, \"Bitcoin\" for BTC — 1-3 names, omit for obvious sectors"]
     }
   }
 }`,
@@ -121,7 +159,7 @@ Output schema — do NOT include a "since" date, that is managed externally:
     .map((b) => b.text)
     .join('');
 
-  let parsed: { summary: string | null; positions: Record<string, { stance: PositionEntry['stance']; note?: string; mentioned_in_tweets?: boolean }> };
+  let parsed: { summary: string | null; positions: Record<string, { stance: PositionEntry['stance']; note?: string; mentioned_in_tweets?: boolean; aliases?: string[] }> };
   try {
     const stripped = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
     const match = stripped.match(/\{[\s\S]*\}/);
@@ -141,10 +179,16 @@ Output schema — do NOT include a "since" date, that is managed externally:
   const enriched: Record<string, PositionEntry> = {};
   if (existing?.positions) {
     for (const [ticker, pos] of Object.entries(existing.positions)) {
-      const refDate = pos.last_mentioned || pos.since;
+      // Advance last_mentioned from a raw-text mention the model didn't re-tag
+      // (retweet or full-name reference), so the drop check + display use it too.
+      const rawMention = latestRawMention(newTweets, ticker, pos.aliases);
+      const effectiveLastMentioned = maxDate(pos.last_mentioned || pos.since, rawMention);
+      const refDate = effectiveLastMentioned || pos.last_mentioned || pos.since;
       const daysOld = Math.floor((Date.now() - new Date(refDate).getTime()) / 86_400_000);
       if (daysOld < STALE_DROP_DAYS) {
-        enriched[ticker] = pos;
+        enriched[ticker] = effectiveLastMentioned && effectiveLastMentioned !== pos.last_mentioned
+          ? { ...pos, last_mentioned: effectiveLastMentioned }
+          : pos;
       }
     }
   }
@@ -157,11 +201,15 @@ Output schema — do NOT include a "since" date, that is managed externally:
 
       // since: never changes for same stance; resets only on a flip
       const since = (prev && !stanceFlipped) ? prev.since : today;
-      // last_mentioned: if the model surfaced this position from the tweet batch,
-      // it was mentioned by definition — advance to today. Otherwise keep previous.
-      const last_mentioned = pos.mentioned_in_tweets
+      // Merge model aliases with any previously stored ones (dedup, cap 3).
+      const aliases = Array.from(new Set([...(pos.aliases || []), ...(prev?.aliases || [])].filter(Boolean))).slice(0, 3);
+      // last_mentioned: if the model surfaced this position it was mentioned →
+      // today. Otherwise carry previous, but still advance if a raw-text scan
+      // (cashtag/name/retweet) finds a mention the model didn't flag.
+      const modelLastMentioned = pos.mentioned_in_tweets
         ? today
         : (prev?.last_mentioned || prev?.since || today);
+      const last_mentioned = maxDate(modelLastMentioned, latestRawMention(newTweets, ticker, aliases)) || today;
 
       // Conviction: builds when stance is reaffirmed in new tweets, resets on flip.
       // Range 1–5, starts at 1 for new positions.
@@ -192,6 +240,7 @@ Output schema — do NOT include a "since" date, that is managed externally:
         ...(pos.note ? { note: pos.note } : {}),
         ...(entry_price != null ? { entry_price } : {}),
         ...(prev?.target_price != null ? { target_price: prev.target_price } : {}),
+        ...(aliases.length ? { aliases } : {}),
       };
     }),
   );
