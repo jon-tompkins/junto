@@ -1,6 +1,7 @@
 import { alpacaForMandate } from './client';
 import {
   getActiveMandates,
+  getMandateById,
   createPendingTrade,
   addJournalEntry,
   logSignal,
@@ -46,11 +47,20 @@ export interface TickResult {
   };
 }
 
-export async function runTick(window: TickWindow, opts?: { broker?: string }): Promise<TickResult[]> {
-  const all = await getActiveMandates();
-  // Optional broker scope: lets HL mandates tick 24/7 (HL never closes) on their
-  // own cron while Alpaca mandates stay on the US-market-hours schedule.
-  const mandates = opts?.broker ? all.filter((m) => (m.broker || 'alpaca') === opts.broker) : all;
+export async function runTick(window: TickWindow, opts?: { broker?: string; mandateId?: string }): Promise<TickResult[]> {
+  // Single-mandate manual run: load it directly (by id) so an explicit "run tick"
+  // works even if the mandate is paused — a deliberate user action, unlike the
+  // scheduled cron which only sweeps active mandates.
+  let mandates: Mandate[];
+  if (opts?.mandateId) {
+    const m = await getMandateById(opts.mandateId);
+    mandates = m ? [m] : [];
+  } else {
+    const all = await getActiveMandates();
+    // Optional broker scope: lets HL mandates tick 24/7 (HL never closes) on their
+    // own cron while Alpaca mandates stay on the US-market-hours schedule.
+    mandates = opts?.broker ? all.filter((m) => (m.broker || 'alpaca') === opts.broker) : all;
+  }
   const results: TickResult[] = [];
   for (const mandate of mandates) {
     results.push(await tickMandate(mandate, window));

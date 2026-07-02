@@ -50,6 +50,7 @@ export default function AdminTradingPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [ticking, setTicking] = useState(false);
+  const [tickingId, setTickingId] = useState<string | null>(null);
   const [tickResult, setTickResult] = useState<string | null>(null);
   const [telegramLinked, setTelegramLinked] = useState<boolean | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -190,17 +191,20 @@ export default function AdminTradingPage() {
     }
   }
 
-  async function runTick(window: 'open' | 'midday' | 'close') {
-    setTicking(true);
+  async function runTick(window: 'open' | 'midday' | 'close', mandateId?: string) {
+    if (mandateId) setTickingId(mandateId); else setTicking(true);
     setTickResult(null);
     try {
-      const res = await fetch(`/api/admin/trading/tick?window=${window}`, { method: 'POST' });
+      const qs = mandateId ? `window=${window}&mandateId=${mandateId}` : `window=${window}`;
+      const res = await fetch(`/api/admin/trading/tick?${qs}`, { method: 'POST' });
       const data = await res.json();
       setTickResult(JSON.stringify(data.results || data, null, 2));
+      // Refresh mandate stats after a manual tick so new proposals/opens show.
+      fetch('/api/admin/trading/mandates').then(r => r.ok ? r.json() : null).then(d => { if (d?.mandates) setMandates(d.mandates); }).catch(() => {});
     } catch (e: any) {
       setTickResult(`Error: ${e.message}`);
     } finally {
-      setTicking(false);
+      if (mandateId) setTickingId(null); else setTicking(false);
     }
   }
 
@@ -250,7 +254,7 @@ export default function AdminTradingPage() {
               disabled={ticking}
               className="px-3 py-1.5 rounded text-sm bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/60 hover:text-[#F5EFE0] transition disabled:opacity-50"
             >
-              {ticking ? 'Ticking…' : 'Run tick now'}
+              {ticking ? 'Ticking…' : 'Run tick for all'}
             </button>
             <button
               onClick={() => setShowCreate(s => !s)}
@@ -609,6 +613,17 @@ export default function AdminTradingPage() {
                           : '#e8453c'
                     }
                   />
+                </div>
+                <div className="mt-4 pt-3 border-t border-[rgba(176,141,87,0.14)] flex justify-end">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); runTick('midday', m.id); }}
+                    disabled={tickingId === m.id}
+                    title="Run a tick for this mandate now (works even if paused)"
+                    className="text-xs px-2.5 py-1 rounded border border-[rgba(176,141,87,0.35)] text-[#F5EFE0]/70 hover:text-[#F5EFE0] hover:border-[#B08D57] transition disabled:opacity-40"
+                  >
+                    {tickingId === m.id ? 'Ticking…' : '⚡ Run tick'}
+                  </button>
                 </div>
               </Link>
             ))}

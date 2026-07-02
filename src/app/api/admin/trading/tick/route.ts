@@ -9,8 +9,9 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   if (!(await isAdminSession())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const window = (req.nextUrl.searchParams.get('window') as TickWindow | null) || 'midday';
+  const mandateId = req.nextUrl.searchParams.get('mandateId') || undefined;
   try {
-    const results = await runTick(window);
+    const results = await runTick(window, mandateId ? { mandateId } : undefined);
     return NextResponse.json({ ok: true, window, results });
   } catch (err: any) {
     return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
