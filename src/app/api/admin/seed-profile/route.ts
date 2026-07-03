@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/db/client';
-import { getRecentContentForSources, selectProfileSynthesisTweets } from '@/lib/db/content-twitter';
+import { getRecentContentForSources, selectProfileSynthesisTweets, mapProfileTweets } from '@/lib/db/content-twitter';
 import { updateSourceProfile } from '@/lib/synthesis/profile-updater';
 import { upsertSourceProfile } from '@/lib/db/source-analyst-profiles';
 
@@ -51,7 +51,8 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const result = await updateSourceProfile(source.id, clean, tweets);
+  // LLM sees the bounded `tweets` sample; last_mentioned scan sees the full window.
+  const result = await updateSourceProfile(source.id, clean, tweets, mapProfileTweets(recent));
 
   return NextResponse.json({
     success: true,

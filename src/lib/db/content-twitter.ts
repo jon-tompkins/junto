@@ -71,6 +71,27 @@ export interface ProfileSynthesisTweet {
  * We guarantee the most recent `recent` tweets are always included, then top up
  * with the highest-engagement tweets from the remaining window for signal.
  */
+function toProfileTweet(r: ContentTwitter): ProfileSynthesisTweet {
+  return {
+    twitter_id: r.twitter_id,
+    content: r.content,
+    posted_at: r.posted_at,
+    likes: r.likes ?? 0,
+    retweets: r.retweets ?? 0,
+    replies: r.replies ?? 0,
+    is_retweet: r.is_retweet ?? false,
+    is_reply: r.is_reply ?? false,
+    thread_id: r.thread_id ?? undefined,
+    raw_data: r.raw_data,
+  };
+}
+
+// Map the FULL set of rows (no sampling) — used for the raw-text last_mentioned
+// scan, which must see every tweet in the window, not just the LLM sample.
+export function mapProfileTweets(rows: ContentTwitter[]): ProfileSynthesisTweet[] {
+  return rows.map(toProfileTweet);
+}
+
 export function selectProfileSynthesisTweets(
   rows: ContentTwitter[],
   opts: { recent?: number; topEngagement?: number } = {}
@@ -88,18 +109,7 @@ export function selectProfileSynthesisTweets(
     .sort((a, b) => eng(b) - eng(a))
     .slice(0, topCount);
 
-  return [...mostRecent, ...topEngaged].map((r) => ({
-    twitter_id: r.twitter_id,
-    content: r.content,
-    posted_at: r.posted_at,
-    likes: r.likes ?? 0,
-    retweets: r.retweets ?? 0,
-    replies: r.replies ?? 0,
-    is_retweet: r.is_retweet ?? false,
-    is_reply: r.is_reply ?? false,
-    thread_id: r.thread_id ?? undefined,
-    raw_data: r.raw_data,
-  }));
+  return [...mostRecent, ...topEngaged].map(toProfileTweet);
 }
 
 export async function getRecentContentForSources(

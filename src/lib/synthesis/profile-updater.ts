@@ -57,6 +57,12 @@ export async function updateSourceProfile(
   sourceId: string,
   handle: string,
   newTweets: TweetInput[],
+  // Full recent-window tweets for the raw-text last_mentioned scan. The LLM only
+  // sees the bounded `newTweets` sample, but staleness must be computed over EVERY
+  // tweet in the window — otherwise a position mentioned in a tweet that didn't
+  // make the sample reads stale despite active tweeting (esp. high-volume,
+  // position-dense accounts). Defaults to `newTweets` when a caller doesn't pass it.
+  rawScanTweets: TweetInput[] = newTweets,
 ): Promise<ProfileUpdateResult> {
   const existing = await getSourceProfile(sourceId);
 
@@ -182,7 +188,7 @@ Output schema — do NOT include a "since" date, that is managed externally:
     for (const [ticker, pos] of Object.entries(existing.positions)) {
       // Advance last_mentioned from a raw-text mention the model didn't re-tag
       // (retweet or full-name reference), so the drop check + display use it too.
-      const rawMention = latestRawMention(newTweets, ticker, pos.aliases);
+      const rawMention = latestRawMention(rawScanTweets, ticker, pos.aliases);
       const effectiveLastMentioned = maxDate(pos.last_mentioned || pos.since, rawMention);
       const refDate = effectiveLastMentioned || pos.last_mentioned || pos.since;
       const daysOld = Math.floor((Date.now() - new Date(refDate).getTime()) / 86_400_000);
@@ -210,7 +216,7 @@ Output schema — do NOT include a "since" date, that is managed externally:
       const modelLastMentioned = pos.mentioned_in_tweets
         ? today
         : (prev?.last_mentioned || prev?.since || today);
-      const last_mentioned = maxDate(modelLastMentioned, latestRawMention(newTweets, ticker, aliases)) || today;
+      const last_mentioned = maxDate(modelLastMentioned, latestRawMention(rawScanTweets, ticker, aliases)) || today;
 
       // Conviction: builds when stance is reaffirmed in new tweets, resets on flip.
       // Range 1–5, starts at 1 for new positions.

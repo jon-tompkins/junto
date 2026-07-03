@@ -5,7 +5,7 @@ import {
   markRunCompleted,
   markRunFailed,
 } from '@/lib/db/apify-runs';
-import { storeTwitterContent, getRecentContentForSources, selectProfileSynthesisTweets } from '@/lib/db/content-twitter';
+import { storeTwitterContent, getRecentContentForSources, selectProfileSynthesisTweets, mapProfileTweets } from '@/lib/db/content-twitter';
 import { updateSourceProfile } from '@/lib/synthesis/profile-updater';
 import { getSourcesMissingOrStaleProfiles, getSourceProfile } from '@/lib/db/source-analyst-profiles';
 import { getSupabase } from '@/lib/db/client';
@@ -175,7 +175,7 @@ export async function GET(req: NextRequest) {
         const windowRows = await getRecentContentForSources([sourceId], windowHours);
         const tweets = selectProfileSynthesisTweets(windowRows);
         if (tweets.length === 0) continue;
-        await updateSourceProfile(sourceId, handle, tweets);
+        await updateSourceProfile(sourceId, handle, tweets, mapProfileTweets(windowRows));
       } catch (err) {
         console.warn(
           `[collect-twitter] Profile update failed for @${handle}:`,
@@ -193,7 +193,7 @@ export async function GET(req: NextRequest) {
         const tweets = selectProfileSynthesisTweets(recent);
         if (tweets.length > 0) {
           console.log(`[collect-twitter] Seeding missing profile for @${src.handle_or_url} from ${tweets.length} stored tweets`);
-          await updateSourceProfile(src.id, src.handle_or_url, tweets);
+          await updateSourceProfile(src.id, src.handle_or_url, tweets, mapProfileTweets(recent));
         }
       }
     } catch (err) {
