@@ -5,7 +5,7 @@ import {
   markRunCompleted,
   markRunFailed,
 } from '@/lib/db/apify-runs';
-import { storeTwitterContent, getRecentContentForSources } from '@/lib/db/content-twitter';
+import { storeTwitterContent, getRecentContentForSources, selectProfileSynthesisTweets } from '@/lib/db/content-twitter';
 import { updateSourceProfile } from '@/lib/synthesis/profile-updater';
 import { getSourcesMissingOrStaleProfiles, getSourceProfile } from '@/lib/db/source-analyst-profiles';
 import { getSupabase } from '@/lib/db/client';
@@ -153,7 +153,7 @@ export async function GET(req: NextRequest) {
     // a source whose profile is older than PROFILE_RESYNTH_MS, so frequent pulls
     // don't trigger Haiku on every ingest. New tweets are already stored; the
     // profile just catches up once a day.
-    for (const { sourceId, handle, tweets } of profileTasks) {
+    for (const { sourceId, handle } of profileTasks) {
       try {
         const existing = await getSourceProfile(sourceId);
         if (
@@ -162,6 +162,19 @@ export async function GET(req: NextRequest) {
         ) {
           continue;
         }
+        // Re-synth over the FULL window since the last profile update (recency-first),
+        // not just this 10-min cycle's newly-stored tweets. Profiles re-synth ~once/day,
+        // so mentions that landed in the day's other (throttled) cycles would otherwise
+        // never be seen and last_mentioned would read stale despite active tweeting.
+        const windowHours = existing
+          ? Math.min(
+              336,
+              Math.max(48, Math.ceil((Date.now() - new Date(existing.last_updated).getTime()) / 3_600_000) + 6)
+            )
+          : 336;
+        const windowRows = await getRecentContentForSources([sourceId], windowHours);
+        const tweets = selectProfileSynthesisTweets(windowRows);
+        if (tweets.length === 0) continue;
         await updateSourceProfile(sourceId, handle, tweets);
       } catch (err) {
         console.warn(
@@ -177,21 +190,7 @@ export async function GET(req: NextRequest) {
       const toSeed = missing.slice(0, 3);
       for (const src of toSeed) {
         const recent = await getRecentContentForSources([src.id], 336);
-        const tweets = recent
-          .sort((a, b) => (b.likes + b.retweets * 2) - (a.likes + a.retweets * 2))
-          .slice(0, 30)
-          .map((r) => ({
-            twitter_id: r.twitter_id,
-            content: r.content,
-            posted_at: r.posted_at,
-            likes: r.likes ?? 0,
-            retweets: r.retweets ?? 0,
-            replies: r.replies ?? 0,
-            is_retweet: r.is_retweet ?? false,
-            is_reply: r.is_reply ?? false,
-            thread_id: r.thread_id ?? undefined,
-            raw_data: r.raw_data,
-          }));
+        const tweets = selectProfileSynthesisTweets(recent);
         if (tweets.length > 0) {
           console.log(`[collect-twitter] Seeding missing profile for @${src.handle_or_url} from ${tweets.length} stored tweets`);
           await updateSourceProfile(src.id, src.handle_or_url, tweets);

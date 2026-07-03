@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/db/client';
-import { getRecentContentForSources } from '@/lib/db/content-twitter';
+import { getRecentContentForSources, selectProfileSynthesisTweets } from '@/lib/db/content-twitter';
 import { updateSourceProfile } from '@/lib/synthesis/profile-updater';
 import { upsertSourceProfile } from '@/lib/db/source-analyst-profiles';
 
@@ -37,21 +37,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `No stored tweets found for @${clean}` }, { status: 404 });
   }
 
-  const tweets = recent
-    .sort((a, b) => (b.likes + b.retweets * 2) - (a.likes + a.retweets * 2))
-    .slice(0, 30)
-    .map((r) => ({
-      twitter_id: r.twitter_id,
-      content: r.content,
-      posted_at: r.posted_at,
-      likes: r.likes ?? 0,
-      retweets: r.retweets ?? 0,
-      replies: r.replies ?? 0,
-      is_retweet: r.is_retweet ?? false,
-      is_reply: r.is_reply ?? false,
-      thread_id: r.thread_id ?? undefined,
-      raw_data: r.raw_data,
-    }));
+  // Recency-first selection (most recent tweets guaranteed in-window + top
+  // engagement for signal). Old code sorted by engagement only and dropped fresh
+  // tweets → stale last_mentioned. See selectProfileSynthesisTweets.
+  const tweets = selectProfileSynthesisTweets(recent);
 
   // Extract cashtags for debug visibility (same regex used inside updater)
   const seenCashtags = new Map<string, number>();

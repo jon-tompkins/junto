@@ -44,6 +44,64 @@ export async function storeTwitterContent(
   return data?.length ?? 0;
 }
 
+// Shape consumed by updateSourceProfile (profile-updater). Kept permissive so it
+// matches the objects the callers were building inline before this was centralized.
+export interface ProfileSynthesisTweet {
+  twitter_id: string;
+  content: string;
+  posted_at: string;
+  likes: number;
+  retweets: number;
+  replies: number;
+  is_retweet: boolean;
+  is_reply: boolean;
+  thread_id?: string;
+  raw_data?: Record<string, unknown>;
+}
+
+/**
+ * Select the tweets to feed profile synthesis, RECENCY-FIRST.
+ *
+ * The old logic sorted by engagement (likes + 2·retweets) and took the top 30.
+ * Fresh tweets haven't accumulated engagement yet, so they were systematically
+ * dropped in favour of older viral tweets — which made `last_mentioned` reflect
+ * old high-engagement tweets and positions read "stale" even right after a
+ * re-synth. This is the fix for "actively tweeted about it but it shows stale".
+ *
+ * We guarantee the most recent `recent` tweets are always included, then top up
+ * with the highest-engagement tweets from the remaining window for signal.
+ */
+export function selectProfileSynthesisTweets(
+  rows: ContentTwitter[],
+  opts: { recent?: number; topEngagement?: number } = {}
+): ProfileSynthesisTweet[] {
+  const recentCount = opts.recent ?? 25;
+  const topCount = opts.topEngagement ?? 15;
+  const eng = (r: ContentTwitter) => (r.likes ?? 0) + (r.retweets ?? 0) * 2;
+
+  const byRecency = [...rows].sort(
+    (a, b) => new Date(b.posted_at).getTime() - new Date(a.posted_at).getTime()
+  );
+  const mostRecent = byRecency.slice(0, recentCount);
+  const topEngaged = byRecency
+    .slice(recentCount)
+    .sort((a, b) => eng(b) - eng(a))
+    .slice(0, topCount);
+
+  return [...mostRecent, ...topEngaged].map((r) => ({
+    twitter_id: r.twitter_id,
+    content: r.content,
+    posted_at: r.posted_at,
+    likes: r.likes ?? 0,
+    retweets: r.retweets ?? 0,
+    replies: r.replies ?? 0,
+    is_retweet: r.is_retweet ?? false,
+    is_reply: r.is_reply ?? false,
+    thread_id: r.thread_id ?? undefined,
+    raw_data: r.raw_data,
+  }));
+}
+
 export async function getRecentContentForSources(
   sourceIds: string[],
   hoursBack: number = 48
