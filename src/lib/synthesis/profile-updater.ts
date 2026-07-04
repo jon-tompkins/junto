@@ -53,6 +53,34 @@ function maxDate(a?: string | null, b?: string | null): string | undefined {
   return da >= db ? (a as string) : (b as string);
 }
 
+const STALE_DROP_DAYS = 60;
+
+// Carry existing positions forward, advancing last_mentioned from a raw-text scan
+// of the full window (cashtag / bare symbol / alias) so staleness tracks actual
+// tweeting regardless of what the LLM returns. Stale positions persist until
+// STALE_DROP_DAYS without any mention. Used by BOTH the normal path and the
+// parse-failure fallback — the latter is what keeps position-dense accounts
+// (whose synthesis output truncates past max_tokens) from freezing as stale.
+function carryOverExistingPositions(
+  existingPositions: Record<string, PositionEntry> | undefined,
+  rawScanTweets: TweetInput[],
+): Record<string, PositionEntry> {
+  const enriched: Record<string, PositionEntry> = {};
+  if (!existingPositions) return enriched;
+  for (const [ticker, pos] of Object.entries(existingPositions)) {
+    const rawMention = latestRawMention(rawScanTweets, ticker, pos.aliases);
+    const effectiveLastMentioned = maxDate(pos.last_mentioned || pos.since, rawMention);
+    const refDate = (effectiveLastMentioned || pos.last_mentioned || pos.since) as string;
+    const daysOld = Math.floor((Date.now() - new Date(refDate).getTime()) / 86_400_000);
+    if (daysOld < STALE_DROP_DAYS) {
+      enriched[ticker] = effectiveLastMentioned && effectiveLastMentioned !== pos.last_mentioned
+        ? { ...pos, last_mentioned: effectiveLastMentioned }
+        : pos;
+    }
+  }
+  return enriched;
+}
+
 export async function updateSourceProfile(
   sourceId: string,
   handle: string,
@@ -95,7 +123,10 @@ export async function updateSourceProfile(
   const client = getAnthropic();
   const response = await client.messages.create({
     model: HAIKU_MODEL,
-    max_tokens: 4096,
+    // Position-dense accounts (60-80+ positions) emit large JSON; 4096 truncated
+    // it → parse failure → frozen stale profile. 8192 covers the vast majority;
+    // the raw-scan fallback (see catch block) keeps staleness correct beyond that.
+    max_tokens: 8192,
     system: `You maintain analyst profiles for a financial newsletter platform. Given new tweets from a source and their existing profile, return an updated JSON profile.
 
 WHAT TO TRACK — only investable assets or sectors:
@@ -174,31 +205,24 @@ Output schema — do NOT include a "since" date, that is managed externally:
     parsed = JSON.parse(match[0]);
   } catch (err) {
     console.warn(
-      `[profile-updater] Failed to parse JSON for @${handle}, stop_reason=${(response as any).stop_reason}, raw response (full): ${raw}`,
+      `[profile-updater] Failed to parse JSON for @${handle}, stop_reason=${(response as any).stop_reason}, raw len=${raw.length}. Falling back to raw-scan staleness update.`,
     );
-    return { summary: existing?.summary ?? null, positions: existing?.positions ?? {}, changed: false };
+    // Don't freeze the profile on a bad/truncated LLM response (common on
+    // position-dense accounts that blow past max_tokens). Still advance
+    // last_mentioned for existing positions via the full-window raw scan and
+    // persist it, so staleness stays correct even when synthesis fails.
+    const carried = carryOverExistingPositions(existing?.positions, rawScanTweets);
+    if (existing && Object.keys(carried).length) {
+      await upsertSourceProfile(sourceId, existing.summary ?? null, carried);
+    }
+    return { summary: existing?.summary ?? null, positions: carried, changed: false };
   }
 
   const today = new Date().toISOString().split('T')[0];
-  const STALE_DROP_DAYS = 60;
 
-  // Start with carried-over existing positions — stale ones persist until 60 days without mention
-  const enriched: Record<string, PositionEntry> = {};
-  if (existing?.positions) {
-    for (const [ticker, pos] of Object.entries(existing.positions)) {
-      // Advance last_mentioned from a raw-text mention the model didn't re-tag
-      // (retweet or full-name reference), so the drop check + display use it too.
-      const rawMention = latestRawMention(rawScanTweets, ticker, pos.aliases);
-      const effectiveLastMentioned = maxDate(pos.last_mentioned || pos.since, rawMention);
-      const refDate = effectiveLastMentioned || pos.last_mentioned || pos.since;
-      const daysOld = Math.floor((Date.now() - new Date(refDate).getTime()) / 86_400_000);
-      if (daysOld < STALE_DROP_DAYS) {
-        enriched[ticker] = effectiveLastMentioned && effectiveLastMentioned !== pos.last_mentioned
-          ? { ...pos, last_mentioned: effectiveLastMentioned }
-          : pos;
-      }
-    }
-  }
+  // Start with carried-over existing positions (raw-scan advances last_mentioned;
+  // stale ones persist until STALE_DROP_DAYS). Model positions override below.
+  const enriched: Record<string, PositionEntry> = carryOverExistingPositions(existing?.positions, rawScanTweets);
 
   // Process Claude's returned positions — these override the carry-over
   await Promise.all(
