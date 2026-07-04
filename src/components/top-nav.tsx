@@ -52,7 +52,7 @@ export function TopNav() {
   const isActive = (path: string) =>
     pathname === path || pathname?.startsWith(path + '/');
 
-  const isDetailActive = isActive('/juntos') || isActive('/sources') || isActive('/positions');
+  const isDetailActive = isActive('/juntos') || isActive('/sources') || isActive('/leaderboard') || isActive('/positions');
 
   return (
     <nav className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
@@ -104,6 +104,7 @@ export function TopNav() {
               {[
                 { href: '/juntos', label: 'Juntos' },
                 { href: '/sources', label: 'Sources' },
+                { href: '/leaderboard', label: 'Leaderboard' },
                 { href: '/positions', label: 'Positions' },
               ].map(({ href, label }) => (
                 <Link
@@ -320,6 +321,7 @@ export function TopNav() {
               <div className="space-y-0.5">
                 <MobileNavLink href="/juntos" label="Juntos" active={isActive('/juntos')} onClick={() => setMobileOpen(false)} indent />
                 <MobileNavLink href="/sources" label="Sources" active={isActive('/sources')} onClick={() => setMobileOpen(false)} indent />
+                <MobileNavLink href="/leaderboard" label="Leaderboard" active={isActive('/leaderboard')} onClick={() => setMobileOpen(false)} indent />
                 <MobileNavLink href="/positions" label="Positions" active={isActive('/positions')} onClick={() => setMobileOpen(false)} indent />
               </div>
 

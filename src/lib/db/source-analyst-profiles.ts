@@ -123,6 +123,76 @@ export async function getSourceHitRatesForTicker(
   return out;
 }
 
+export interface LeaderboardRow {
+  source_id: string;
+  handle: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  scored: number;
+  wins: number;
+  losses: number;
+  win_rate: number; // 0..1
+  avg_return_pct: number | null;
+}
+
+/**
+ * Analyst track-record leaderboard: sources ranked by closed-call win rate, gated
+ * by a minimum number of SCORED (win/loss) calls so a lucky 2-for-2 can't top it.
+ * Ranked by win rate, then sample size, then average return. Public share-bait + SEO.
+ */
+export async function getAnalystLeaderboard(minScored = 5): Promise<LeaderboardRow[]> {
+  const supabase = getSupabase();
+  const { data: outcomes, error } = await supabase
+    .from('source_call_outcomes')
+    .select('source_id, outcome, return_pct');
+  if (error || !outcomes) return [];
+
+  const acc = new Map<string, { wins: number; losses: number; retSum: number; retCount: number }>();
+  for (const r of outcomes as { source_id: string; outcome: string; return_pct: number | null }[]) {
+    const a = acc.get(r.source_id) || { wins: 0, losses: 0, retSum: 0, retCount: 0 };
+    if (r.outcome === 'win') a.wins += 1;
+    else if (r.outcome === 'loss') a.losses += 1;
+    if (r.return_pct != null) { a.retSum += Number(r.return_pct); a.retCount += 1; }
+    acc.set(r.source_id, a);
+  }
+
+  const qualifying = [...acc.entries()]
+    .map(([source_id, a]) => ({ source_id, ...a, scored: a.wins + a.losses }))
+    .filter((x) => x.scored >= minScored);
+  if (qualifying.length === 0) return [];
+
+  const { data: srcs } = await supabase
+    .from('sources')
+    .select('id, handle_or_url, display_name, avatar_url')
+    .in('id', qualifying.map((q) => q.source_id));
+  const meta = new Map((srcs ?? []).map((s) => [s.id, s as { id: string; handle_or_url: string; display_name: string | null; avatar_url: string | null }]));
+
+  const rows: LeaderboardRow[] = qualifying
+    .map((q) => {
+      const m = meta.get(q.source_id);
+      return {
+        source_id: q.source_id,
+        handle: m?.handle_or_url ?? '',
+        display_name: m?.display_name ?? null,
+        avatar_url: m?.avatar_url ?? null,
+        scored: q.scored,
+        wins: q.wins,
+        losses: q.losses,
+        win_rate: q.scored > 0 ? q.wins / q.scored : 0,
+        avg_return_pct: q.retCount > 0 ? q.retSum / q.retCount : null,
+      };
+    })
+    .filter((r) => r.handle); // only rank sources we can actually link to
+
+  rows.sort(
+    (a, b) =>
+      b.win_rate - a.win_rate ||
+      b.scored - a.scored ||
+      (b.avg_return_pct ?? -Infinity) - (a.avg_return_pct ?? -Infinity),
+  );
+  return rows;
+}
+
 export interface SourceAnalystProfile {
   id: string;
   source_id: string;
