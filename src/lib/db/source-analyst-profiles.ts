@@ -172,6 +172,96 @@ export async function upsertSourceProfile(
     );
 
   if (error) throw error;
+
+  // Dual-write the normalized per-row table (source_positions). The blob above is
+  // still the compatibility cache every existing reader uses; this table is the
+  // queryable per-row store. Best-effort — a sync failure must never break the
+  // primary profile write or synthesis.
+  try {
+    await syncSourcePositions(sourceId, positions);
+  } catch (err) {
+    console.warn(
+      `[source-positions] sync failed for ${sourceId}:`,
+      err instanceof Error ? err.message : err,
+    );
+  }
+}
+
+// Mirror a source's positions map into the normalized source_positions table:
+// upsert every current position as a row, delete rows for tickers no longer held.
+async function syncSourcePositions(
+  sourceId: string,
+  positions: Record<string, PositionEntry>,
+): Promise<void> {
+  const supabase = getSupabase();
+  const now = new Date().toISOString();
+  const tickers = Object.keys(positions);
+
+  if (tickers.length > 0) {
+    const rows = tickers.map((ticker) => {
+      const p = positions[ticker];
+      return {
+        source_id: sourceId,
+        ticker,
+        stance: p.stance,
+        since: p.since ?? null,
+        last_mentioned: p.last_mentioned ?? null,
+        mentions: p.mentions ?? 0,
+        conviction: p.conviction ?? null,
+        note: p.note ?? null,
+        entry_price: p.entry_price ?? null,
+        target_price: p.target_price ?? null,
+        aliases: p.aliases ?? null,
+        asset_class: p.asset_class ?? null,
+        updated_at: now,
+      };
+    });
+    const { error: upErr } = await supabase
+      .from('source_positions')
+      .upsert(rows, { onConflict: 'source_id,ticker' });
+    if (upErr) throw upErr;
+  }
+
+  // Delete any rows for tickers this source no longer holds (dropped / stale-dropped).
+  const { data: existingRows, error: selErr } = await supabase
+    .from('source_positions')
+    .select('ticker')
+    .eq('source_id', sourceId);
+  if (selErr) throw selErr;
+
+  const current = new Set(tickers);
+  const removed = (existingRows ?? []).map((r) => r.ticker).filter((t) => !current.has(t));
+  if (removed.length > 0) {
+    const { error: delErr } = await supabase
+      .from('source_positions')
+      .delete()
+      .eq('source_id', sourceId)
+      .in('ticker', removed);
+    if (delErr) throw delErr;
+  }
+}
+
+/**
+ * Cross-source query (the payoff of normalization): every source currently holding
+ * a position on a ticker, with stance/conviction/mentions. Powers "who's bullish on
+ * $NVDA", the leaderboard, and portfolio rollups without scanning JSON blobs.
+ */
+export async function getPositionsForTicker(ticker: string): Promise<Array<{
+  source_id: string;
+  ticker: string;
+  stance: string;
+  conviction: number | null;
+  mentions: number;
+  last_mentioned: string | null;
+}>> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('source_positions')
+    .select('source_id, ticker, stance, conviction, mentions, last_mentioned')
+    .ilike('ticker', ticker)
+    .order('conviction', { ascending: false, nullsFirst: false });
+  if (error) throw error;
+  return (data ?? []) as Array<{ source_id: string; ticker: string; stance: string; conviction: number | null; mentions: number; last_mentioned: string | null }>;
 }
 
 // Returns Twitter sources that have stored tweets but no analyst profile yet,
