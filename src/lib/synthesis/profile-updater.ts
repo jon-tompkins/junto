@@ -116,8 +116,16 @@ export async function updateSourceProfile(
         .join(', ')}`
     : '';
 
+  // Compact context: ticker(stance,cN). Enough for the model to judge deltas +
+  // avoid dupes, without paying to serialize the full positions blob (which for
+  // 100-position accounts is a large input cost). Metadata (aliases/asset_class/
+  // note) is preserved in code on carry-over, so it need not be re-sent.
   const existingBlock = existing
-    ? `Current summary: ${existing.summary || 'none'}\nCurrent positions: ${JSON.stringify(existing.positions, null, 2)}`
+    ? `Current summary: ${existing.summary || 'none'}\nCurrently tracked (ticker: stance, conviction 1-5): ${
+        Object.entries(existing.positions || {})
+          .map(([t, p]) => `${t}(${p.stance},c${p.conviction ?? 1})`)
+          .join(', ') || 'none'
+      }`
     : 'No existing profile.';
 
   const client = getAnthropic();
@@ -143,11 +151,12 @@ WHAT NOT TO TRACK — remove these if they exist, never add new ones:
 - Anything that is not directly investable or a recognized sector
 
 Rules:
-- Include a position whenever a tweet states OR confirms a directional view — even "still long X" or "added more X" counts
-- Set mentioned_in_tweets: true whenever the new tweets reference the asset in ANY way — a cashtag, the bare ticker, or the asset name — even a casual restatement with no fresh thesis, even just "$PURR" or "$BTC" in passing. When in doubt, set it true. Only set it false when the position is carried over from the existing profile and the new tweets are genuinely silent on it (no cashtag, no name, no reference at all)
-- If new tweets clearly show an exit or contradiction of an existing position, change the stance
-- If new tweets are silent on an existing position, still include it with its current stance (do not drop it just because it wasn't mentioned)
-- Remove positions in the "WHAT NOT TO TRACK" category
+- Return ONLY positions the NEW tweets actually discuss — a position that is newly opened, confirmed/restated, flipped, or whose thesis the new tweets update. Do NOT re-list positions the new tweets are silent about; those are carried over automatically. This keeps your output small — a source may have 100 tracked positions but only a few appear in a given batch.
+- Include a position whenever a tweet states OR confirms a directional view — even "still long X" or "added more X" counts. ANY explicit cashtag in the new tweets is a position to return.
+- Set mentioned_in_tweets: true for every position you return whose asset the new tweets reference in any way (cashtag, bare ticker, or name) — which will be essentially all of them, since you only return discussed positions.
+- conviction (integer 1-5): your read of how strongly the source holds this view based on WHAT THEY SAID in these tweets, relative to the current conviction shown above. Doubling down / adding size / a strong fresh thesis → higher. A passing cashtag or bare restatement with no new thesis → keep it about the same as the current value. Hedging, trimming, or expressing doubt → lower. A mention by itself does NOT raise conviction. A brand-new position with a weak signal → 1-2.
+- If new tweets clearly show an exit or contradiction of an existing position, change the stance (a flip is a fresh call — conviction resets low unless they flipped with strong conviction).
+- Only return a position in the "WHAT NOT TO TRACK" category if you are removing/correcting it; never add one.
 - summary: 1–2 sentences on what this analyst focuses on and their style
 - Return ONLY valid JSON, no prose
 
@@ -157,12 +166,13 @@ Normalization:
 - Never duplicate: if an existing key covers the same asset, update it
 - Max 1–3 words for sector/theme keys: "semiconductors" not "semiconductor supply chains"
 
-Output schema — do NOT include a "since" date, that is managed externally:
+Output schema — include ONLY positions discussed in the new tweets. Do NOT include a "since" date, that is managed externally:
 {
   "summary": "string or null",
   "positions": {
     "<ticker or investable sector>": {
       "stance": "bullish" | "bearish" | "neutral" | "cautious",
+      "conviction": 1 | 2 | 3 | 4 | 5,  // your judged strength of the view from what they said (see rules) — NOT a mention counter
       "note": "optional brief context — only if tweet provides specific reason or target",
       "mentioned_in_tweets": true | false,  // true if these new tweets explicitly reference this position
       "aliases": ["full/common names for this asset, e.g. \"BlackBerry\" for BB, \"Bitcoin\" for BTC — 1-3 names, omit for obvious sectors"],
@@ -173,7 +183,7 @@ Output schema — do NOT include a "since" date, that is managed externally:
     messages: [
       {
         role: 'user',
-        content: `Handle: @${handle}\n\n${existingBlock}${cashtagHint}\n\nNew tweets:\n${tweetBlock}\n\nReturn updated profile JSON. Include EVERY cashtag from the hint above as a position — use the tweet text to determine stance.`,
+        content: `Handle: @${handle}\n\n${existingBlock}${cashtagHint}\n\nNew tweets:\n${tweetBlock}\n\nReturn JSON with ONLY the positions these new tweets discuss (include EVERY cashtag from the hint above). Use the tweet text to determine stance and conviction. Positions not mentioned here are carried over automatically — do not list them.`,
       },
     ],
   });
@@ -197,7 +207,7 @@ Output schema — do NOT include a "since" date, that is managed externally:
     .map((b) => b.text)
     .join('');
 
-  let parsed: { summary: string | null; positions: Record<string, { stance: PositionEntry['stance']; note?: string; mentioned_in_tweets?: boolean; aliases?: string[]; asset_class?: PositionEntry['asset_class'] }> };
+  let parsed: { summary: string | null; positions: Record<string, { stance: PositionEntry['stance']; note?: string; mentioned_in_tweets?: boolean; conviction?: number; aliases?: string[]; asset_class?: PositionEntry['asset_class'] }> };
   try {
     const stripped = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
     const match = stripped.match(/\{[\s\S]*\}/);
@@ -242,17 +252,17 @@ Output schema — do NOT include a "since" date, that is managed externally:
         : (prev?.last_mentioned || prev?.since || today);
       const last_mentioned = maxDate(modelLastMentioned, latestRawMention(rawScanTweets, ticker, aliases)) || today;
 
-      // Conviction: builds when stance is reaffirmed in new tweets, resets on flip.
-      // Range 1–5, starts at 1 for new positions.
+      // Conviction (1–5) is the MODEL's read of how strongly the source holds this
+      // view given what they actually said — NOT a per-mention counter (a passing
+      // cashtag doesn't raise conviction). Use the model's judged value when it gave
+      // one; a flip with no value is a fresh weak call; otherwise carry prev.
       let conviction: number;
-      if (!prev) {
-        conviction = pos.mentioned_in_tweets ? 2 : 1;
+      if (typeof pos.conviction === 'number' && Number.isFinite(pos.conviction)) {
+        conviction = Math.max(1, Math.min(5, Math.round(pos.conviction)));
       } else if (stanceFlipped) {
         conviction = 1;
-      } else if (pos.mentioned_in_tweets) {
-        conviction = Math.min(5, (prev.conviction ?? 1) + 1);
       } else {
-        conviction = prev.conviction ?? 1;
+        conviction = prev?.conviction ?? 1;
       }
 
       // A flip is a new call — reset entry to today's price (matching the reset
