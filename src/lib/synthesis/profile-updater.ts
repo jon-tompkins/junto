@@ -77,6 +77,10 @@ function maxDate(a?: string | null, b?: string | null): string | undefined {
 }
 
 const STALE_DROP_DAYS = 60;
+// Conviction is only re-judged after this many new mentions accrue since the last
+// judgment (or immediately on a new position / stance flip). Keeps conviction stable
+// and, once positions are per-row, avoids an LLM call on every passing mention.
+const CONVICTION_RECHECK_MENTIONS = 5;
 
 // Carry existing positions forward, advancing last_mentioned from a raw-text scan
 // of the full window (cashtag / bare symbol / alias) so staleness tracks actual
@@ -278,17 +282,29 @@ Output schema — include ONLY positions discussed in the new tweets. Do NOT inc
         : (prev?.last_mentioned || prev?.since || today);
       const last_mentioned = maxDate(modelLastMentioned, latestRawMention(rawScanTweets, ticker, aliases)) || today;
 
-      // Conviction (1–5) is the MODEL's read of how strongly the source holds this
-      // view given what they actually said — NOT a per-mention counter (a passing
-      // cashtag doesn't raise conviction). Use the model's judged value when it gave
-      // one; a flip with no value is a fresh weak call; otherwise carry prev.
+      // Mechanical mention counter: uptick for mentions on days after the prev
+      // watermark (idempotent). Base off prev so carry-over and this override agree.
+      const mentions = (prev?.mentions ?? 0) + countRawMentions(rawScanTweets, ticker, aliases, prev?.last_mentioned || prev?.since);
+
+      // Conviction (1–5) is the MODEL's judged strength — NOT a mention counter. To
+      // keep it stable (and, once positions are processed per-row, cheap), only
+      // (re)judge on a NEW position, a stance FLIP, or once the position has accrued
+      // CONVICTION_RECHECK_MENTIONS new mentions since the last judgment. Otherwise
+      // carry prior conviction. conviction_mentions = `mentions` at the last judgment.
+      const modelConv = (typeof pos.conviction === 'number' && Number.isFinite(pos.conviction))
+        ? Math.max(1, Math.min(5, Math.round(pos.conviction)))
+        : null;
       let conviction: number;
-      if (typeof pos.conviction === 'number' && Number.isFinite(pos.conviction)) {
-        conviction = Math.max(1, Math.min(5, Math.round(pos.conviction)));
-      } else if (stanceFlipped) {
-        conviction = 1;
+      let conviction_mentions: number;
+      if (!prev || stanceFlipped) {
+        conviction = modelConv ?? 1;
+        conviction_mentions = mentions;
+      } else if (modelConv != null && mentions - (prev.conviction_mentions ?? 0) >= CONVICTION_RECHECK_MENTIONS) {
+        conviction = modelConv;
+        conviction_mentions = mentions;
       } else {
-        conviction = prev?.conviction ?? 1;
+        conviction = prev.conviction ?? 1;
+        conviction_mentions = prev.conviction_mentions ?? 0;
       }
 
       // A flip is a new call — reset entry to today's price (matching the reset
@@ -299,15 +315,12 @@ Output schema — include ONLY positions discussed in the new tweets. Do NOT inc
         if (price != null) entry_price = price;
       }
 
-      // Mechanical mention counter: uptick for mentions on days after the prev
-      // watermark (idempotent). Base off prev so carry-over and this override agree.
-      const mentions = (prev?.mentions ?? 0) + countRawMentions(rawScanTweets, ticker, aliases, prev?.last_mentioned || prev?.since);
-
       enriched[ticker] = {
         stance: pos.stance,
         since,
         last_mentioned,
         conviction,
+        conviction_mentions,
         ...(mentions > 0 ? { mentions } : {}),
         ...(pos.note ? { note: pos.note } : {}),
         ...(entry_price != null ? { entry_price } : {}),

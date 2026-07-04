@@ -6,6 +6,7 @@ export interface PositionEntry {
   last_mentioned?: string; // ISO date — last time a tweet confirmed or updated this position
   mentions?: number;       // mechanical running count of raw-text mentions (cashtag/name), watermarked off last_mentioned so re-scans don't double-count. Frequency signal, distinct from conviction (strength)
   conviction?: number;     // 1–5; the model's judged strength of the view (NOT a mention counter)
+  conviction_mentions?: number; // the `mentions` value when conviction was last judged; conviction is only re-judged after CONVICTION_RECHECK_MENTIONS new mentions (or on a flip)
   note?: string;
   target_price?: number;
   entry_price?: number;
@@ -208,6 +209,7 @@ async function syncSourcePositions(
         last_mentioned: p.last_mentioned ?? null,
         mentions: p.mentions ?? 0,
         conviction: p.conviction ?? null,
+        conviction_mentions: p.conviction_mentions ?? null,
         note: p.note ?? null,
         entry_price: p.entry_price ?? null,
         target_price: p.target_price ?? null,
