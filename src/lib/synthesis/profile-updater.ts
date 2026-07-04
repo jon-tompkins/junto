@@ -43,6 +43,29 @@ function latestRawMention(tweets: TweetInput[], ticker: string, aliases?: string
   return latest ? new Date(latest).toISOString().split('T')[0] : null;
 }
 
+// Count raw-text mentions (cashtag / bare symbol / alias) of an asset in tweets
+// posted on a DAY strictly after `afterDate` (YYYY-MM-DD). Watermarking off the
+// position's existing last_mentioned makes this idempotent — re-scanning the same
+// or overlapping window never re-counts already-counted days. Purely mechanical
+// frequency signal; independent of the model.
+function countRawMentions(tweets: TweetInput[], ticker: string, aliases: string[] | undefined, afterDate?: string | null): number {
+  const sym = ticker.toUpperCase();
+  const cashtag = new RegExp(`\\$${escapeRe(sym)}\\b`, 'i');
+  const bare = sym.length >= 4 && /^[A-Z.]+$/.test(sym) ? new RegExp(`\\b${escapeRe(sym)}\\b`) : null;
+  const aliasRes = (aliases || [])
+    .filter((a) => typeof a === 'string' && a.trim().length >= 4)
+    .map((a) => new RegExp(`\\b${escapeRe(a.trim())}\\b`, 'i'));
+  const after = (afterDate || '').slice(0, 10);
+  let count = 0;
+  for (const t of tweets) {
+    const day = (t.posted_at || '').slice(0, 10);
+    if (day <= after) continue; // already counted (or malformed) — skip
+    const c = t.content || '';
+    if (cashtag.test(c) || (bare && bare.test(c)) || aliasRes.some((r) => r.test(c))) count++;
+  }
+  return count;
+}
+
 // Later of two ISO dates (either may be null/undefined).
 function maxDate(a?: string | null, b?: string | null): string | undefined {
   const da = a ? new Date(a).getTime() : NaN;
@@ -73,8 +96,11 @@ function carryOverExistingPositions(
     const refDate = (effectiveLastMentioned || pos.last_mentioned || pos.since) as string;
     const daysOld = Math.floor((Date.now() - new Date(refDate).getTime()) / 86_400_000);
     if (daysOld < STALE_DROP_DAYS) {
-      enriched[ticker] = effectiveLastMentioned && effectiveLastMentioned !== pos.last_mentioned
-        ? { ...pos, last_mentioned: effectiveLastMentioned }
+      // Uptick the mechanical mention counter for mentions on days after the old
+      // watermark (idempotent). If nothing new, keep the entry untouched.
+      const added = countRawMentions(rawScanTweets, ticker, pos.aliases, pos.last_mentioned || pos.since);
+      enriched[ticker] = added > 0
+        ? { ...pos, last_mentioned: effectiveLastMentioned, mentions: (pos.mentions ?? 0) + added }
         : pos;
     }
   }
@@ -273,11 +299,16 @@ Output schema — include ONLY positions discussed in the new tweets. Do NOT inc
         if (price != null) entry_price = price;
       }
 
+      // Mechanical mention counter: uptick for mentions on days after the prev
+      // watermark (idempotent). Base off prev so carry-over and this override agree.
+      const mentions = (prev?.mentions ?? 0) + countRawMentions(rawScanTweets, ticker, aliases, prev?.last_mentioned || prev?.since);
+
       enriched[ticker] = {
         stance: pos.stance,
         since,
         last_mentioned,
         conviction,
+        ...(mentions > 0 ? { mentions } : {}),
         ...(pos.note ? { note: pos.note } : {}),
         ...(entry_price != null ? { entry_price } : {}),
         ...(prev?.target_price != null ? { target_price: prev.target_price } : {}),
