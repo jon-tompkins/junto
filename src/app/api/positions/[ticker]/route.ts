@@ -24,6 +24,7 @@ export async function GET(
     stance: string;
     note?: string;
     since: string;
+    last_mentioned?: string;
     target_price?: number;
     entry_price?: number;
     track_record?: { wins: number; losses: number; scored: number; avg_return_pct: number | null };
@@ -49,6 +50,7 @@ export async function GET(
       stance: pos.stance,
       note: pos.note,
       since: pos.since,
+      last_mentioned: pos.last_mentioned,
       target_price: pos.target_price,
       entry_price: pos.entry_price,
     });
