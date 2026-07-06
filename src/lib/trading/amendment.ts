@@ -176,12 +176,39 @@ export async function handleAmendmentCallback(params: {
           ...levelPatch,
           ...(isStop ? { stop_order_id: null } : { target_order_id: null }),
         });
+        // Verify the re-attach actually placed a protective order. Previously this
+        // swallowed every failure and reported success — so when protection could
+        // not attach (e.g. Alpaca rejects OCO on crypto, or Math.floor zeroed a
+        // fractional qty) the user kept approving a no-op forever while the
+        // position sat unprotected. Only claim success if the leg really landed.
+        let attached = false;
+        let detail = 'protection did not run';
         try {
-          await protectMandate(trade.mandate_id);
-        } catch {
-          // Protection also runs every tick; the new level is already persisted
-          // so it will be re-attached on the next sweep regardless.
+          const res = await protectMandate(trade.mandate_id);
+          const r = res.results.find(
+            (x) => x.ticker.toUpperCase() === trade.ticker.toUpperCase(),
+          );
+          attached = r?.action === 'protected' || r?.action === 'already_protected';
+          detail = r?.detail || r?.action || 'no protection result for this ticker';
+        } catch (e: any) {
+          detail = e?.message?.slice(0, 200) || String(e);
         }
+
+        if (!attached) {
+          await updateAmendment(amendmentId, {
+            status: 'rejected',
+            applied_note: `re-attach FAILED (${detail}); ${trade.ticker} likely UNPROTECTED at broker`,
+          });
+          await addJournalEntry({
+            tradeId: trade.id,
+            kind: 'daily',
+            content: `[amendment re-attach FAILED: ${amendment.kind} → ${amendment.new_value} — protection could not place a stop (${detail}). Position may be unprotected.]`,
+          });
+          return {
+            message: `⚠️ Could NOT ${KIND_LABEL[amendment.kind]} on ${trade.ticker} — protection failed to attach (${detail}). The position is likely UNPROTECTED. This won't self-heal on retry.`,
+          };
+        }
+
         await updateAmendment(amendmentId, {
           status: 'applied',
           applied_at: new Date().toISOString(),
