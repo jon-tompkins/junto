@@ -70,11 +70,27 @@ function stalenessLevel(a: Analyst): 'fresh' | 'warn' | 'stale' {
   return 'fresh';
 }
 
+interface ClosedTickerCall {
+  source_id: string;
+  handle: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  stance: string;
+  outcome: string;
+  return_pct: number | null;
+  entry_price: number | null;
+  exit_price: number | null;
+  entry_date: string | null;
+  exit_date: string | null;
+  close_reason: string | null;
+}
+
 interface PositionData {
   ticker: string;
   total: number;
   breakdown: Record<string, number>;
   analysts: Analyst[];
+  closedCalls?: ClosedTickerCall[];
 }
 
 function PnL({ entry, current }: { entry: number; current: number }) {
@@ -587,6 +603,68 @@ function TradingActivity({ ticker, trades }: { ticker: string; trades: ActivityT
   );
 }
 
+const CLOSED_OUTCOME_PILL: Record<string, string> = {
+  win: 'bg-[#3ecf6a]/15 text-[#3ecf6a] border border-[#3ecf6a]/40',
+  loss: 'bg-[#e8453c]/15 text-[#e8453c] border border-[#e8453c]/40',
+  flat: 'bg-[#1c1a17] text-[#F5EFE0]/50 border border-[rgba(176,141,87,0.18)]',
+  unscored: 'bg-[#1c1a17] text-[#F5EFE0]/35 border border-[rgba(176,141,87,0.12)]',
+};
+
+function TickerClosedCalls({ calls, ticker }: { calls: ClosedTickerCall[]; ticker: string }) {
+  if (calls.length === 0) {
+    return (
+      <div className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 text-sm text-[#F5EFE0]/45">
+        No source has closed a call on {ticker} yet.
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      {calls.map((c, i) => {
+        const outcome = (c.outcome || 'unscored').toLowerCase();
+        const ret = c.return_pct;
+        return (
+          <Link
+            key={`${c.source_id}-${c.exit_date}-${i}`}
+            href={`/sources/${c.handle}`}
+            className="flex items-center gap-3 p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] hover:bg-[#1c1a17] transition group"
+          >
+            {c.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={c.avatar_url} alt={c.handle} className="w-9 h-9 rounded bg-[#1c1a17] object-cover shrink-0" />
+            ) : (
+              <div className="w-9 h-9 rounded bg-[#1c1a17] flex items-center justify-center text-[#F5EFE0]/60 text-xs font-medium shrink-0">
+                {c.handle[0]?.toUpperCase()}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-medium text-[#F5EFE0] group-hover:text-[#B08D57] transition truncate">@{c.handle}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium capitalize ${STANCE_COLORS[c.stance] ?? STANCE_COLORS.neutral}`}>
+                  {STANCE_ICONS[c.stance] ?? ''} {c.stance}
+                </span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium capitalize ${CLOSED_OUTCOME_PILL[outcome] ?? CLOSED_OUTCOME_PILL.unscored}`}>
+                  {outcome}
+                </span>
+              </div>
+              <div className="text-[11px] text-[#F5EFE0]/40 mt-1">
+                {c.entry_price != null ? `$${c.entry_price.toFixed(2)}` : '—'} → {c.exit_price != null ? `$${c.exit_price.toFixed(2)}` : '—'}
+                {c.exit_date ? ` · closed ${new Date(c.exit_date).toLocaleDateString()}` : ''}
+                {c.close_reason ? ` · ${c.close_reason}` : ''}
+              </div>
+            </div>
+            {ret != null && (
+              <span className={`font-mono text-sm shrink-0 ${ret >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
+                {ret >= 0 ? '+' : ''}{ret.toFixed(1)}%
+              </span>
+            )}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function PositionPage() {
   const params = useParams();
   const ticker = decodeURIComponent(params.ticker as string).toUpperCase();
@@ -599,7 +677,7 @@ export default function PositionPage() {
   const [juntos, setJuntos] = useState<Array<{ id: string; name: string; sourceIds: Set<string> }>>([]);
   const [juntoFilter, setJuntoFilter] = useState<string>('all');
   const [activityTrades, setActivityTrades] = useState<ActivityTrade[]>([]);
-  const [activeTab, setActiveTab] = useState<'sources' | 'activity'>('sources');
+  const [activeTab, setActiveTab] = useState<'sources' | 'activity' | 'closed'>('sources');
 
   useEffect(() => {
     fetch(`/api/positions/${encodeURIComponent(ticker)}`)
@@ -669,6 +747,7 @@ export default function PositionPage() {
 
   const total = data?.total ?? 0;
   const allAnalysts = data?.analysts ?? [];
+  const closedCalls = data?.closedCalls ?? [];
 
   // Junto filter: when a junto is selected, restrict the visible stances to its
   // member sources. Breakdown/consensus/avatars all recompute from the filtered
@@ -798,6 +877,14 @@ export default function PositionPage() {
               >
                 Sources{total > 0 ? ` (${total})` : ''}
               </button>
+              {closedCalls.length > 0 && (
+                <button
+                  onClick={() => setActiveTab('closed')}
+                  className={`px-3 py-2 text-xs uppercase tracking-wide font-[var(--font-oswald)] border-b-2 -mb-px transition ${activeTab === 'closed' ? 'border-[#B08D57] text-[#F5EFE0]' : 'border-transparent text-[#F5EFE0]/45 hover:text-[#F5EFE0]/70'}`}
+                >
+                  Closed ({closedCalls.length})
+                </button>
+              )}
               {activityTrades.length > 0 && (
                 <button
                   onClick={() => setActiveTab('activity')}
@@ -808,7 +895,9 @@ export default function PositionPage() {
               )}
             </div>
 
-            {activeTab === 'activity' ? (
+            {activeTab === 'closed' ? (
+              <TickerClosedCalls calls={closedCalls} ticker={ticker} />
+            ) : activeTab === 'activity' ? (
               <TradingActivity ticker={ticker} trades={activityTrades} />
             ) : !data || total === 0 ? (
               <div className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 text-sm text-[#F5EFE0]/45">

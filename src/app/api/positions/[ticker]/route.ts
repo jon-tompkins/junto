@@ -72,5 +72,27 @@ export async function GET(
       new Date(a.since).getTime() - new Date(b.since).getTime(),
   );
 
-  return NextResponse.json({ ticker, total: analysts.length, breakdown, analysts });
+  // Closed-call history for this ticker across all sources (realized receipts).
+  // ilike = case-insensitive exact match (tickers stored as 'AMD', themes lower).
+  const { data: outcomes } = await supabase
+    .from('source_call_outcomes')
+    .select('source_id, stance, outcome, return_pct, entry_price, exit_price, entry_date, exit_date, close_reason, source:sources(handle_or_url, display_name, avatar_url)')
+    .ilike('ticker', ticker)
+    .order('exit_date', { ascending: false, nullsFirst: false });
+  const closedCalls = (outcomes || []).map((o: any) => ({
+    source_id: o.source_id,
+    handle: o.source?.handle_or_url ?? '',
+    display_name: o.source?.display_name ?? null,
+    avatar_url: o.source?.avatar_url ?? null,
+    stance: o.stance,
+    outcome: o.outcome,
+    return_pct: o.return_pct,
+    entry_price: o.entry_price,
+    exit_price: o.exit_price,
+    entry_date: o.entry_date,
+    exit_date: o.exit_date,
+    close_reason: o.close_reason,
+  }));
+
+  return NextResponse.json({ ticker, total: analysts.length, breakdown, analysts, closedCalls });
 }
