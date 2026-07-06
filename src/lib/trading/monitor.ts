@@ -2,7 +2,8 @@ import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
 import { recordCost, anthropicHaikuCostCents } from '@/lib/costs';
 import { alpacaForMandate } from './client';
 import { getOpenTrades, updateTrade, addJournalEntry, getJournalEntries } from './db';
-import { isCryptoTicker, findPosition, baseSymbol } from './asset';
+import { findPosition } from './asset';
+import { enforceSyntheticStops, writeExitAndPostMortem } from './stops';
 import type { Mandate } from './types';
 
 // For every open trade: detect fills/closes against Alpaca and write a daily
@@ -22,7 +23,16 @@ export async function monitorMandate(mandate: Mandate): Promise<{
 
   const positions = await alpaca.getPositions().catch(() => []);
 
+  // Pre-pass: synthetic stop/target enforcement for crypto (no resting broker
+  // stop on Alpaca). Flattens breached positions at market; skip them below.
+  const synthClosed = new Set(
+    (await enforceSyntheticStops(mandate, alpaca, trades, positions)).map((c) => c.tradeId),
+  );
+  closed += synthClosed.size;
+
   for (const trade of trades) {
+    if (synthClosed.has(trade.id)) continue;
+
     // Submitted or pending with order ID → check if order filled
     if ((trade.status === 'pending' || trade.status === 'submitted') && trade.alpaca_order_id) {
       try {
@@ -116,53 +126,6 @@ export async function monitorMandate(mandate: Mandate): Promise<{
       continue;
     }
 
-    // Synthetic stop/target enforcement. Crypto has no resting broker stop
-    // (Alpaca supports neither OCO nor plain stop orders on crypto), so the
-    // tick loop IS the protection: when the live price breaches the trade's
-    // stop or target, flatten at market. Equities are left to their native OCO
-    // here so we don't race a resting order into a double-sell.
-    if (isCryptoTicker(trade.ticker)) {
-      const price = Number(livePosition.current_price);
-      const stop = Number(trade.stop_price) || null;
-      const target = Number(trade.target_price) || null;
-      const isLong = trade.side !== 'short';
-      const stopHit = stop != null && (isLong ? price <= stop : price >= stop);
-      const targetHit = target != null && (isLong ? price >= target : price <= target);
-      if (price > 0 && (stopHit || targetHit)) {
-        const reason = stopHit ? 'stop' : 'target';
-        try {
-          // Cancel any stray resting orders on this symbol, then flatten.
-          const openOrders = await alpaca.listOpenOrders().catch(() => [] as any[]);
-          for (const o of openOrders) {
-            if (baseSymbol(o.symbol) === baseSymbol(livePosition.symbol)) {
-              try { await alpaca.cancelOrder(o.id); } catch { /* ignore */ }
-            }
-          }
-          await alpaca.closePosition(livePosition.symbol);
-        } catch (e) {
-          console.error('[monitor] synthetic close failed', trade.ticker, e);
-          continue; // leave open; next tick retries
-        }
-        const realized = trade.entry_price
-          ? (isLong ? price - trade.entry_price : trade.entry_price - price) * trade.qty
-          : null;
-        await updateTrade(trade.id, {
-          status: 'closed',
-          exit_price: price,
-          exit_at: new Date().toISOString(),
-          realized_pnl_usd: realized,
-        });
-        await addJournalEntry({
-          tradeId: trade.id,
-          kind: 'daily',
-          content: `[synthetic ${reason} hit: price ${price} ${stopHit ? `≤ stop ${stop}` : `≥ target ${target}`} — flattened at market (crypto has no resting broker stop)]`,
-        });
-        await writeExitAndPostMortem(trade.id, mandate);
-        closed++;
-        continue;
-      }
-    }
-
     // Still open — daily journal entry, but only once per UTC day per trade
     const recent = await getJournalEntries(trade.id);
     const today = new Date().toISOString().slice(0, 10);
@@ -220,75 +183,4 @@ async function writeDailyEntry(
     .trim();
 
   await addJournalEntry({ tradeId, kind: 'daily', content });
-}
-
-async function writeExitAndPostMortem(tradeId: string, mandate: Mandate) {
-  const history = await getJournalEntries(tradeId);
-  const entry = history.find((e: any) => e.kind === 'entry' && e.content && !e.content.startsWith('['));
-  const dailies = history.filter((e: any) => e.kind === 'daily');
-  const thesis = entry?.content?.slice(0, 1500) || '(no thesis)';
-  const dailiesBlock = dailies.map((d: any) => `- ${d.content}`).join('\n').slice(0, 2000);
-
-  const anthropic = getAnthropic();
-  const res = await anthropic.messages.create({
-    model: HAIKU_MODEL,
-    max_tokens: 800,
-    system: `You write trade post-mortems. Separate PROCESS quality from OUTCOME quality.
-Process = did the agent follow its own rules, was the thesis well-formed, was sizing appropriate?
-Outcome = did the trade make money?
-The 2x2: good process + good outcome = skill. good process + bad outcome = bad luck. bad process + good outcome = lucky. bad process + bad outcome = lesson.
-
-Be honest. Bad process with a winning outcome is still bad process.
-
-Output JSON only:
-{ "post_mortem": "string under 600 chars", "process_score": 1-5, "outcome_score": 1-5 }`,
-    messages: [
-      {
-        role: 'user',
-        content: `Mandate guidelines:\n${mandate.guidelines}\n\nEntry thesis:\n${thesis}\n\nDaily entries while open:\n${dailiesBlock}\n\nFinal state: position closed. Write the post-mortem.`,
-      },
-    ],
-  });
-
-  // Record inference cost
-  const inputTokens = (res as any).usage?.input_tokens ?? 0;
-  const outputTokens = (res as any).usage?.output_tokens ?? 0;
-  recordCost({
-    supplier: 'anthropic',
-    operation: 'trading.writeExitAndPostMortem',
-    cost_cents: anthropicHaikuCostCents(inputTokens, outputTokens),
-    usage_amount: inputTokens + outputTokens,
-    usage_unit: 'tokens',
-    input_tokens: inputTokens,
-    output_tokens: outputTokens,
-    metadata: { trade_id: tradeId, mandate_id: mandate.id, model: HAIKU_MODEL },
-  });
-
-  const text = res.content
-    .filter((b) => b.type === 'text')
-    .map((b: any) => b.text)
-    .join('');
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  let postMortem = text.slice(0, 600);
-  let processScore: number | undefined;
-  let outcomeScore: number | undefined;
-  if (jsonMatch) {
-    try {
-      const parsed = JSON.parse(jsonMatch[0]);
-      postMortem = String(parsed.post_mortem || postMortem);
-      processScore = Number(parsed.process_score) || undefined;
-      outcomeScore = Number(parsed.outcome_score) || undefined;
-    } catch {
-      // fall back to raw text
-    }
-  }
-
-  await addJournalEntry({ tradeId, kind: 'exit', content: '[position closed]' });
-  await addJournalEntry({
-    tradeId,
-    kind: 'post_mortem',
-    content: postMortem,
-    processScore,
-    outcomeScore,
-  });
 }

@@ -70,6 +70,9 @@ export interface AlpacaAccount {
 
 export interface AlpacaPosition {
   symbol: string;
+  // Alpaca's authoritative asset class — 'us_equity' | 'crypto'. Preferred over
+  // ticker heuristics for deciding native-OCO vs synthetic-stop protection.
+  asset_class?: string;
   qty: string;
   side: 'long' | 'short';
   avg_entry_price: string;
