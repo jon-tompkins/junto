@@ -5,6 +5,19 @@ import { getSubscribedNewslettersByUserId } from '@/lib/db/subscriptions';
 import { getEntityForSource, getCombinedHitRate } from '@/lib/db/creator-entities';
 import { getSupabase } from '@/lib/db/client';
 
+// A source's realized track record: every call they've closed (win/loss/flat),
+// most-recently-closed first. Powers the "closed call history" view.
+async function getClosedCallsForSource(sourceId: string) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('source_call_outcomes')
+    .select('ticker, stance, outcome, return_pct, entry_price, exit_price, entry_date, exit_date, close_reason')
+    .eq('source_id', sourceId)
+    .order('exit_date', { ascending: false, nullsFirst: false });
+  if (error || !data) return [];
+  return data;
+}
+
 async function getPublicJuntosContainingSource(sourceId: string) {
   const supabase = getSupabase();
   const { data, error } = await supabase
@@ -27,11 +40,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ han
     ]);
     if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    const [juntos, subscribedDispatches, hitRate, entity] = await Promise.all([
+    const [juntos, subscribedDispatches, hitRate, entity, closedCalls] = await Promise.all([
       getPublicJuntosContainingSource(profile.source_id),
       userId ? getSubscribedNewslettersByUserId(userId) : Promise.resolve([]),
       getSourceHitRate(profile.source_id),
       getEntityForSource(profile.source_id),
+      getClosedCallsForSource(profile.source_id),
     ]);
 
     // Cross-platform creator identity: sibling sources + a hit rate combined
@@ -47,7 +61,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ han
       creator = { name: entity.entity.name, slug: entity.entity.slug, siblings, combinedHitRate };
     }
 
-    return NextResponse.json({ profile, dispatches, juntos, subscribedDispatches, hitRate, creator });
+    return NextResponse.json({ profile, dispatches, juntos, subscribedDispatches, hitRate, creator, closedCalls });
   } catch (err) {
     console.error('[api/sources/[handle]]', err);
     return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });

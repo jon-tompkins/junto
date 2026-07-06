@@ -105,6 +105,18 @@ interface SourceProfile {
   };
 }
 
+interface ClosedCall {
+  ticker: string;
+  stance: string;
+  outcome: string; // win | loss | flat | unscored
+  return_pct: number | null;
+  entry_price: number | null;
+  exit_price: number | null;
+  entry_date: string | null;
+  exit_date: string | null;
+  close_reason: string | null;
+}
+
 const STANCE_BADGE: Record<string, string> = {
   bullish: 'bg-[#3ecf6a]/15 text-[#3ecf6a] border border-[#3ecf6a]/40',
   bearish: 'bg-[#e8453c]/15 text-[#e8453c] border border-[#e8453c]/40',
@@ -123,6 +135,76 @@ function daysHeld(since: string): number {
   return Math.max(1, Math.floor((Date.now() - new Date(since).getTime()) / 86_400_000));
 }
 
+const OUTCOME_PILL: Record<string, string> = {
+  win: 'bg-[#3ecf6a]/15 text-[#3ecf6a] border border-[#3ecf6a]/40',
+  loss: 'bg-[#e8453c]/15 text-[#e8453c] border border-[#e8453c]/40',
+  flat: 'bg-[#1c1a17] text-[#F5EFE0]/50 border border-[rgba(176,141,87,0.18)]',
+  unscored: 'bg-[#1c1a17] text-[#F5EFE0]/35 border border-[rgba(176,141,87,0.12)]',
+};
+
+function ClosedCallsTable({ calls }: { calls: ClosedCall[] }) {
+  if (calls.length === 0) {
+    return (
+      <p className="text-[#F5EFE0]/45 text-sm">
+        No closed calls yet — a call is scored here once this source exits it.
+      </p>
+    );
+  }
+  return (
+    <div className="overflow-x-auto bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded">
+      <table className="w-full text-sm min-w-[720px]">
+        <thead>
+          <tr className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)] border-b border-[rgba(176,141,87,0.18)]">
+            <th className="text-left font-semibold px-4 py-3">Name</th>
+            <th className="text-left font-semibold px-3 py-3">Outcome</th>
+            <th className="text-right font-semibold px-3 py-3">Return</th>
+            <th className="text-right font-semibold px-3 py-3">Entry → Exit</th>
+            <th className="text-left font-semibold px-3 py-3">Closed</th>
+            <th className="text-left font-semibold px-4 py-3">Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          {calls.map((c, i) => {
+            const ret = c.return_pct;
+            const outcome = (c.outcome || 'unscored').toLowerCase();
+            return (
+              <tr key={`${c.ticker}-${c.exit_date}-${i}`} className="border-b border-[rgba(176,141,87,0.08)] last:border-0 hover:bg-[#1c1a17]/50 transition">
+                <td className="px-4 py-3">
+                  <Link href={`/positions/${c.ticker}`} className="inline-flex items-center gap-2 group">
+                    <span className="font-mono font-bold text-[#F5EFE0] group-hover:text-[#B08D57] transition">{c.ticker}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium ${STANCE_BADGE[c.stance] ?? STANCE_BADGE.neutral}`}>
+                      {STANCE_LABELS[c.stance] ?? c.stance}
+                    </span>
+                  </Link>
+                </td>
+                <td className="px-3 py-3">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium capitalize ${OUTCOME_PILL[outcome] ?? OUTCOME_PILL.unscored}`}>
+                    {outcome}
+                  </span>
+                </td>
+                <td className="px-3 py-3 text-right font-mono">
+                  {ret != null ? (
+                    <span className={ret >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}>{ret >= 0 ? '+' : ''}{ret.toFixed(1)}%</span>
+                  ) : (
+                    <span className="text-[#F5EFE0]/30">—</span>
+                  )}
+                </td>
+                <td className="px-3 py-3 text-right font-mono text-[#F5EFE0]/60 whitespace-nowrap">
+                  {c.entry_price != null ? `$${c.entry_price.toFixed(2)}` : '—'} → {c.exit_price != null ? `$${c.exit_price.toFixed(2)}` : '—'}
+                </td>
+                <td className="px-3 py-3 text-xs text-[#F5EFE0]/60 whitespace-nowrap">
+                  {c.exit_date ? new Date(c.exit_date).toLocaleDateString() : '—'}
+                </td>
+                <td className="px-4 py-3 text-xs text-[#F5EFE0]/45 capitalize">{c.close_reason ?? '—'}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function SourceProfilePage() {
   const params = useParams();
   const handle = params.handle as string;
@@ -136,6 +218,8 @@ export default function SourceProfilePage() {
   const [holdings, setHoldings] = useState<Record<string, MandateHolding[]>>({});
   const [hitRate, setHitRate] = useState<HitRate | null>(null);
   const [creator, setCreator] = useState<CreatorInfo | null>(null);
+  const [closedCalls, setClosedCalls] = useState<ClosedCall[]>([]);
+  const [callView, setCallView] = useState<'open' | 'closed'>('open');
 
   useEffect(() => {
     fetch('/api/me/holdings')
@@ -158,6 +242,7 @@ export default function SourceProfilePage() {
         setSubscribedDispatches(d.subscribedDispatches ?? []);
         setHitRate(d.hitRate ?? null);
         setCreator(d.creator ?? null);
+        setClosedCalls(d.closedCalls ?? []);
         const tickers = Object.keys(d.profile?.positions ?? {});
         if (tickers.length === 0) return;
         Promise.all(
@@ -372,11 +457,29 @@ export default function SourceProfilePage() {
 
         {/* Tracked stances table */}
         <div className="mb-8">
-          <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
-            Tracked Calls
-          </h2>
+          <div className="flex items-center justify-between mb-4 gap-3">
+            <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider font-[var(--font-oswald)]">
+              {callView === 'open' ? 'Tracked Calls' : 'Closed Calls'}
+            </h2>
+            <div className="inline-flex rounded overflow-hidden border border-[rgba(176,141,87,0.28)] text-[11px]">
+              <button
+                onClick={() => setCallView('open')}
+                className={`px-3 py-1 font-medium transition ${callView === 'open' ? 'bg-[rgba(176,141,87,0.18)] text-[#B08D57]' : 'text-[#F5EFE0]/45 hover:text-[#F5EFE0]/70'}`}
+              >
+                Open ({positions.length})
+              </button>
+              <button
+                onClick={() => setCallView('closed')}
+                className={`px-3 py-1 font-medium transition border-l border-[rgba(176,141,87,0.28)] ${callView === 'closed' ? 'bg-[rgba(176,141,87,0.18)] text-[#B08D57]' : 'text-[#F5EFE0]/45 hover:text-[#F5EFE0]/70'}`}
+              >
+                Closed ({closedCalls.length})
+              </button>
+            </div>
+          </div>
 
-          {positions.length === 0 ? (
+          {callView === 'closed' ? (
+            <ClosedCallsTable calls={closedCalls} />
+          ) : positions.length === 0 ? (
             <p className="text-[#F5EFE0]/45 text-sm">No positions tracked yet — will populate on next content pull.</p>
           ) : (
             <div className="overflow-x-auto bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded">
