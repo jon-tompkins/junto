@@ -2,6 +2,7 @@ import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
 import { recordCost, anthropicHaikuCostCents } from '@/lib/costs';
 import { alpacaForMandate } from './client';
 import { getOpenTrades, updateTrade, addJournalEntry, getJournalEntries } from './db';
+import { isCryptoTicker, findPosition, baseSymbol } from './asset';
 import type { Mandate } from './types';
 
 // For every open trade: detect fills/closes against Alpaca and write a daily
@@ -20,7 +21,6 @@ export async function monitorMandate(mandate: Mandate): Promise<{
   let journaled = 0;
 
   const positions = await alpaca.getPositions().catch(() => []);
-  const positionsBySymbol = new Map(positions.map((p) => [p.symbol.toUpperCase(), p]));
 
   for (const trade of trades) {
     // Submitted or pending with order ID → check if order filled
@@ -95,7 +95,7 @@ export async function monitorMandate(mandate: Mandate): Promise<{
       }
     }
 
-    const livePosition = positionsBySymbol.get(trade.ticker.toUpperCase());
+    const livePosition = findPosition(positions, trade.ticker);
 
     // Position disappeared = closed (stop/target hit, manual close, etc.)
     if (!livePosition) {
@@ -114,6 +114,53 @@ export async function monitorMandate(mandate: Mandate): Promise<{
       await writeExitAndPostMortem(trade.id, mandate);
       closed++;
       continue;
+    }
+
+    // Synthetic stop/target enforcement. Crypto has no resting broker stop
+    // (Alpaca supports neither OCO nor plain stop orders on crypto), so the
+    // tick loop IS the protection: when the live price breaches the trade's
+    // stop or target, flatten at market. Equities are left to their native OCO
+    // here so we don't race a resting order into a double-sell.
+    if (isCryptoTicker(trade.ticker)) {
+      const price = Number(livePosition.current_price);
+      const stop = Number(trade.stop_price) || null;
+      const target = Number(trade.target_price) || null;
+      const isLong = trade.side !== 'short';
+      const stopHit = stop != null && (isLong ? price <= stop : price >= stop);
+      const targetHit = target != null && (isLong ? price >= target : price <= target);
+      if (price > 0 && (stopHit || targetHit)) {
+        const reason = stopHit ? 'stop' : 'target';
+        try {
+          // Cancel any stray resting orders on this symbol, then flatten.
+          const openOrders = await alpaca.listOpenOrders().catch(() => [] as any[]);
+          for (const o of openOrders) {
+            if (baseSymbol(o.symbol) === baseSymbol(livePosition.symbol)) {
+              try { await alpaca.cancelOrder(o.id); } catch { /* ignore */ }
+            }
+          }
+          await alpaca.closePosition(livePosition.symbol);
+        } catch (e) {
+          console.error('[monitor] synthetic close failed', trade.ticker, e);
+          continue; // leave open; next tick retries
+        }
+        const realized = trade.entry_price
+          ? (isLong ? price - trade.entry_price : trade.entry_price - price) * trade.qty
+          : null;
+        await updateTrade(trade.id, {
+          status: 'closed',
+          exit_price: price,
+          exit_at: new Date().toISOString(),
+          realized_pnl_usd: realized,
+        });
+        await addJournalEntry({
+          tradeId: trade.id,
+          kind: 'daily',
+          content: `[synthetic ${reason} hit: price ${price} ${stopHit ? `≤ stop ${stop}` : `≥ target ${target}`} — flattened at market (crypto has no resting broker stop)]`,
+        });
+        await writeExitAndPostMortem(trade.id, mandate);
+        closed++;
+        continue;
+      }
     }
 
     // Still open — daily journal entry, but only once per UTC day per trade

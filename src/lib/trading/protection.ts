@@ -11,6 +11,7 @@
 
 import { alpacaForMandate } from './client';
 import { getSupabase } from '@/lib/db/client';
+import { isCryptoTicker, findPosition } from './asset';
 
 export interface ProtectionResult {
   ticker: string;
@@ -59,7 +60,23 @@ export async function protectMandate(mandateId: string): Promise<{
   for (const trade of openTrades) {
     const sym = trade.ticker.toUpperCase();
     try {
-      const pos = posBySymbol.get(sym);
+      // Crypto: Alpaca supports neither OCO/bracket nor plain stop orders here,
+      // so there is no resting protective order to attach. The stop/target on
+      // the trade row are enforced synthetically by the tick monitor instead
+      // (see monitor.ts). Report success so the amendment flow doesn't treat a
+      // legitimately order-less crypto position as an attach failure.
+      if (isCryptoTicker(trade.ticker)) {
+        const stop = Number(trade.stop_price);
+        const target = Number(trade.target_price);
+        if (!stop && !target) {
+          results.push({ ticker: sym, action: 'no_levels', detail: 'crypto: no stop/target on trade row' });
+        } else {
+          results.push({ ticker: sym, action: 'already_protected', detail: 'crypto: enforced synthetically by tick monitor' });
+        }
+        continue;
+      }
+
+      const pos = findPosition(positions, trade.ticker);
       if (!pos) {
         results.push({ ticker: sym, action: 'no_position', detail: 'Alpaca shows no live position' });
         continue;

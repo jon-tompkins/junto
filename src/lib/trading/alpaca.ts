@@ -196,7 +196,9 @@ export function makeAlpaca(override?: { keyId?: string | null; secret?: string |
     },
 
     closePosition(symbol: string) {
-      return call<AlpacaOrder>(creds, 'DELETE', `/v2/positions/${symbol}`);
+      // Crypto symbols carry a slash ("ETH/USD") which must be encoded or it
+      // corrupts the request path.
+      return call<AlpacaOrder>(creds, 'DELETE', `/v2/positions/${encodeURIComponent(symbol)}`);
     },
 
     submitMarketOrder(params: {
