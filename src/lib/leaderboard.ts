@@ -94,12 +94,10 @@ export async function getSourceHitRates(minPositions = 20): Promise<SourceHitRat
     posAgg.set(p.source_id, a);
   }
 
-  // 2) Sample-size gate — only sources with enough tracked positions to rank.
-  const qualified = [...posAgg.entries()].filter(([, a]) => a.total >= minPositions);
-  if (qualified.length === 0) return [];
-  const qualifiedIds = new Set(qualified.map(([id]) => id));
-
-  // 3) Closed-call outcomes for the qualified sources → the actual hit rate.
+  // 2) Closed-call outcomes for ALL sources → the actual hit rate. We fetch these
+  //    before gating so a source with a real closed-call record still surfaces even
+  //    if it sits just under the tracked-position threshold (going purely on closed
+  //    positions is noisy while the outcome log is still thin).
   const outcomes = await fetchAll<{
     source_id: string;
     ticker: string;
@@ -108,8 +106,7 @@ export async function getSourceHitRates(minPositions = 20): Promise<SourceHitRat
   }>(() =>
     supabase
       .from('source_call_outcomes')
-      .select('source_id, ticker, outcome, return_pct')
-      .in('source_id', [...qualifiedIds]),
+      .select('source_id, ticker, outcome, return_pct'),
   );
 
   interface OutcomeAgg {
@@ -142,6 +139,13 @@ export async function getSourceHitRates(minPositions = 20): Promise<SourceHitRat
     outAgg.set(o.source_id, a);
   }
 
+  // 3) Inclusion gate — a source appears if it either clears the tracked-position
+  //    sample gate OR has at least one scored (win/loss) closed call.
+  const candidateIds = new Set<string>();
+  for (const [id, a] of posAgg) if (a.total >= minPositions) candidateIds.add(id);
+  for (const [id, a] of outAgg) if (a.wins + a.losses >= 1) candidateIds.add(id);
+  if (candidateIds.size === 0) return [];
+
   // 4) Source metadata (handle / name / avatar) for the ones we can link to.
   const srcs = await fetchAll<{
     id: string;
@@ -152,16 +156,17 @@ export async function getSourceHitRates(minPositions = 20): Promise<SourceHitRat
     supabase
       .from('sources')
       .select('id, handle_or_url, display_name, avatar_url')
-      .in('id', [...qualifiedIds]),
+      .in('id', [...candidateIds]),
   );
   const meta = new Map(srcs.map((s) => [s.id, s]));
 
   // 5) Assemble rows.
   const rows: SourceHitRateRow[] = [];
-  for (const [source_id, pa] of qualified) {
+  for (const source_id of candidateIds) {
     const m = meta.get(source_id);
     if (!m?.handle_or_url) continue; // only rank sources we can actually link to
 
+    const pa = posAgg.get(source_id) ?? { total: 0, convSum: 0, convCount: 0, convByTicker: new Map<string, number>() };
     const oa = outAgg.get(source_id);
     const wins = oa?.wins ?? 0;
     const losses = oa?.losses ?? 0;
