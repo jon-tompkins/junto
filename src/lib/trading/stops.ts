@@ -47,6 +47,11 @@ export async function enforceSyntheticStops(
 ): Promise<SyntheticClose[]> {
   const closed: SyntheticClose[] = [];
 
+  // Synthetic stops are ONLY for Alpaca spot crypto (no native resting stop on
+  // Alpaca). Hyperliquid has native trigger (tpsl) stops and equities have OCO,
+  // so they must not be double-managed by a market-close sweep here.
+  if (mandate.broker !== 'alpaca') return closed;
+
   for (const trade of trades) {
     if (trade.status !== 'open') continue;
     const livePosition = findPosition(positions, trade.ticker);

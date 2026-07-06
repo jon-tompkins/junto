@@ -60,12 +60,14 @@ export async function protectMandate(mandateId: string): Promise<{
   for (const trade of openTrades) {
     const sym = trade.ticker.toUpperCase();
     try {
-      // Crypto: Alpaca supports neither OCO/bracket nor plain stop orders here,
-      // so there is no resting protective order to attach. The stop/target on
-      // the trade row are enforced synthetically by the tick monitor instead
-      // (see monitor.ts). Report success so the amendment flow doesn't treat a
-      // legitimately order-less crypto position as an attach failure.
-      if (isCryptoTicker(trade.ticker)) {
+      // Alpaca spot crypto ONLY: Alpaca supports neither OCO/bracket nor plain
+      // stop orders for crypto, so there is no resting order to attach — the
+      // trade row's stop/target are enforced synthetically by the tick monitor
+      // (see stops.ts). Report success so the amendment flow doesn't treat a
+      // legitimately order-less position as an attach failure.
+      // NOTE: Hyperliquid crypto does NOT come here — HL has native trigger
+      // (tpsl) stops and flows through the native path below.
+      if (mandate.broker === 'alpaca' && isCryptoTicker(trade.ticker)) {
         const stop = Number(trade.stop_price);
         const target = Number(trade.target_price);
         if (!stop && !target) {
@@ -106,6 +108,23 @@ export async function protectMandate(mandateId: string): Promise<{
       const hasStop = hasOco || sellOrders.some((o: any) => (o.type === 'stop' || o.type === 'stop_limit') && Number(o.stop_price) > 0);
       const hasLimit = hasOco || sellOrders.some((o: any) => o.type === 'limit' && Number(o.limit_price) > 0);
       if (hasStop && hasLimit) {
+        // The position IS protected, but if we lost the order ids (stop_order_id
+        // null), amendments can't cleanly MOVE the level — they fall to re-attach,
+        // bail here as "already_protected", and reconcile keeps clobbering the
+        // trade's stop_price back to the stale live order. Backfill the live
+        // order ids so the next stop/target move uses replaceOrder instead of
+        // looping. (This was the CT Tracker infinite re-propose bug.)
+        const legs: any[] = hasOco
+          ? (sellOrders.find((o: any) => Array.isArray(o.legs))?.legs ?? [])
+          : sellOrders;
+        const liveStopId = legs.find((o: any) => o.type === 'stop' || o.type === 'stop_limit')?.id;
+        const liveTargetId = legs.find((o: any) => o.type === 'limit')?.id;
+        const patch: Record<string, string> = {};
+        if (liveStopId && trade.stop_order_id !== liveStopId) patch.stop_order_id = liveStopId;
+        if (liveTargetId && trade.target_order_id !== liveTargetId) patch.target_order_id = liveTargetId;
+        if (Object.keys(patch).length > 0) {
+          await supabase.from('trades').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', trade.id);
+        }
         results.push({ ticker: sym, action: 'already_protected' });
         continue;
       }
@@ -121,7 +140,10 @@ export async function protectMandate(mandateId: string): Promise<{
         await new Promise((r) => setTimeout(r, 2500));
       }
 
-      const qty = Math.floor(Number(pos.qty));
+      // Hyperliquid trades fractional coin (0.0177 ETH), so flooring the qty
+      // zeroes it and protection bails — the original CT Tracker bug. Only
+      // Alpaca equities are whole-share; keep the floor there.
+      const qty = mandate.broker === 'hyperliquid' ? Number(pos.qty) : Math.floor(Number(pos.qty));
       if (qty <= 0) {
         results.push({ ticker: sym, action: 'no_position', detail: 'Position qty is zero/fractional' });
         continue;
