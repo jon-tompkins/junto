@@ -3,6 +3,7 @@ import TwitterProvider from "next-auth/providers/twitter";
 import GoogleProvider from "next-auth/providers/google";
 import { getSupabase } from "@/lib/db/client";
 import { NEW_USER_BONUS_CREDITS } from "@/lib/pricing";
+import { recordFunnelEvent } from "@/lib/funnel";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -157,6 +158,7 @@ async function createNewUser(
       type: 'bonus',
       description: 'Welcome bonus — new account signup',
     });
+    recordFunnelEvent(newUser.id, 'signup');
   }
   return true;
 }

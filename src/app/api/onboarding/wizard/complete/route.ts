@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getSupabase } from '@/lib/db/client';
+import { recordFunnelEvent } from '@/lib/funnel';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -141,6 +142,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    recordFunnelEvent(user.id, 'onboarding_complete', { junto_id: body.juntoId });
     return NextResponse.json({ ok: true, juntoId: body.juntoId, juntoName: junto.name });
   } catch (err: any) {
     console.error('[POST /api/onboarding/wizard/complete]', err);

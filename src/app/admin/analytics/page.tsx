@@ -5,6 +5,8 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 
+interface FunnelRow { event: string; users: number; total_events: number; }
+
 interface Analytics {
   since: string;
   days: number;
@@ -23,18 +25,24 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(30);
+  const [funnel, setFunnel] = useState<FunnelRow[]>([]);
 
   useEffect(() => {
     if (status !== 'authenticated') return;
     setLoading(true);
     setError(null);
-    fetch(`/api/admin/analytics?days=${days}`)
-      .then(async (r) => {
+    Promise.all([
+      fetch(`/api/admin/analytics?days=${days}`).then(async (r) => {
         if (r.status === 403) throw new Error('You are not a platform admin.');
         if (!r.ok) throw new Error(`Failed (${r.status})`);
         return r.json() as Promise<Analytics>;
+      }),
+      fetch(`/api/admin/funnel?days=${days}`).then((r) => r.json()).then((d) => d.rows ?? []),
+    ])
+      .then(([analytics, funnelRows]) => {
+        setData(analytics);
+        setFunnel(funnelRows);
       })
-      .then(setData)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [status, days]);
@@ -139,6 +147,43 @@ export default function AnalyticsPage() {
           <ListCard title="Top pages" rows={data.top_paths} mono />
           <ListCard title="Top referrers" rows={data.top_referrers} />
         </div>
+
+        {funnel.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-4 font-[var(--font-oswald)]">
+              Funnel — last {days}d
+            </h2>
+            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6">
+              <div className="flex items-end gap-6 flex-wrap">
+                {funnel.map((row, i) => {
+                  const signupUsers = funnel.find((r) => r.event === 'signup')?.users ?? row.users;
+                  const convPct = signupUsers > 0 ? Math.round((row.users / signupUsers) * 100) : 100;
+                  return (
+                    <div key={row.event} className="flex flex-col items-center gap-1 min-w-[80px]">
+                      {i > 0 && (
+                        <span className="text-[#F5EFE0]/20 text-xs self-start -ml-3">→</span>
+                      )}
+                      <div
+                        className="w-16 rounded-t flex items-end justify-center"
+                        style={{
+                          height: `${Math.max(convPct * 1.2, 12)}px`,
+                          background: 'rgba(176,141,87,0.25)',
+                          border: '1px solid rgba(176,141,87,0.4)',
+                        }}
+                      >
+                        <span className="text-[10px] text-[#B08D57] font-semibold pb-1">{convPct}%</span>
+                      </div>
+                      <span className="text-lg font-bold text-[#F5EFE0]">{row.users.toLocaleString()}</span>
+                      <span className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/40">
+                        {row.event.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {data.capped && (
           <p className="text-xs text-[#F5EFE0]/30 mt-6">

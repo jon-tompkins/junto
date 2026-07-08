@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getSupabase } from '@/lib/db/client';
 import { createJunto, getUserJuntos, addSourceToJunto } from '@/lib/db/juntos';
+import { recordFunnelEvent } from '@/lib/funnel';
 
 async function resolveUserId(session: any): Promise<string | null> {
   const supabase = getSupabase();
@@ -92,6 +93,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    recordFunnelEvent(userId, 'junto_create', { junto_id: junto.id, is_public: is_public ?? false });
     return NextResponse.json({ junto }, { status: 201 });
   } catch (error) {
     console.error('[POST /api/juntos]', error);
