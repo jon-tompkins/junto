@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe/client';
 import { getSupabase } from '@/lib/db/client';
 import { TIER_MONTHLY_CREDITS, tierForPriceId, type Tier } from '@/lib/tiers';
+import { recordFunnelEvent } from '@/lib/funnel';
 
 // Fallback for subscriptions whose price ID we can't map (legacy / mis-config).
 const FALLBACK_MONTHLY_CREDITS = TIER_MONTHLY_CREDITS.pro;
@@ -173,6 +174,7 @@ export async function POST(req: NextRequest) {
           const tierLabel = tier === 'operator' ? 'Operator' : 'Pro';
           const label = `${tierLabel} subscription — ${interval === 'year' ? 'annual' : 'monthly'} credits`;
           await setSubscriptionCredits(userId, amount, label, session.id);
+          recordFunnelEvent(userId, 'subscribe', { tier, interval });
           console.log(`[webhook] ${tierLabel} activated (${interval}) for user ${userId}, +${amount} credits`);
         }
         break;
