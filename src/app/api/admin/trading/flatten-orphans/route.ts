@@ -49,11 +49,27 @@ export async function POST(req: NextRequest) {
 
   const results: any[] = [];
   for (const p of orphans as any[]) {
+    let ordersCancelled = 0;
+    // Protective GTC OCO legs reserve the full qty (held_for_orders), so a
+    // close is rejected until they're cancelled. Cancel every open order on the
+    // symbol (nested=true returns OCO parents with .legs) before closing.
+    try {
+      const open = await alpaca.listOpenOrders(p.symbol);
+      const ids = new Set<string>();
+      for (const o of (open || []) as any[]) {
+        if (o?.id) ids.add(o.id);
+        for (const leg of (o?.legs || []) as any[]) if (leg?.id) ids.add(leg.id);
+      }
+      for (const id of ids) {
+        try { await alpaca.cancelOrder(id); ordersCancelled++; } catch { /* already gone */ }
+      }
+    } catch { /* best-effort */ }
+
     try {
       const order = await alpaca.closePosition(p.symbol);
-      results.push({ symbol: p.symbol, qty: p.qty, closed: true, orderId: (order as any)?.id ?? null });
+      results.push({ symbol: p.symbol, qty: p.qty, ordersCancelled, closed: true, orderId: (order as any)?.id ?? null });
     } catch (err: any) {
-      results.push({ symbol: p.symbol, qty: p.qty, closed: false, error: err?.message || 'close failed' });
+      results.push({ symbol: p.symbol, qty: p.qty, ordersCancelled, closed: false, error: err?.message || 'close failed' });
     }
   }
 
