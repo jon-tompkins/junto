@@ -38,6 +38,12 @@ export interface SourceHitRateRow {
   avg_conviction_wins: number | null;
   /** Ranking tiebreak: hit_rate weighted by conviction (0 when unrated). */
   conviction_weighted_score: number;
+  /**
+   * Wilson lower-bound composite score (z=1.96, n=scored calls).
+   * Accounts for sample size — a 3/3 source ranks below a 30/40 source.
+   * 0 when scored == 0 so unrated sources always sort to the bottom.
+   */
+  wilson_score: number;
 }
 
 // Supabase caps a single select at 1000 rows; page through so a busy table
@@ -62,6 +68,21 @@ interface PositionAgg {
   convSum: number;
   convCount: number;
   convByTicker: Map<string, number>; // upper(ticker) -> conviction, for win-conviction join
+}
+
+/**
+ * Wilson score lower bound for a binomial proportion.
+ * z = 1.96 (95% CI). Returns 0 when n == 0 so unscored sources sort to the bottom.
+ */
+function wilsonLower(wins: number, n: number): number {
+  if (n === 0) return 0;
+  const z = 1.96;
+  const p = wins / n;
+  const z2 = z * z;
+  return (
+    (p + z2 / (2 * n) - z * Math.sqrt((p * (1 - p) + z2 / (4 * n)) / n)) /
+    (1 + z2 / n)
+  );
 }
 
 /**
@@ -191,6 +212,7 @@ export async function getSourceHitRates(minPositions = 20): Promise<SourceHitRat
       avg_conviction_wins,
       // Reward both accuracy and conviction; 0 when unrated so rated sources rank first.
       conviction_weighted_score: (hit_rate ?? 0) * (avg_conviction ?? 0),
+      wilson_score: wilsonLower(wins, scored),
     });
   }
 

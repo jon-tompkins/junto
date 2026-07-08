@@ -4,9 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { SourceHitRateRow } from '@/lib/leaderboard';
 
-type SortKey = 'hit_rate' | 'scored' | 'avg_return_pct' | 'total_positions' | 'avg_conviction';
+type SortKey = 'wilson_score' | 'hit_rate' | 'scored' | 'avg_return_pct' | 'total_positions' | 'avg_conviction';
 
 const COLUMNS: Array<{ key: SortKey; label: string; hideAt?: string }> = [
+  { key: 'wilson_score', label: 'Score' },
   { key: 'hit_rate', label: 'Hit rate' },
   { key: 'scored', label: 'Calls' },
   { key: 'avg_return_pct', label: 'Avg return', hideAt: 'hidden md:table-cell' },
@@ -19,13 +20,15 @@ function pct(x: number | null): string {
 }
 
 // Null-aware value for sorting: unrated/empty metrics always sink to the bottom.
+// wilson_score is never null (0 for unrated), so we treat 0 as "unrated" for null-sink.
 function sortVal(r: SourceHitRateRow, key: SortKey): number | null {
+  if (key === 'wilson_score') return r.wilson_score === 0 && r.scored === 0 ? null : r.wilson_score;
   const v = r[key];
   return v == null ? null : Number(v);
 }
 
 export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
-  const [sortKey, setSortKey] = useState<SortKey>('hit_rate');
+  const [sortKey, setSortKey] = useState<SortKey>('wilson_score');
   const [desc, setDesc] = useState(true);
 
   const sorted = [...rows].sort((a, b) => {
@@ -106,6 +109,15 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
                       ) : null}
                     </div>
                   </Link>
+                </td>
+                <td className="py-3 px-2 text-right tabular-nums text-[#F5EFE0]/70">
+                  {r.scored > 0 ? (
+                    <span className="font-semibold text-[#B08D57]">
+                      {Math.round(r.wilson_score * 100)}
+                    </span>
+                  ) : (
+                    <span className="text-[#F5EFE0]/30">—</span>
+                  )}
                 </td>
                 <td className="py-3 px-2 text-right tabular-nums font-semibold text-[#B08D57]">
                   {isRated ? (
