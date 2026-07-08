@@ -10,6 +10,8 @@ export interface PositionGroup {
   fresh_count: number;
   category: PositionCategory;
   sources: Array<{ handle: string; display_name: string | null; avatar_url: string | null; is_stale: boolean }>;
+  /** Total closed calls (wins + losses) for this ticker across all sources. */
+  closed_count: number;
 }
 
 const STALE_DAYS = 30;
@@ -91,6 +93,7 @@ export async function GET(req: NextRequest) {
           fresh_count: 0,
           category: classify(normalized),
           sources: [],
+          closed_count: 0,
         };
       }
       const stale = isStalePosition(pos);
@@ -98,6 +101,27 @@ export async function GET(req: NextRequest) {
       if (!stale) groups[key].fresh_count += 1;
       groups[key].sources.push({ handle, display_name, avatar_url, is_stale: stale });
     }
+  }
+
+  // Aggregate closed-call counts per ticker from source_call_outcomes.
+  // Filter by allowedSourceIds when a junto is selected.
+  let closedQuery = supabase
+    .from('source_call_outcomes')
+    .select('source_id, ticker, outcome')
+    .in('outcome', ['win', 'loss']);
+  if (allowedSourceIds && allowedSourceIds.size > 0) {
+    closedQuery = closedQuery.in('source_id', [...allowedSourceIds]);
+  }
+  const { data: closedRows } = await closedQuery;
+  const closedByTicker = new Map<string, number>();
+  for (const row of closedRows || []) {
+    const t = (row.ticker as string).toUpperCase();
+    closedByTicker.set(t, (closedByTicker.get(t) ?? 0) + 1);
+  }
+
+  // Stamp each group with its ticker's closed count.
+  for (const g of Object.values(groups)) {
+    g.closed_count = closedByTicker.get(g.ticker) ?? 0;
   }
 
   const items = Object.values(groups).sort((a, b) => b.count - a.count);

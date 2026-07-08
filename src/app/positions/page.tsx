@@ -14,6 +14,7 @@ interface PositionGroup {
   fresh_count: number;
   category: PositionCategory;
   sources: Array<{ handle: string; display_name: string | null; avatar_url: string | null; is_stale: boolean }>;
+  closed_count: number;
 }
 
 const STANCE_BG: Record<string, string> = {
@@ -51,6 +52,7 @@ export default function PositionsPage() {
   const [juntos, setJuntos] = useState<JuntoOption[]>([]);
   const [juntoId, setJuntoId] = useState<string>('');
   const [includeStale, setIncludeStale] = useState(false);
+  const [showClosed, setShowClosed] = useState(false);
   const [search, setSearch] = useState('');
 
   const heatmapRef = useRef<HTMLDivElement>(null);
@@ -293,6 +295,20 @@ export default function PositionsPage() {
               {includeStale ? '✓ ' : ''}Include stale
             </button>
 
+            {/* Closed calls badge toggle */}
+            <button
+              onClick={() => setShowClosed((v) => !v)}
+              className="px-3 py-1.5 rounded text-xs font-medium transition"
+              style={{
+                background: showClosed ? 'rgba(176,141,87,0.18)' : 'rgba(255,255,255,0.04)',
+                color: showClosed ? '#B08D57' : 'rgba(245,239,224,0.5)',
+                border: `1px solid ${showClosed ? 'rgba(176,141,87,0.4)' : 'rgba(176,141,87,0.18)'}`,
+              }}
+              title="Show count of closed (scored) calls per ticker"
+            >
+              {showClosed ? '✓ ' : ''}Closed calls
+            </button>
+
             <div className="hidden sm:block w-px h-5 bg-[rgba(176,141,87,0.2)]" />
 
             {/* View toggle */}
@@ -388,6 +404,7 @@ export default function PositionsPage() {
                       style={{ fontSize: `${Math.max(8, Math.floor(fontSize * 0.4))}px`, color: bg }}
                     >
                       {STANCE_LABEL[item.stance] ?? item.stance} · {shownCount}
+                      {showClosed && item.closed_count > 0 ? ` · ${item.closed_count}✓` : ''}
                     </span>
                   )}
                   {showAvatars && visibleSources.length > 0 && (
@@ -461,12 +478,23 @@ export default function PositionsPage() {
                       className="border-b border-[rgba(176,141,87,0.1)] last:border-0 hover:bg-[rgba(176,141,87,0.04)] transition"
                     >
                       <td className="px-5 py-3">
-                        <Link
-                          href={`/positions/${encodeURIComponent(item.ticker)}`}
-                          className="font-mono font-bold text-[#F5EFE0] hover:text-[#B08D57] transition"
-                        >
-                          {item.ticker}
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/positions/${encodeURIComponent(item.ticker)}`}
+                            className="font-mono font-bold text-[#F5EFE0] hover:text-[#B08D57] transition"
+                          >
+                            {item.ticker}
+                          </Link>
+                          {showClosed && item.closed_count > 0 && (
+                            <span
+                              className="inline-block px-1.5 py-0 rounded text-[10px] tabular-nums"
+                              style={{ background: 'rgba(176,141,87,0.15)', color: '#B08D57', border: '1px solid rgba(176,141,87,0.3)' }}
+                              title={`${item.closed_count} closed call${item.closed_count === 1 ? '' : 's'}`}
+                            >
+                              {item.closed_count} closed
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-5 py-3">
                         <span
