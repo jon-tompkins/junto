@@ -3,6 +3,7 @@ import { getSupabase } from '@/lib/db/client';
 import { loadJuntoSnapshot, extractSignals } from '@/lib/trading/extract';
 import { decideTrades } from '@/lib/trading/decide';
 import { alpacaForMandate } from '@/lib/trading/client';
+import { getMandateOpenTickers } from '@/lib/trading/db';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -62,7 +63,10 @@ export async function GET(req: NextRequest) {
       } catch (e: any) {
         heldSymbols = [`<err:${e?.message || 'positions'}>`];
       }
-      const held = new Set(heldSymbols.filter((s) => !s.startsWith('<')));
+      // Mandate-scoped holdings (its own open/submitted trades) — the correct
+      // basis for the no-double-entry filter on a shared broker account.
+      const ownHeldTickers = await getMandateOpenTickers(mandateId);
+      const held = new Set(Array.from(ownHeldTickers).map((t) => t.toUpperCase()));
       // Mirror decide.ts pre-filter so we can see what actually reaches the LLM.
       const preFiltered = (signals as any[]).filter((s) => {
         if (s.direction === 'hold') return false;
@@ -74,10 +78,11 @@ export async function GET(req: NextRequest) {
       });
       const openNotional = positions.reduce((sum: number, p: any) => sum + (Number(p.market_value) || 0), 0);
       const isBookFull = openNotional >= accountEquity * 0.82;
-      const decisions = await decideTrades({ mandate: mandate as any, signals: signals as any, positions, accountEquity, isBookFull });
+      const decisions = await decideTrades({ mandate: mandate as any, signals: signals as any, positions, accountEquity, isBookFull, ownHeldTickers });
       decideFunnel = {
         accountEquity,
-        heldSymbols,
+        accountHeldSymbols: heldSymbols,
+        mandateOwnHeld: Array.from(held),
         isBookFull,
         candidatesToLLM: preFiltered.length,
         candidateTickers: preFiltered.map((s) => `${s.ticker}(${s.conviction})`),

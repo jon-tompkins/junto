@@ -9,6 +9,7 @@ import {
   getOpenTrades,
   createPendingAmendment,
   getPendingAmendmentsForTrade,
+  getMandateOpenTickers,
   markTweetsProcessed,
 } from './db';
 import { loadJuntoSnapshot, extractSignals } from './extract';
@@ -216,7 +217,12 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
   let decisions: import('./types').TradeDecision[] = [];
   if (allowNewEntries) {
     try {
-      decisions = await decideTrades({ mandate, signals, positions, accountEquity, isBookFull });
+      // Scope the no-double-entry filter to THIS mandate's own open trades, not
+      // the whole (possibly shared) broker account — otherwise a sibling
+      // mandate's or an untracked orphan position silently blocks every signal
+      // for that ticker (root cause of the July-3 trade-suggestion collapse).
+      const ownHeldTickers = await getMandateOpenTickers(mandate.id);
+      decisions = await decideTrades({ mandate, signals, positions, accountEquity, isBookFull, ownHeldTickers });
       result.decisions = decisions.length;
     } catch (err: any) {
       result.errors.push(`decide: ${err.message}`);

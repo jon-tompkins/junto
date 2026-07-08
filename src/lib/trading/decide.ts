@@ -12,13 +12,21 @@ export interface DecisionContext {
   positions: AlpacaPosition[];
   accountEquity: number;
   isBookFull?: boolean;
+  // The tickers THIS mandate already holds (its own open/submitted trades).
+  // On a shared broker account, `positions` is the whole account's book — using
+  // it for the no-double-entry filter blocks a mandate from trading names that
+  // belong to a sibling mandate (or are untracked orphans). Pass this so the
+  // filter is scoped to the mandate's own slice. Falls back to `positions`.
+  ownHeldTickers?: Set<string>;
 }
 
 export async function decideTrades(ctx: DecisionContext): Promise<TradeDecision[]> {
   const { mandate, signals, positions, accountEquity, isBookFull = false } = ctx;
   if (signals.length === 0) return [];
 
-  const heldSymbols = new Set(positions.map((p) => p.symbol.toUpperCase()));
+  const heldSymbols = ctx.ownHeldTickers
+    ? new Set(Array.from(ctx.ownHeldTickers).map((t) => t.toUpperCase()))
+    : new Set(positions.map((p) => p.symbol.toUpperCase()));
   const candidates = signals.filter((s) => {
     if (s.direction === 'hold') return false;
     if (s.direction === 'exit') return heldSymbols.has(s.ticker);
