@@ -11,22 +11,22 @@ const LAST_UPDATED = 'June 17, 2026';
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <div className="max-w-3xl mx-auto px-6 py-12">
         <header className="mb-10">
           <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-2">
             Terms &amp; Disclosures
           </h1>
-          <p className="text-sm text-[#F5EFE0]/45">
+          <p className="text-sm text-parchment/45">
             Last updated {LAST_UPDATED}. This is a first-pass draft for review — it
             should be blessed by a securities attorney before it goes live.
           </p>
         </header>
 
         {/* Lawyer-review banner */}
-        <div className="bg-[#141210] border border-[#e8453c]/40 rounded p-4 mb-10 text-sm text-[#F5EFE0]/70">
-          <span className="text-[#e8453c] font-semibold font-[var(--font-oswald)] uppercase tracking-wide mr-2">
+        <div className="bg-surface border border-bear/40 rounded p-4 mb-10 text-sm text-parchment/70">
+          <span className="text-bear font-semibold font-[var(--font-oswald)] uppercase tracking-wide mr-2">
             Draft
           </span>
           Internal review copy. The positioning here is designed to keep myjunto on
@@ -37,10 +37,10 @@ export default function TermsPage() {
 
         <nav className="mb-12 text-sm">
           <ul className="space-y-1.5">
-            <li><a href="#opt-in" className="text-[#B08D57] hover:text-[#B08D57]/80 transition">1. Opt-In Consent</a></li>
-            <li><a href="#not-advice" className="text-[#B08D57] hover:text-[#B08D57]/80 transition">2. Not Investment Advice</a></li>
-            <li><a href="#risk" className="text-[#B08D57] hover:text-[#B08D57]/80 transition">3. Risk &amp; Loss-of-Capital Disclosure</a></li>
-            <li><a href="#tos" className="text-[#B08D57] hover:text-[#B08D57]/80 transition">4. Terms of Service</a></li>
+            <li><a href="#opt-in" className="text-brass hover:text-brass/80 transition">1. Opt-In Consent</a></li>
+            <li><a href="#not-advice" className="text-brass hover:text-brass/80 transition">2. Not Investment Advice</a></li>
+            <li><a href="#risk" className="text-brass hover:text-brass/80 transition">3. Risk &amp; Loss-of-Capital Disclosure</a></li>
+            <li><a href="#tos" className="text-brass hover:text-brass/80 transition">4. Terms of Service</a></li>
           </ul>
         </nav>
 
@@ -51,7 +51,7 @@ export default function TermsPage() {
             myjunto, you are making a request for information. Specifically, you are
             telling us:
           </p>
-          <blockquote className="border-l-2 border-[#B08D57] pl-4 my-4 italic text-[#F5EFE0]/80">
+          <blockquote className="border-l-2 border-brass pl-4 my-4 italic text-parchment/80">
             &ldquo;I would like information provided to me based on the publicly
             observable activity of the accounts and sources I select. I understand
             myjunto compiles and relays that activity to me, and that the same
@@ -106,7 +106,7 @@ export default function TermsPage() {
             of your entire investment.</strong> Please read and understand the
             following before acting on any information from myjunto:
           </p>
-          <ul className="list-disc pl-5 space-y-2 my-4 text-[#F5EFE0]/80">
+          <ul className="list-disc pl-5 space-y-2 my-4 text-parchment/80">
             <li>
               <strong>Past activity is not predictive.</strong> The historical or
               recent activity of any tracked account is not a guarantee or indication
@@ -191,7 +191,7 @@ export default function TermsPage() {
               provide are encrypted at rest and used solely to operate the features you
               enable. We do not sell your personal financial data. Our handling of your
               information is further described in our{' '}
-              <Link href="/privacy" className="text-[#B08D57] hover:text-[#B08D57]/80 transition underline">
+              <Link href="/privacy" className="text-brass hover:text-brass/80 transition underline">
                 Privacy Policy
               </Link>
               .
@@ -250,13 +250,13 @@ export default function TermsPage() {
           </SubSection>
         </Section>
 
-        <footer className="mt-12 pt-6 border-t border-[rgba(176,141,87,0.28)] text-sm text-[#F5EFE0]/45">
+        <footer className="mt-12 pt-6 border-t border-[rgb(var(--t-brass) / 0.28)] text-sm text-parchment/45">
           <p className="mb-3">
             Bracketed items ([JURISDICTION TBD], arbitration specifics) and the entire
             document require sign-off from a licensed securities attorney before
             publication.
           </p>
-          <Link href="/admin" className="text-[#B08D57] hover:text-[#B08D57]/80 transition">
+          <Link href="/admin" className="text-brass hover:text-brass/80 transition">
             ← Back to Admin
           </Link>
         </footer>
@@ -279,10 +279,10 @@ function Section({
   return (
     <section id={id} className="mb-12 scroll-mt-6">
       <h2 className="text-xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-4 flex items-baseline gap-3">
-        <span className="text-[#B08D57]">{n}</span>
+        <span className="text-brass">{n}</span>
         {title}
       </h2>
-      <div className="space-y-4 text-[#F5EFE0]/70 leading-relaxed">{children}</div>
+      <div className="space-y-4 text-parchment/70 leading-relaxed">{children}</div>
     </section>
   );
 }
@@ -290,10 +290,10 @@ function Section({
 function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-5">
-      <h3 className="text-sm font-semibold font-[var(--font-oswald)] uppercase tracking-wider text-[#F5EFE0]/90 mb-2">
+      <h3 className="text-sm font-semibold font-[var(--font-oswald)] uppercase tracking-wider text-parchment/90 mb-2">
         {title}
       </h3>
-      <div className="space-y-3 text-[#F5EFE0]/70 leading-relaxed">{children}</div>
+      <div className="space-y-3 text-parchment/70 leading-relaxed">{children}</div>
     </div>
   );
 }

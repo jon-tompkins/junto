@@ -59,7 +59,7 @@ export function PositionsHeatmap({
 
   if (items.length === 0) {
     return (
-      <div className={`flex items-center justify-center text-[#F5EFE0]/40 text-sm ${className}`} style={{ height }}>
+      <div className={`flex items-center justify-center text-parchment/40 text-sm ${className}`} style={{ height }}>
         No positions yet.
       </div>
     );
@@ -68,7 +68,7 @@ export function PositionsHeatmap({
   return (
     <div
       ref={ref}
-      className={`relative w-full bg-[#0a0907] border border-[rgba(176,141,87,0.18)] rounded overflow-hidden ${className}`}
+      className={`relative w-full bg-ink border border-[rgb(var(--t-brass) / 0.18)] rounded overflow-hidden ${className}`}
       style={{ height: `${height}px` }}
     >
       {layout.map(({ x, y, w, h, data: item }) => {
@@ -95,7 +95,7 @@ export function PositionsHeatmap({
               width: `${w}px`,
               height: `${h}px`,
               background: `rgba(${hexToRgb(bg)}, ${alpha})`,
-              boxShadow: 'inset 0 0 0 1px rgba(8,6,4,0.6)',
+              boxShadow: 'inset 0 0 0 1px rgb(var(--t-ink) / 0.6)',
             }}
             title={`${item.ticker} · ${STANCE_LABEL[item.stance] ?? item.stance} · ${shownCount} source${shownCount !== 1 ? 's' : ''}`}
           >
@@ -106,7 +106,7 @@ export function PositionsHeatmap({
             {showLabel && (
               <span
                 className="font-bold font-mono text-center leading-tight px-1"
-                style={{ fontSize: `${fontSize}px`, color: '#F5EFE0' }}
+                style={{ fontSize: `${fontSize}px`, color: 'rgb(var(--t-parchment))' }}
               >
                 {item.ticker}
               </span>
@@ -128,9 +128,9 @@ export function PositionsHeatmap({
                     style={{
                       width: `${avatarSize}px`,
                       height: `${avatarSize}px`,
-                      borderColor: '#080604',
+                      borderColor: 'rgb(var(--t-ink))',
                       marginLeft: i > 0 ? `-${Math.floor(avatarSize / 3)}px` : 0,
-                      background: '#1c1a17',
+                      background: 'rgb(var(--t-raised))',
                       position: 'relative',
                       zIndex: 10 - i,
                     }}
@@ -139,7 +139,7 @@ export function PositionsHeatmap({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={s.avatar_url} alt={s.handle} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[#F5EFE0]/60" style={{ fontSize: '8px' }}>
+                      <div className="w-full h-full flex items-center justify-center text-parchment/60" style={{ fontSize: '8px' }}>
                         {s.handle[0]?.toUpperCase()}
                       </div>
                     )}

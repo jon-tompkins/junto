@@ -19,10 +19,10 @@ function enrichTweetHtml(text: string): string {
 }
 
 const STANCE_COLORS: Record<string, string> = {
-  bullish: 'bg-[#3ecf6a]/15 text-[#3ecf6a] border border-[#3ecf6a]/40',
-  bearish: 'bg-[#e8453c]/15 text-[#e8453c] border border-[#e8453c]/40',
+  bullish: 'bg-bull/15 text-bull border border-bull/40',
+  bearish: 'bg-bear/15 text-bear border border-bear/40',
   cautious: 'bg-amber-900/40 text-amber-400 border border-amber-700/40',
-  neutral: 'bg-[#1c1a17] text-[#F5EFE0]/45 border border-[rgba(176,141,87,0.18)]',
+  neutral: 'bg-raised text-parchment/45 border border-[rgb(var(--t-brass) / 0.18)]',
 };
 
 const STANCE_ICONS: Record<string, string> = {
@@ -33,17 +33,17 @@ const STANCE_ICONS: Record<string, string> = {
 };
 
 const STANCE_BAR: Record<string, string> = {
-  bullish: 'bg-[#3ecf6a]',
-  bearish: 'bg-[#e8453c]',
+  bullish: 'bg-bull',
+  bearish: 'bg-bear',
   cautious: 'bg-amber-500',
-  neutral: 'bg-[#F5EFE0]/30',
+  neutral: 'bg-parchment/30',
 };
 
 const STANCE_BAR_COLOR: Record<string, string> = {
-  bullish: '#3ecf6a',
-  bearish: '#e8453c',
+  bullish: 'rgb(var(--t-bull))',
+  bearish: 'rgb(var(--t-bear))',
   cautious: '#d97706',
-  neutral: 'rgba(245,239,224,0.6)',
+  neutral: 'rgb(var(--t-parchment) / 0.6)',
 };
 
 const STANCES = ['bullish', 'cautious', 'neutral', 'bearish'] as const;
@@ -97,7 +97,7 @@ function PnL({ entry, current }: { entry: number; current: number }) {
   const pct = ((current - entry) / entry) * 100;
   const pos = pct >= 0;
   return (
-    <span className={`text-xs font-mono ${pos ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
+    <span className={`text-xs font-mono ${pos ? 'text-bull' : 'text-bear'}`}>
       {pos ? '+' : ''}{pct.toFixed(1)}%
     </span>
   );
@@ -179,27 +179,27 @@ function SocialPulse({ ticker }: { ticker: string }) {
   if (status === 'error') return null;
 
   return (
-    <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-8">
+    <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5 mb-8">
       <button
         onClick={() => setCollapsed((c) => !c)}
         className={`w-full flex items-center justify-between ${collapsed ? '' : 'mb-4'} text-left`}
       >
-        <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] flex items-center gap-2">
-          <span className="text-[#F5EFE0]/45 text-[10px]">{collapsed ? '▸' : '▾'}</span>
+        <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] flex items-center gap-2">
+          <span className="text-parchment/45 text-[10px]">{collapsed ? '▸' : '▾'}</span>
           Social Pulse
         </h2>
-        <span className="text-[10px] uppercase tracking-wide text-[#B08D57]/70 font-[var(--font-oswald)]">
+        <span className="text-[10px] uppercase tracking-wide text-brass/70 font-[var(--font-oswald)]">
           Pro · ${ticker}
         </span>
       </button>
 
       {!collapsed && <>
       {status === 'loading' && (
-        <p className="text-sm text-[#F5EFE0]/45">Loading social pulse…</p>
+        <p className="text-sm text-parchment/45">Loading social pulse…</p>
       )}
 
       {status === 'empty' && (
-        <p className="text-sm text-[#F5EFE0]/45">
+        <p className="text-sm text-parchment/45">
           No reports yet. A daily report for ${ticker} will be generated on the next cron cycle.
         </p>
       )}
@@ -207,12 +207,12 @@ function SocialPulse({ ticker }: { ticker: string }) {
       {status === 'ready' && (
         <>
           {summary && (
-            <div className="mb-4 p-4 rounded bg-[#0e0c0a] border border-[rgba(176,141,87,0.18)]">
+            <div className="mb-4 p-4 rounded bg-ink border border-[rgb(var(--t-brass) / 0.18)]">
               <div
                 className="research-content text-sm max-w-none"
                 dangerouslySetInnerHTML={{ __html: markdownToHtml(summary.summary) }}
               />
-              <p className="text-[11px] text-[#F5EFE0]/40 mt-3">
+              <p className="text-[11px] text-parchment/40 mt-3">
                 {pulseCountLabel(summary.mention_count, summary.tweet_count)} · updated {new Date(summary.updated_at).toLocaleString()}
               </p>
             </div>
@@ -221,7 +221,7 @@ function SocialPulse({ ticker }: { ticker: string }) {
           {reports.length > 0 && (
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-[10px] uppercase tracking-wide text-[#F5EFE0]/45 font-[var(--font-oswald)]">
+                <tr className="text-left text-[10px] uppercase tracking-wide text-parchment/45 font-[var(--font-oswald)]">
                   <th className="py-2 pr-4 w-6"></th>
                   <th className="py-2 pr-4">Date</th>
                   <th className="py-2 pr-4">Summary</th>
@@ -234,28 +234,28 @@ function SocialPulse({ ticker }: { ticker: string }) {
                   return (
                     <Fragment key={r.id}>
                       <tr
-                        className="border-t border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17] cursor-pointer"
+                        className="border-t border-[rgb(var(--t-brass) / 0.18)] hover:bg-raised cursor-pointer"
                         onClick={() => setOpenId(open ? null : r.id)}
                       >
-                        <td className="py-2 pr-2 text-[#F5EFE0]/45 text-[10px] align-top">{open ? '▾' : '▸'}</td>
-                        <td className="py-2 pr-4 font-mono text-[#F5EFE0]/60 align-top whitespace-nowrap">{r.report_date}</td>
-                        <td className={`py-2 pr-4 text-[#F5EFE0]/80 ${open ? '' : 'line-clamp-2'}`}>{r.summary}</td>
-                        <td className="py-2 pr-4 text-right text-[#F5EFE0]/45 font-mono align-top">{r.mention_count || r.tweet_count}</td>
+                        <td className="py-2 pr-2 text-parchment/45 text-[10px] align-top">{open ? '▾' : '▸'}</td>
+                        <td className="py-2 pr-4 font-mono text-parchment/60 align-top whitespace-nowrap">{r.report_date}</td>
+                        <td className={`py-2 pr-4 text-parchment/80 ${open ? '' : 'line-clamp-2'}`}>{r.summary}</td>
+                        <td className="py-2 pr-4 text-right text-parchment/45 font-mono align-top">{r.mention_count || r.tweet_count}</td>
                       </tr>
                       {open && (
-                        <tr className="bg-[#0e0c0a]">
+                        <tr className="bg-ink">
                           <td></td>
                           <td colSpan={3} className="px-4 pb-4 pt-1">
                             <div
                               className="research-content text-sm max-w-none"
                               dangerouslySetInnerHTML={{ __html: markdownToHtml(r.content) }}
                             />
-                            <p className="text-[11px] text-[#F5EFE0]/40 mt-3">
+                            <p className="text-[11px] text-parchment/40 mt-3">
                               {pulseCountLabel(r.mention_count, r.tweet_count)}
                             </p>
                             {r.tweet_refs?.length > 0 && (
                               <div className="mt-3 space-y-2">
-                                <p className="text-[10px] uppercase tracking-wide text-[#F5EFE0]/45 font-[var(--font-oswald)]">
+                                <p className="text-[10px] uppercase tracking-wide text-parchment/45 font-[var(--font-oswald)]">
                                   Top tweets analyzed
                                 </p>
                                 {r.tweet_refs.map((t) => (
@@ -264,19 +264,19 @@ function SocialPulse({ ticker }: { ticker: string }) {
                                     href={`https://twitter.com/${t.author_handle}/status/${t.twitter_id}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="block p-2 rounded bg-[#141210] border border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17]"
+                                    className="block p-2 rounded bg-surface border border-[rgb(var(--t-brass) / 0.18)] hover:bg-raised"
                                   >
                                     <div className="flex items-center gap-2 mb-1 flex-wrap text-[11px]">
-                                      <span className="text-[#B08D57]">@{t.author_handle}</span>
+                                      <span className="text-brass">@{t.author_handle}</span>
                                       {t.author_followers != null && (
-                                        <span className="text-[#F5EFE0]/40">{t.author_followers.toLocaleString()} followers</span>
+                                        <span className="text-parchment/40">{t.author_followers.toLocaleString()} followers</span>
                                       )}
-                                      <span className="text-[#F5EFE0]/40 ml-auto">
+                                      <span className="text-parchment/40 ml-auto">
                                         {t.likes}❤ {t.retweets}🔁
                                       </span>
                                     </div>
                                     <p
-                                      className="text-xs text-[#F5EFE0]/70 line-clamp-3"
+                                      className="text-xs text-parchment/70 line-clamp-3"
                                       dangerouslySetInnerHTML={{ __html: enrichTweetHtml(t.content) }}
                                     />
                                   </a>
@@ -312,16 +312,16 @@ interface AilmanackReport {
 }
 
 const RATING_COLORS: Record<string, string> = {
-  'strong buy': 'text-[#3ecf6a] border-[#3ecf6a]/40 bg-[#3ecf6a]/10',
-  'buy': 'text-[#3ecf6a] border-[#3ecf6a]/30 bg-[#3ecf6a]/5',
-  'hold': 'text-[#F5EFE0]/60 border-[rgba(176,141,87,0.28)] bg-[#1c1a17]',
-  'sell': 'text-[#e8453c] border-[#e8453c]/30 bg-[#e8453c]/5',
-  'strong sell': 'text-[#e8453c] border-[#e8453c]/40 bg-[#e8453c]/10',
+  'strong buy': 'text-bull border-bull/40 bg-bull/10',
+  'buy': 'text-bull border-bull/30 bg-bull/5',
+  'hold': 'text-parchment/60 border-[rgb(var(--t-brass) / 0.28)] bg-raised',
+  'sell': 'text-bear border-bear/30 bg-bear/5',
+  'strong sell': 'text-bear border-bear/40 bg-bear/10',
 };
 
 function ratingClass(r: string | null): string {
   const key = (r || '').toLowerCase().trim();
-  return RATING_COLORS[key] || 'text-[#F5EFE0]/60 border-[rgba(176,141,87,0.28)] bg-[#1c1a17]';
+  return RATING_COLORS[key] || 'text-parchment/60 border-[rgb(var(--t-brass) / 0.28)] bg-raised';
 }
 
 function ResearchReports({ ticker }: { ticker: string }) {
@@ -392,13 +392,13 @@ function ResearchReports({ ticker }: { ticker: string }) {
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
+        <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">
           Research Reports
         </h2>
         <button
           onClick={handleGenerate}
           disabled={generating}
-          className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded border border-[#B08D57] text-[#B08D57] hover:bg-[#B08D57] hover:text-[#080604] disabled:opacity-50 disabled:cursor-wait transition font-[var(--font-oswald)] uppercase tracking-wide"
+          className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded border border-brass text-brass hover:bg-brass hover:text-ink disabled:opacity-50 disabled:cursor-wait transition font-[var(--font-oswald)] uppercase tracking-wide"
         >
           {generating ? 'Generating…' : '+ Generate Report'}
           {!generating && <span className="text-[10px] opacity-70 font-mono">5 credits</span>}
@@ -406,25 +406,25 @@ function ResearchReports({ ticker }: { ticker: string }) {
       </div>
 
       {(genMessage || genError) && (
-        <p className={`text-xs mb-3 ${genError ? 'text-[#e8453c]' : 'text-[#F5EFE0]/60'}`}>
+        <p className={`text-xs mb-3 ${genError ? 'text-bear' : 'text-parchment/60'}`}>
           {genError || genMessage}
         </p>
       )}
 
       {loading ? (
-        <div className="h-16 bg-[#141210] rounded animate-pulse" />
+        <div className="h-16 bg-surface rounded animate-pulse" />
       ) : reports.length === 0 ? (
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 text-sm text-[#F5EFE0]/45">
+        <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 text-sm text-parchment/45">
           No public research reports for {ticker} yet. Generate one on{' '}
-          <a href={base} target="_blank" rel="noopener" className="text-[#B08D57] hover:underline">
+          <a href={base} target="_blank" rel="noopener" className="text-brass hover:underline">
             Ailmanack
           </a>.
         </div>
       ) : (
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-x-auto">
+        <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-x-auto">
           <table className="w-full min-w-[560px] text-sm">
             <thead>
-              <tr className="border-b border-[rgba(176,141,87,0.28)] text-[10px] uppercase tracking-wider text-[#F5EFE0]/30 font-[var(--font-oswald)]">
+              <tr className="border-b border-[rgb(var(--t-brass) / 0.28)] text-[10px] uppercase tracking-wider text-parchment/30 font-[var(--font-oswald)]">
                 <th className="py-2 px-4 text-left">Date</th>
                 <th className="py-2 px-4 text-right">Price</th>
                 <th className="py-2 px-4 text-left">Trade</th>
@@ -434,15 +434,15 @@ function ResearchReports({ ticker }: { ticker: string }) {
             </thead>
             <tbody>
               {reports.map((r) => (
-                <tr key={r.id} className="border-b border-[rgba(176,141,87,0.1)] last:border-0 hover:bg-[#1c1a17] transition">
-                  <td className="py-2 px-4 font-mono text-xs text-[#F5EFE0]/60 whitespace-nowrap">
+                <tr key={r.id} className="border-b border-[rgb(var(--t-brass) / 0.1)] last:border-0 hover:bg-raised transition">
+                  <td className="py-2 px-4 font-mono text-xs text-parchment/60 whitespace-nowrap">
                     {new Date(r.date).toLocaleDateString()}
                   </td>
                   <td className="py-2 px-4 font-mono text-xs text-right whitespace-nowrap">
                     {r.report_price != null ? (
-                      <span className="text-[#F5EFE0]/80">${r.report_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="text-parchment/80">${r.report_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     ) : (
-                      <span className="text-[#F5EFE0]/30">—</span>
+                      <span className="text-parchment/30">—</span>
                     )}
                   </td>
                   <td className="py-2 px-4">
@@ -451,10 +451,10 @@ function ResearchReports({ ticker }: { ticker: string }) {
                         {r.rating}
                       </span>
                     ) : (
-                      <span className="text-xs text-[#F5EFE0]/30">—</span>
+                      <span className="text-xs text-parchment/30">—</span>
                     )}
                   </td>
-                  <td className="py-2 px-4 text-[#F5EFE0]/80 truncate max-w-[280px]">
+                  <td className="py-2 px-4 text-parchment/80 truncate max-w-[280px]">
                     {r.title}
                   </td>
                   <td className="py-2 px-4 text-right">
@@ -462,7 +462,7 @@ function ResearchReports({ ticker }: { ticker: string }) {
                       href={reportPath(r)}
                       target="_blank"
                       rel="noopener"
-                      className="text-xs text-[#B08D57] hover:underline whitespace-nowrap"
+                      className="text-xs text-brass hover:underline whitespace-nowrap"
                     >
                       View →
                     </a>
@@ -504,11 +504,11 @@ interface ActivityTrade {
 }
 
 const TRADE_STATUS_COLORS: Record<string, string> = {
-  open: 'text-[#3ecf6a] border-[#3ecf6a]/40 bg-[#3ecf6a]/10',
-  closed: 'text-[#F5EFE0]/60 border-[rgba(176,141,87,0.28)] bg-[#1c1a17]',
+  open: 'text-bull border-bull/40 bg-bull/10',
+  closed: 'text-parchment/60 border-[rgb(var(--t-brass) / 0.28)] bg-raised',
   proposed: 'text-amber-400 border-amber-700/40 bg-amber-900/20',
-  rejected: 'text-[#e8453c] border-[#e8453c]/30 bg-[#e8453c]/5',
-  cancelled: 'text-[#F5EFE0]/40 border-[rgba(176,141,87,0.18)] bg-[#141210]',
+  rejected: 'text-bear border-bear/30 bg-bear/5',
+  cancelled: 'text-parchment/40 border-[rgb(var(--t-brass) / 0.18)] bg-surface',
 };
 
 // Owner-only: the viewer's own trades on this ticker plus their journal notes.
@@ -517,7 +517,7 @@ const TRADE_STATUS_COLORS: Record<string, string> = {
 function TradingActivity({ ticker, trades }: { ticker: string; trades: ActivityTrade[] }) {
   if (trades.length === 0) {
     return (
-      <div className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 text-sm text-[#F5EFE0]/45">
+      <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 text-sm text-parchment/45">
         You have no trades on {ticker} yet.
       </div>
     );
@@ -525,7 +525,7 @@ function TradingActivity({ ticker, trades }: { ticker: string; trades: ActivityT
 
   return (
     <section>
-      <p className="text-[10px] uppercase tracking-wide text-[#B08D57]/70 font-[var(--font-oswald)] mb-3">
+      <p className="text-[10px] uppercase tracking-wide text-brass/70 font-[var(--font-oswald)] mb-3">
         Private · only you
       </p>
 
@@ -535,29 +535,29 @@ function TradingActivity({ ticker, trades }: { ticker: string; trades: ActivityT
           return (
             <div
               key={t.id}
-              className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4"
+              className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-4"
             >
               <div className="flex items-center gap-2 flex-wrap mb-2">
-                <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-sm border ${sideShort ? 'text-[#e8453c] border-[#e8453c]/40 bg-[#e8453c]/10' : 'text-[#3ecf6a] border-[#3ecf6a]/40 bg-[#3ecf6a]/10'}`}>
+                <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-sm border ${sideShort ? 'text-bear border-bear/40 bg-bear/10' : 'text-bull border-bull/40 bg-bull/10'}`}>
                   {t.side}
                 </span>
                 <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-sm border ${TRADE_STATUS_COLORS[String(t.status).toLowerCase()] || TRADE_STATUS_COLORS.closed}`}>
                   {t.status}
                 </span>
                 {t.qty != null && (
-                  <span className="text-xs font-mono text-[#F5EFE0]/60">qty {t.qty}</span>
+                  <span className="text-xs font-mono text-parchment/60">qty {t.qty}</span>
                 )}
                 {t.mandate_name && (
                   <Link
                     href={`/trading/${t.mandate_id}`}
-                    className="text-xs text-[#B08D57] hover:underline ml-auto"
+                    className="text-xs text-brass hover:underline ml-auto"
                   >
                     {t.mandate_name} →
                   </Link>
                 )}
               </div>
 
-              <div className="flex gap-4 text-xs text-[#F5EFE0]/45 flex-wrap font-mono">
+              <div className="flex gap-4 text-xs text-parchment/45 flex-wrap font-mono">
                 {t.entry_price != null && (
                   <span>entry ${t.entry_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 )}
@@ -565,7 +565,7 @@ function TradingActivity({ ticker, trades }: { ticker: string; trades: ActivityT
                   <span>exit ${t.exit_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 )}
                 {t.realized_pnl_usd != null && (
-                  <span className={t.realized_pnl_usd >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}>
+                  <span className={t.realized_pnl_usd >= 0 ? 'text-bull' : 'text-bear'}>
                     {t.realized_pnl_usd >= 0 ? '+' : ''}${t.realized_pnl_usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 )}
@@ -573,24 +573,24 @@ function TradingActivity({ ticker, trades }: { ticker: string; trades: ActivityT
               </div>
 
               {t.notes.length > 0 && (
-                <div className="mt-3 space-y-2 border-t border-[rgba(176,141,87,0.18)] pt-3">
+                <div className="mt-3 space-y-2 border-t border-[rgb(var(--t-brass) / 0.18)] pt-3">
                   {t.notes.map((n, i) => (
                     <div key={`${n.trade_id}-${i}`} className="text-xs">
                       <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <span className="text-[10px] uppercase tracking-wide text-[#B08D57]/70 font-[var(--font-oswald)]">
+                        <span className="text-[10px] uppercase tracking-wide text-brass/70 font-[var(--font-oswald)]">
                           {n.kind}
                         </span>
                         {n.process_score != null && (
-                          <span className="text-[#F5EFE0]/40">process {n.process_score}/10</span>
+                          <span className="text-parchment/40">process {n.process_score}/10</span>
                         )}
                         {n.outcome_score != null && (
-                          <span className="text-[#F5EFE0]/40">outcome {n.outcome_score}/10</span>
+                          <span className="text-parchment/40">outcome {n.outcome_score}/10</span>
                         )}
-                        <span className="text-[#F5EFE0]/30 ml-auto">
+                        <span className="text-parchment/30 ml-auto">
                           {new Date(n.created_at).toLocaleDateString()}
                         </span>
                       </div>
-                      <p className="text-[#F5EFE0]/70 whitespace-pre-wrap leading-relaxed">{n.content}</p>
+                      <p className="text-parchment/70 whitespace-pre-wrap leading-relaxed">{n.content}</p>
                     </div>
                   ))}
                 </div>
@@ -604,16 +604,16 @@ function TradingActivity({ ticker, trades }: { ticker: string; trades: ActivityT
 }
 
 const CLOSED_OUTCOME_PILL: Record<string, string> = {
-  win: 'bg-[#3ecf6a]/15 text-[#3ecf6a] border border-[#3ecf6a]/40',
-  loss: 'bg-[#e8453c]/15 text-[#e8453c] border border-[#e8453c]/40',
-  flat: 'bg-[#1c1a17] text-[#F5EFE0]/50 border border-[rgba(176,141,87,0.18)]',
-  unscored: 'bg-[#1c1a17] text-[#F5EFE0]/35 border border-[rgba(176,141,87,0.12)]',
+  win: 'bg-bull/15 text-bull border border-bull/40',
+  loss: 'bg-bear/15 text-bear border border-bear/40',
+  flat: 'bg-raised text-parchment/50 border border-[rgb(var(--t-brass) / 0.18)]',
+  unscored: 'bg-raised text-parchment/35 border border-[rgb(var(--t-brass) / 0.12)]',
 };
 
 function TickerClosedCalls({ calls, ticker }: { calls: ClosedTickerCall[]; ticker: string }) {
   if (calls.length === 0) {
     return (
-      <div className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 text-sm text-[#F5EFE0]/45">
+      <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 text-sm text-parchment/45">
         No source has closed a call on {ticker} yet.
       </div>
     );
@@ -627,19 +627,19 @@ function TickerClosedCalls({ calls, ticker }: { calls: ClosedTickerCall[]; ticke
           <Link
             key={`${c.source_id}-${c.exit_date}-${i}`}
             href={`/sources/${c.handle}`}
-            className="flex items-center gap-3 p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] hover:bg-[#1c1a17] transition group"
+            className="flex items-center gap-3 p-4 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface hover:bg-raised transition group"
           >
             {c.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={c.avatar_url} alt={c.handle} className="w-9 h-9 rounded bg-[#1c1a17] object-cover shrink-0" />
+              <img src={c.avatar_url} alt={c.handle} className="w-9 h-9 rounded bg-raised object-cover shrink-0" />
             ) : (
-              <div className="w-9 h-9 rounded bg-[#1c1a17] flex items-center justify-center text-[#F5EFE0]/60 text-xs font-medium shrink-0">
+              <div className="w-9 h-9 rounded bg-raised flex items-center justify-center text-parchment/60 text-xs font-medium shrink-0">
                 {c.handle[0]?.toUpperCase()}
               </div>
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium text-[#F5EFE0] group-hover:text-[#B08D57] transition truncate">@{c.handle}</span>
+                <span className="font-medium text-parchment group-hover:text-brass transition truncate">@{c.handle}</span>
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium capitalize ${STANCE_COLORS[c.stance] ?? STANCE_COLORS.neutral}`}>
                   {STANCE_ICONS[c.stance] ?? ''} {c.stance}
                 </span>
@@ -647,14 +647,14 @@ function TickerClosedCalls({ calls, ticker }: { calls: ClosedTickerCall[]; ticke
                   {outcome}
                 </span>
               </div>
-              <div className="text-[11px] text-[#F5EFE0]/40 mt-1">
+              <div className="text-[11px] text-parchment/40 mt-1">
                 {c.entry_price != null ? `$${c.entry_price.toFixed(2)}` : '—'} → {c.exit_price != null ? `$${c.exit_price.toFixed(2)}` : '—'}
                 {c.exit_date ? ` · closed ${new Date(c.exit_date).toLocaleDateString()}` : ''}
                 {c.close_reason ? ` · ${c.close_reason}` : ''}
               </div>
             </div>
             {ret != null && (
-              <span className={`font-mono text-sm shrink-0 ${ret >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
+              <span className={`font-mono text-sm shrink-0 ${ret >= 0 ? 'text-bull' : 'text-bear'}`}>
                 {ret >= 0 ? '+' : ''}{ret.toFixed(1)}%
               </span>
             )}
@@ -771,23 +771,23 @@ export default function PositionPage() {
     : null;
 
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         <Link
           href="/sources"
-          className="text-sm text-[#F5EFE0]/45 hover:text-[#F5EFE0]/80 transition mb-6 inline-block"
+          className="text-sm text-parchment/45 hover:text-parchment/80 transition mb-6 inline-block"
         >
           ← All positions
         </Link>
 
         {loading ? (
           <div className="animate-pulse space-y-4">
-            <div className="h-12 bg-[#141210] rounded w-48" />
-            <div className="h-[220px] bg-[#141210] rounded" />
-            <div className="h-32 bg-[#141210] rounded" />
-            <div className="h-96 bg-[#141210] rounded" />
+            <div className="h-12 bg-surface rounded w-48" />
+            <div className="h-[220px] bg-surface rounded" />
+            <div className="h-32 bg-surface rounded" />
+            <div className="h-96 bg-surface rounded" />
           </div>
         ) : (
           <>
@@ -795,7 +795,7 @@ export default function PositionPage() {
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-2 flex-wrap">
                 <h1 className="text-4xl font-bold font-mono">
-                  <span className="text-[#B08D57]">{ticker}</span>
+                  <span className="text-brass">{ticker}</span>
                 </h1>
                 {topStance && (
                   <span className={`text-sm px-3 py-1 rounded-sm font-medium capitalize ${STANCE_COLORS[topStance]}`}>
@@ -808,9 +808,9 @@ export default function PositionPage() {
                     disabled={starring}
                     title={starred ? 'Remove from starred' : 'Add to starred'}
                     className="ml-auto text-xl transition-transform active:scale-90"
-                    style={{ color: starred ? '#B08D57' : 'rgba(245,239,224,0.2)', lineHeight: 1 }}
-                    onMouseEnter={(e) => { if (!starred) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(176,141,87,0.6)'; }}
-                    onMouseLeave={(e) => { if (!starred) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(245,239,224,0.2)'; }}
+                    style={{ color: starred ? 'rgb(var(--t-brass))' : 'rgb(var(--t-parchment) / 0.2)', lineHeight: 1 }}
+                    onMouseEnter={(e) => { if (!starred) (e.currentTarget as HTMLButtonElement).style.color = 'rgb(var(--t-brass) / 0.6)'; }}
+                    onMouseLeave={(e) => { if (!starred) (e.currentTarget as HTMLButtonElement).style.color = 'rgb(var(--t-parchment) / 0.2)'; }}
                   >
                     {starred ? '★' : '☆'}
                   </button>
@@ -826,37 +826,37 @@ export default function PositionPage() {
                           src={a.avatar_url}
                           alt={a.handle}
                           title={`@${a.handle} · ${a.stance}`}
-                          className="w-7 h-7 rounded-full bg-[#1c1a17] object-cover border-2 border-[#080604]"
+                          className="w-7 h-7 rounded-full bg-raised object-cover border-2 border-ink"
                         />
                       ) : (
                         <div
                           key={a.source_id}
                           title={`@${a.handle} · ${a.stance}`}
-                          className="w-7 h-7 rounded-full bg-[#1c1a17] flex items-center justify-center text-[10px] font-medium text-[#F5EFE0]/70 border-2 border-[#080604]"
+                          className="w-7 h-7 rounded-full bg-raised flex items-center justify-center text-[10px] font-medium text-parchment/70 border-2 border-ink"
                         >
                           {a.handle[0]?.toUpperCase()}
                         </div>
                       )
                     ))}
                     {analysts.length > 8 && (
-                      <div className="w-7 h-7 rounded-full bg-[#1c1a17] flex items-center justify-center text-[10px] text-[#F5EFE0]/60 border-2 border-[#080604]">
+                      <div className="w-7 h-7 rounded-full bg-raised flex items-center justify-center text-[10px] text-parchment/60 border-2 border-ink">
                         +{analysts.length - 8}
                       </div>
                     )}
                   </div>
-                  <p className="text-[#F5EFE0]/70">
+                  <p className="text-parchment/70">
                     {STANCES.filter((s) => (breakdown[s] ?? 0) > 0).map((s, i, arr) => (
                       <span key={s}>
                         <span className="font-mono font-semibold" style={{ color: STANCE_BAR_COLOR[s] }}>{breakdown[s]}</span>
                         <span className="ml-1 capitalize" style={{ color: STANCE_BAR_COLOR[s] }}>{s}</span>
-                        {i < arr.length - 1 && <span className="text-[#F5EFE0]/30 mx-1.5">·</span>}
+                        {i < arr.length - 1 && <span className="text-parchment/30 mx-1.5">·</span>}
                       </span>
                     ))}
                   </p>
                 </div>
               )}
               {starError && (
-                <p className="text-[#e8453c] text-xs mt-2">{starError}</p>
+                <p className="text-bear text-xs mt-2">{starError}</p>
               )}
             </div>
 
@@ -870,17 +870,17 @@ export default function PositionPage() {
             {starred && session?.user && <SocialPulse ticker={ticker} />}
 
             {/* Tabs: Sources (public stances) + My Activity (private, owner-only) */}
-            <div className="flex gap-1 border-b border-[rgba(176,141,87,0.18)] mb-4">
+            <div className="flex gap-1 border-b border-[rgb(var(--t-brass) / 0.18)] mb-4">
               <button
                 onClick={() => setActiveTab('sources')}
-                className={`px-3 py-2 text-xs uppercase tracking-wide font-[var(--font-oswald)] border-b-2 -mb-px transition ${activeTab === 'sources' ? 'border-[#B08D57] text-[#F5EFE0]' : 'border-transparent text-[#F5EFE0]/45 hover:text-[#F5EFE0]/70'}`}
+                className={`px-3 py-2 text-xs uppercase tracking-wide font-[var(--font-oswald)] border-b-2 -mb-px transition ${activeTab === 'sources' ? 'border-brass text-parchment' : 'border-transparent text-parchment/45 hover:text-parchment/70'}`}
               >
                 Sources{total > 0 ? ` (${total})` : ''}
               </button>
               {closedCalls.length > 0 && (
                 <button
                   onClick={() => setActiveTab('closed')}
-                  className={`px-3 py-2 text-xs uppercase tracking-wide font-[var(--font-oswald)] border-b-2 -mb-px transition ${activeTab === 'closed' ? 'border-[#B08D57] text-[#F5EFE0]' : 'border-transparent text-[#F5EFE0]/45 hover:text-[#F5EFE0]/70'}`}
+                  className={`px-3 py-2 text-xs uppercase tracking-wide font-[var(--font-oswald)] border-b-2 -mb-px transition ${activeTab === 'closed' ? 'border-brass text-parchment' : 'border-transparent text-parchment/45 hover:text-parchment/70'}`}
                 >
                   Closed ({closedCalls.length})
                 </button>
@@ -888,7 +888,7 @@ export default function PositionPage() {
               {activityTrades.length > 0 && (
                 <button
                   onClick={() => setActiveTab('activity')}
-                  className={`px-3 py-2 text-xs uppercase tracking-wide font-[var(--font-oswald)] border-b-2 -mb-px transition ${activeTab === 'activity' ? 'border-[#B08D57] text-[#F5EFE0]' : 'border-transparent text-[#F5EFE0]/45 hover:text-[#F5EFE0]/70'}`}
+                  className={`px-3 py-2 text-xs uppercase tracking-wide font-[var(--font-oswald)] border-b-2 -mb-px transition ${activeTab === 'activity' ? 'border-brass text-parchment' : 'border-transparent text-parchment/45 hover:text-parchment/70'}`}
                 >
                   My Activity ({activityTrades.length})
                 </button>
@@ -900,7 +900,7 @@ export default function PositionPage() {
             ) : activeTab === 'activity' ? (
               <TradingActivity ticker={ticker} trades={activityTrades} />
             ) : !data || total === 0 ? (
-              <div className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 text-sm text-[#F5EFE0]/45">
+              <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 text-sm text-parchment/45">
                 No source currently has a live stance on {ticker}. Research and any past activity above remain available.
               </div>
             ) : (
@@ -921,7 +921,7 @@ export default function PositionPage() {
                     <select
                       value={juntoFilter}
                       onChange={(e) => setJuntoFilter(e.target.value)}
-                      className="text-xs bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-2 py-1 text-[#F5EFE0]/70 focus:outline-none focus:border-[#B08D57]"
+                      className="text-xs bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-2 py-1 text-parchment/70 focus:outline-none focus:border-brass"
                     >
                       <option value="all">All juntos</option>
                       {juntos.map((j) => (
@@ -931,7 +931,7 @@ export default function PositionPage() {
                   </div>
                 )}
                 {viewTotal === 0 ? (
-                  <div className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 text-sm text-[#F5EFE0]/45">
+                  <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 text-sm text-parchment/45">
                     No source{activeJunto ? ` in ${activeJunto.name}` : ''} has a live stance on {ticker}.
                   </div>
                 ) : (
@@ -940,29 +940,29 @@ export default function PositionPage() {
                     <Link
                       key={a.source_id}
                       href={`/sources/${a.handle}`}
-                      className="flex items-start gap-3 p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] hover:bg-[#1c1a17] transition group"
+                      className="flex items-start gap-3 p-4 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface hover:bg-raised transition group"
                     >
                       {a.avatar_url ? (
                         <img
                           src={a.avatar_url}
                           alt={a.handle}
-                          className="w-9 h-9 rounded bg-[#1c1a17] object-cover shrink-0 mt-0.5"
+                          className="w-9 h-9 rounded bg-raised object-cover shrink-0 mt-0.5"
                         />
                       ) : (
-                        <div className="w-9 h-9 rounded bg-[#1c1a17] flex items-center justify-center text-[#F5EFE0]/60 text-xs font-medium shrink-0 mt-0.5">
+                        <div className="w-9 h-9 rounded bg-raised flex items-center justify-center text-parchment/60 text-xs font-medium shrink-0 mt-0.5">
                           {a.handle[0]?.toUpperCase()}
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="font-medium text-[#F5EFE0] group-hover:text-[#B08D57] transition text-sm">
+                          <span className="font-medium text-parchment group-hover:text-brass transition text-sm">
                             @{a.handle}
                           </span>
                           {a.display_name && (
-                            <span className="text-xs text-[#F5EFE0]/45">{a.display_name}</span>
+                            <span className="text-xs text-parchment/45">{a.display_name}</span>
                           )}
                           {stalenessLevel(a) === 'stale' && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded border border-[#e8453c]/20 bg-[#e8453c]/10 text-[#e8453c]/80 font-medium">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded border border-bear/20 bg-bear/10 text-bear/80 font-medium">
                               stale · {Math.floor((Date.now() - new Date(a.last_mentioned || a.since).getTime()) / 86_400_000)}d ago
                             </span>
                           )}
@@ -978,23 +978,23 @@ export default function PositionPage() {
                           </span>
                         </div>
                         {a.note && (
-                          <p className="text-xs text-[#F5EFE0]/60 line-clamp-2 mb-1">{a.note}</p>
+                          <p className="text-xs text-parchment/60 line-clamp-2 mb-1">{a.note}</p>
                         )}
-                        <div className="flex gap-3 text-xs text-[#F5EFE0]/30 flex-wrap items-center">
+                        <div className="flex gap-3 text-xs text-parchment/30 flex-wrap items-center">
                           <span>since {new Date(a.since).toLocaleDateString()}</span>
                           {a.track_record && a.track_record.scored > 0 && (
                             <span
                               title={`${a.track_record.wins}W / ${a.track_record.losses}L on closed ${ticker} calls`}
-                              className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-sm border border-[rgba(176,141,87,0.28)] bg-[#1c1a17]"
+                              className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-sm border border-[rgb(var(--t-brass) / 0.28)] bg-raised"
                             >
-                              <span className="text-[#F5EFE0]/55 font-medium">
+                              <span className="text-parchment/55 font-medium">
                                 {Math.round((a.track_record.wins / a.track_record.scored) * 100)}% on {ticker}
                               </span>
-                              <span className="text-[#F5EFE0]/30 font-mono">
+                              <span className="text-parchment/30 font-mono">
                                 {a.track_record.wins}-{a.track_record.losses}
                               </span>
                               {a.track_record.avg_return_pct != null && (
-                                <span className={`font-mono ${a.track_record.avg_return_pct >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
+                                <span className={`font-mono ${a.track_record.avg_return_pct >= 0 ? 'text-bull' : 'text-bear'}`}>
                                   {a.track_record.avg_return_pct >= 0 ? '+' : ''}{a.track_record.avg_return_pct.toFixed(1)}% avg
                                 </span>
                               )}

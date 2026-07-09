@@ -150,19 +150,19 @@ export default function SetupPage() {
 
   if (status === 'loading') {
     return (
-      <main className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-neutral-400">Loading...</div>
+      <main className="min-h-screen bg-ink text-parchment flex items-center justify-center">
+        <div className="text-parchment/55">Loading...</div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-black text-white flex flex-col">
+    <main className="min-h-screen bg-ink text-parchment flex flex-col">
       {/* Header */}
-      <header className="px-8 py-6 border-b border-neutral-800">
+      <header className="px-8 py-6 border-b border-brass/20">
         <div className="max-w-2xl mx-auto flex justify-between items-center">
           <h1 className="text-sm font-medium tracking-widest uppercase">Joonto</h1>
-          <div className="text-sm text-neutral-400">
+          <div className="text-sm text-parchment/55">
             @{session?.user?.twitterHandle}
           </div>
         </div>
@@ -173,7 +173,7 @@ export default function SetupPage() {
         <div className="max-w-2xl mx-auto">
           <div className="mb-8">
             <h2 className="text-2xl font-light mb-2">Select your sources</h2>
-            <p className="text-neutral-400">
+            <p className="text-parchment/55">
               Choose up to {MAX_PROFILES} accounts. Their tweets will be synthesized into your daily briefing.
             </p>
           </div>
@@ -186,7 +186,7 @@ export default function SetupPage() {
 
           {/* Selected profiles */}
           <div className="mb-6">
-            <div className="text-sm text-neutral-400 mb-3">
+            <div className="text-sm text-parchment/55 mb-3">
               {selected.length}/{MAX_PROFILES} selected
             </div>
             {selected.length > 0 && (
@@ -195,10 +195,10 @@ export default function SetupPage() {
                   <button
                     key={username}
                     onClick={() => toggleSelect(username)}
-                    className="px-3 py-1 bg-white text-black text-sm flex items-center gap-2"
+                    className="px-3 py-1 bg-surface text-ink text-sm flex items-center gap-2"
                   >
                     @{username}
-                    <span className="text-neutral-500">×</span>
+                    <span className="text-parchment/45">×</span>
                   </button>
                 ))}
               </div>
@@ -206,8 +206,8 @@ export default function SetupPage() {
           </div>
 
           {/* Manual add */}
-          <div className="mb-6 p-4 border border-neutral-800 bg-neutral-950">
-            <div className="text-sm text-neutral-400 mb-3">Add any Twitter account</div>
+          <div className="mb-6 p-4 border border-brass/20 bg-ink">
+            <div className="text-sm text-parchment/55 mb-3">Add any Twitter account</div>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -215,12 +215,12 @@ export default function SetupPage() {
                 onChange={(e) => setManualHandle(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && addManualHandle()}
                 placeholder="@username"
-                className="flex-1 px-4 py-2 bg-transparent border border-neutral-700 focus:border-white focus:outline-none transition-colors placeholder-neutral-600 text-sm"
+                className="flex-1 px-4 py-2 bg-transparent border border-brass/28 focus:border-brass/40 focus:outline-none transition-colors placeholder-neutral-600 text-sm"
               />
               <button
                 onClick={addManualHandle}
                 disabled={addingManual || !manualHandle.trim() || selected.length >= MAX_PROFILES}
-                className="px-4 py-2 bg-white text-black text-sm hover:bg-neutral-200 transition-colors disabled:bg-neutral-600 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-surface text-ink text-sm hover:bg-raised transition-colors disabled:bg-raised disabled:cursor-not-allowed"
               >
                 {addingManual ? '...' : 'Add'}
               </button>
@@ -233,17 +233,17 @@ export default function SetupPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search your following..."
-            className="w-full px-4 py-3 mb-4 bg-transparent border border-neutral-700 focus:border-white focus:outline-none transition-colors placeholder-neutral-600"
+            className="w-full px-4 py-3 mb-4 bg-transparent border border-brass/28 focus:border-brass/40 focus:outline-none transition-colors placeholder-neutral-600"
           />
 
           {/* Following list */}
-          <div className="border border-neutral-800 divide-y divide-neutral-800 max-h-80 overflow-y-auto">
+          <div className="border border-brass/20 divide-y divide-neutral-800 max-h-80 overflow-y-auto">
             {loading ? (
-              <div className="p-8 text-center text-neutral-500">
+              <div className="p-8 text-center text-parchment/45">
                 Loading your following list...
               </div>
             ) : filtered.length === 0 ? (
-              <div className="p-8 text-center text-neutral-500">
+              <div className="p-8 text-center text-parchment/45">
                 {search ? 'No matches found' : 'No accounts found'}
               </div>
             ) : (
@@ -254,8 +254,8 @@ export default function SetupPage() {
                   disabled={!selected.includes(user.username) && selected.length >= MAX_PROFILES}
                   className={`w-full p-4 flex items-center gap-4 text-left transition-colors ${
                     selected.includes(user.username)
-                      ? 'bg-neutral-900'
-                      : 'hover:bg-neutral-900/50'
+                      ? 'bg-surface'
+                      : 'hover:bg-surface'
                   } ${
                     !selected.includes(user.username) && selected.length >= MAX_PROFILES
                       ? 'opacity-50 cursor-not-allowed'
@@ -271,13 +271,13 @@ export default function SetupPage() {
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{user.name}</div>
-                    <div className="text-sm text-neutral-400">@{user.username}</div>
+                    <div className="text-sm text-parchment/55">@{user.username}</div>
                   </div>
-                  <div className="text-sm text-neutral-500">
+                  <div className="text-sm text-parchment/45">
                     {user.public_metrics?.followers_count?.toLocaleString() || 0} followers
                   </div>
                   {selected.includes(user.username) && (
-                    <div className="w-5 h-5 bg-white text-black flex items-center justify-center text-xs">
+                    <div className="w-5 h-5 bg-surface text-ink flex items-center justify-center text-xs">
                       ✓
                     </div>
                   )}
@@ -291,7 +291,7 @@ export default function SetupPage() {
             <button
               onClick={handleSave}
               disabled={selected.length === 0 || saving}
-              className="w-full px-8 py-4 bg-white text-black hover:bg-neutral-200 transition-colors disabled:bg-neutral-600 disabled:cursor-not-allowed"
+              className="w-full px-8 py-4 bg-surface text-ink hover:bg-raised transition-colors disabled:bg-raised disabled:cursor-not-allowed"
             >
               {saving ? 'Saving...' : `Continue with ${selected.length} source${selected.length !== 1 ? 's' : ''}`}
             </button>

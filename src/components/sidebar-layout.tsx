@@ -104,11 +104,11 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
                 className="flex items-center gap-3 px-3 py-2 text-sm rounded-sm transition-colors"
                 style={
                   pathname === item.href
-                    ? { background: 'rgba(176,141,87,0.12)', color: '#F5EFE0', borderLeft: '2px solid #B08D57' }
-                    : { color: 'rgba(245,239,224,0.45)' }
+                    ? { background: 'rgb(var(--t-brass) / 0.12)', color: 'rgb(var(--t-parchment))', borderLeft: '2px solid rgb(var(--t-brass))' }
+                    : { color: 'rgb(var(--t-parchment) / 0.45)' }
                 }
               >
-                <span className="text-xs" style={{ color: pathname === item.href ? '#B08D57' : 'rgba(176,141,87,0.5)' }}>{item.icon}</span>
+                <span className="text-xs" style={{ color: pathname === item.href ? 'rgb(var(--t-brass))' : 'rgb(var(--t-brass) / 0.5)' }}>{item.icon}</span>
                 {item.label}
               </Link>
             </li>
@@ -119,17 +119,17 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
         <div className="px-3 mt-2">
           <button
             onClick={() => setDetailOpen(!detailOpen)}
-            className="flex items-center justify-between w-full px-3 py-2 text-sm rounded-sm transition-colors hover:bg-[#1c1a17]"
-            style={{ color: 'rgba(245,239,224,0.45)' }}
+            className="flex items-center justify-between w-full px-3 py-2 text-sm rounded-sm transition-colors hover:bg-raised"
+            style={{ color: 'rgb(var(--t-parchment) / 0.45)' }}
           >
             <span className="flex items-center gap-3">
-              <span className="text-xs" style={{ color: 'rgba(176,141,87,0.5)' }}>▸</span>
+              <span className="text-xs" style={{ color: 'rgb(var(--t-brass) / 0.5)' }}>▸</span>
               Detail
             </span>
             <span className="text-[10px]">{detailOpen ? '−' : '+'}</span>
           </button>
           {detailOpen && (
-            <ul className="ml-6 mt-1 space-y-0.5 border-l border-[#B08D57]/20 pl-3">
+            <ul className="ml-6 mt-1 space-y-0.5 border-l border-brass/20 pl-3">
               {detailItems.map((item) => (
                 <li key={item.href}>
                   <Link
@@ -137,10 +137,10 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-3 py-1.5 text-sm rounded-sm transition-colors"
                     style={pathname === item.href
-                      ? { background: 'rgba(176,141,87,0.12)', color: '#F5EFE0', borderLeft: '2px solid #B08D57' }
-                      : { color: 'rgba(245,239,224,0.4)' }}
+                      ? { background: 'rgb(var(--t-brass) / 0.12)', color: 'rgb(var(--t-parchment))', borderLeft: '2px solid rgb(var(--t-brass))' }
+                      : { color: 'rgb(var(--t-parchment) / 0.4)' }}
                   >
-                    <span className="text-xs" style={{ color: pathname === item.href ? '#B08D57' : 'rgba(176,141,87,0.5)' }}>{item.icon}</span>
+                    <span className="text-xs" style={{ color: pathname === item.href ? 'rgb(var(--t-brass))' : 'rgb(var(--t-brass) / 0.5)' }}>{item.icon}</span>
                     {item.label}
                   </Link>
                 </li>
@@ -152,22 +152,22 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 
       {/* Credits section */}
       {session && (
-        <div className="px-3 py-3" style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}>
+        <div className="px-3 py-3" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.18)' }}>
           <div className="px-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs uppercase tracking-wide" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>Credits</span>
-              <span className="text-sm font-medium" style={{ color: '#F5EFE0', fontFamily: 'var(--font-mono)' }}>{credits ?? '...'}</span>
+              <span className="text-xs uppercase tracking-wide" style={{ color: 'rgb(var(--t-parchment) / 0.35)', fontFamily: 'var(--font-oswald)' }}>Credits</span>
+              <span className="text-sm font-medium" style={{ color: 'rgb(var(--t-parchment))', fontFamily: 'var(--font-mono)' }}>{credits ?? '...'}</span>
             </div>
             <button
               onClick={handleRequestMoreCredits}
               disabled={requestingCredits}
               className="w-full px-3 py-1.5 text-xs rounded-sm transition-colors disabled:opacity-50"
-              style={{ background: 'rgba(176,141,87,0.1)', color: 'rgba(245,239,224,0.6)', border: '1px solid rgba(176,141,87,0.18)' }}
+              style={{ background: 'rgb(var(--t-brass) / 0.1)', color: 'rgb(var(--t-parchment) / 0.6)', border: '1px solid rgb(var(--t-brass) / 0.18)' }}
             >
               {requestingCredits ? 'Sending...' : 'Request More Credits'}
             </button>
             {creditRequestMessage && (
-              <div className="mt-2 text-xs" style={{ color: creditRequestMessage.includes('sent') ? '#3ecf6a' : '#e8453c' }}>
+              <div className="mt-2 text-xs" style={{ color: creditRequestMessage.includes('sent') ? 'rgb(var(--t-bull))' : 'rgb(var(--t-bear))' }}>
                 {creditRequestMessage}
               </div>
             )}
@@ -176,15 +176,15 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
       )}
 
       {/* User section - always visible at bottom */}
-      <div className="mt-auto px-3 py-4" style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}>
+      <div className="mt-auto px-3 py-4" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.18)' }}>
         <div className="px-3 py-2">
-          <div className="text-sm truncate" style={{ color: 'rgba(245,239,224,0.7)' }}>@{(session?.user as { twitterHandle?: string } | undefined)?.twitterHandle || 'user'}</div>
+          <div className="text-sm truncate" style={{ color: 'rgb(var(--t-parchment) / 0.7)' }}>@{(session?.user as { twitterHandle?: string } | undefined)?.twitterHandle || 'user'}</div>
           <button
             onClick={() => signOut({ callbackUrl: '/' })}
             className="text-xs transition-colors mt-1"
-            style={{ color: 'rgba(245,239,224,0.3)' }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#e8453c'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(245,239,224,0.3)'; }}
+            style={{ color: 'rgb(var(--t-parchment) / 0.3)' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgb(var(--t-bear))'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgb(var(--t-parchment) / 0.3)'; }}
           >
             Sign out
           </button>
@@ -194,12 +194,12 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
   );
 
   return (
-    <div className="h-screen flex overflow-hidden" style={{ background: '#080604', color: '#F5EFE0' }}>
+    <div className="h-screen flex overflow-hidden" style={{ background: 'rgb(var(--t-ink))', color: 'rgb(var(--t-parchment))' }}>
       {/* Desktop Sidebar - fixed height 100vh */}
-      <aside className="hidden md:flex w-56 h-screen flex-col fixed left-0 top-0" style={{ background: '#080604', borderRight: '1px solid rgba(176,141,87,0.18)' }}>
+      <aside className="hidden md:flex w-56 h-screen flex-col fixed left-0 top-0" style={{ background: 'rgb(var(--t-ink))', borderRight: '1px solid rgb(var(--t-brass) / 0.18)' }}>
         {/* Logo */}
-        <div className="px-6 py-6 shrink-0" style={{ borderBottom: '1px solid rgba(176,141,87,0.18)' }}>
-          <Link href="/dashboard" className="text-sm font-medium tracking-widest uppercase" style={{ color: '#F5EFE0', fontFamily: 'var(--font-oswald)' }}>
+        <div className="px-6 py-6 shrink-0" style={{ borderBottom: '1px solid rgb(var(--t-brass) / 0.18)' }}>
+          <Link href="/dashboard" className="text-sm font-medium tracking-widest uppercase" style={{ color: 'rgb(var(--t-parchment))', fontFamily: 'var(--font-oswald)' }}>
             MyJunto
           </Link>
         </div>
@@ -207,8 +207,8 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
       </aside>
 
       {/* Mobile Header */}
-      <header className="md:hidden fixed top-0 left-0 right-0 h-14 flex items-center justify-between px-4 z-40" style={{ background: '#080604', borderBottom: '1px solid rgba(176,141,87,0.18)' }}>
-        <Link href="/dashboard" className="text-sm font-medium tracking-widest uppercase" style={{ color: '#F5EFE0', fontFamily: 'var(--font-oswald)' }}>
+      <header className="md:hidden fixed top-0 left-0 right-0 h-14 flex items-center justify-between px-4 z-40" style={{ background: 'rgb(var(--t-ink))', borderBottom: '1px solid rgb(var(--t-brass) / 0.18)' }}>
+        <Link href="/dashboard" className="text-sm font-medium tracking-widest uppercase" style={{ color: 'rgb(var(--t-parchment))', fontFamily: 'var(--font-oswald)' }}>
           MyJunto
         </Link>
         <button
@@ -216,9 +216,9 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
           className="w-10 h-10 flex flex-col items-center justify-center gap-1.5"
           aria-label="Toggle menu"
         >
-          <span className={`w-5 h-0.5 transition-transform duration-200 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} style={{ background: 'rgba(245,239,224,0.7)' }} />
-          <span className={`w-5 h-0.5 transition-opacity duration-200 ${mobileMenuOpen ? 'opacity-0' : ''}`} style={{ background: 'rgba(245,239,224,0.7)' }} />
-          <span className={`w-5 h-0.5 transition-transform duration-200 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} style={{ background: 'rgba(245,239,224,0.7)' }} />
+          <span className={`w-5 h-0.5 transition-transform duration-200 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} style={{ background: 'rgb(var(--t-parchment) / 0.7)' }} />
+          <span className={`w-5 h-0.5 transition-opacity duration-200 ${mobileMenuOpen ? 'opacity-0' : ''}`} style={{ background: 'rgb(var(--t-parchment) / 0.7)' }} />
+          <span className={`w-5 h-0.5 transition-transform duration-200 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} style={{ background: 'rgb(var(--t-parchment) / 0.7)' }} />
         </button>
       </header>
 
@@ -226,7 +226,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
       {mobileMenuOpen && (
         <div
           className="md:hidden fixed inset-0 z-30"
-          style={{ background: 'rgba(8,6,4,0.8)' }}
+          style={{ background: 'rgb(var(--t-ink) / 0.8)' }}
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
@@ -236,7 +236,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
         className={`md:hidden fixed top-14 left-0 bottom-0 w-[78vw] max-w-[280px] z-30 flex flex-col overflow-y-auto transform transition-transform duration-200 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
-        style={{ background: '#080604', borderRight: '1px solid rgba(176,141,87,0.18)' }}
+        style={{ background: 'rgb(var(--t-ink))', borderRight: '1px solid rgb(var(--t-brass) / 0.18)' }}
       >
         <NavContent />
       </aside>

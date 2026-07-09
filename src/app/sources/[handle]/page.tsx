@@ -118,10 +118,10 @@ interface ClosedCall {
 }
 
 const STANCE_BADGE: Record<string, string> = {
-  bullish: 'bg-[#3ecf6a]/15 text-[#3ecf6a] border border-[#3ecf6a]/40',
-  bearish: 'bg-[#e8453c]/15 text-[#e8453c] border border-[#e8453c]/40',
+  bullish: 'bg-bull/15 text-bull border border-bull/40',
+  bearish: 'bg-bear/15 text-bear border border-bear/40',
   cautious: 'bg-amber-900/40 text-amber-400 border border-amber-700/40',
-  neutral: 'bg-[#1c1a17] text-[#F5EFE0]/45 border border-[rgba(176,141,87,0.18)]',
+  neutral: 'bg-raised text-parchment/45 border border-[rgb(var(--t-brass) / 0.18)]',
 };
 
 const STANCE_LABELS: Record<string, string> = {
@@ -136,25 +136,25 @@ function daysHeld(since: string): number {
 }
 
 const OUTCOME_PILL: Record<string, string> = {
-  win: 'bg-[#3ecf6a]/15 text-[#3ecf6a] border border-[#3ecf6a]/40',
-  loss: 'bg-[#e8453c]/15 text-[#e8453c] border border-[#e8453c]/40',
-  flat: 'bg-[#1c1a17] text-[#F5EFE0]/50 border border-[rgba(176,141,87,0.18)]',
-  unscored: 'bg-[#1c1a17] text-[#F5EFE0]/35 border border-[rgba(176,141,87,0.12)]',
+  win: 'bg-bull/15 text-bull border border-bull/40',
+  loss: 'bg-bear/15 text-bear border border-bear/40',
+  flat: 'bg-raised text-parchment/50 border border-[rgb(var(--t-brass) / 0.18)]',
+  unscored: 'bg-raised text-parchment/35 border border-[rgb(var(--t-brass) / 0.12)]',
 };
 
 function ClosedCallsTable({ calls }: { calls: ClosedCall[] }) {
   if (calls.length === 0) {
     return (
-      <p className="text-[#F5EFE0]/45 text-sm">
+      <p className="text-parchment/45 text-sm">
         No closed calls yet — a call is scored here once this source exits it.
       </p>
     );
   }
   return (
-    <div className="overflow-x-auto bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded">
+    <div className="overflow-x-auto bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded">
       <table className="w-full text-sm min-w-[720px]">
         <thead>
-          <tr className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)] border-b border-[rgba(176,141,87,0.18)]">
+          <tr className="text-[10px] uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)] border-b border-[rgb(var(--t-brass) / 0.18)]">
             <th className="text-left font-semibold px-4 py-3">Name</th>
             <th className="text-left font-semibold px-3 py-3">Outcome</th>
             <th className="text-right font-semibold px-3 py-3">Return</th>
@@ -168,10 +168,10 @@ function ClosedCallsTable({ calls }: { calls: ClosedCall[] }) {
             const ret = c.return_pct;
             const outcome = (c.outcome || 'unscored').toLowerCase();
             return (
-              <tr key={`${c.ticker}-${c.exit_date}-${i}`} className="border-b border-[rgba(176,141,87,0.08)] last:border-0 hover:bg-[#1c1a17]/50 transition">
+              <tr key={`${c.ticker}-${c.exit_date}-${i}`} className="border-b border-[rgb(var(--t-brass) / 0.08)] last:border-0 hover:bg-raised/50 transition">
                 <td className="px-4 py-3">
                   <Link href={`/positions/${c.ticker}`} className="inline-flex items-center gap-2 group">
-                    <span className="font-mono font-bold text-[#F5EFE0] group-hover:text-[#B08D57] transition">{c.ticker}</span>
+                    <span className="font-mono font-bold text-parchment group-hover:text-brass transition">{c.ticker}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium ${STANCE_BADGE[c.stance] ?? STANCE_BADGE.neutral}`}>
                       {STANCE_LABELS[c.stance] ?? c.stance}
                     </span>
@@ -184,18 +184,18 @@ function ClosedCallsTable({ calls }: { calls: ClosedCall[] }) {
                 </td>
                 <td className="px-3 py-3 text-right font-mono">
                   {ret != null ? (
-                    <span className={ret >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}>{ret >= 0 ? '+' : ''}{ret.toFixed(1)}%</span>
+                    <span className={ret >= 0 ? 'text-bull' : 'text-bear'}>{ret >= 0 ? '+' : ''}{ret.toFixed(1)}%</span>
                   ) : (
-                    <span className="text-[#F5EFE0]/30">—</span>
+                    <span className="text-parchment/30">—</span>
                   )}
                 </td>
-                <td className="px-3 py-3 text-right font-mono text-[#F5EFE0]/60 whitespace-nowrap">
+                <td className="px-3 py-3 text-right font-mono text-parchment/60 whitespace-nowrap">
                   {c.entry_price != null ? `$${c.entry_price.toFixed(2)}` : '—'} → {c.exit_price != null ? `$${c.exit_price.toFixed(2)}` : '—'}
                 </td>
-                <td className="px-3 py-3 text-xs text-[#F5EFE0]/60 whitespace-nowrap">
+                <td className="px-3 py-3 text-xs text-parchment/60 whitespace-nowrap">
                   {c.exit_date ? new Date(c.exit_date).toLocaleDateString() : '—'}
                 </td>
-                <td className="px-4 py-3 text-xs text-[#F5EFE0]/45 capitalize">{c.close_reason ?? '—'}</td>
+                <td className="px-4 py-3 text-xs text-parchment/45 capitalize">{c.close_reason ?? '—'}</td>
               </tr>
             );
           })}
@@ -262,19 +262,19 @@ export default function SourceProfilePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+      <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
         <div className="container mx-auto px-4 py-16 max-w-3xl">
           <div className="animate-pulse space-y-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded bg-[#141210]" />
+              <div className="w-16 h-16 rounded bg-surface" />
               <div>
-                <div className="h-6 bg-[#141210] rounded w-40 mb-2" />
-                <div className="h-4 bg-[#141210]/60 rounded w-24" />
+                <div className="h-6 bg-surface rounded w-40 mb-2" />
+                <div className="h-4 bg-surface/60 rounded w-24" />
               </div>
             </div>
-            <div className="h-4 bg-[#141210]/60 rounded w-full" />
-            <div className="h-4 bg-[#141210]/60 rounded w-2/3" />
+            <div className="h-4 bg-surface/60 rounded w-full" />
+            <div className="h-4 bg-surface/60 rounded w-2/3" />
           </div>
         </div>
       </main>
@@ -283,11 +283,11 @@ export default function SourceProfilePage() {
 
   if (notFound || !profile) {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+      <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
         <div className="container mx-auto px-4 py-16 max-w-3xl text-center">
-          <p className="text-[#F5EFE0]/60 mb-4">Profile not found for @{handle}</p>
-          <Link href="/sources" className="text-[#B08D57] hover:text-[#B08D57]/80 text-sm">
+          <p className="text-parchment/60 mb-4">Profile not found for @{handle}</p>
+          <Link href="/sources" className="text-brass hover:text-brass/80 text-sm">
             ← Back to Sources
           </Link>
         </div>
@@ -323,11 +323,11 @@ export default function SourceProfilePage() {
   const perf = { ...perfRaw, avgReturn: perfRaw.scored > 0 ? perfRaw.sumReturn / perfRaw.scored : 0 };
 
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
-        <Link href="/sources" className="text-[#F5EFE0]/45 hover:text-[#F5EFE0]/80 text-sm transition mb-6 inline-block">
+        <Link href="/sources" className="text-parchment/45 hover:text-parchment/80 text-sm transition mb-6 inline-block">
           ← Sources
         </Link>
 
@@ -337,10 +337,10 @@ export default function SourceProfilePage() {
             <img
               src={profile.source.avatar_url}
               alt={displayHandle}
-              className="w-16 h-16 rounded bg-[#1c1a17] object-cover shrink-0"
+              className="w-16 h-16 rounded bg-raised object-cover shrink-0"
             />
           ) : (
-            <div className="w-16 h-16 rounded bg-[#1c1a17] flex items-center justify-center text-[#F5EFE0]/80 text-xl font-bold shrink-0">
+            <div className="w-16 h-16 rounded bg-raised flex items-center justify-center text-parchment/80 text-xl font-bold shrink-0">
               {displayHandle[0]?.toUpperCase()}
             </div>
           )}
@@ -352,16 +352,16 @@ export default function SourceProfilePage() {
               href={`https://twitter.com/${displayHandle}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#F5EFE0]/45 hover:text-[#B08D57] text-sm transition"
+              className="text-parchment/45 hover:text-brass text-sm transition"
             >
               @{displayHandle} ↗
             </a>
-            <p className="text-xs text-[#F5EFE0]/40 mt-1.5 font-[var(--font-oswald)] uppercase tracking-wider">
+            <p className="text-xs text-parchment/40 mt-1.5 font-[var(--font-oswald)] uppercase tracking-wider">
               Tracking since {new Date(profile.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
             </p>
             {creator && creator.siblings.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/35 font-[var(--font-oswald)]">
+                <span className="text-[10px] uppercase tracking-wider text-parchment/35 font-[var(--font-oswald)]">
                   Also publishes as {creator.name} on
                 </span>
                 {creator.siblings.map((s) => {
@@ -369,7 +369,7 @@ export default function SourceProfilePage() {
                   const label = `${PLATFORM_LABEL[s.type] || s.type}`;
                   const external = /^https?:\/\//i.test(href);
                   const cls =
-                    'inline-flex items-center gap-1 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-2 py-0.5 text-xs text-[#F5EFE0]/75 hover:text-[#B08D57] hover:border-[#B08D57] transition';
+                    'inline-flex items-center gap-1 bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-2 py-0.5 text-xs text-parchment/75 hover:text-brass hover:border-brass transition';
                   return external ? (
                     <a key={`${s.type}:${s.handle_or_url}`} href={href} target="_blank" rel="noopener noreferrer" className={cls}>
                       {label} ↗
@@ -403,9 +403,9 @@ export default function SourceProfilePage() {
 
         {/* Summary */}
         {profile.summary && (
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-8">
-            <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-2 font-[var(--font-oswald)]">Source Summary</h2>
-            <p className="text-[#F5EFE0]/80 leading-relaxed">{profile.summary}</p>
+          <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5 mb-8">
+            <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider mb-2 font-[var(--font-oswald)]">Source Summary</h2>
+            <p className="text-parchment/80 leading-relaxed">{profile.summary}</p>
           </div>
         )}
 
@@ -414,41 +414,41 @@ export default function SourceProfilePage() {
             history we're only now starting to accumulate. */}
         {(perf.scored > 0 || (hitRate?.total ?? 0) > 0) && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 mb-1 font-[var(--font-oswald)]">Calls Working</p>
-              <p className="text-xl font-bold text-[#F5EFE0]">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-4">
+              <p className="text-[10px] uppercase tracking-wider text-parchment/45 mb-1 font-[var(--font-oswald)]">Calls Working</p>
+              <p className="text-xl font-bold text-parchment">
                 {perf.scored > 0 ? `${Math.round((perf.working / perf.scored) * 100)}%` : '—'}
-                {perf.scored > 0 && <span className="text-xs font-normal text-[#F5EFE0]/45 ml-1.5">{perf.working}/{perf.scored}</span>}
+                {perf.scored > 0 && <span className="text-xs font-normal text-parchment/45 ml-1.5">{perf.working}/{perf.scored}</span>}
               </p>
-              <p className="text-[10px] text-[#F5EFE0]/30 mt-0.5">open calls now</p>
+              <p className="text-[10px] text-parchment/30 mt-0.5">open calls now</p>
             </div>
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 mb-1 font-[var(--font-oswald)]">Avg Return</p>
-              <p className={`text-xl font-bold ${perf.avgReturn >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-4">
+              <p className="text-[10px] uppercase tracking-wider text-parchment/45 mb-1 font-[var(--font-oswald)]">Avg Return</p>
+              <p className={`text-xl font-bold ${perf.avgReturn >= 0 ? 'text-bull' : 'text-bear'}`}>
                 {perf.scored > 0 ? `${perf.avgReturn >= 0 ? '+' : ''}${perf.avgReturn.toFixed(1)}%` : '—'}
               </p>
-              <p className="text-[10px] text-[#F5EFE0]/30 mt-0.5">open calls now</p>
+              <p className="text-[10px] text-parchment/30 mt-0.5">open calls now</p>
             </div>
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 mb-1 font-[var(--font-oswald)]">Targets Hit</p>
-              <p className="text-xl font-bold text-[#F5EFE0]">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-4">
+              <p className="text-[10px] uppercase tracking-wider text-parchment/45 mb-1 font-[var(--font-oswald)]">Targets Hit</p>
+              <p className="text-xl font-bold text-parchment">
                 {perf.targets > 0 ? `${perf.targetsHit}/${perf.targets}` : '—'}
               </p>
-              <p className="text-[10px] text-[#F5EFE0]/30 mt-0.5">open calls now</p>
+              <p className="text-[10px] text-parchment/30 mt-0.5">open calls now</p>
             </div>
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#B08D57]/70 mb-1 font-[var(--font-oswald)]">Hit Rate</p>
-              <p className="text-xl font-bold text-[#F5EFE0]">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-4">
+              <p className="text-[10px] uppercase tracking-wider text-brass/70 mb-1 font-[var(--font-oswald)]">Hit Rate</p>
+              <p className="text-xl font-bold text-parchment">
                 {hitRate && hitRate.scored > 0 ? (
                   <>
                     {Math.round((hitRate.wins / hitRate.scored) * 100)}%
-                    <span className="text-xs font-normal text-[#F5EFE0]/45 ml-1.5">{hitRate.wins}/{hitRate.scored}</span>
+                    <span className="text-xs font-normal text-parchment/45 ml-1.5">{hitRate.wins}/{hitRate.scored}</span>
                   </>
                 ) : (
                   '—'
                 )}
               </p>
-              <p className="text-[10px] text-[#F5EFE0]/30 mt-0.5">
+              <p className="text-[10px] text-parchment/30 mt-0.5">
                 {hitRate && hitRate.total > 0 ? 'closed calls' : 'tracking from now'}
               </p>
             </div>
@@ -458,19 +458,19 @@ export default function SourceProfilePage() {
         {/* Tracked stances table */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4 gap-3">
-            <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider font-[var(--font-oswald)]">
+            <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider font-[var(--font-oswald)]">
               {callView === 'open' ? 'Tracked Calls' : 'Closed Calls'}
             </h2>
-            <div className="inline-flex rounded overflow-hidden border border-[rgba(176,141,87,0.28)] text-[11px]">
+            <div className="inline-flex rounded overflow-hidden border border-[rgb(var(--t-brass) / 0.28)] text-[11px]">
               <button
                 onClick={() => setCallView('open')}
-                className={`px-3 py-1 font-medium transition ${callView === 'open' ? 'bg-[rgba(176,141,87,0.18)] text-[#B08D57]' : 'text-[#F5EFE0]/45 hover:text-[#F5EFE0]/70'}`}
+                className={`px-3 py-1 font-medium transition ${callView === 'open' ? 'bg-[rgb(var(--t-brass) / 0.18)] text-brass' : 'text-parchment/45 hover:text-parchment/70'}`}
               >
                 Open ({positions.length})
               </button>
               <button
                 onClick={() => setCallView('closed')}
-                className={`px-3 py-1 font-medium transition border-l border-[rgba(176,141,87,0.28)] ${callView === 'closed' ? 'bg-[rgba(176,141,87,0.18)] text-[#B08D57]' : 'text-[#F5EFE0]/45 hover:text-[#F5EFE0]/70'}`}
+                className={`px-3 py-1 font-medium transition border-l border-[rgb(var(--t-brass) / 0.28)] ${callView === 'closed' ? 'bg-[rgb(var(--t-brass) / 0.18)] text-brass' : 'text-parchment/45 hover:text-parchment/70'}`}
               >
                 Closed ({closedCalls.length})
               </button>
@@ -480,12 +480,12 @@ export default function SourceProfilePage() {
           {callView === 'closed' ? (
             <ClosedCallsTable calls={closedCalls} />
           ) : positions.length === 0 ? (
-            <p className="text-[#F5EFE0]/45 text-sm">No positions tracked yet — will populate on next content pull.</p>
+            <p className="text-parchment/45 text-sm">No positions tracked yet — will populate on next content pull.</p>
           ) : (
-            <div className="overflow-x-auto bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded">
+            <div className="overflow-x-auto bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded">
               <table className="w-full text-sm min-w-[760px]">
                 <thead>
-                  <tr className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)] border-b border-[rgba(176,141,87,0.18)]">
+                  <tr className="text-[10px] uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)] border-b border-[rgb(var(--t-brass) / 0.18)]">
                     <th className="text-left font-semibold px-4 py-3">Name</th>
                     <th className="text-right font-semibold px-3 py-3">Price</th>
                     <th className="text-right font-semibold px-3 py-3">Entry</th>
@@ -508,48 +508,48 @@ export default function SourceProfilePage() {
                         : null;
                     const level = stalenessLevel(pos);
                     const statusLabel = level === 'stale' ? `Stale · ${days}d` : level === 'warn' ? `Cooling · ${days}d` : `Active · ${days}d`;
-                    const statusCls = level === 'stale' ? 'text-[#e8453c]/80' : level === 'warn' ? 'text-amber-400/80' : 'text-[#3ecf6a]';
+                    const statusCls = level === 'stale' ? 'text-bear/80' : level === 'warn' ? 'text-amber-400/80' : 'text-bull';
                     const held = holdings[ticker] ?? [];
                     return (
-                      <tr key={ticker} className="border-b border-[rgba(176,141,87,0.08)] last:border-0 hover:bg-[#1c1a17]/50 transition">
+                      <tr key={ticker} className="border-b border-[rgb(var(--t-brass) / 0.08)] last:border-0 hover:bg-raised/50 transition">
                         <td className="px-4 py-3">
                           <Link href={`/positions/${ticker}`} className="inline-flex items-center gap-2 group">
-                            <span className="font-mono font-bold text-[#F5EFE0] group-hover:text-[#B08D57] transition">{ticker}</span>
+                            <span className="font-mono font-bold text-parchment group-hover:text-brass transition">{ticker}</span>
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium ${STANCE_BADGE[pos.stance]}`}>
                               {STANCE_LABELS[pos.stance]}
                             </span>
                           </Link>
-                          {pos.note && <p className="text-xs text-[#F5EFE0]/40 mt-1 line-clamp-1 max-w-[220px]" title={pos.note}>{pos.note}</p>}
+                          {pos.note && <p className="text-xs text-parchment/40 mt-1 line-clamp-1 max-w-[220px]" title={pos.note}>{pos.note}</p>}
                         </td>
-                        <td className="px-3 py-3 text-right font-mono text-[#F5EFE0]/90">
+                        <td className="px-3 py-3 text-right font-mono text-parchment/90">
                           {quote?.price != null ? `$${quote.price.toFixed(2)}` : '—'}
                         </td>
-                        <td className="px-3 py-3 text-right font-mono text-[#F5EFE0]/60">
+                        <td className="px-3 py-3 text-right font-mono text-parchment/60">
                           {pos.entry_price != null ? `$${pos.entry_price.toFixed(2)}` : '—'}
                         </td>
                         <td className="px-3 py-3 text-right font-mono">
                           {ret != null ? (
-                            <span className={ret >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}>
+                            <span className={ret >= 0 ? 'text-bull' : 'text-bear'}>
                               {ret >= 0 ? '+' : ''}{ret.toFixed(1)}%
                             </span>
                           ) : (
-                            <span className="text-[#F5EFE0]/30">—</span>
+                            <span className="text-parchment/30">—</span>
                           )}
                         </td>
                         <td className={`px-3 py-3 text-xs whitespace-nowrap ${statusCls}`}>{statusLabel}</td>
                         <td className="px-4 py-3">
                           {held.length === 0 ? (
-                            <span className="text-[#F5EFE0]/25 text-xs">—</span>
+                            <span className="text-parchment/25 text-xs">—</span>
                           ) : (
                             <div className="space-y-1">
                               {held.map((h) => (
                                 <div key={h.mandate_id} className="flex items-center gap-2 text-xs">
-                                  <Link href={`/trading/${h.mandate_id}`} className="text-[#B08D57]/90 hover:text-[#B08D57] truncate max-w-[120px]" title={h.mandate_name}>
+                                  <Link href={`/trading/${h.mandate_id}`} className="text-brass/90 hover:text-brass truncate max-w-[120px]" title={h.mandate_name}>
                                     {h.mandate_name}
                                   </Link>
-                                  <span className="text-[#F5EFE0]/30">{h.side}</span>
+                                  <span className="text-parchment/30">{h.side}</span>
                                   {h.unrealized_pl != null && (
-                                    <span className={`font-mono ${h.unrealized_pl >= 0 ? 'text-[#3ecf6a]' : 'text-[#e8453c]'}`}>
+                                    <span className={`font-mono ${h.unrealized_pl >= 0 ? 'text-bull' : 'text-bear'}`}>
                                       {h.unrealized_pl >= 0 ? '+' : ''}${h.unrealized_pl.toFixed(0)}
                                       {h.unrealized_plpc != null && ` (${(h.unrealized_plpc * 100).toFixed(1)}%)`}
                                     </span>
@@ -570,28 +570,28 @@ export default function SourceProfilePage() {
 
         {/* Juntos */}
         <div className="mb-8">
-          <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
+          <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
             Juntos
           </h2>
           {juntos.length === 0 ? (
-            <p className="text-[#F5EFE0]/45 text-sm">No juntos yet.</p>
+            <p className="text-parchment/45 text-sm">No juntos yet.</p>
           ) : (
             <div className="space-y-3">
               {juntos.map((j) => (
                 <Link
                   key={j.id}
                   href={`/junto/${j.id}`}
-                  className="block bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 hover:border-[rgba(176,141,87,0.4)] transition"
+                  className="block bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 hover:border-[rgb(var(--t-brass) / 0.4)] transition"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-semibold text-[#F5EFE0] truncate">{j.name}</p>
+                      <p className="font-semibold text-parchment truncate">{j.name}</p>
                       {j.description && (
-                        <p className="text-sm text-[#F5EFE0]/60 mt-0.5 line-clamp-2">{j.description}</p>
+                        <p className="text-sm text-parchment/60 mt-0.5 line-clamp-2">{j.description}</p>
                       )}
                     </div>
                     {!j.is_public && (
-                      <span className="text-xs text-[#F5EFE0]/30 shrink-0">Private</span>
+                      <span className="text-xs text-parchment/30 shrink-0">Private</span>
                     )}
                   </div>
                 </Link>
@@ -602,29 +602,29 @@ export default function SourceProfilePage() {
 
         {/* Dispatches owned */}
         <div className="mb-8">
-          <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
+          <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
             Dispatches
           </h2>
           {dispatches.length === 0 ? (
-            <p className="text-[#F5EFE0]/45 text-sm">No public dispatches yet.</p>
+            <p className="text-parchment/45 text-sm">No public dispatches yet.</p>
           ) : (
             <div className="space-y-3">
               {dispatches.map((d) => (
                 <Link
                   key={d.id}
                   href={`/newsletter/${d.id}`}
-                  className="block bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 hover:border-[rgba(176,141,87,0.4)] transition"
+                  className="block bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 hover:border-[rgb(var(--t-brass) / 0.4)] transition"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-semibold text-[#F5EFE0] truncate">{d.name}</p>
+                      <p className="font-semibold text-parchment truncate">{d.name}</p>
                       {d.description && (
-                        <p className="text-sm text-[#F5EFE0]/60 mt-0.5 line-clamp-2">{d.description}</p>
+                        <p className="text-sm text-parchment/60 mt-0.5 line-clamp-2">{d.description}</p>
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-xs text-[#F5EFE0]/45">{d.subscriber_count} subscriber{d.subscriber_count !== 1 ? 's' : ''}</p>
-                      <p className="text-xs text-[#F5EFE0]/30 capitalize">{d.schedule_cadence}</p>
+                      <p className="text-xs text-parchment/45">{d.subscriber_count} subscriber{d.subscriber_count !== 1 ? 's' : ''}</p>
+                      <p className="text-xs text-parchment/30 capitalize">{d.schedule_cadence}</p>
                     </div>
                   </div>
                 </Link>
@@ -635,29 +635,29 @@ export default function SourceProfilePage() {
 
         {/* Subscribed dispatches */}
         <div className="mb-8">
-          <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
+          <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
             Subscribed To
           </h2>
           {subscribedDispatches.length === 0 ? (
-            <p className="text-[#F5EFE0]/45 text-sm">No active subscriptions.</p>
+            <p className="text-parchment/45 text-sm">No active subscriptions.</p>
           ) : (
             <div className="space-y-3">
               {subscribedDispatches.map((d) => (
                 <Link
                   key={d.id}
                   href={`/newsletter/${d.id}`}
-                  className="block bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-4 hover:border-[rgba(176,141,87,0.4)] transition"
+                  className="block bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 hover:border-[rgb(var(--t-brass) / 0.4)] transition"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-semibold text-[#F5EFE0] truncate">{d.name}</p>
+                      <p className="font-semibold text-parchment truncate">{d.name}</p>
                       {d.description && (
-                        <p className="text-sm text-[#F5EFE0]/60 mt-0.5 line-clamp-2">{d.description}</p>
+                        <p className="text-sm text-parchment/60 mt-0.5 line-clamp-2">{d.description}</p>
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-xs text-[#F5EFE0]/45">{d.subscriber_count} subscriber{d.subscriber_count !== 1 ? 's' : ''}</p>
-                      <p className="text-xs text-[#F5EFE0]/30 capitalize">{d.schedule_cadence}</p>
+                      <p className="text-xs text-parchment/45">{d.subscriber_count} subscriber{d.subscriber_count !== 1 ? 's' : ''}</p>
+                      <p className="text-xs text-parchment/30 capitalize">{d.schedule_cadence}</p>
                     </div>
                   </div>
                 </Link>
@@ -666,7 +666,7 @@ export default function SourceProfilePage() {
           )}
         </div>
 
-        <p className="text-xs text-[#F5EFE0]/30">
+        <p className="text-xs text-parchment/30">
           Profile analyzed {new Date(profile.last_updated).toLocaleString()}. Positions inferred from public posts — not real holdings.
         </p>
       </div>

@@ -23,16 +23,16 @@ export const metadata: Metadata = {
 
 export default function ApiDocsPage() {
   return (
-    <div className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <div className="min-h-screen bg-ink text-parchment">
       <TopNav />
 
       <main className="container mx-auto px-4 py-12 max-w-3xl">
         <div className="mb-10">
-          <Link href="/docs" className="text-xs text-[#B08D57] hover:underline">← Docs</Link>
+          <Link href="/docs" className="text-xs text-brass hover:underline">← Docs</Link>
           <h1 className="text-4xl font-bold mt-2 font-[var(--font-oswald)] uppercase tracking-wide">
-            <span className="text-[#B08D57]">#</span> API
+            <span className="text-brass">#</span> API
           </h1>
-          <p className="text-[#F5EFE0]/60 mt-3 max-w-2xl">
+          <p className="text-parchment/60 mt-3 max-w-2xl">
             Pay-as-you-go REST API for source profiles, ticker consensus, and public
             dispatches. Charged per call against your credit balance.
           </p>
@@ -41,7 +41,7 @@ export default function ApiDocsPage() {
         <Section title="Authentication">
           <p>
             Generate a key at{' '}
-            <Link href="/settings/api-keys" className="text-[#B08D57] hover:underline">
+            <Link href="/settings/api-keys" className="text-brass hover:underline">
               /settings/api-keys
             </Link>
             . Pass it as a bearer token:
@@ -51,7 +51,7 @@ export default function ApiDocsPage() {
         </Section>
 
         <Section title="Pricing">
-          <ul className="space-y-2 text-[#F5EFE0]/80">
+          <ul className="space-y-2 text-parchment/80">
             <li><Mono>GET /sources/:handle</Mono> — <strong>1 credit</strong></li>
             <li><Mono>GET /positions/:ticker</Mono> — <strong>1 credit</strong></li>
             <li><Mono>GET /dispatches/:id</Mono> — <strong>5 credits</strong></li>
@@ -118,7 +118,7 @@ export default function ApiDocsPage() {
         </Section>
 
         <Section title="Errors">
-          <ul className="space-y-2 text-[#F5EFE0]/80">
+          <ul className="space-y-2 text-parchment/80">
             <li><Mono>401</Mono> — missing, malformed, or revoked key</li>
             <li><Mono>402</Mono> — insufficient credit balance</li>
             <li><Mono>404</Mono> — resource not found or not public</li>
@@ -134,23 +134,23 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <section className="mb-12">
       <h2 className="text-xl font-bold mb-4 font-[var(--font-oswald)] uppercase tracking-wide">
-        <span className="text-[#B08D57]">#</span> {title}
+        <span className="text-brass">#</span> {title}
       </h2>
-      <div className="space-y-3 text-[#F5EFE0]/80 leading-relaxed text-sm">{children}</div>
+      <div className="space-y-3 text-parchment/80 leading-relaxed text-sm">{children}</div>
     </section>
   );
 }
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <pre className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-3 text-xs font-mono overflow-x-auto text-[#F5EFE0]/85">
+    <pre className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-3 text-xs font-mono overflow-x-auto text-parchment/85">
       {children}
     </pre>
   );
 }
 
 function Mono({ children }: { children: React.ReactNode }) {
-  return <span className="font-mono text-xs px-1.5 py-0.5 bg-[#141210] rounded text-[#B08D57]">{children}</span>;
+  return <span className="font-mono text-xs px-1.5 py-0.5 bg-surface rounded text-brass">{children}</span>;
 }
 
 function Endpoint({
@@ -167,15 +167,15 @@ function Endpoint({
   response: string;
 }) {
   return (
-    <div className="mb-8 pb-8 border-b border-[rgba(176,141,87,0.18)] last:border-b-0">
+    <div className="mb-8 pb-8 border-b border-[rgb(var(--t-brass) / 0.18)] last:border-b-0">
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-xs font-bold px-2 py-0.5 rounded bg-[#3ecf6a]/15 text-[#3ecf6a] font-mono">{method}</span>
-        <span className="font-mono text-sm text-[#F5EFE0]">{path}</span>
+        <span className="text-xs font-bold px-2 py-0.5 rounded bg-bull/15 text-bull font-mono">{method}</span>
+        <span className="font-mono text-sm text-parchment">{path}</span>
       </div>
-      <p className="text-sm text-[#F5EFE0]/65 mb-3">{description}</p>
-      <div className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 mb-1 mt-3 font-[var(--font-oswald)]">Request</div>
+      <p className="text-sm text-parchment/65 mb-3">{description}</p>
+      <div className="text-[10px] uppercase tracking-wider text-parchment/45 mb-1 mt-3 font-[var(--font-oswald)]">Request</div>
       <Code>{example}</Code>
-      <div className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 mb-1 mt-3 font-[var(--font-oswald)]">Response</div>
+      <div className="text-[10px] uppercase tracking-wider text-parchment/45 mb-1 mt-3 font-[var(--font-oswald)]">Response</div>
       <Code>{response}</Code>
     </div>
   );

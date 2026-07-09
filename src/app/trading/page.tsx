@@ -210,19 +210,19 @@ export default function AdminTradingPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+      <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
-        <div className="max-w-6xl mx-auto px-6 py-12 text-[#F5EFE0]/45">Loading…</div>
+        <div className="max-w-6xl mx-auto px-6 py-12 text-parchment/45">Loading…</div>
       </main>
     );
   }
 
   if (status !== 'authenticated') {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+      <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
         <div className="max-w-6xl mx-auto px-6 py-12">
-          <Link href="/login" className="text-[#B08D57]">Sign in</Link>
+          <Link href="/login" className="text-brass">Sign in</Link>
         </div>
       </main>
     );
@@ -230,35 +230,35 @@ export default function AdminTradingPage() {
 
   if (error) {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+      <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
         <div className="max-w-6xl mx-auto px-6 py-12">
-          <p className="text-[#e8453c]">{error}</p>
+          <p className="text-bear">{error}</p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 sm:mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">Admin · Trading</h1>
-            <p className="text-sm text-[#F5EFE0]/45 mt-1">{mandates.length} mandates</p>
+            <p className="text-sm text-parchment/45 mt-1">{mandates.length} mandates</p>
           </div>
           <div className="flex gap-2 flex-wrap">
             <Link
               href="/trading/portfolio"
-              className="px-3 py-1.5 rounded text-sm bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/60 hover:text-[#F5EFE0] transition"
+              className="px-3 py-1.5 rounded text-sm bg-surface border border-[rgb(var(--t-brass) / 0.28)] text-parchment/60 hover:text-parchment transition"
             >
               📊 Portfolio tool
             </Link>
             <button
               onClick={() => runTick('midday')}
               disabled={ticking}
-              className="px-3 py-1.5 rounded text-sm bg-[#141210] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/60 hover:text-[#F5EFE0] transition disabled:opacity-50"
+              className="px-3 py-1.5 rounded text-sm bg-surface border border-[rgb(var(--t-brass) / 0.28)] text-parchment/60 hover:text-parchment transition disabled:opacity-50"
             >
               {ticking ? 'Ticking…' : 'Run tick for all'}
             </button>
@@ -266,7 +266,7 @@ export default function AdminTradingPage() {
               onClick={() => setShowCreate(s => !s)}
               disabled={telegramLinked === false}
               title={telegramLinked === false ? 'Link Telegram first' : undefined}
-              className="px-3 py-1.5 rounded text-sm bg-[#B08D57] text-[#080604] font-semibold hover:bg-[#B08D57]/80 transition disabled:opacity-30 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 rounded text-sm bg-brass text-ink font-semibold hover:bg-brass/80 transition disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {showCreate ? 'Cancel' : '+ New mandate'}
             </button>
@@ -274,17 +274,17 @@ export default function AdminTradingPage() {
         </div>
 
         {portfolio && portfolio.mandate_count > 0 && (
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4 sm:p-5 mb-6">
+          <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-4 sm:p-5 mb-6">
             <div className="flex items-center justify-between mb-3">
-              <div className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">
+              <div className="text-[10px] uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)]">
                 Portfolio
               </div>
-              <div className="flex items-center gap-1.5 text-[10px] text-[#F5EFE0]/45 font-mono">
+              <div className="flex items-center gap-1.5 text-[10px] text-parchment/45 font-mono">
                 <span
                   className="inline-block w-1.5 h-1.5 rounded-full transition-all"
                   style={{
-                    background: livePulse ? '#3ecf6a' : 'rgba(62,207,106,0.45)',
-                    boxShadow: livePulse ? '0 0 6px #3ecf6a' : 'none',
+                    background: livePulse ? 'rgb(var(--t-bull))' : 'rgba(62,207,106,0.45)',
+                    boxShadow: livePulse ? '0 0 6px rgb(var(--t-bull))' : 'none',
                   }}
                 />
                 {lastTickAt ? `live · ${new Date(lastTickAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : 'live'}
@@ -304,17 +304,17 @@ export default function AdminTradingPage() {
               <SummaryStat
                 label="Unrealized P/L"
                 value={fmtUsd(portfolio.total_unrealized_pnl)}
-                accent={portfolio.total_unrealized_pnl >= 0 ? '#3ecf6a' : '#e8453c'}
+                accent={portfolio.total_unrealized_pnl >= 0 ? 'rgb(var(--t-bull))' : 'rgb(var(--t-bear))'}
               />
               <SummaryStat
                 label="Realized P/L"
                 value={fmtUsd(portfolio.total_realized_pnl)}
-                accent={portfolio.total_realized_pnl >= 0 ? '#3ecf6a' : '#e8453c'}
+                accent={portfolio.total_realized_pnl >= 0 ? 'rgb(var(--t-bull))' : 'rgb(var(--t-bear))'}
               />
               <SummaryStat
                 label="Total P/L"
                 value={fmtUsd(portfolio.total_realized_pnl + portfolio.total_unrealized_pnl)}
-                accent={(portfolio.total_realized_pnl + portfolio.total_unrealized_pnl) >= 0 ? '#3ecf6a' : '#e8453c'}
+                accent={(portfolio.total_realized_pnl + portfolio.total_unrealized_pnl) >= 0 ? 'rgb(var(--t-bull))' : 'rgb(var(--t-bear))'}
               />
               <SummaryStat
                 label="Mandates"
@@ -325,41 +325,41 @@ export default function AdminTradingPage() {
         )}
 
         {telegramLinked === false && (
-          <div className="bg-[#e8453c]/10 border border-[#e8453c]/40 rounded p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="bg-bear/10 border border-bear/40 rounded p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <div className="text-sm font-semibold text-[#e8453c] mb-1">Telegram not linked</div>
-              <p className="text-xs text-[#F5EFE0]/60">
+              <div className="text-sm font-semibold text-bear mb-1">Telegram not linked</div>
+              <p className="text-xs text-parchment/60">
                 Trade approvals are sent to your Telegram DM. Link your account first — without it, proposed trades can't be approved and won't reach Alpaca.
               </p>
             </div>
-            <Link href="/settings" className="self-start sm:self-auto px-3 py-1.5 rounded text-xs bg-[#B08D57] text-[#080604] font-semibold whitespace-nowrap">
+            <Link href="/settings" className="self-start sm:self-auto px-3 py-1.5 rounded text-xs bg-brass text-ink font-semibold whitespace-nowrap">
               Link Telegram →
             </Link>
           </div>
         )}
 
         {tickResult && (
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4 mb-6">
-            <div className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 mb-2 font-[var(--font-oswald)]">Tick result</div>
-            <pre className="text-xs text-[#F5EFE0]/70 overflow-x-auto whitespace-pre-wrap">{tickResult}</pre>
+          <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-4 mb-6">
+            <div className="text-xs uppercase tracking-wider text-parchment/45 mb-2 font-[var(--font-oswald)]">Tick result</div>
+            <pre className="text-xs text-parchment/70 overflow-x-auto whitespace-pre-wrap">{tickResult}</pre>
           </div>
         )}
 
         {showCreate && (
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-8 space-y-3">
-            <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/45 mb-2 font-[var(--font-oswald)]">New mandate</h2>
+          <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6 mb-8 space-y-3">
+            <h2 className="text-sm uppercase tracking-wider text-parchment/45 mb-2 font-[var(--font-oswald)]">New mandate</h2>
 
             <div>
-              <span className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] block mb-2">Broker</span>
+              <span className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] block mb-2">Broker</span>
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setForm({ ...form, broker: 'alpaca' })}
                   className="flex-1 px-3 py-2 rounded text-xs uppercase tracking-wider transition"
                   style={{
-                    background: form.broker === 'alpaca' ? '#B08D57' : '#080604',
-                    color: form.broker === 'alpaca' ? '#080604' : 'rgba(245,239,224,0.65)',
-                    border: '1px solid rgba(176,141,87,0.28)',
+                    background: form.broker === 'alpaca' ? 'rgb(var(--t-brass))' : 'rgb(var(--t-ink))',
+                    color: form.broker === 'alpaca' ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.65)',
+                    border: '1px solid rgb(var(--t-brass) / 0.28)',
                     fontFamily: 'var(--font-oswald)',
                   }}
                 >
@@ -370,9 +370,9 @@ export default function AdminTradingPage() {
                   onClick={() => setForm({ ...form, broker: 'hyperliquid', account_kind: 'byo_keys' })}
                   className="flex-1 px-3 py-2 rounded text-xs uppercase tracking-wider transition"
                   style={{
-                    background: form.broker === 'hyperliquid' ? '#B08D57' : '#080604',
-                    color: form.broker === 'hyperliquid' ? '#080604' : 'rgba(245,239,224,0.65)',
-                    border: '1px solid rgba(176,141,87,0.28)',
+                    background: form.broker === 'hyperliquid' ? 'rgb(var(--t-brass))' : 'rgb(var(--t-ink))',
+                    color: form.broker === 'hyperliquid' ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.65)',
+                    border: '1px solid rgb(var(--t-brass) / 0.28)',
                     fontFamily: 'var(--font-oswald)',
                   }}
                 >
@@ -383,7 +383,7 @@ export default function AdminTradingPage() {
 
             {form.broker === 'alpaca' && (
             <div>
-              <span className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] block mb-2">Brokerage account</span>
+              <span className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] block mb-2">Brokerage account</span>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -392,9 +392,9 @@ export default function AdminTradingPage() {
                   title={!managedAccount ? 'Open a managed account first' : undefined}
                   className="flex-1 px-3 py-2 rounded text-xs uppercase tracking-wider transition disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{
-                    background: form.account_kind === 'managed' ? '#B08D57' : '#080604',
-                    color: form.account_kind === 'managed' ? '#080604' : 'rgba(245,239,224,0.65)',
-                    border: '1px solid rgba(176,141,87,0.28)',
+                    background: form.account_kind === 'managed' ? 'rgb(var(--t-brass))' : 'rgb(var(--t-ink))',
+                    color: form.account_kind === 'managed' ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.65)',
+                    border: '1px solid rgb(var(--t-brass) / 0.28)',
                     fontFamily: 'var(--font-oswald)',
                   }}
                 >
@@ -405,9 +405,9 @@ export default function AdminTradingPage() {
                   onClick={() => setForm({ ...form, account_kind: 'byo_keys' })}
                   className="flex-1 px-3 py-2 rounded text-xs uppercase tracking-wider transition"
                   style={{
-                    background: form.account_kind === 'byo_keys' ? '#B08D57' : '#080604',
-                    color: form.account_kind === 'byo_keys' ? '#080604' : 'rgba(245,239,224,0.65)',
-                    border: '1px solid rgba(176,141,87,0.28)',
+                    background: form.account_kind === 'byo_keys' ? 'rgb(var(--t-brass))' : 'rgb(var(--t-ink))',
+                    color: form.account_kind === 'byo_keys' ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.65)',
+                    border: '1px solid rgb(var(--t-brass) / 0.28)',
                     fontFamily: 'var(--font-oswald)',
                   }}
                 >
@@ -415,9 +415,9 @@ export default function AdminTradingPage() {
                 </button>
               </div>
               {!managedAccount && (
-                <p className="text-[11px] text-[#F5EFE0]/45 mt-2">
+                <p className="text-[11px] text-parchment/45 mt-2">
                   Don&apos;t have a managed account?{' '}
-                  <Link href="/account/open" className="text-[#B08D57] hover:underline">Open one →</Link>
+                  <Link href="/account/open" className="text-brass hover:underline">Open one →</Link>
                 </p>
               )}
             </div>
@@ -426,16 +426,16 @@ export default function AdminTradingPage() {
             {form.broker === 'hyperliquid' && (
             <div className="space-y-3">
               <div>
-                <span className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] block mb-2">Network</span>
+                <span className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] block mb-2">Network</span>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, mode: 'paper' })}
                     className="flex-1 px-3 py-2 rounded text-xs uppercase tracking-wider transition"
                     style={{
-                      background: form.mode === 'paper' ? '#3ecf6a' : '#080604',
-                      color: form.mode === 'paper' ? '#080604' : 'rgba(245,239,224,0.65)',
-                      border: '1px solid rgba(176,141,87,0.28)',
+                      background: form.mode === 'paper' ? 'rgb(var(--t-bull))' : 'rgb(var(--t-ink))',
+                      color: form.mode === 'paper' ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.65)',
+                      border: '1px solid rgb(var(--t-brass) / 0.28)',
                       fontFamily: 'var(--font-oswald)',
                     }}
                   >
@@ -446,9 +446,9 @@ export default function AdminTradingPage() {
                     onClick={() => setForm({ ...form, mode: 'live' })}
                     className="flex-1 px-3 py-2 rounded text-xs uppercase tracking-wider transition"
                     style={{
-                      background: form.mode === 'live' ? '#e8453c' : '#080604',
-                      color: form.mode === 'live' ? '#080604' : 'rgba(245,239,224,0.65)',
-                      border: '1px solid rgba(176,141,87,0.28)',
+                      background: form.mode === 'live' ? 'rgb(var(--t-bear))' : 'rgb(var(--t-ink))',
+                      color: form.mode === 'live' ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.65)',
+                      border: '1px solid rgb(var(--t-brass) / 0.28)',
                       fontFamily: 'var(--font-oswald)',
                     }}
                   >
@@ -458,8 +458,8 @@ export default function AdminTradingPage() {
               </div>
 
               {form.mode === 'live' && (
-                <div className="bg-[#e8453c]/10 border border-[#e8453c]/40 rounded p-3 text-[11px] text-[#F5EFE0]/70">
-                  <span className="font-semibold text-[#e8453c]">Live mainnet — real money.</span> Trades still require your Telegram approval before they execute. Execution also needs <code className="text-[#B08D57]">ALPACA_ALLOW_LIVE=true</code> set server-side; without it, orders stay suggestion-only.
+                <div className="bg-bear/10 border border-bear/40 rounded p-3 text-[11px] text-parchment/70">
+                  <span className="font-semibold text-bear">Live mainnet — real money.</span> Trades still require your Telegram approval before they execute. Execution also needs <code className="text-brass">ALPACA_ALLOW_LIVE=true</code> set server-side; without it, orders stay suggestion-only.
                 </div>
               )}
 
@@ -474,8 +474,8 @@ export default function AdminTradingPage() {
               <Field label="Agent key (private key — optional)">
                 <input type="password" value={form.hl_agent_secret} onChange={e => setForm({ ...form, hl_agent_secret: e.target.value })} className={inputCls} placeholder="0x… leave blank for suggestion-only" />
               </Field>
-              <p className="text-[11px] text-[#F5EFE0]/45 -mt-1">
-                Agent/API wallet key that can trade but <span className="text-[#F5EFE0]/70">cannot withdraw</span>. Generate it at Hyperliquid → More → API → Authorize. Leave blank to run suggestion-only (signals to Telegram, no execution). Stored encrypted.
+              <p className="text-[11px] text-parchment/45 -mt-1">
+                Agent/API wallet key that can trade but <span className="text-parchment/70">cannot withdraw</span>. Generate it at Hyperliquid → More → API → Authorize. Leave blank to run suggestion-only (signals to Telegram, no execution). Stored encrypted.
               </p>
               <Field label="Telegram chat ID for alerts (optional)">
                 <input value={form.telegram_chat_id} onChange={e => setForm({ ...form, telegram_chat_id: e.target.value })} className={inputCls} placeholder="defaults to your DM" />
@@ -504,8 +504,8 @@ export default function AdminTradingPage() {
               </Field>
             </div>
 
-            <div className="pt-4 border-t border-[#F5EFE0]/10">
-              <div className="text-sm font-medium mb-2 text-[#F5EFE0]/70">Portfolio Risk Limits</div>
+            <div className="pt-4 border-t border-parchment/10">
+              <div className="text-sm font-medium mb-2 text-parchment/70">Portfolio Risk Limits</div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Max single position %">
                   <input type="number" value={form.max_single_position_pct || ''} onChange={e => setForm({ ...form, max_single_position_pct: e.target.value })} className={inputCls} placeholder="15" />
@@ -531,7 +531,7 @@ export default function AdminTradingPage() {
                     <input type="password" value={form.alpaca_secret} onChange={e => setForm({ ...form, alpaca_secret: e.target.value })} className={inputCls} />
                   </Field>
                 </div>
-                <p className="text-[11px] text-[#F5EFE0]/45 mt-2">
+                <p className="text-[11px] text-parchment/45 mt-2">
                   For live (real-money) Alpaca accounts: go to Alpaca dashboard → Manage accounts → Generate key. Keys are optional — you can use paper trading or skip connecting for now.
                 </p>
               </div>
@@ -555,7 +555,7 @@ export default function AdminTradingPage() {
             <button
               onClick={createMandate}
               disabled={creating || !form.name || (form.broker === 'hyperliquid' && !/^0x[0-9a-fA-F]{40}$/.test(form.hl_wallet_address.trim()))}
-              className="px-4 py-2 rounded bg-[#B08D57] text-[#080604] text-sm font-bold uppercase tracking-wide disabled:opacity-50"
+              className="px-4 py-2 rounded bg-brass text-ink text-sm font-bold uppercase tracking-wide disabled:opacity-50"
             >
               {creating ? 'Creating…' : 'Create'}
             </button>
@@ -563,28 +563,28 @@ export default function AdminTradingPage() {
         )}
 
         {mandates.length === 0 ? (
-          <div className="text-center py-12 text-[#F5EFE0]/45 text-sm">No mandates yet. Create one to start.</div>
+          <div className="text-center py-12 text-parchment/45 text-sm">No mandates yet. Create one to start.</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {mandates.map(m => (
               <Link
                 key={m.id}
                 href={`/trading/${m.id}`}
-                className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 hover:border-[#B08D57] transition block"
+                className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5 hover:border-brass transition block"
               >
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <div className="text-lg font-bold text-[#F5EFE0]">{m.name}</div>
-                    <div className="text-xs text-[#F5EFE0]/45 mt-0.5 flex items-center gap-2">
+                    <div className="text-lg font-bold text-parchment">{m.name}</div>
+                    <div className="text-xs text-parchment/45 mt-0.5 flex items-center gap-2">
                       {m.junto_name || 'no junto'}
-                      <span className={`px-1.5 py-px rounded text-[10px] font-mono ${m.mode === 'live' ? 'bg-[#e8453c]/20 text-[#e8453c]' : 'bg-[#3ecf6a]/20 text-[#3ecf6a]'}`}>{m.mode}</span>
+                      <span className={`px-1.5 py-px rounded text-[10px] font-mono ${m.mode === 'live' ? 'bg-bear/20 text-bear' : 'bg-bull/20 text-bull'}`}>{m.mode}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`text-xs px-2 py-0.5 rounded font-[var(--font-oswald)] uppercase tracking-wide ${
-                      m.status === 'active' ? 'bg-[#3ecf6a]/20 text-[#3ecf6a]' :
-                      m.status === 'paused' ? 'bg-[#B08D57]/20 text-[#B08D57]' :
-                      'bg-[#F5EFE0]/10 text-[#F5EFE0]/40'
+                      m.status === 'active' ? 'bg-bull/20 text-bull' :
+                      m.status === 'paused' ? 'bg-brass/20 text-brass' :
+                      'bg-parchment/10 text-parchment/40'
                     }`}>{m.status}</span>
                     {m.status !== 'archived' && (
                       <button
@@ -594,8 +594,8 @@ export default function AdminTradingPage() {
                         title={m.status === 'active' ? 'Pause — stop new proposals + activity' : 'Resume activity'}
                         className={`text-xs px-2 py-0.5 rounded border transition disabled:opacity-40 ${
                           m.status === 'active'
-                            ? 'border-[#B08D57]/40 text-[#B08D57] hover:bg-[#B08D57]/10'
-                            : 'border-[#3ecf6a]/40 text-[#3ecf6a] hover:bg-[#3ecf6a]/10'
+                            ? 'border-brass/40 text-brass hover:bg-brass/10'
+                            : 'border-bull/40 text-bull hover:bg-bull/10'
                         }`}
                       >
                         {togglingId === m.id ? '…' : m.status === 'active' ? '❚❚ Pause' : '▶ Resume'}
@@ -607,7 +607,7 @@ export default function AdminTradingPage() {
                   <Stat label="Capital" value={fmtUsd(m.capital_allotted_usd)} />
                   <Stat label="Open" value={String(m.stats.open)} />
                   <Stat label="Closed" value={String(m.stats.closed)} />
-                  <Stat label="Realized" value={fmtUsd(m.stats.pnl)} accent={m.stats.pnl >= 0 ? '#3ecf6a' : '#e8453c'} />
+                  <Stat label="Realized" value={fmtUsd(m.stats.pnl)} accent={m.stats.pnl >= 0 ? 'rgb(var(--t-bull))' : 'rgb(var(--t-bear))'} />
                   <Stat
                     label="Unrealized"
                     value={m.stats.unrealized == null ? '—' : fmtUsd(m.stats.unrealized)}
@@ -615,18 +615,18 @@ export default function AdminTradingPage() {
                       m.stats.unrealized == null
                         ? undefined
                         : m.stats.unrealized >= 0
-                          ? '#3ecf6a'
-                          : '#e8453c'
+                          ? 'rgb(var(--t-bull))'
+                          : 'rgb(var(--t-bear))'
                     }
                   />
                 </div>
-                <div className="mt-4 pt-3 border-t border-[rgba(176,141,87,0.14)] flex justify-end">
+                <div className="mt-4 pt-3 border-t border-[rgb(var(--t-brass) / 0.14)] flex justify-end">
                   <button
                     type="button"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); runTick('midday', m.id); }}
                     disabled={tickingId === m.id}
                     title="Run a tick for this mandate now (works even if paused)"
-                    className="text-xs px-2.5 py-1 rounded border border-[rgba(176,141,87,0.35)] text-[#F5EFE0]/70 hover:text-[#F5EFE0] hover:border-[#B08D57] transition disabled:opacity-40"
+                    className="text-xs px-2.5 py-1 rounded border border-[rgb(var(--t-brass) / 0.35)] text-parchment/70 hover:text-parchment hover:border-brass transition disabled:opacity-40"
                   >
                     {tickingId === m.id ? 'Ticking…' : '⚡ Run tick'}
                   </button>
@@ -640,12 +640,12 @@ export default function AdminTradingPage() {
   );
 }
 
-const inputCls = 'w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]';
+const inputCls = 'w-full bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-2 text-sm text-parchment focus:outline-none focus:border-brass';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)] block mb-1">{label}</span>
+      <span className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] block mb-1">{label}</span>
       {children}
     </label>
   );
@@ -664,13 +664,13 @@ function SummaryStat({
 }) {
   return (
     <div>
-      <div className="text-[#F5EFE0]/45 uppercase tracking-wider text-[10px] font-[var(--font-oswald)] mb-1">
+      <div className="text-parchment/45 uppercase tracking-wider text-[10px] font-[var(--font-oswald)] mb-1">
         {label}
       </div>
-      <div className="font-mono text-base sm:text-lg leading-tight" style={{ color: accent || '#F5EFE0' }}>
+      <div className="font-mono text-base sm:text-lg leading-tight" style={{ color: accent || 'rgb(var(--t-parchment))' }}>
         {value}
       </div>
-      {sub && <div className="text-[10px] text-[#F5EFE0]/40 font-mono mt-0.5">{sub}</div>}
+      {sub && <div className="text-[10px] text-parchment/40 font-mono mt-0.5">{sub}</div>}
     </div>
   );
 }
@@ -678,8 +678,8 @@ function SummaryStat({
 function Stat({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
     <div>
-      <div className="text-[#F5EFE0]/30 uppercase tracking-wider text-[10px] font-[var(--font-oswald)]">{label}</div>
-      <div className="font-mono text-sm" style={{ color: accent || '#F5EFE0' }}>{value}</div>
+      <div className="text-parchment/30 uppercase tracking-wider text-[10px] font-[var(--font-oswald)]">{label}</div>
+      <div className="font-mono text-sm" style={{ color: accent || 'rgb(var(--t-parchment))' }}>{value}</div>
     </div>
   );
 }

@@ -32,7 +32,7 @@ function TypeBadge({ type }: { type: SourceType | string | undefined }) {
   const t = (type || 'twitter') as SourceType;
   const label = TYPE_LABELS[t] || (t as string).slice(0, 2).toUpperCase();
   return (
-    <span className="text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#B08D57]/20 text-[#B08D57] border border-[#B08D57]/30">
+    <span className="text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-brass/20 text-brass border border-brass/30">
       {label}
     </span>
   );
@@ -251,43 +251,43 @@ export default function NewJuntoPage() {
   const inputPlaceholder = sourceType === 'twitter' ? 'Search by handle or name...' : 'https://...';
 
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Link href="/dashboard" className="text-[#F5EFE0]/45 hover:text-[#F5EFE0]/80 text-sm transition mb-6 inline-block">
+        <Link href="/dashboard" className="text-parchment/45 hover:text-parchment/80 text-sm transition mb-6 inline-block">
           ← Dashboard
         </Link>
 
         <h1 className="text-3xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">New Junto</h1>
-        <p className="text-[#F5EFE0]/60 mb-8">A curated collection of sources you can use across dispatches.</p>
+        <p className="text-parchment/60 mb-8">A curated collection of sources you can use across dispatches.</p>
 
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-5">
-          <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-1.5">Name</label>
+        <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5 mb-5">
+          <label className="block text-sm font-medium text-parchment/80 mb-1.5">Name</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Crypto Voices"
-            className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition mb-4"
+            className="w-full bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded px-4 py-2.5 text-parchment placeholder-parchment/30 focus:outline-none focus:border-brass focus:ring-1 focus:ring-brass/30 transition mb-4"
           />
-          <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-1.5">Description</label>
+          <label className="block text-sm font-medium text-parchment/80 mb-1.5">Description</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What is this collection about?"
             rows={3}
-            className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition resize-none"
+            className="w-full bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded px-4 py-2.5 text-parchment placeholder-parchment/30 focus:outline-none focus:border-brass focus:ring-1 focus:ring-brass/30 transition resize-none"
           />
           <div className="flex items-center justify-between gap-3 mt-4">
-            <label className="block text-sm font-medium text-[#F5EFE0]/80">Visibility</label>
+            <label className="block text-sm font-medium text-parchment/80">Visibility</label>
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setIsPublic(false)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-sm transition font-[var(--font-oswald)] uppercase tracking-wide ${
                   !isPublic
-                    ? 'bg-[#B08D57] text-[#080604]'
-                    : 'bg-[#080604] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
+                    ? 'bg-brass text-ink'
+                    : 'bg-ink text-parchment/60 hover:text-parchment border border-[rgb(var(--t-brass) / 0.18)]'
                 }`}
               >
                 🔒 Private
@@ -297,8 +297,8 @@ export default function NewJuntoPage() {
                 onClick={() => setIsPublic(true)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-sm transition font-[var(--font-oswald)] uppercase tracking-wide ${
                   isPublic
-                    ? 'bg-[#B08D57] text-[#080604]'
-                    : 'bg-[#080604] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
+                    ? 'bg-brass text-ink'
+                    : 'bg-ink text-parchment/60 hover:text-parchment border border-[rgb(var(--t-brass) / 0.18)]'
                 }`}
               >
                 🌐 Public
@@ -307,8 +307,8 @@ export default function NewJuntoPage() {
           </div>
         </div>
 
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 mb-5">
-          <label className="block text-sm font-medium text-[#F5EFE0]/80 mb-1.5">Add Sources</label>
+        <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5 mb-5">
+          <label className="block text-sm font-medium text-parchment/80 mb-1.5">Add Sources</label>
 
           {/* Source type selector */}
           <div className="flex gap-2 mb-3">
@@ -319,8 +319,8 @@ export default function NewJuntoPage() {
                 onClick={() => { setSourceType(t); setQuery(''); setResults([]); setShowDropdown(false); }}
                 className={`px-3.5 py-1.5 rounded text-xs font-medium transition font-[var(--font-oswald)] uppercase tracking-wide ${
                   sourceType === t
-                    ? 'bg-[#B08D57] text-[#080604]'
-                    : 'bg-[#080604] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
+                    ? 'bg-brass text-ink'
+                    : 'bg-ink text-parchment/60 hover:text-parchment border border-[rgb(var(--t-brass) / 0.18)]'
                 }`}
               >
                 {t === 'twitter' ? 'Twitter' : t === 'youtube' ? 'YouTube' : 'Newsletter'}
@@ -335,25 +335,25 @@ export default function NewJuntoPage() {
                 <button
                   type="button"
                   onClick={() => { setShowListImport(true); setListImportError(''); }}
-                  className="text-xs text-[#B08D57] hover:text-[#B08D57]/80 transition font-[var(--font-oswald)] uppercase tracking-wider"
+                  className="text-xs text-brass hover:text-brass/80 transition font-[var(--font-oswald)] uppercase tracking-wider"
                 >
                   + Import from X list
                 </button>
               ) : (
-                <div className="p-3 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded">
+                <div className="p-3 bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-[#F5EFE0]/60 font-[var(--font-oswald)] uppercase tracking-wider">
+                    <span className="text-xs text-parchment/60 font-[var(--font-oswald)] uppercase tracking-wider">
                       Import from X list
                     </span>
                     <button
                       type="button"
                       onClick={() => { setShowListImport(false); setListImportError(''); setListInput(''); }}
-                      className="text-xs text-[#F5EFE0]/40 hover:text-[#F5EFE0]/80 transition"
+                      className="text-xs text-parchment/40 hover:text-parchment/80 transition"
                     >
                       cancel
                     </button>
                   </div>
-                  <p className="text-[11px] text-[#F5EFE0]/45 mb-2 leading-relaxed">
+                  <p className="text-[11px] text-parchment/45 mb-2 leading-relaxed">
                     Paste a public X list URL (e.g. <span className="font-mono">x.com/i/lists/12345…</span>). We only surface members who&apos;ve tweeted recently — inactive accounts on the list won&apos;t appear and can be added manually. Review and × any handles before creating.
                   </p>
                   <div className="flex gap-2">
@@ -363,27 +363,27 @@ export default function NewJuntoPage() {
                       onChange={e => setListInput(e.target.value)}
                       disabled={importingList}
                       placeholder="https://x.com/i/lists/..."
-                      className="flex-1 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-xs text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] transition disabled:opacity-50"
+                      className="flex-1 bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-2 text-xs text-parchment placeholder-parchment/30 focus:outline-none focus:border-brass transition disabled:opacity-50"
                     />
                     <button
                       type="button"
                       onClick={importList}
                       disabled={!listInput.trim() || importingList}
-                      className="px-4 py-2 rounded text-xs font-semibold bg-[#B08D57] text-[#080604] font-[var(--font-oswald)] uppercase tracking-wide disabled:opacity-30 transition"
+                      className="px-4 py-2 rounded text-xs font-semibold bg-brass text-ink font-[var(--font-oswald)] uppercase tracking-wide disabled:opacity-30 transition"
                     >
                       {importingList ? 'Scraping…' : 'Scrape'}
                     </button>
                   </div>
                   {importingList && (
-                    <p className="text-[11px] text-[#B08D57]/70 mt-2">Scraping list — can take up to a minute…</p>
+                    <p className="text-[11px] text-brass/70 mt-2">Scraping list — can take up to a minute…</p>
                   )}
                   {listImportError && (
-                    <p className="text-[11px] text-[#e8453c] mt-2">{listImportError}</p>
+                    <p className="text-[11px] text-bear mt-2">{listImportError}</p>
                   )}
                 </div>
               )}
               {lastImportSummary && !showListImport && (
-                <p className="text-[11px] text-[#3ecf6a] mt-2">{lastImportSummary}</p>
+                <p className="text-[11px] text-bull mt-2">{lastImportSummary}</p>
               )}
             </div>
           )}
@@ -402,21 +402,21 @@ export default function NewJuntoPage() {
                   }
                 }}
                 placeholder={inputPlaceholder}
-                className="flex-1 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition"
+                className="flex-1 bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded px-4 py-2.5 text-parchment placeholder-parchment/30 focus:outline-none focus:border-brass focus:ring-1 focus:ring-brass/30 transition"
               />
               {isUrlType && (
                 <button
                   type="button"
                   onClick={() => addNewUrl(query)}
                   disabled={adding || !query.trim()}
-                  className="px-5 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 disabled:cursor-not-allowed rounded text-sm font-medium transition text-[#080604]"
+                  className="px-5 py-2.5 bg-brass hover:bg-brass/80 disabled:opacity-50 disabled:cursor-not-allowed rounded text-sm font-medium transition text-ink"
                 >
                   {adding ? 'Adding...' : 'Add'}
                 </button>
               )}
             </div>
             {sourceType === 'twitter' && showDropdown && (
-              <div className="absolute z-20 mt-1 w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded shadow-xl max-h-64 overflow-y-auto">
+              <div className="absolute z-20 mt-1 w-full bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded shadow-xl max-h-64 overflow-y-auto">
                 {results.map((r) => {
                   const alreadyAdded = added.some((a) => a.id === r.id);
                   return (
@@ -426,21 +426,21 @@ export default function NewJuntoPage() {
                       disabled={alreadyAdded}
                       onClick={() => addSource(r)}
                       className={`w-full text-left flex items-center gap-3 px-3 py-2 transition ${
-                        alreadyAdded ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#1c1a17]'
+                        alreadyAdded ? 'opacity-50 cursor-not-allowed' : 'hover:bg-raised'
                       }`}
                     >
                       {r.avatar_url ? (
-                        <img src={r.avatar_url} alt={r.handle_or_url} className="w-8 h-8 rounded bg-[#1c1a17] object-cover" />
+                        <img src={r.avatar_url} alt={r.handle_or_url} className="w-8 h-8 rounded bg-raised object-cover" />
                       ) : (
-                        <div className="w-8 h-8 rounded bg-[#1c1a17] flex items-center justify-center text-xs font-bold text-[#F5EFE0]/80">
+                        <div className="w-8 h-8 rounded bg-raised flex items-center justify-center text-xs font-bold text-parchment/80">
                           {r.handle_or_url[0]?.toUpperCase()}
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium truncate">@{r.handle_or_url}</div>
-                        {r.display_name && <div className="text-xs text-[#F5EFE0]/60 truncate">{r.display_name}</div>}
+                        {r.display_name && <div className="text-xs text-parchment/60 truncate">{r.display_name}</div>}
                       </div>
-                      {alreadyAdded && <span className="text-xs text-[#3ecf6a]">added</span>}
+                      {alreadyAdded && <span className="text-xs text-bull">added</span>}
                     </button>
                   );
                 })}
@@ -450,14 +450,14 @@ export default function NewJuntoPage() {
                     type="button"
                     disabled={adding}
                     onClick={() => addNewHandle(query)}
-                    className="w-full text-left flex items-center gap-3 px-3 py-2.5 border-t border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17] transition"
+                    className="w-full text-left flex items-center gap-3 px-3 py-2.5 border-t border-[rgb(var(--t-brass) / 0.18)] hover:bg-raised transition"
                   >
-                    <div className="w-8 h-8 rounded bg-[#B08D57]/20 flex items-center justify-center text-[#B08D57] text-sm font-bold">+</div>
+                    <div className="w-8 h-8 rounded bg-brass/20 flex items-center justify-center text-brass text-sm font-bold">+</div>
                     <div>
-                      <div className="text-sm font-medium text-[#B08D57]">
+                      <div className="text-sm font-medium text-brass">
                         {adding ? 'Adding...' : `Add @${query.trim().replace('@', '')}`}
                       </div>
-                      <div className="text-xs text-[#F5EFE0]/45">New source — {TYPE_PULL_TEXT.twitter}</div>
+                      <div className="text-xs text-parchment/45">New source — {TYPE_PULL_TEXT.twitter}</div>
                     </div>
                   </button>
                 )}
@@ -465,7 +465,7 @@ export default function NewJuntoPage() {
             )}
           </div>
           {isUrlType && (
-            <p className="text-xs text-[#F5EFE0]/45 mt-2">
+            <p className="text-xs text-parchment/45 mt-2">
               New source — {TYPE_PULL_TEXT[sourceType]}
             </p>
           )}
@@ -476,11 +476,11 @@ export default function NewJuntoPage() {
                 const t = (s.type || 'twitter') as SourceType;
                 const isTwitter = t === 'twitter';
                 return (
-                  <div key={s.id} className="flex items-center gap-3 bg-[#080604] border border-[rgba(176,141,87,0.18)] rounded px-3 py-2">
+                  <div key={s.id} className="flex items-center gap-3 bg-ink border border-[rgb(var(--t-brass) / 0.18)] rounded px-3 py-2">
                     {s.avatar_url ? (
-                      <img src={s.avatar_url} alt={s.handle_or_url} className="w-8 h-8 rounded bg-[#1c1a17] object-cover" />
+                      <img src={s.avatar_url} alt={s.handle_or_url} className="w-8 h-8 rounded bg-raised object-cover" />
                     ) : (
-                      <div className="w-8 h-8 rounded bg-[#1c1a17] flex items-center justify-center text-xs font-bold text-[#F5EFE0]/80">
+                      <div className="w-8 h-8 rounded bg-raised flex items-center justify-center text-xs font-bold text-parchment/80">
                         {s.handle_or_url[0]?.toUpperCase()}
                       </div>
                     )}
@@ -491,11 +491,11 @@ export default function NewJuntoPage() {
                           {isTwitter ? `@${s.handle_or_url}` : s.handle_or_url}
                         </span>
                       </div>
-                      {s.display_name && <div className="text-xs text-[#F5EFE0]/60 truncate mt-0.5">{s.display_name}</div>}
+                      {s.display_name && <div className="text-xs text-parchment/60 truncate mt-0.5">{s.display_name}</div>}
                     </div>
                     <button
                       onClick={() => removeSource(s.id)}
-                      className="text-[#F5EFE0]/45 hover:text-[#e8453c] transition text-lg leading-none px-2"
+                      className="text-parchment/45 hover:text-bear transition text-lg leading-none px-2"
                       aria-label="Remove"
                     >
                       ×
@@ -508,20 +508,20 @@ export default function NewJuntoPage() {
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-[#e8453c]/10 border border-[#e8453c]/30 rounded text-sm text-[#e8453c]">{error}</div>
+          <div className="mb-4 p-3 bg-bear/10 border border-bear/30 rounded text-sm text-bear">{error}</div>
         )}
 
         <div className="flex justify-end gap-3">
           <Link
             href="/dashboard"
-            className="text-[#F5EFE0]/60 hover:text-[#F5EFE0] text-sm self-center"
+            className="text-parchment/60 hover:text-parchment text-sm self-center"
           >
             Cancel
           </Link>
           <button
             onClick={handleSubmit}
             disabled={submitting || !name.trim()}
-            className="bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 disabled:cursor-not-allowed text-[#080604] rounded px-4 py-2 font-medium transition font-[var(--font-oswald)] uppercase tracking-wide"
+            className="bg-brass hover:bg-brass/80 disabled:opacity-50 disabled:cursor-not-allowed text-ink rounded px-4 py-2 font-medium transition font-[var(--font-oswald)] uppercase tracking-wide"
           >
             {submitting ? 'Creating...' : 'Create Junto'}
           </button>

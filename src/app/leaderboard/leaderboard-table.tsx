@@ -54,17 +54,17 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
   const arrow = (key: SortKey) => (key === sortKey ? (desc ? ' ↓' : ' ↑') : '');
 
   return (
-    <div className="overflow-x-auto border border-[#F5EFE0]/10 rounded-lg">
+    <div className="overflow-x-auto border border-parchment/10 rounded-lg">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 border-b border-[#F5EFE0]/10">
+          <tr className="text-left text-[10px] uppercase tracking-wider text-parchment/40 border-b border-parchment/10">
             <th className="py-3 pl-4 pr-2 font-medium">#</th>
             <th className="py-3 px-2 font-medium">Analyst</th>
             {COLUMNS.map((c) => (
               <th
                 key={c.key}
-                className={`py-3 px-2 font-medium text-right select-none cursor-pointer hover:text-[#F5EFE0]/70 ${c.hideAt ?? ''} ${
-                  c.key === sortKey ? 'text-[#B08D57]' : ''
+                className={`py-3 px-2 font-medium text-right select-none cursor-pointer hover:text-parchment/70 ${c.hideAt ?? ''} ${
+                  c.key === sortKey ? 'text-brass' : ''
                 }`}
                 onClick={() => toggle(c.key)}
               >
@@ -80,9 +80,9 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
             return (
               <tr
                 key={r.source_id}
-                className="border-b border-[#F5EFE0]/5 last:border-0 hover:bg-[#F5EFE0]/[0.03]"
+                className="border-b border-parchment/5 last:border-0 hover:bg-parchment/[0.03]"
               >
-                <td className="py-3 pl-4 pr-2 text-[#F5EFE0]/40 tabular-nums">{i + 1}</td>
+                <td className="py-3 pl-4 pr-2 text-parchment/40 tabular-nums">{i + 1}</td>
                 <td className="py-3 px-2">
                   <Link
                     href={`/sources/${encodeURIComponent(r.handle)}`}
@@ -93,58 +93,58 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
                       <img
                         src={r.avatar_url}
                         alt={r.handle}
-                        className="w-8 h-8 rounded bg-[#1c1a17] object-cover shrink-0"
+                        className="w-8 h-8 rounded bg-raised object-cover shrink-0"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded bg-[#1c1a17] flex items-center justify-center text-[#F5EFE0]/60 text-xs font-medium shrink-0">
+                      <div className="w-8 h-8 rounded bg-raised flex items-center justify-center text-parchment/60 text-xs font-medium shrink-0">
                         {r.handle[0]?.toUpperCase()}
                       </div>
                     )}
                     <div className="min-w-0">
-                      <span className="font-medium text-[#F5EFE0] group-hover:text-[#B08D57] transition">
+                      <span className="font-medium text-parchment group-hover:text-brass transition">
                         @{r.handle}
                       </span>
                       {r.display_name ? (
-                        <div className="text-[11px] text-[#F5EFE0]/40 truncate">{r.display_name}</div>
+                        <div className="text-[11px] text-parchment/40 truncate">{r.display_name}</div>
                       ) : null}
                     </div>
                   </Link>
                 </td>
-                <td className="py-3 px-2 text-right tabular-nums text-[#F5EFE0]/70">
+                <td className="py-3 px-2 text-right tabular-nums text-parchment/70">
                   {r.scored > 0 ? (
-                    <span className="font-semibold text-[#B08D57]">
+                    <span className="font-semibold text-brass">
                       {Math.round(r.wilson_score * 100)}
                     </span>
                   ) : (
-                    <span className="text-[#F5EFE0]/30">—</span>
+                    <span className="text-parchment/30">—</span>
                   )}
                 </td>
-                <td className="py-3 px-2 text-right tabular-nums font-semibold text-[#B08D57]">
+                <td className="py-3 px-2 text-right tabular-nums font-semibold text-brass">
                   {isRated ? (
                     pct(r.hit_rate)
                   ) : (
-                    <span className="text-[#F5EFE0]/30 font-normal">unrated</span>
+                    <span className="text-parchment/30 font-normal">unrated</span>
                   )}
                 </td>
-                <td className="py-3 px-2 text-right tabular-nums text-[#F5EFE0]/70">
+                <td className="py-3 px-2 text-right tabular-nums text-parchment/70">
                   {r.scored > 0 ? (
                     <>
                       {r.scored}
-                      <span className="text-[#F5EFE0]/30 text-[11px]"> ({r.wins}–{r.losses})</span>
+                      <span className="text-parchment/30 text-[11px]"> ({r.wins}–{r.losses})</span>
                     </>
                   ) : (
                     '—'
                   )}
                 </td>
-                <td className="py-3 px-2 text-right tabular-nums hidden md:table-cell text-[#F5EFE0]/70">
+                <td className="py-3 px-2 text-right tabular-nums hidden md:table-cell text-parchment/70">
                   {r.avg_return_pct == null
                     ? '—'
                     : `${r.avg_return_pct > 0 ? '+' : ''}${r.avg_return_pct.toFixed(1)}%`}
                 </td>
-                <td className="py-3 px-2 text-right tabular-nums hidden sm:table-cell text-[#F5EFE0]/70">
+                <td className="py-3 px-2 text-right tabular-nums hidden sm:table-cell text-parchment/70">
                   {r.avg_conviction == null ? '—' : r.avg_conviction.toFixed(1)}
                 </td>
-                <td className="py-3 pl-2 pr-4 text-right tabular-nums text-[#F5EFE0]/40">
+                <td className="py-3 pl-2 pr-4 text-right tabular-nums text-parchment/40">
                   {r.total_positions}
                 </td>
               </tr>

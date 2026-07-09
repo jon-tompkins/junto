@@ -23,23 +23,23 @@ export const metadata: Metadata = {
 
 export default function DocsPage() {
   return (
-    <div className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <div className="min-h-screen bg-ink text-parchment">
       <TopNav />
 
       <main className="container mx-auto px-4 py-12 max-w-4xl">
         {/* Page header */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-[#F5EFE0] mb-4 font-[var(--font-oswald)] uppercase tracking-wide">
-            How <span className="text-[#B08D57]">Junto</span> Works
+          <h1 className="text-4xl md:text-5xl font-bold text-parchment mb-4 font-[var(--font-oswald)] uppercase tracking-wide">
+            How <span className="text-brass">Junto</span> Works
           </h1>
-          <p className="text-lg text-[#F5EFE0]/60 max-w-2xl mx-auto">
+          <p className="text-lg text-parchment/60 max-w-2xl mx-auto">
             Curated voices, AI synthesis, real positions. Group the people you
             trust into a junto, point it at a watchlist, and get a daily
             dispatch — text, voice, email, Telegram, or podcast.
           </p>
           <Link
             href="/flows"
-            className="inline-block mt-6 text-xs px-3 py-1.5 rounded border border-[rgba(176,141,87,0.4)] text-[#B08D57] hover:bg-[#B08D57]/10 font-[var(--font-oswald)] uppercase tracking-wide transition"
+            className="inline-block mt-6 text-xs px-3 py-1.5 rounded border border-[rgb(var(--t-brass) / 0.4)] text-brass hover:bg-brass/10 font-[var(--font-oswald)] uppercase tracking-wide transition"
           >
             See system flows →
           </Link>
@@ -47,51 +47,51 @@ export default function DocsPage() {
 
         {/* Core objects */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-[#F5EFE0] mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
-            <span className="text-[#B08D57]">#</span> The Core Objects
+          <h2 className="text-2xl font-bold text-parchment mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
+            <span className="text-brass">#</span> The Core Objects
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-              <h3 className="text-[#F5EFE0] font-semibold mb-1">Source</h3>
-              <p className="text-sm text-[#F5EFE0]/60">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5">
+              <h3 className="text-parchment font-semibold mb-1">Source</h3>
+              <p className="text-sm text-parchment/60">
                 A voice you want to hear from — an X account, a YouTube channel,
                 a newsletter. Junto pulls their public output on a rolling basis.
               </p>
             </div>
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-              <h3 className="text-[#F5EFE0] font-semibold mb-1">Junto</h3>
-              <p className="text-sm text-[#F5EFE0]/60">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5">
+              <h3 className="text-parchment font-semibold mb-1">Junto</h3>
+              <p className="text-sm text-parchment/60">
                 A group of sources you want to listen to as one. Every user has
                 a <em>primary junto</em>; juntos can be private or public so others
                 can adopt them.
               </p>
             </div>
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-              <h3 className="text-[#F5EFE0] font-semibold mb-1">Watchlist</h3>
-              <p className="text-sm text-[#F5EFE0]/60">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5">
+              <h3 className="text-parchment font-semibold mb-1">Watchlist</h3>
+              <p className="text-sm text-parchment/60">
                 A list of tickers you care about. Used to focus dispatches and
                 to power the Positions heatmap. Every user has a primary watchlist;
                 you can have multiple.
               </p>
             </div>
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-              <h3 className="text-[#F5EFE0] font-semibold mb-1">Dispatch</h3>
-              <p className="text-sm text-[#F5EFE0]/60">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5">
+              <h3 className="text-parchment font-semibold mb-1">Dispatch</h3>
+              <p className="text-sm text-parchment/60">
                 A scheduled briefing tied to a junto + watchlist + prompt. Each
                 generation produces a <em>run</em> that gets delivered to its
                 subscribers.
               </p>
             </div>
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-              <h3 className="text-[#F5EFE0] font-semibold mb-1">Subscription</h3>
-              <p className="text-sm text-[#F5EFE0]/60">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5">
+              <h3 className="text-parchment font-semibold mb-1">Subscription</h3>
+              <p className="text-sm text-parchment/60">
                 Your opt-in to a dispatch. You pick delivery channels (email,
                 Telegram, podcast), text and/or voice, send windows, and days.
               </p>
             </div>
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-              <h3 className="text-[#F5EFE0] font-semibold mb-1">Position</h3>
-              <p className="text-sm text-[#F5EFE0]/60">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5">
+              <h3 className="text-parchment font-semibold mb-1">Position</h3>
+              <p className="text-sm text-parchment/60">
                 An aggregated stance — when N sources in a junto are bullish on
                 $X, that&apos;s a position with weight N. The Positions heatmap
                 visualizes consensus across your tracked voices.
@@ -102,40 +102,40 @@ export default function DocsPage() {
 
         {/* Getting started */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-[#F5EFE0] mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
-            <span className="text-[#B08D57]">#</span> Getting Started
+          <h2 className="text-2xl font-bold text-parchment mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
+            <span className="text-brass">#</span> Getting Started
           </h2>
           <div className="grid md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6">
-              <p className="text-[10px] uppercase tracking-wider text-[#B08D57] font-mono mb-2">Step 1</p>
-              <h3 className="text-[#F5EFE0] font-semibold mb-2">Onboard</h3>
-              <p className="text-sm text-[#F5EFE0]/60">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6">
+              <p className="text-[10px] uppercase tracking-wider text-brass font-mono mb-2">Step 1</p>
+              <h3 className="text-parchment font-semibold mb-2">Onboard</h3>
+              <p className="text-sm text-parchment/60">
                 Sign in with X or Google, pick a junto (your own X follows, an
                 X list, an existing public junto, or manual), seed a watchlist,
                 set a delivery channel.
               </p>
             </div>
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6">
-              <p className="text-[10px] uppercase tracking-wider text-[#B08D57] font-mono mb-2">Step 2</p>
-              <h3 className="text-[#F5EFE0] font-semibold mb-2">Get Your Dispatch</h3>
-              <p className="text-sm text-[#F5EFE0]/60">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6">
+              <p className="text-[10px] uppercase tracking-wider text-brass font-mono mb-2">Step 2</p>
+              <h3 className="text-parchment font-semibold mb-2">Get Your Dispatch</h3>
+              <p className="text-sm text-parchment/60">
                 A personal dispatch is created automatically from your junto +
                 watchlist using the Investment Brief template. It runs daily at
                 your chosen send window.
               </p>
             </div>
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6">
-              <p className="text-[10px] uppercase tracking-wider text-[#B08D57] font-mono mb-2">Step 3</p>
-              <h3 className="text-[#F5EFE0] font-semibold mb-2">Tune It</h3>
-              <p className="text-sm text-[#F5EFE0]/60">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6">
+              <p className="text-[10px] uppercase tracking-wider text-brass font-mono mb-2">Step 3</p>
+              <h3 className="text-parchment font-semibold mb-2">Tune It</h3>
+              <p className="text-sm text-parchment/60">
                 Edit accounts, swap the prompt template, add a voice memo,
                 change channels. Or browse public dispatches and subscribe to
                 what others are publishing.
               </p>
             </div>
           </div>
-          <div className="bg-[#B08D57]/10 border border-[rgba(176,141,87,0.3)] rounded p-5">
-            <p className="text-[#B08D57] text-sm">
+          <div className="bg-brass/10 border border-[rgb(var(--t-brass) / 0.3)] rounded p-5">
+            <p className="text-brass text-sm">
               <strong>Junto + Watchlist + Prompt = Dispatch.</strong> One
               generation is reused across every subscriber, so the marginal cost
               of an extra reader is tiny.
@@ -145,34 +145,34 @@ export default function DocsPage() {
 
         {/* Delivery channels */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-[#F5EFE0] mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
-            <span className="text-[#B08D57]">#</span> Delivery Channels
+          <h2 className="text-2xl font-bold text-parchment mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
+            <span className="text-brass">#</span> Delivery Channels
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-              <h3 className="text-[#F5EFE0] font-semibold mb-1">Email</h3>
-              <p className="text-sm text-[#F5EFE0]/60">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5">
+              <h3 className="text-parchment font-semibold mb-1">Email</h3>
+              <p className="text-sm text-parchment/60">
                 Rendered HTML to your inbox. Per-dispatch sender alias from
-                <code className="text-[#B08D57] font-mono mx-1">myjunto.xyz</code>.
+                <code className="text-brass font-mono mx-1">myjunto.xyz</code>.
               </p>
             </div>
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-              <h3 className="text-[#F5EFE0] font-semibold mb-1">Telegram</h3>
-              <p className="text-sm text-[#F5EFE0]/60">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5">
+              <h3 className="text-parchment font-semibold mb-1">Telegram</h3>
+              <p className="text-sm text-parchment/60">
                 Bot DM with text and/or voice memo. Pick either or both inside
                 the subscribe modal.
               </p>
             </div>
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-              <h3 className="text-[#F5EFE0] font-semibold mb-1">Podcast Feed</h3>
-              <p className="text-sm text-[#F5EFE0]/60">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5">
+              <h3 className="text-parchment font-semibold mb-1">Podcast Feed</h3>
+              <p className="text-sm text-parchment/60">
                 Personal RSS feed of every audio-enabled dispatch you&apos;re
                 subscribed to. Drop the URL into any podcast app.
               </p>
             </div>
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5">
-              <h3 className="text-[#F5EFE0] font-semibold mb-1">On-site</h3>
-              <p className="text-sm text-[#F5EFE0]/60">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5">
+              <h3 className="text-parchment font-semibold mb-1">On-site</h3>
+              <p className="text-sm text-parchment/60">
                 Every dispatch run has a permalink with sources, watchlist,
                 synthesis, and an audio player when voice is enabled.
               </p>
@@ -182,11 +182,11 @@ export default function DocsPage() {
 
         {/* Schedule */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-[#F5EFE0] mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
-            <span className="text-[#B08D57]">#</span> Schedule
+          <h2 className="text-2xl font-bold text-parchment mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
+            <span className="text-brass">#</span> Schedule
           </h2>
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6">
-            <p className="text-sm text-[#F5EFE0]/70 mb-3">
+          <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6">
+            <p className="text-sm text-parchment/70 mb-3">
               Pick one or more send windows (Pacific time) and which days of the
               week to send. Sources are refreshed every 6 hours so each run has
               fresh signal.
@@ -195,7 +195,7 @@ export default function DocsPage() {
               {['6:00 AM', '12:00 PM', '6:00 PM', '12:00 AM'].map((time) => (
                 <div
                   key={time}
-                  className="bg-[#1c1a17] border border-[rgba(176,141,87,0.18)] rounded px-3 py-2 text-center text-sm text-[#F5EFE0] font-medium"
+                  className="bg-raised border border-[rgb(var(--t-brass) / 0.18)] rounded px-3 py-2 text-center text-sm text-parchment font-medium"
                 >
                   {time}
                 </div>
@@ -206,42 +206,42 @@ export default function DocsPage() {
 
         {/* Pricing */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-[#F5EFE0] mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
-            <span className="text-[#B08D57]">#</span> Credits &amp; Pricing
+          <h2 className="text-2xl font-bold text-parchment mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
+            <span className="text-brass">#</span> Credits &amp; Pricing
           </h2>
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-4">
+          <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6 mb-4">
             <div className="grid sm:grid-cols-3 gap-6 text-center mb-6">
               <div>
-                <p className="text-3xl font-bold text-[#B08D57]">100</p>
-                <p className="text-sm text-[#F5EFE0]/60">credits = $1</p>
+                <p className="text-3xl font-bold text-brass">100</p>
+                <p className="text-sm text-parchment/60">credits = $1</p>
               </div>
               <div>
-                <p className="text-3xl font-bold text-[#3ecf6a]">1,000</p>
-                <p className="text-sm text-[#F5EFE0]/60">free credits for new users</p>
+                <p className="text-3xl font-bold text-bull">1,000</p>
+                <p className="text-sm text-parchment/60">free credits for new users</p>
               </div>
               <div>
                 <p className="text-3xl font-bold text-amber-400">$10</p>
-                <p className="text-sm text-[#F5EFE0]/60">value at sign-up</p>
+                <p className="text-sm text-parchment/60">value at sign-up</p>
               </div>
             </div>
-            <div className="border-t border-[rgba(176,141,87,0.18)] pt-4 space-y-3 text-sm">
+            <div className="border-t border-[rgb(var(--t-brass) / 0.18)] pt-4 space-y-3 text-sm">
               <div className="flex justify-between items-center">
-                <span className="text-[#F5EFE0]/80">Owner cost per send (1–10 sources)</span>
-                <span className="text-[#F5EFE0] font-medium">10 credits</span>
+                <span className="text-parchment/80">Owner cost per send (1–10 sources)</span>
+                <span className="text-parchment font-medium">10 credits</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[#F5EFE0]/80">Owner cost per send (31+ sources)</span>
-                <span className="text-[#F5EFE0] font-medium">25 credits</span>
+                <span className="text-parchment/80">Owner cost per send (31+ sources)</span>
+                <span className="text-parchment font-medium">25 credits</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[#F5EFE0]/80">Subscriber cost per delivery</span>
-                <span className="text-[#F5EFE0] font-medium">2 credits</span>
+                <span className="text-parchment/80">Subscriber cost per delivery</span>
+                <span className="text-parchment font-medium">2 credits</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[#F5EFE0]/80">Subscriber cost with voice</span>
-                <span className="text-[#F5EFE0] font-medium">4 credits</span>
+                <span className="text-parchment/80">Subscriber cost with voice</span>
+                <span className="text-parchment font-medium">4 credits</span>
               </div>
-              <p className="text-xs text-[#F5EFE0]/30">
+              <p className="text-xs text-parchment/30">
                 Owner cost doubles when voice generation is enabled. Subscriber
                 payments split 50/50 between the platform and the dispatch owner.
               </p>
@@ -249,7 +249,7 @@ export default function DocsPage() {
           </div>
           <Link
             href="/pricing"
-            className="inline-block bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] px-5 py-2.5 rounded text-sm font-semibold uppercase tracking-wide font-[var(--font-oswald)] transition"
+            className="inline-block bg-brass hover:bg-brass/80 text-ink px-5 py-2.5 rounded text-sm font-semibold uppercase tracking-wide font-[var(--font-oswald)] transition"
           >
             Buy Credits →
           </Link>
@@ -257,22 +257,22 @@ export default function DocsPage() {
 
         {/* Positions */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-[#F5EFE0] mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
-            <span className="text-[#B08D57]">#</span> Positions
+          <h2 className="text-2xl font-bold text-parchment mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
+            <span className="text-brass">#</span> Positions
           </h2>
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6">
-            <p className="text-sm text-[#F5EFE0]/70 mb-3">
+          <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6">
+            <p className="text-sm text-parchment/70 mb-3">
               Junto continuously extracts the stances each source is publishing
               — long, short, cautious, neutral — and aggregates them per ticker.
               The Positions heatmap is a squarified treemap: a tile&apos;s area is
               proportional to how many sources agree on that position.
             </p>
-            <p className="text-sm text-[#F5EFE0]/70 mb-3">
+            <p className="text-sm text-parchment/70 mb-3">
               Filter by junto, category (crypto / equities / themes), stance,
               search by ticker, or include positions that haven&apos;t been
               re-confirmed in 30+ days.
             </p>
-            <Link href="/positions" className="text-[#B08D57] hover:text-[#B08D57]/80 text-sm transition">
+            <Link href="/positions" className="text-brass hover:text-brass/80 text-sm transition">
               Open the heatmap →
             </Link>
           </div>
@@ -280,18 +280,18 @@ export default function DocsPage() {
 
         {/* AI */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-[#F5EFE0] mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
-            <span className="text-[#B08D57]">#</span> The Synthesis Layer
+          <h2 className="text-2xl font-bold text-parchment mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
+            <span className="text-brass">#</span> The Synthesis Layer
           </h2>
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6">
-            <p className="text-sm text-[#F5EFE0]/70 mb-3">
-              Dispatch text is synthesized with <strong className="text-[#F5EFE0]">xAI&apos;s Grok</strong>{' '}
+          <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6">
+            <p className="text-sm text-parchment/70 mb-3">
+              Dispatch text is synthesized with <strong className="text-parchment">xAI&apos;s Grok</strong>{' '}
               (fast model, good with social content). Voice generation uses
-              <strong className="text-[#F5EFE0]"> Claude Haiku</strong> to write the
+              <strong className="text-parchment"> Claude Haiku</strong> to write the
               script and ElevenLabs to render the audio. Live junto syntheses on
               the dashboard use the same stack on a smaller window.
             </p>
-            <p className="text-sm text-[#F5EFE0]/70">
+            <p className="text-sm text-parchment/70">
               Source content is refreshed every 6 hours via cron, so each run
               sees fresh tweets, transcripts, and articles.
             </p>
@@ -300,8 +300,8 @@ export default function DocsPage() {
 
         {/* FAQ */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-[#F5EFE0] mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
-            <span className="text-[#B08D57]">#</span> FAQ
+          <h2 className="text-2xl font-bold text-parchment mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
+            <span className="text-brass">#</span> FAQ
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
             {[
@@ -340,10 +340,10 @@ export default function DocsPage() {
             ].map((item) => (
               <div
                 key={item.q}
-                className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5"
+                className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5"
               >
-                <h3 className="text-[#F5EFE0] font-semibold text-sm mb-2">{item.q}</h3>
-                <p className="text-sm text-[#F5EFE0]/60">{item.a}</p>
+                <h3 className="text-parchment font-semibold text-sm mb-2">{item.q}</h3>
+                <p className="text-sm text-parchment/60">{item.a}</p>
               </div>
             ))}
           </div>
@@ -351,36 +351,36 @@ export default function DocsPage() {
 
         {/* API access */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-[#F5EFE0] mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
-            <span className="text-[#B08D57]">#</span> API Access
+          <h2 className="text-2xl font-bold text-parchment mb-4 flex items-center gap-2 font-[var(--font-oswald)] uppercase tracking-wide">
+            <span className="text-brass">#</span> API Access
           </h2>
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 space-y-4">
-            <p className="text-sm text-[#F5EFE0]/70">
+          <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6 space-y-4">
+            <p className="text-sm text-parchment/70">
               Junto exposes a pay-as-you-go REST API for source profiles, ticker
               consensus, and public dispatches. Three steps to your first call:
             </p>
-            <ol className="space-y-3 text-sm text-[#F5EFE0]/80 list-decimal list-inside">
+            <ol className="space-y-3 text-sm text-parchment/80 list-decimal list-inside">
               <li>
                 Generate a key at{' '}
-                <Link href="/settings/api-keys" className="text-[#B08D57] hover:underline">
+                <Link href="/settings/api-keys" className="text-brass hover:underline">
                   /settings/api-keys
                 </Link>
                 . Keys are shown once at creation — store them somewhere safe.
               </li>
               <li>
                 Send it as a bearer token:
-                <pre className="mt-2 bg-[#1c1a17] border border-[rgba(176,141,87,0.18)] rounded p-3 text-xs font-mono overflow-x-auto text-[#F5EFE0]/85">{`Authorization: Bearer mj_live_…`}</pre>
+                <pre className="mt-2 bg-raised border border-[rgb(var(--t-brass) / 0.18)] rounded p-3 text-xs font-mono overflow-x-auto text-parchment/85">{`Authorization: Bearer mj_live_…`}</pre>
               </li>
               <li>
                 Call an endpoint. Calls debit credits from the key owner's
                 balance (1 credit for source/ticker reads, 5 for full dispatches).
-                <pre className="mt-2 bg-[#1c1a17] border border-[rgba(176,141,87,0.18)] rounded p-3 text-xs font-mono overflow-x-auto text-[#F5EFE0]/85">{`curl https://www.myjunto.xyz/api/public/v1/positions/BB \\
+                <pre className="mt-2 bg-raised border border-[rgb(var(--t-brass) / 0.18)] rounded p-3 text-xs font-mono overflow-x-auto text-parchment/85">{`curl https://www.myjunto.xyz/api/public/v1/positions/BB \\
   -H "Authorization: Bearer mj_live_…"`}</pre>
               </li>
             </ol>
             <Link
               href="/docs/api"
-              className="inline-block text-xs px-3 py-1.5 rounded bg-[#B08D57] text-[#080604] font-semibold uppercase tracking-wide font-[var(--font-oswald)]"
+              className="inline-block text-xs px-3 py-1.5 rounded bg-brass text-ink font-semibold uppercase tracking-wide font-[var(--font-oswald)]"
             >
               Full API reference →
             </Link>
@@ -388,18 +388,18 @@ export default function DocsPage() {
         </section>
 
         {/* Footer CTA */}
-        <div className="text-center py-8 border-t border-[rgba(176,141,87,0.18)]">
-          <p className="text-[#F5EFE0]/60 mb-4">Ready to get started?</p>
+        <div className="text-center py-8 border-t border-[rgb(var(--t-brass) / 0.18)]">
+          <p className="text-parchment/60 mb-4">Ready to get started?</p>
           <div className="flex items-center justify-center gap-4">
             <Link
               href="/explore"
-              className="text-[#B08D57] hover:text-[#B08D57]/80 text-sm transition"
+              className="text-brass hover:text-brass/80 text-sm transition"
             >
               Browse Dispatches
             </Link>
             <Link
               href="/create"
-              className="bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] px-5 py-2.5 rounded text-sm font-semibold uppercase tracking-wide font-[var(--font-oswald)] transition"
+              className="bg-brass hover:bg-brass/80 text-ink px-5 py-2.5 rounded text-sm font-semibold uppercase tracking-wide font-[var(--font-oswald)] transition"
             >
               Create a Dispatch
             </Link>

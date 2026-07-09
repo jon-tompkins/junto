@@ -11,22 +11,22 @@ const LAST_UPDATED = 'June 17, 2026';
 
 export default function PrivacyPage() {
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <div className="max-w-3xl mx-auto px-6 py-12">
         <header className="mb-10">
           <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-2">
             Privacy Policy
           </h1>
-          <p className="text-sm text-[#F5EFE0]/45">
+          <p className="text-sm text-parchment/45">
             Last updated {LAST_UPDATED}. This is a first-pass draft for review — it
             should be reviewed by counsel before it governs real users.
           </p>
         </header>
 
         {/* Draft banner */}
-        <div className="bg-[#141210] border border-[#e8453c]/40 rounded p-4 mb-10 text-sm text-[#F5EFE0]/70">
-          <span className="text-[#e8453c] font-semibold font-[var(--font-oswald)] uppercase tracking-wide mr-2">
+        <div className="bg-surface border border-bear/40 rounded p-4 mb-10 text-sm text-parchment/70">
+          <span className="text-bear font-semibold font-[var(--font-oswald)] uppercase tracking-wide mr-2">
             Draft
           </span>
           Internal review copy. The data-handling commitments below (especially around
@@ -36,20 +36,20 @@ export default function PrivacyPage() {
 
         <nav className="mb-12 text-sm">
           <ul className="space-y-1.5">
-            <li><a href="#what" className="text-[#B08D57] hover:text-[#B08D57]/80 transition">1. What We Collect</a></li>
-            <li><a href="#use" className="text-[#B08D57] hover:text-[#B08D57]/80 transition">2. How We Use It</a></li>
-            <li><a href="#brokerage" className="text-[#B08D57] hover:text-[#B08D57]/80 transition">3. Brokerage Credentials &amp; Financial Data</a></li>
-            <li><a href="#sharing" className="text-[#B08D57] hover:text-[#B08D57]/80 transition">4. Sharing &amp; Third Parties</a></li>
-            <li><a href="#security" className="text-[#B08D57] hover:text-[#B08D57]/80 transition">5. Security</a></li>
-            <li><a href="#retention" className="text-[#B08D57] hover:text-[#B08D57]/80 transition">6. Retention</a></li>
-            <li><a href="#rights" className="text-[#B08D57] hover:text-[#B08D57]/80 transition">7. Your Rights &amp; Choices</a></li>
-            <li><a href="#changes" className="text-[#B08D57] hover:text-[#B08D57]/80 transition">8. Changes &amp; Contact</a></li>
+            <li><a href="#what" className="text-brass hover:text-brass/80 transition">1. What We Collect</a></li>
+            <li><a href="#use" className="text-brass hover:text-brass/80 transition">2. How We Use It</a></li>
+            <li><a href="#brokerage" className="text-brass hover:text-brass/80 transition">3. Brokerage Credentials &amp; Financial Data</a></li>
+            <li><a href="#sharing" className="text-brass hover:text-brass/80 transition">4. Sharing &amp; Third Parties</a></li>
+            <li><a href="#security" className="text-brass hover:text-brass/80 transition">5. Security</a></li>
+            <li><a href="#retention" className="text-brass hover:text-brass/80 transition">6. Retention</a></li>
+            <li><a href="#rights" className="text-brass hover:text-brass/80 transition">7. Your Rights &amp; Choices</a></li>
+            <li><a href="#changes" className="text-brass hover:text-brass/80 transition">8. Changes &amp; Contact</a></li>
           </ul>
         </nav>
 
         <Section id="what" n="1" title="What We Collect">
           <p>We collect only what we need to operate myjunto:</p>
-          <ul className="list-disc pl-5 space-y-2 my-4 text-[#F5EFE0]/80">
+          <ul className="list-disc pl-5 space-y-2 my-4 text-parchment/80">
             <li>
               <strong>Account information</strong> — your email, authentication
               details, and subscription/credit status.
@@ -81,7 +81,7 @@ export default function PrivacyPage() {
 
         <Section id="use" n="2" title="How We Use It">
           <p>We use your information to:</p>
-          <ul className="list-disc pl-5 space-y-2 my-4 text-[#F5EFE0]/80">
+          <ul className="list-disc pl-5 space-y-2 my-4 text-parchment/80">
             <li>provide, maintain, and improve the platform and its features;</li>
             <li>compile and deliver the information you request based on the accounts you follow;</li>
             <li>operate any execution features you explicitly enable, within the parameters you set;</li>
@@ -114,7 +114,7 @@ export default function PrivacyPage() {
 
         <Section id="sharing" n="4" title="Sharing & Third Parties">
           <p>We share information only in limited circumstances:</p>
-          <ul className="list-disc pl-5 space-y-2 my-4 text-[#F5EFE0]/80">
+          <ul className="list-disc pl-5 space-y-2 my-4 text-parchment/80">
             <li>
               <strong>Service providers</strong> — vendors that help us run the platform
               (hosting, database, email, data sources, your connected brokerage),
@@ -159,7 +159,7 @@ export default function PrivacyPage() {
             export, or delete your personal information, and to object to or restrict
             certain processing. You can:
           </p>
-          <ul className="list-disc pl-5 space-y-2 my-4 text-[#F5EFE0]/80">
+          <ul className="list-disc pl-5 space-y-2 my-4 text-parchment/80">
             <li>update your selections and settings at any time;</li>
             <li>disconnect a connected brokerage and revoke its keys;</li>
             <li>request access to or deletion of your data by contacting us;</li>
@@ -181,16 +181,16 @@ export default function PrivacyPage() {
           </p>
         </Section>
 
-        <footer className="mt-12 pt-6 border-t border-[rgba(176,141,87,0.28)] text-sm text-[#F5EFE0]/45">
+        <footer className="mt-12 pt-6 border-t border-[rgb(var(--t-brass) / 0.28)] text-sm text-parchment/45">
           <p className="mb-3">
             Bracketed items and the entire document require review by counsel before it
             governs real users.
           </p>
           <div className="flex gap-4">
-            <Link href="/terms" className="text-[#B08D57] hover:text-[#B08D57]/80 transition">
+            <Link href="/terms" className="text-brass hover:text-brass/80 transition">
               Terms &amp; Disclosures
             </Link>
-            <Link href="/admin" className="text-[#B08D57] hover:text-[#B08D57]/80 transition">
+            <Link href="/admin" className="text-brass hover:text-brass/80 transition">
               ← Back to Admin
             </Link>
           </div>
@@ -214,10 +214,10 @@ function Section({
   return (
     <section id={id} className="mb-12 scroll-mt-6">
       <h2 className="text-xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-4 flex items-baseline gap-3">
-        <span className="text-[#B08D57]">{n}</span>
+        <span className="text-brass">{n}</span>
         {title}
       </h2>
-      <div className="space-y-4 text-[#F5EFE0]/70 leading-relaxed">{children}</div>
+      <div className="space-y-4 text-parchment/70 leading-relaxed">{children}</div>
     </section>
   );
 }

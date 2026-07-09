@@ -91,19 +91,19 @@ export default function OpenAccountPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+      <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
-        <div className="max-w-2xl mx-auto px-6 py-12 text-[#F5EFE0]/45">Loading…</div>
+        <div className="max-w-2xl mx-auto px-6 py-12 text-parchment/45">Loading…</div>
       </main>
     );
   }
 
   if (status !== 'authenticated') {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+      <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
         <div className="max-w-2xl mx-auto px-6 py-12">
-          <Link href="/login?callbackUrl=/account/open" className="text-[#B08D57]">Sign in to continue</Link>
+          <Link href="/login?callbackUrl=/account/open" className="text-brass">Sign in to continue</Link>
         </div>
       </main>
     );
@@ -111,32 +111,32 @@ export default function OpenAccountPage() {
 
   if (existing) {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+      <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
         <div className="max-w-2xl mx-auto px-6 py-12">
           <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-2">Brokerage account</h1>
-          <p className="text-sm text-[#F5EFE0]/45 mb-8">Managed by myjunto via Alpaca</p>
+          <p className="text-sm text-parchment/45 mb-8">Managed by myjunto via Alpaca</p>
 
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-6">
+          <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6 mb-6">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 font-mono mb-1">Status</div>
-                <div className="text-[#F5EFE0]">{existing.status}</div>
+                <div className="text-[10px] uppercase tracking-wider text-parchment/45 font-mono mb-1">Status</div>
+                <div className="text-parchment">{existing.status}</div>
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 font-mono mb-1">Account #</div>
-                <div className="text-[#F5EFE0] font-mono">{existing.account_number || '—'}</div>
+                <div className="text-[10px] uppercase tracking-wider text-parchment/45 font-mono mb-1">Account #</div>
+                <div className="text-parchment font-mono">{existing.account_number || '—'}</div>
               </div>
               <div className="col-span-2">
-                <div className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 font-mono mb-1">Account ID</div>
-                <div className="text-[#F5EFE0]/60 font-mono text-xs">{existing.id}</div>
+                <div className="text-[10px] uppercase tracking-wider text-parchment/45 font-mono mb-1">Account ID</div>
+                <div className="text-parchment/60 font-mono text-xs">{existing.id}</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6">
-            <h2 className="text-sm uppercase tracking-wider text-[#F5EFE0]/60 font-[var(--font-oswald)] mb-3">Next: fund the account</h2>
-            <p className="text-xs text-[#F5EFE0]/45 mb-4">
+          <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6">
+            <h2 className="text-sm uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] mb-3">Next: fund the account</h2>
+            <p className="text-xs text-parchment/45 mb-4">
               ACH funding via Plaid is wired as a stub for now. Production-ready funding ships once Broker API agreement is signed.
             </p>
             <button
@@ -144,7 +144,7 @@ export default function OpenAccountPage() {
                 const res = await fetch('/api/broker/funding', { method: 'POST' });
                 alert(JSON.stringify(await res.json(), null, 2));
               }}
-              className="px-4 py-2 rounded bg-[#B08D57] text-[#080604] text-sm font-bold uppercase tracking-wide"
+              className="px-4 py-2 rounded bg-brass text-ink text-sm font-bold uppercase tracking-wide"
             >
               Set up ACH (stub)
             </button>
@@ -155,11 +155,11 @@ export default function OpenAccountPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <div className="max-w-2xl mx-auto px-6 py-10">
         <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-2">Open a brokerage account</h1>
-        <p className="text-sm text-[#F5EFE0]/45 mb-8">
+        <p className="text-sm text-parchment/45 mb-8">
           Skip the &quot;create an Alpaca account and paste keys&quot; dance — open a managed account in myjunto.
           Trading happens through your Alpaca account but lives inside this app.
         </p>
@@ -264,18 +264,18 @@ export default function OpenAccountPage() {
             />
           </Section>
 
-          {error && <p className="text-sm text-[#e8453c]">{error}</p>}
+          {error && <p className="text-sm text-bear">{error}</p>}
 
           <button
             onClick={submit}
             disabled={saving}
-            className="w-full px-5 py-4 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-40 text-[#080604] rounded font-bold uppercase tracking-wide text-sm"
+            className="w-full px-5 py-4 bg-brass hover:bg-brass/80 disabled:opacity-40 text-ink rounded font-bold uppercase tracking-wide text-sm"
             style={{ fontFamily: 'var(--font-oswald)' }}
           >
             {saving ? 'Opening account…' : 'Open account'}
           </button>
 
-          <p className="text-[11px] text-[#F5EFE0]/35 text-center">
+          <p className="text-[11px] text-parchment/35 text-center">
             By submitting, you authorize Alpaca Securities LLC (the underlying broker-dealer) to open an account in your name.
             myjunto routes trades but does not custody funds.
           </p>
@@ -285,12 +285,12 @@ export default function OpenAccountPage() {
   );
 }
 
-const inputCls = 'w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]';
+const inputCls = 'w-full bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-2 text-sm text-parchment focus:outline-none focus:border-brass';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-5 space-y-3">
-      <h2 className="text-xs uppercase tracking-wider text-[#F5EFE0]/60 font-[var(--font-oswald)]">{title}</h2>
+    <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5 space-y-3">
+      <h2 className="text-xs uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)]">{title}</h2>
       {children}
     </div>
   );
@@ -303,7 +303,7 @@ function Row({ children }: { children: React.ReactNode }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 font-mono block mb-1">{label}</span>
+      <span className="text-[10px] uppercase tracking-wider text-parchment/45 font-mono block mb-1">{label}</span>
       {children}
     </label>
   );
@@ -328,9 +328,9 @@ function Check({ checked, onChange, label }: { checked: boolean; onChange: (v: b
         type="checkbox"
         checked={checked}
         onChange={e => onChange(e.target.checked)}
-        className="mt-0.5 w-4 h-4 accent-[#B08D57]"
+        className="mt-0.5 w-4 h-4 accent-brass"
       />
-      <span className="text-sm text-[#F5EFE0]/80">{label}</span>
+      <span className="text-sm text-parchment/80">{label}</span>
     </label>
   );
 }

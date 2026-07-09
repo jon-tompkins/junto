@@ -44,14 +44,14 @@ export default async function LeaderboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0e0c0a] text-[#F5EFE0]">
+    <div className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <main className="max-w-4xl mx-auto px-5 py-8">
         <h1 className="text-2xl md:text-3xl font-semibold mb-1">
-          Analyst <span className="text-[#B08D57]">track-record</span> leaderboard
+          Analyst <span className="text-brass">track-record</span> leaderboard
         </h1>
-        <p className="text-sm text-[#F5EFE0]/50 mb-6 max-w-2xl">
+        <p className="text-sm text-parchment/50 mb-6 max-w-2xl">
           Every tracked analyst&rsquo;s scored calls, avg return, and hit rate &mdash; click any column
           to sort and dig in. No cherry-picking; a call is a call. A source appears once it clears{' '}
           {MIN_POSITIONS}+ tracked positions <em>or</em> has a closed call scored. The board thickens as
@@ -59,7 +59,7 @@ export default async function LeaderboardPage() {
         </p>
 
         {rows.length === 0 ? (
-          <div className="border border-[#F5EFE0]/10 rounded-lg p-8 text-center text-[#F5EFE0]/50 text-sm">
+          <div className="border border-parchment/10 rounded-lg p-8 text-center text-parchment/50 text-sm">
             Nothing to rank yet &mdash; no source has enough tracked positions or a scored call. The
             board populates as we build out coverage &mdash; check back soon.
           </div>
@@ -67,7 +67,7 @@ export default async function LeaderboardPage() {
           <LeaderboardTable rows={rows} />
         )}
 
-        <p className="text-[11px] text-[#F5EFE0]/30 mt-4">
+        <p className="text-[11px] text-parchment/30 mt-4">
           Calls are inferred from public posts and scored on price move after the stance closed or
           flipped. &ldquo;Calls&rdquo; is scored closed calls (wins&ndash;losses); hit rate is wins
           &divide; (wins + losses); &ldquo;unrated&rdquo; sources are tracked but have no closed call

@@ -13,8 +13,8 @@ export async function GET() {
           display: 'flex',
           position: 'relative',
           overflow: 'hidden',
-          background: '#080604',
-          color: '#F5EFE0',
+          background: 'rgb(var(--t-ink))',
+          color: 'rgb(var(--t-parchment))',
           fontFamily: 'Arial, sans-serif',
         }}
       >
@@ -25,7 +25,7 @@ export async function GET() {
             inset: 0,
             display: 'flex',
             background:
-              'radial-gradient(circle at top right, rgba(176,141,87,0.22), transparent 38%), radial-gradient(circle at bottom left, rgba(176,141,87,0.12), transparent 40%), linear-gradient(135deg, #080604 0%, #141210 55%, #1c1a17 100%)',
+              'radial-gradient(circle at top right, rgb(var(--t-brass) / 0.22), transparent 38%), radial-gradient(circle at bottom left, rgb(var(--t-brass) / 0.12), transparent 40%), linear-gradient(135deg, rgb(var(--t-ink)) 0%, rgb(var(--t-surface)) 55%, rgb(var(--t-raised)) 100%)',
           }}
         />
 
@@ -34,7 +34,7 @@ export async function GET() {
           style={{
             position: 'absolute',
             inset: 60,
-            border: '2px solid rgba(176,141,87,0.32)',
+            border: '2px solid rgb(var(--t-brass) / 0.32)',
             borderRadius: 18,
             display: 'flex',
           }}
@@ -43,7 +43,7 @@ export async function GET() {
           style={{
             position: 'absolute',
             inset: 84,
-            border: '1px solid rgba(176,141,87,0.16)',
+            border: '1px solid rgb(var(--t-brass) / 0.16)',
             borderRadius: 10,
             display: 'flex',
           }}
@@ -61,7 +61,7 @@ export async function GET() {
             fontSize: 36,
             letterSpacing: '0.32em',
             textTransform: 'uppercase',
-            color: 'rgba(176,141,87,0.78)',
+            color: 'rgb(var(--t-brass) / 0.78)',
           }}
         >
           myjunto
@@ -96,7 +96,7 @@ export async function GET() {
               fontWeight: 900,
               letterSpacing: '-0.05em',
               lineHeight: 0.95,
-              color: '#B08D57',
+              color: 'rgb(var(--t-brass))',
               display: 'flex',
               marginTop: 12,
             }}
@@ -117,11 +117,11 @@ export async function GET() {
             alignItems: 'center',
           }}
         >
-          <div style={{ width: 120, height: 2, background: '#B08D57', display: 'flex', marginBottom: 32 }} />
+          <div style={{ width: 120, height: 2, background: 'rgb(var(--t-brass))', display: 'flex', marginBottom: 32 }} />
           <div
             style={{
               fontSize: 38,
-              color: 'rgba(245,239,224,0.7)',
+              color: 'rgb(var(--t-parchment) / 0.7)',
               letterSpacing: '0.05em',
               display: 'flex',
             }}
@@ -140,7 +140,7 @@ export async function GET() {
             display: 'flex',
             justifyContent: 'center',
             fontSize: 28,
-            color: 'rgba(245,239,224,0.4)',
+            color: 'rgb(var(--t-parchment) / 0.4)',
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
           }}

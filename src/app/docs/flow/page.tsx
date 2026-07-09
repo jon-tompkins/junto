@@ -1,18 +1,18 @@
 import { TopNav } from '@/components/top-nav';
 
-const brass = '#B08D57';
-const surface = '#141210';
-const raised = '#1c1a17';
-const border = 'rgba(176,141,87,0.28)';
-const borderInner = 'rgba(176,141,87,0.18)';
-const parchment = '#F5EFE0';
-const muted = 'rgba(245,239,224,0.5)';
-const dimmer = 'rgba(245,239,224,0.3)';
+const brass = 'rgb(var(--t-brass))';
+const surface = 'rgb(var(--t-surface))';
+const raised = 'rgb(var(--t-raised))';
+const border = 'rgb(var(--t-brass) / 0.28)';
+const borderInner = 'rgb(var(--t-brass) / 0.18)';
+const parchment = 'rgb(var(--t-parchment))';
+const muted = 'rgb(var(--t-parchment) / 0.5)';
+const dimmer = 'rgb(var(--t-parchment) / 0.3)';
 
-const green = '#3ecf6a';
+const green = 'rgb(var(--t-bull))';
 const greenBg = 'rgba(62,207,106,0.08)';
 const greenBorder = 'rgba(62,207,106,0.25)';
-const red = '#e8453c';
+const red = 'rgb(var(--t-bear))';
 const redBg = 'rgba(232,69,60,0.08)';
 const redBorder = 'rgba(232,69,60,0.3)';
 const orange = '#f59e0b';
@@ -50,7 +50,7 @@ function Badge({ label, color }: { label: string; color?: string }) {
     cron: { bg: blueBg, text: blue, bd: blueBorder },
     data: { bg: greenBg, text: green, bd: greenBorder },
     warn: { bg: orangeBg, text: orange, bd: orangeBorder },
-    new: { bg: 'rgba(176,141,87,0.15)', text: brass, bd: border },
+    new: { bg: 'rgb(var(--t-brass) / 0.15)', text: brass, bd: border },
     default: { bg: raised, text: muted, bd: borderInner },
   };
   const s = styles[color ?? 'default'];
@@ -168,7 +168,7 @@ function IssueCard({ title, detail, severity }: { title: string; detail: string;
 
 export default function FlowPage() {
   return (
-    <div style={{ minHeight: '100vh', background: '#080604', color: parchment }}>
+    <div style={{ minHeight: '100vh', background: 'rgb(var(--t-ink))', color: parchment }}>
       <TopNav />
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '48px 24px 100px' }}>

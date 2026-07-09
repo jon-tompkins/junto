@@ -31,13 +31,13 @@ export function TickerStrip() {
   return (
     <div
       className="w-full overflow-hidden border-y"
-      style={{ borderColor: 'rgba(176,141,87,0.18)', background: 'rgba(176,141,87,0.03)' }}
+      style={{ borderColor: 'rgb(var(--t-brass) / 0.18)', background: 'rgb(var(--t-brass) / 0.03)' }}
     >
       <div className="flex items-center">
         {label && (
           <div
             className="shrink-0 px-4 py-2 text-[10px] uppercase tracking-widest border-r"
-            style={{ color: '#B08D57', borderColor: 'rgba(176,141,87,0.18)', fontFamily: 'var(--font-oswald)' }}
+            style={{ color: 'rgb(var(--t-brass))', borderColor: 'rgb(var(--t-brass) / 0.18)', fontFamily: 'var(--font-oswald)' }}
           >
             Featured · {label}
           </div>
@@ -47,20 +47,20 @@ export function TickerStrip() {
             {loop.map((e, i) => {
               const up = e.change_pct != null && e.change_pct >= 0;
               const color = e.change_pct == null
-                ? 'rgba(245,239,224,0.55)'
-                : up ? '#3ecf6a' : '#e8453c';
+                ? 'rgb(var(--t-parchment) / 0.55)'
+                : up ? 'rgb(var(--t-bull))' : 'rgb(var(--t-bear))';
               return (
                 <span key={i} className="flex items-baseline gap-2 text-sm" style={{ fontFamily: 'var(--font-mono)' }}>
-                  <span className="font-semibold" style={{ color: '#F5EFE0' }}>{e.ticker}</span>
+                  <span className="font-semibold" style={{ color: 'rgb(var(--t-parchment))' }}>{e.ticker}</span>
                   {e.price != null && (
-                    <span style={{ color: 'rgba(245,239,224,0.55)' }}>${e.price.toFixed(2)}</span>
+                    <span style={{ color: 'rgb(var(--t-parchment) / 0.55)' }}>${e.price.toFixed(2)}</span>
                   )}
                   {e.change_pct != null && (
                     <span style={{ color }}>
                       {up ? '+' : ''}{e.change_pct.toFixed(2)}%
                     </span>
                   )}
-                  <span className="text-[10px] uppercase tracking-wider" style={{ color: 'rgba(245,239,224,0.3)' }}>
+                  <span className="text-[10px] uppercase tracking-wider" style={{ color: 'rgb(var(--t-parchment) / 0.3)' }}>
                     {e.side}
                   </span>
                 </span>

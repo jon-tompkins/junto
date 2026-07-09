@@ -18,8 +18,8 @@ interface PositionGroup {
 }
 
 const STANCE_BG: Record<string, string> = {
-  bullish: '#3ecf6a',
-  bearish: '#e8453c',
+  bullish: 'rgb(var(--t-bull))',
+  bearish: 'rgb(var(--t-bear))',
   cautious: '#d97706',
   neutral: '#4b5563',
 };
@@ -172,7 +172,7 @@ export default function PositionsPage() {
   });
 
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
 
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -182,7 +182,7 @@ export default function PositionsPage() {
             <h1 className="text-4xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-1">
               Positions
             </h1>
-            <p className="text-[#F5EFE0]/50 text-sm">
+            <p className="text-parchment/50 text-sm">
               Aggregate stances across all tracked sources · {items.length} signals
             </p>
           </div>
@@ -196,20 +196,20 @@ export default function PositionsPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search ticker…"
-                className="w-full sm:w-40 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-1.5 pr-7 text-xs text-[#F5EFE0] placeholder-[#F5EFE0]/30 font-mono uppercase focus:outline-none focus:border-[#B08D57]"
+                className="w-full sm:w-40 bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-1.5 pr-7 text-xs text-parchment placeholder-parchment/30 font-mono uppercase focus:outline-none focus:border-brass"
               />
               {search && (
                 <button
                   onClick={() => setSearch('')}
                   aria-label="Clear search"
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-xs text-[#F5EFE0]/35 hover:text-[#F5EFE0]/70 w-4 h-4 leading-none"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-xs text-parchment/35 hover:text-parchment/70 w-4 h-4 leading-none"
                 >
                   ×
                 </button>
               )}
             </div>
 
-            <div className="hidden sm:block w-px h-5 bg-[rgba(176,141,87,0.2)]" />
+            <div className="hidden sm:block w-px h-5 bg-[rgb(var(--t-brass) / 0.2)]" />
 
             {/* Junto filter */}
             {juntos.length > 0 && (
@@ -218,9 +218,9 @@ export default function PositionsPage() {
                 onChange={(e) => setJuntoId(e.target.value)}
                 className="text-xs rounded px-3 py-1.5 transition appearance-none cursor-pointer"
                 style={{
-                  background: juntoId ? 'rgba(176,141,87,0.12)' : 'rgba(255,255,255,0.04)',
-                  color: juntoId ? '#B08D57' : 'rgba(245,239,224,0.5)',
-                  border: `1px solid ${juntoId ? 'rgba(176,141,87,0.4)' : 'rgba(176,141,87,0.18)'}`,
+                  background: juntoId ? 'rgb(var(--t-brass) / 0.12)' : 'rgba(255,255,255,0.04)',
+                  color: juntoId ? 'rgb(var(--t-brass))' : 'rgb(var(--t-parchment) / 0.5)',
+                  border: `1px solid ${juntoId ? 'rgb(var(--t-brass) / 0.4)' : 'rgb(var(--t-brass) / 0.18)'}`,
                 }}
               >
                 <option value="">All Juntos</option>
@@ -230,12 +230,12 @@ export default function PositionsPage() {
               </select>
             )}
 
-            <div className="hidden sm:block w-px h-5 bg-[rgba(176,141,87,0.2)]" />
+            <div className="hidden sm:block w-px h-5 bg-[rgb(var(--t-brass) / 0.2)]" />
 
             {/* Category filter */}
             <div className="flex gap-1">
               {([
-                { cat: 'crypto' as PositionCategory, label: 'Crypto', color: '#B08D57' },
+                { cat: 'crypto' as PositionCategory, label: 'Crypto', color: 'rgb(var(--t-brass))' },
                 { cat: 'equity' as PositionCategory, label: 'Equities', color: '#60a5fa' },
                 { cat: 'theme' as PositionCategory, label: 'Themes', color: '#a78bfa' },
               ]).map(({ cat, label, color }) => {
@@ -247,8 +247,8 @@ export default function PositionsPage() {
                     className="px-3 py-1.5 rounded text-xs font-medium transition"
                     style={{
                       background: active ? `${color}22` : 'rgba(255,255,255,0.03)',
-                      color: active ? color : 'rgba(245,239,224,0.35)',
-                      border: `1px solid ${active ? color + '55' : 'rgba(176,141,87,0.15)'}`,
+                      color: active ? color : 'rgb(var(--t-parchment) / 0.35)',
+                      border: `1px solid ${active ? color + '55' : 'rgb(var(--t-brass) / 0.15)'}`,
                     }}
                   >
                     {label}
@@ -257,7 +257,7 @@ export default function PositionsPage() {
               })}
             </div>
 
-            <div className="hidden sm:block w-px h-5 bg-[rgba(176,141,87,0.2)]" />
+            <div className="hidden sm:block w-px h-5 bg-[rgb(var(--t-brass) / 0.2)]" />
 
             {/* Stance filter */}
             <div className="flex gap-1">
@@ -268,12 +268,12 @@ export default function PositionsPage() {
                   className="px-3 py-1.5 rounded text-xs font-medium transition capitalize"
                   style={{
                     background: filter === s
-                      ? s === 'all' ? '#B08D57' : STANCE_BG[s]
+                      ? s === 'all' ? 'rgb(var(--t-brass))' : STANCE_BG[s]
                       : 'rgba(255,255,255,0.04)',
-                    color: filter === s ? (s === 'all' ? '#080604' : '#fff') : 'rgba(245,239,224,0.5)',
+                    color: filter === s ? (s === 'all' ? 'rgb(var(--t-ink))' : '#fff') : 'rgb(var(--t-parchment) / 0.5)',
                     border: '1px solid ' + (filter === s
-                      ? s === 'all' ? '#B08D57' : STANCE_BG[s]
-                      : 'rgba(176,141,87,0.18)'),
+                      ? s === 'all' ? 'rgb(var(--t-brass))' : STANCE_BG[s]
+                      : 'rgb(var(--t-brass) / 0.18)'),
                   }}
                 >
                   {s === 'all' ? 'All' : STANCE_LABEL[s]}
@@ -286,9 +286,9 @@ export default function PositionsPage() {
               onClick={() => setIncludeStale((v) => !v)}
               className="px-3 py-1.5 rounded text-xs font-medium transition"
               style={{
-                background: includeStale ? 'rgba(176,141,87,0.18)' : 'rgba(255,255,255,0.04)',
-                color: includeStale ? '#B08D57' : 'rgba(245,239,224,0.5)',
-                border: `1px solid ${includeStale ? 'rgba(176,141,87,0.4)' : 'rgba(176,141,87,0.18)'}`,
+                background: includeStale ? 'rgb(var(--t-brass) / 0.18)' : 'rgba(255,255,255,0.04)',
+                color: includeStale ? 'rgb(var(--t-brass))' : 'rgb(var(--t-parchment) / 0.5)',
+                border: `1px solid ${includeStale ? 'rgb(var(--t-brass) / 0.4)' : 'rgb(var(--t-brass) / 0.18)'}`,
               }}
               title="Show positions not confirmed in 30+ days"
             >
@@ -300,27 +300,27 @@ export default function PositionsPage() {
               onClick={() => setShowClosed((v) => !v)}
               className="px-3 py-1.5 rounded text-xs font-medium transition"
               style={{
-                background: showClosed ? 'rgba(176,141,87,0.18)' : 'rgba(255,255,255,0.04)',
-                color: showClosed ? '#B08D57' : 'rgba(245,239,224,0.5)',
-                border: `1px solid ${showClosed ? 'rgba(176,141,87,0.4)' : 'rgba(176,141,87,0.18)'}`,
+                background: showClosed ? 'rgb(var(--t-brass) / 0.18)' : 'rgba(255,255,255,0.04)',
+                color: showClosed ? 'rgb(var(--t-brass))' : 'rgb(var(--t-parchment) / 0.5)',
+                border: `1px solid ${showClosed ? 'rgb(var(--t-brass) / 0.4)' : 'rgb(var(--t-brass) / 0.18)'}`,
               }}
               title="Show count of closed (scored) calls per ticker"
             >
               {showClosed ? '✓ ' : ''}Closed calls
             </button>
 
-            <div className="hidden sm:block w-px h-5 bg-[rgba(176,141,87,0.2)]" />
+            <div className="hidden sm:block w-px h-5 bg-[rgb(var(--t-brass) / 0.2)]" />
 
             {/* View toggle */}
-            <div className="flex rounded overflow-hidden border border-[rgba(176,141,87,0.28)]">
+            <div className="flex rounded overflow-hidden border border-[rgb(var(--t-brass) / 0.28)]">
               {(['heatmap', 'table'] as const).map((v) => (
                 <button
                   key={v}
                   onClick={() => setView(v)}
                   className="px-4 py-1.5 text-xs font-medium transition capitalize"
                   style={{
-                    background: view === v ? '#B08D57' : 'transparent',
-                    color: view === v ? '#080604' : 'rgba(245,239,224,0.5)',
+                    background: view === v ? 'rgb(var(--t-brass))' : 'transparent',
+                    color: view === v ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.5)',
                   }}
                 >
                   {v === 'heatmap' ? '⊞ Heatmap' : '≡ Table'}
@@ -333,16 +333,16 @@ export default function PositionsPage() {
         {loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[...Array(12)].map((_, i) => (
-              <div key={i} className="animate-pulse rounded bg-[#141210] border border-[rgba(176,141,87,0.18)]" style={{ height: '80px' }} />
+              <div key={i} className="animate-pulse rounded bg-surface border border-[rgb(var(--t-brass) / 0.18)]" style={{ height: '80px' }} />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-[#F5EFE0]/40">No positions yet.</div>
+          <div className="text-center py-20 text-parchment/40">No positions yet.</div>
         ) : view === 'heatmap' ? (
           // ─── Heatmap (squarified treemap) ──────────────────────────
           <div
             ref={heatmapRef}
-            className="relative w-full bg-[#0a0907] border border-[rgba(176,141,87,0.18)] rounded overflow-hidden"
+            className="relative w-full bg-ink border border-[rgb(var(--t-brass) / 0.18)] rounded overflow-hidden"
             style={{ height: `${heatmapHeight}px` }}
           >
             {heatmapLayout.map(({ x, y, w, h, data: item }) => {
@@ -372,7 +372,7 @@ export default function PositionsPage() {
                     width: `${w}px`,
                     height: `${h}px`,
                     background: `rgba(${hexToRgb(bg)}, ${alpha})`,
-                    boxShadow: 'inset 0 0 0 1px rgba(8,6,4,0.6)',
+                    boxShadow: 'inset 0 0 0 1px rgb(var(--t-ink) / 0.6)',
                   }}
                   title={`${item.ticker} · ${STANCE_LABEL[item.stance] ?? item.stance} · ${shownCount} source${shownCount !== 1 ? 's' : ''}${!includeStale && item.count > shownCount ? ` (+${item.count - shownCount} stale)` : ''}`}
                 >
@@ -384,7 +384,7 @@ export default function PositionsPage() {
                     <button
                       onClick={(e) => toggleStar(e, item.ticker)}
                       className="absolute top-1 right-1.5 text-xs leading-none transition z-10"
-                      style={{ color: starredTickers.has(item.ticker) ? '#B08D57' : 'rgba(245,239,224,0.25)' }}
+                      style={{ color: starredTickers.has(item.ticker) ? 'rgb(var(--t-brass))' : 'rgb(var(--t-parchment) / 0.25)' }}
                       title={starredTickers.has(item.ticker) ? 'Unstar' : 'Star'}
                     >
                       {starredTickers.has(item.ticker) ? '★' : '☆'}
@@ -393,7 +393,7 @@ export default function PositionsPage() {
                   {showLabel && (
                     <span
                       className="font-bold font-mono text-center leading-tight px-1"
-                      style={{ fontSize: `${fontSize}px`, color: '#F5EFE0' }}
+                      style={{ fontSize: `${fontSize}px`, color: 'rgb(var(--t-parchment))' }}
                     >
                       {item.ticker}
                     </span>
@@ -416,9 +416,9 @@ export default function PositionsPage() {
                           style={{
                             width: `${avatarSize}px`,
                             height: `${avatarSize}px`,
-                            borderColor: '#080604',
+                            borderColor: 'rgb(var(--t-ink))',
                             marginLeft: i > 0 ? `-${Math.floor(avatarSize / 3)}px` : 0,
-                            background: '#1c1a17',
+                            background: 'rgb(var(--t-raised))',
                             position: 'relative',
                             zIndex: 10 - i,
                           }}
@@ -426,7 +426,7 @@ export default function PositionsPage() {
                           {s.avatar_url ? (
                             <img src={s.avatar_url} alt={s.handle} className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[#F5EFE0]/60" style={{ fontSize: '8px' }}>
+                            <div className="w-full h-full flex items-center justify-center text-parchment/60" style={{ fontSize: '8px' }}>
                               {s.handle[0]?.toUpperCase()}
                             </div>
                           )}
@@ -440,10 +440,10 @@ export default function PositionsPage() {
           </div>
         ) : (
           // ─── Table ─────────────────────────────────────────────────
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
+          <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[rgba(176,141,87,0.28)]">
+                <tr className="border-b border-[rgb(var(--t-brass) / 0.28)]">
                   {([
                     { col: 'ticker' as SortCol, label: 'Position' },
                     { col: 'stance' as SortCol, label: 'Side' },
@@ -453,7 +453,7 @@ export default function PositionsPage() {
                       key={col}
                       onClick={() => handleSort(col)}
                       className="text-left px-5 py-3 text-xs uppercase tracking-wider font-[var(--font-oswald)] cursor-pointer select-none transition"
-                      style={{ color: sortCol === col ? '#B08D57' : 'rgba(245,239,224,0.4)' }}
+                      style={{ color: sortCol === col ? 'rgb(var(--t-brass))' : 'rgb(var(--t-parchment) / 0.4)' }}
                     >
                       {label}
                       <span className="ml-1 opacity-60">
@@ -461,8 +461,8 @@ export default function PositionsPage() {
                       </span>
                     </th>
                   ))}
-                  <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)]">Type</th>
-                  <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)]">Profiles</th>
+                  <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)]">Type</th>
+                  <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)]">Profiles</th>
                   {session?.user && <th className="px-3 py-3 w-8" />}
                 </tr>
               </thead>
@@ -475,20 +475,20 @@ export default function PositionsPage() {
                   return (
                     <tr
                       key={`${item.ticker}-${item.stance}`}
-                      className="border-b border-[rgba(176,141,87,0.1)] last:border-0 hover:bg-[rgba(176,141,87,0.04)] transition"
+                      className="border-b border-[rgb(var(--t-brass) / 0.1)] last:border-0 hover:bg-[rgb(var(--t-brass) / 0.04)] transition"
                     >
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2">
                           <Link
                             href={`/positions/${encodeURIComponent(item.ticker)}`}
-                            className="font-mono font-bold text-[#F5EFE0] hover:text-[#B08D57] transition"
+                            className="font-mono font-bold text-parchment hover:text-brass transition"
                           >
                             {item.ticker}
                           </Link>
                           {showClosed && item.closed_count > 0 && (
                             <span
                               className="inline-block px-1.5 py-0 rounded text-[10px] tabular-nums"
-                              style={{ background: 'rgba(176,141,87,0.15)', color: '#B08D57', border: '1px solid rgba(176,141,87,0.3)' }}
+                              style={{ background: 'rgb(var(--t-brass) / 0.15)', color: 'rgb(var(--t-brass))', border: '1px solid rgb(var(--t-brass) / 0.3)' }}
                               title={`${item.closed_count} closed call${item.closed_count === 1 ? '' : 's'}`}
                             >
                               {item.closed_count} closed
@@ -507,22 +507,22 @@ export default function PositionsPage() {
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2">
                           {/* Mini bar */}
-                          <div className="w-24 h-1.5 rounded-full bg-[#080604] overflow-hidden">
+                          <div className="w-24 h-1.5 rounded-full bg-ink overflow-hidden">
                             <div
                               className="h-full rounded-full"
                               style={{ width: `${(shownCount / maxCount) * 100}%`, background: bg }}
                             />
                           </div>
-                          <span className="text-[#F5EFE0]/70 tabular-nums">{shownCount}</span>
+                          <span className="text-parchment/70 tabular-nums">{shownCount}</span>
                           {!includeStale && staleHidden > 0 && (
-                            <span className="text-[10px] text-[#F5EFE0]/30 tabular-nums" title={`${staleHidden} stale source${staleHidden === 1 ? '' : 's'} hidden`}>
+                            <span className="text-[10px] text-parchment/30 tabular-nums" title={`${staleHidden} stale source${staleHidden === 1 ? '' : 's'} hidden`}>
                               (+{staleHidden})
                             </span>
                           )}
                         </div>
                       </td>
                       <td className="px-5 py-3">
-                        <span className="text-xs capitalize text-[#F5EFE0]/35">{item.category}</span>
+                        <span className="text-xs capitalize text-parchment/35">{item.category}</span>
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex flex-wrap gap-2">
@@ -532,20 +532,20 @@ export default function PositionsPage() {
                               href={`/sources/${s.handle}`}
                               className="flex items-center gap-1.5 hover:opacity-80 transition"
                             >
-                              <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-[#1c1a17] border border-[rgba(176,141,87,0.2)]">
+                              <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-raised border border-[rgb(var(--t-brass) / 0.2)]">
                                 {s.avatar_url ? (
                                   <img src={s.avatar_url} alt={s.handle} className="w-full h-full object-cover" />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-[8px] text-[#F5EFE0]/50">
+                                  <div className="w-full h-full flex items-center justify-center text-[8px] text-parchment/50">
                                     {s.handle[0]?.toUpperCase()}
                                   </div>
                                 )}
                               </div>
-                              <span className="text-xs text-[#F5EFE0]/50 hover:text-[#B08D57]">@{s.handle}</span>
+                              <span className="text-xs text-parchment/50 hover:text-brass">@{s.handle}</span>
                             </Link>
                           ))}
                           {visibleSources.length > 5 && (
-                            <span className="text-xs text-[#F5EFE0]/30 self-center">+{visibleSources.length - 5} more</span>
+                            <span className="text-xs text-parchment/30 self-center">+{visibleSources.length - 5} more</span>
                           )}
                         </div>
                       </td>
@@ -554,7 +554,7 @@ export default function PositionsPage() {
                           <button
                             onClick={(e) => toggleStar(e, item.ticker)}
                             className="text-base leading-none transition"
-                            style={{ color: starredTickers.has(item.ticker) ? '#B08D57' : 'rgba(245,239,224,0.2)' }}
+                            style={{ color: starredTickers.has(item.ticker) ? 'rgb(var(--t-brass))' : 'rgb(var(--t-parchment) / 0.2)' }}
                             title={starredTickers.has(item.ticker) ? 'Unstar' : 'Star'}
                           >
                             {starredTickers.has(item.ticker) ? '★' : '☆'}

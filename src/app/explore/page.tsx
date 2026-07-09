@@ -119,7 +119,7 @@ export default function ExplorePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
 
       <div className="container mx-auto px-4 py-8">
@@ -127,15 +127,15 @@ export default function ExplorePage() {
         <div className="flex items-start justify-between mb-10">
           <div className="max-w-3xl">
             <h1 className="text-4xl font-bold mb-3 font-[var(--font-oswald)] uppercase tracking-wide">
-              Explore <span className="text-[#B08D57]">Dispatches</span>
+              Explore <span className="text-brass">Dispatches</span>
             </h1>
-            <p className="text-[#F5EFE0]/60 text-lg">
+            <p className="text-parchment/60 text-lg">
               Discover community-created intelligence briefs. Subscribe with credits, or create your own.
             </p>
           </div>
           <Link
             href="/create"
-            className="bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] px-5 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition text-sm shrink-0"
+            className="bg-brass hover:bg-brass/80 text-ink px-5 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition text-sm shrink-0"
           >
             + Create Dispatch
           </Link>
@@ -144,7 +144,7 @@ export default function ExplorePage() {
         {/* Search + Filters */}
         <div className="mb-8 space-y-4">
           <div className="relative max-w-md">
-            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#F5EFE0]/45" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-parchment/45" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
@@ -152,7 +152,7 @@ export default function ExplorePage() {
               placeholder="Search dispatches..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded pl-10 pr-4 py-2.5 text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57]/30 transition"
+              className="w-full bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded pl-10 pr-4 py-2.5 text-parchment placeholder-parchment/30 focus:outline-none focus:border-brass focus:ring-1 focus:ring-brass/30 transition"
             />
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -162,8 +162,8 @@ export default function ExplorePage() {
                 onClick={() => setSelectedLabel(selectedLabel === label ? null : label)}
                 className={`text-xs px-3 py-1.5 rounded-sm transition font-medium ${
                   selectedLabel === label
-                    ? 'bg-[#B08D57] text-[#080604]'
-                    : 'bg-[#141210] text-[#F5EFE0]/60 hover:bg-[#1c1a17] hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
+                    ? 'bg-brass text-ink'
+                    : 'bg-surface text-parchment/60 hover:bg-raised hover:text-parchment border border-[rgb(var(--t-brass) / 0.18)]'
                 }`}
               >
                 {label}
@@ -174,34 +174,34 @@ export default function ExplorePage() {
 
         {/* Grid */}
         {loading ? (
-          <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] p-8 text-sm text-[#F5EFE0]/45 font-mono">Loading…</div>
+          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface p-8 text-sm text-parchment/45 font-mono">Loading…</div>
         ) : newsletters.length === 0 ? (
           <div className="text-center py-20">
-            <div className="w-16 h-16 rounded bg-[#141210] border border-[rgba(176,141,87,0.18)] flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-[#F5EFE0]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-16 h-16 rounded bg-surface border border-[rgb(var(--t-brass) / 0.18)] flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-parchment/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
               </svg>
             </div>
-            <p className="text-[#F5EFE0]/60 text-lg mb-2 font-medium">No dispatches found</p>
-            <p className="text-[#F5EFE0]/45 text-sm mb-6">Be the first to create an intelligence brief.</p>
+            <p className="text-parchment/60 text-lg mb-2 font-medium">No dispatches found</p>
+            <p className="text-parchment/45 text-sm mb-6">Be the first to create an intelligence brief.</p>
             <Link
               href="/create"
-              className="inline-block bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] px-6 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition"
+              className="inline-block bg-brass hover:bg-brass/80 text-ink px-6 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition"
             >
               Create a Dispatch
             </Link>
           </div>
         ) : (
-          <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-x-auto">
+          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-x-auto">
             <table className="w-full min-w-[640px]">
               <thead>
-                <tr className="bg-[#141210] border-b border-[rgba(176,141,87,0.28)]">
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Dispatch</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Curator</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Cadence</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Labels</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Subs</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap"></th>
+                <tr className="bg-surface border-b border-[rgb(var(--t-brass) / 0.28)]">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">Dispatch</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Curator</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Cadence</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">Labels</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Subs</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap"></th>
                 </tr>
               </thead>
               <tbody>
@@ -211,12 +211,12 @@ export default function ExplorePage() {
                     <tr
                       key={nl.id}
                       onClick={() => { window.location.href = `/newsletter/${nl.id}`; }}
-                      className="border-b border-[rgba(176,141,87,0.18)] hover:bg-[#141210] transition-colors cursor-pointer last:border-b-0"
+                      className="border-b border-[rgb(var(--t-brass) / 0.18)] hover:bg-surface transition-colors cursor-pointer last:border-b-0"
                     >
                       <td className="px-4 py-3 max-w-md">
-                        <div className="text-sm font-semibold text-[#F5EFE0] font-[var(--font-oswald)] uppercase tracking-wide">{nl.name}</div>
+                        <div className="text-sm font-semibold text-parchment font-[var(--font-oswald)] uppercase tracking-wide">{nl.name}</div>
                         {nl.description && (
-                          <p className="text-xs text-[#F5EFE0]/55 mt-1 line-clamp-1">{nl.description}</p>
+                          <p className="text-xs text-parchment/55 mt-1 line-clamp-1">{nl.description}</p>
                         )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
@@ -225,42 +225,42 @@ export default function ExplorePage() {
                             {nl.curator.avatar_url ? (
                               <img src={nl.curator.avatar_url} alt="" className="w-4 h-4 rounded-sm" />
                             ) : (
-                              <div className="w-4 h-4 rounded-sm bg-[#1c1a17]" />
+                              <div className="w-4 h-4 rounded-sm bg-raised" />
                             )}
-                            <span className="text-xs text-[#F5EFE0]/55">
+                            <span className="text-xs text-parchment/55">
                               {nl.curator.twitter_handle ? `@${nl.curator.twitter_handle}` : nl.curator.name || 'Anonymous'}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-xs text-[#F5EFE0]/30">—</span>
+                          <span className="text-xs text-parchment/30">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-xs px-2 py-0.5 rounded-sm bg-[#B08D57]/15 text-[#B08D57] font-medium">
+                        <span className="text-xs px-2 py-0.5 rounded-sm bg-brass/15 text-brass font-medium">
                           {CADENCE_LABELS[nl.schedule_cadence] || nl.schedule_cadence}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1 flex-wrap">
                           {nl.labels.slice(0, 3).map((label) => (
-                            <span key={label} className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/60">
+                            <span key={label} className="text-[10px] px-1.5 py-0.5 rounded-sm bg-raised text-parchment/60">
                               {label}
                             </span>
                           ))}
                         </div>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-right text-xs text-[#F5EFE0]/55 font-mono">
+                      <td className="px-4 py-3 whitespace-nowrap text-right text-xs text-parchment/55 font-mono">
                         {nl.subscriber_count}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
                         {isSubscribed ? (
-                          <span className="text-xs px-2 py-1 rounded bg-[#3ecf6a]/10 text-[#3ecf6a] font-medium">
+                          <span className="text-xs px-2 py-1 rounded bg-bull/10 text-bull font-medium">
                             ✓ Subscribed
                           </span>
                         ) : (
                           <button
                             onClick={(e) => openSubscribeModal(e, nl)}
-                            className="text-xs px-2.5 py-1 rounded bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] font-semibold transition font-[var(--font-oswald)] uppercase tracking-wide"
+                            className="text-xs px-2.5 py-1 rounded bg-brass hover:bg-brass/80 text-ink font-semibold transition font-[var(--font-oswald)] uppercase tracking-wide"
                           >
                             Subscribe
                           </button>
@@ -279,24 +279,24 @@ export default function ExplorePage() {
       {subscribeTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSubscribeTarget(null)} />
-          <div className="relative bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 max-w-sm w-full shadow-2xl space-y-5">
+          <div className="relative bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6 max-w-sm w-full shadow-2xl space-y-5">
             <div>
-              <h2 className="text-lg font-bold text-[#F5EFE0] font-[var(--font-oswald)] uppercase tracking-wide">
+              <h2 className="text-lg font-bold text-parchment font-[var(--font-oswald)] uppercase tracking-wide">
                 Subscribe to {subscribeTarget.name}
               </h2>
-              <p className="text-sm text-[#F5EFE0]/60 mt-1">Where should we send it?</p>
+              <p className="text-sm text-parchment/60 mt-1">Where should we send it?</p>
             </div>
 
             {/* Email option */}
             <div
-              className={`rounded border p-4 cursor-pointer transition ${subViaEmail ? 'border-[#B08D57]' : 'border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.45)]'}`}
+              className={`rounded border p-4 cursor-pointer transition ${subViaEmail ? 'border-brass' : 'border-[rgb(var(--t-brass) / 0.28)] hover:border-[rgb(var(--t-brass) / 0.45)]'}`}
               onClick={() => { if (!subViaEmail || subViaTelegram) setSubViaEmail(!subViaEmail); }}
             >
               <div className="flex items-center gap-3 mb-3">
-                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition ${subViaEmail ? 'bg-[#B08D57] border-[#B08D57]' : 'border-[#F5EFE0]/30'}`}>
-                  {subViaEmail && <svg className="w-3 h-3 text-[#080604]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition ${subViaEmail ? 'bg-brass border-brass' : 'border-parchment/30'}`}>
+                  {subViaEmail && <svg className="w-3 h-3 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                 </div>
-                <span className="text-sm font-medium text-[#F5EFE0]">Email</span>
+                <span className="text-sm font-medium text-parchment">Email</span>
               </div>
               {subViaEmail && (
                 <input
@@ -305,45 +305,45 @@ export default function ExplorePage() {
                   onChange={(e) => setSubEmail(e.target.value)}
                   onClick={(e) => e.stopPropagation()}
                   placeholder="you@example.com"
-                  className="w-full px-3 py-2 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
+                  className="w-full px-3 py-2 bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded text-sm text-parchment placeholder-parchment/30 focus:outline-none focus:border-brass"
                 />
               )}
             </div>
 
             {/* Telegram option */}
             <div
-              className={`rounded border p-4 transition ${tgLinked ? 'cursor-pointer' : 'cursor-default'} ${subViaTelegram ? 'border-[#B08D57]' : tgLinked ? 'border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.45)]' : 'border-[rgba(176,141,87,0.15)] opacity-60'}`}
+              className={`rounded border p-4 transition ${tgLinked ? 'cursor-pointer' : 'cursor-default'} ${subViaTelegram ? 'border-brass' : tgLinked ? 'border-[rgb(var(--t-brass) / 0.28)] hover:border-[rgb(var(--t-brass) / 0.45)]' : 'border-[rgb(var(--t-brass) / 0.15)] opacity-60'}`}
               onClick={() => { if (tgLinked && (!subViaTelegram || subViaEmail)) setSubViaTelegram(!subViaTelegram); }}
             >
               <div className="flex items-center gap-3">
-                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition ${subViaTelegram ? 'bg-[#B08D57] border-[#B08D57]' : 'border-[#F5EFE0]/30'}`}>
-                  {subViaTelegram && <svg className="w-3 h-3 text-[#080604]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition ${subViaTelegram ? 'bg-brass border-brass' : 'border-parchment/30'}`}>
+                  {subViaTelegram && <svg className="w-3 h-3 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                 </div>
                 <div className="flex-1">
-                  <span className="text-sm font-medium text-[#F5EFE0]">Telegram</span>
+                  <span className="text-sm font-medium text-parchment">Telegram</span>
                   {tgLinked ? (
-                    <p className="text-xs text-[#F5EFE0]/45 mt-0.5">Arrives as a DM — no extra setup</p>
+                    <p className="text-xs text-parchment/45 mt-0.5">Arrives as a DM — no extra setup</p>
                   ) : (
-                    <p className="text-xs text-[#F5EFE0]/45 mt-0.5">
-                      <Link href="/settings" className="text-[#B08D57] hover:underline" onClick={(e) => e.stopPropagation()}>Link Telegram in Settings</Link> to enable
+                    <p className="text-xs text-parchment/45 mt-0.5">
+                      <Link href="/settings" className="text-brass hover:underline" onClick={(e) => e.stopPropagation()}>Link Telegram in Settings</Link> to enable
                     </p>
                   )}
                 </div>
-                {tgLinked && <span className="text-xs text-[#3ecf6a]">✓ Connected</span>}
+                {tgLinked && <span className="text-xs text-bull">✓ Connected</span>}
               </div>
             </div>
 
             <div className="flex gap-3 pt-1">
               <button
                 onClick={() => setSubscribeTarget(null)}
-                className="flex-1 px-4 py-2.5 bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/80 rounded text-sm font-medium transition"
+                className="flex-1 px-4 py-2.5 bg-raised hover:bg-raised/80 text-parchment/80 rounded text-sm font-medium transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubscribe}
                 disabled={subscribing || (!subViaEmail && !subViaTelegram) || (subViaEmail && !subEmail)}
-                className="flex-1 px-4 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 text-[#080604] rounded text-sm font-medium transition font-[var(--font-oswald)] uppercase tracking-wide"
+                className="flex-1 px-4 py-2.5 bg-brass hover:bg-brass/80 disabled:opacity-50 text-ink rounded text-sm font-medium transition font-[var(--font-oswald)] uppercase tracking-wide"
               >
                 {subscribing ? 'Subscribing...' : 'Subscribe'}
               </button>

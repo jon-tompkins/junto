@@ -79,10 +79,10 @@ function ShareButton({ url, title }: { url: string; title: string }) {
       <button
         onClick={copyLink}
         title="Copy link"
-        className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[#F5EFE0]/45 hover:text-[#F5EFE0]/75 hover:bg-[#1c1a17] transition"
+        className="flex items-center gap-1 px-2 py-1 rounded text-xs text-parchment/45 hover:text-parchment/75 hover:bg-raised transition"
       >
         {copied ? (
-          <span className="text-[#3ecf6a]">Copied!</span>
+          <span className="text-bull">Copied!</span>
         ) : (
           <>
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -97,7 +97,7 @@ function ShareButton({ url, title }: { url: string; title: string }) {
         target="_blank"
         rel="noopener noreferrer"
         title="Share on X"
-        className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[#F5EFE0]/45 hover:text-[#F5EFE0]/75 hover:bg-[#1c1a17] transition"
+        className="flex items-center gap-1 px-2 py-1 rounded text-xs text-parchment/45 hover:text-parchment/75 hover:bg-raised transition"
       >
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.632zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -270,17 +270,17 @@ export default function NewsletterDetailPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0] flex items-center justify-center">
-        <div className="animate-pulse text-[#F5EFE0]/45">Loading...</div>
+      <main className="min-h-screen bg-ink text-parchment flex items-center justify-center">
+        <div className="animate-pulse text-parchment/45">Loading...</div>
       </main>
     );
   }
 
   if (!newsletter) {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0] flex flex-col items-center justify-center gap-4">
-        <p className="text-[#F5EFE0]/60">Newsletter not found</p>
-        <Link href="/explore" className="text-[#B08D57] hover:text-[#B08D57]/80 text-sm">
+      <main className="min-h-screen bg-ink text-parchment flex flex-col items-center justify-center gap-4">
+        <p className="text-parchment/60">Newsletter not found</p>
+        <Link href="/explore" className="text-brass hover:text-brass/80 text-sm">
           &larr; Back to Explore
         </Link>
       </main>
@@ -288,42 +288,42 @@ export default function NewsletterDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
-        <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm mb-4 text-[#B08D57] hover:text-[#F5EFE0] transition">
+        <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm mb-4 text-brass hover:text-parchment transition">
           ← Back to dashboard
         </Link>
 
         {/* Header card */}
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-8 mb-8">
+        <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-8 mb-8">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
             <div>
               <h1 className="text-3xl font-bold mb-3 font-[var(--font-oswald)] uppercase tracking-wide">{newsletter.name}</h1>
               {newsletter.curator && (
                 <div className="flex items-center gap-2.5 mb-3">
                   {newsletter.curator.avatar_url ? (
-                    <img src={newsletter.curator.avatar_url} alt="" className="w-7 h-7 rounded ring-1 ring-[rgba(176,141,87,0.28)]" />
+                    <img src={newsletter.curator.avatar_url} alt="" className="w-7 h-7 rounded ring-1 ring-[rgb(var(--t-brass) / 0.28)]" />
                   ) : (
-                    <div className="w-7 h-7 rounded bg-[#1c1a17] ring-1 ring-[rgba(176,141,87,0.28)]" />
+                    <div className="w-7 h-7 rounded bg-raised ring-1 ring-[rgb(var(--t-brass) / 0.28)]" />
                   )}
                   <div className="flex items-center gap-1.5 text-sm">
-                    <span className="text-[#F5EFE0]/45">Curated by</span>
+                    <span className="text-parchment/45">Curated by</span>
                     {newsletter.curator.twitter_handle ? (
                       <Link
                         href={`/sources/${newsletter.curator.twitter_handle}`}
-                        className="text-[#B08D57] hover:text-[#B08D57]/80 font-medium transition"
+                        className="text-brass hover:text-brass/80 font-medium transition"
                       >
                         @{newsletter.curator.twitter_handle}
                       </Link>
                     ) : (
-                      <span className="text-[#F5EFE0]/80 font-medium">{newsletter.curator.name || 'Anonymous'}</span>
+                      <span className="text-parchment/80 font-medium">{newsletter.curator.name || 'Anonymous'}</span>
                     )}
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-3 text-sm text-[#F5EFE0]/60 flex-wrap">
+              <div className="flex items-center gap-3 text-sm text-parchment/60 flex-wrap">
                 <span className="flex items-center gap-1.5">
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                   {newsletter.subscriber_count} subscribers
@@ -340,7 +340,7 @@ export default function NewsletterDetailPage() {
               {isOwner && (
                 <Link
                   href={`/newsletter/${id}/edit`}
-                  className="px-5 py-3 rounded font-medium transition border border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.5)] text-[#F5EFE0]/80 hover:text-[#F5EFE0] text-sm"
+                  className="px-5 py-3 rounded font-medium transition border border-[rgb(var(--t-brass) / 0.28)] hover:border-[rgb(var(--t-brass) / 0.5)] text-parchment/80 hover:text-parchment text-sm"
                 >
                   Edit
                 </Link>
@@ -348,7 +348,7 @@ export default function NewsletterDetailPage() {
               <button
                 onClick={handleFork}
                 disabled={forking}
-                className="px-5 py-3 rounded font-medium transition border border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.5)] text-[#F5EFE0]/80 hover:text-[#B08D57] text-sm disabled:opacity-50"
+                className="px-5 py-3 rounded font-medium transition border border-[rgb(var(--t-brass) / 0.28)] hover:border-[rgb(var(--t-brass) / 0.5)] text-parchment/80 hover:text-brass text-sm disabled:opacity-50"
               >
                 {forking ? '...' : 'Fork'}
               </button>
@@ -357,8 +357,8 @@ export default function NewsletterDetailPage() {
                 disabled={subscribing}
                 className={`px-7 py-3 rounded font-semibold transition ${
                   subscribed
-                    ? 'bg-[#1c1a17] text-[#F5EFE0]/80 hover:bg-[#1c1a17]/80'
-                    : 'bg-[#B08D57] text-[#080604] hover:bg-[#B08D57]/80 font-[var(--font-oswald)] uppercase tracking-wide'
+                    ? 'bg-raised text-parchment/80 hover:bg-raised/80'
+                    : 'bg-brass text-ink hover:bg-brass/80 font-[var(--font-oswald)] uppercase tracking-wide'
                 }`}
               >
                 {subscribing ? '...' : subscribed ? 'Subscribed ✓' : `Subscribe — ${newsletter.audio_enabled ? 'from ' : ''}2 credits/send`}
@@ -367,13 +367,13 @@ export default function NewsletterDetailPage() {
           </div>
 
           {newsletter.description && (
-            <p className="text-[#F5EFE0]/60 leading-relaxed mb-5">{newsletter.description}</p>
+            <p className="text-parchment/60 leading-relaxed mb-5">{newsletter.description}</p>
           )}
 
           {newsletter.labels.length > 0 && (
             <div className="flex gap-2 flex-wrap">
               {newsletter.labels.map((label) => (
-                <span key={label} className="text-xs px-2.5 py-1 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/60">
+                <span key={label} className="text-xs px-2.5 py-1 rounded-sm bg-raised text-parchment/60">
                   {label}
                 </span>
               ))}
@@ -382,47 +382,47 @@ export default function NewsletterDetailPage() {
         </div>
 
         {/* Settings (collapsible) — sources moved here + configuration for cohesive detail view structure */}
-        <div className="mb-8 border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
+        <div className="mb-8 border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-hidden">
           <button
             onClick={() => setSettingsOpen(!settingsOpen)}
-            className="flex w-full items-center justify-between px-4 py-3 text-left bg-[#141210]"
+            className="flex w-full items-center justify-between px-4 py-3 text-left bg-surface"
           >
-            <span className="text-sm font-semibold text-[#F5EFE0]/45 uppercase tracking-wider font-[var(--font-oswald)]">Settings</span>
-            <span className="text-[#B08D57] text-xs">{settingsOpen ? '−' : '+'}</span>
+            <span className="text-sm font-semibold text-parchment/45 uppercase tracking-wider font-[var(--font-oswald)]">Settings</span>
+            <span className="text-brass text-xs">{settingsOpen ? '−' : '+'}</span>
           </button>
 
           {settingsOpen && (
-            <div className="p-6 bg-[#0e0c0a]">
+            <div className="p-6 bg-ink">
               {/* Sources inside Settings */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="text-xs text-[#F5EFE0]/45 uppercase tracking-wider font-[var(--font-oswald)]">Sources ({newsletter.sources.length})</div>
+                  <div className="text-xs text-parchment/45 uppercase tracking-wider font-[var(--font-oswald)]">Sources ({newsletter.sources.length})</div>
                   {newsletter.junto ? (
                     <Link
                       href={`/junto/${newsletter.junto.id}`}
-                      className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-sm bg-[#1c1a17] text-[#B08D57] hover:bg-[#1c1a17]/70 border border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)] uppercase tracking-wide"
+                      className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-sm bg-raised text-brass hover:bg-raised/70 border border-[rgb(var(--t-brass) / 0.28)] font-[var(--font-oswald)] uppercase tracking-wide"
                     >
                       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                       Junto: {newsletter.junto.name}
                     </Link>
                   ) : (
-                    <span className="text-xs text-[#F5EFE0]/40">Not in a junto</span>
+                    <span className="text-xs text-parchment/40">Not in a junto</span>
                   )}
                 </div>
                 {newsletter.sources.length === 0 ? (
-                  <p className="text-sm text-[#F5EFE0]/45">No sources yet.</p>
+                  <p className="text-sm text-parchment/45">No sources yet.</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {newsletter.sources.map((src) => (
                       <Link
                         key={src.id}
                         href={`/sources/${src.handle_or_url}`}
-                        className="flex items-center gap-2 bg-[#141210] hover:bg-[#1c1a17] px-3 py-2 rounded text-sm border border-[rgba(176,141,87,0.18)] hover:border-[rgba(176,141,87,0.28)] transition"
+                        className="flex items-center gap-2 bg-surface hover:bg-raised px-3 py-2 rounded text-sm border border-[rgb(var(--t-brass) / 0.18)] hover:border-[rgb(var(--t-brass) / 0.28)] transition"
                       >
-                        <div className="w-6 h-6 rounded bg-[#1c1a17] flex items-center justify-center text-xs text-[#F5EFE0]/60 font-bold shrink-0">
+                        <div className="w-6 h-6 rounded bg-raised flex items-center justify-center text-xs text-parchment/60 font-bold shrink-0">
                           {(src.display_name || src.handle_or_url).charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-[#F5EFE0]/80">@{src.handle_or_url}</span>
+                        <span className="text-parchment/80">@{src.handle_or_url}</span>
                       </Link>
                     ))}
                   </div>
@@ -430,95 +430,95 @@ export default function NewsletterDetailPage() {
               </div>
 
               {/* Configuration table (now inside Settings) */}
-              <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
+              <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-hidden">
           <table className="w-full">
             <tbody>
-              <tr className="border-b border-[rgba(176,141,87,0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210] w-48">Prompt</th>
-                <td className="px-4 py-3 text-sm bg-[#0e0c0a]">
+              <tr className="border-b border-[rgb(var(--t-brass) / 0.18)]">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] bg-surface w-48">Prompt</th>
+                <td className="px-4 py-3 text-sm bg-ink">
                   {newsletter.prompt_template ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-[#F5EFE0] font-medium">{newsletter.prompt_template.name}</span>
+                      <span className="text-parchment font-medium">{newsletter.prompt_template.name}</span>
                       {newsletter.prompt_template.category && (
-                        <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/55">
+                        <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-raised text-parchment/55">
                           {newsletter.prompt_template.category}
                         </span>
                       )}
                     </div>
                   ) : (
-                    <span className="text-[#F5EFE0]/70 font-mono text-xs whitespace-pre-wrap line-clamp-3">
+                    <span className="text-parchment/70 font-mono text-xs whitespace-pre-wrap line-clamp-3">
                       {newsletter.prompt || '—'}
                     </span>
                   )}
                 </td>
               </tr>
-              <tr className="border-b border-[rgba(176,141,87,0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210]">Cadence</th>
-                <td className="px-4 py-3 text-sm text-[#F5EFE0] bg-[#0e0c0a]">
+              <tr className="border-b border-[rgb(var(--t-brass) / 0.18)]">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Cadence</th>
+                <td className="px-4 py-3 text-sm text-parchment bg-ink">
                   {CADENCE_LABELS[newsletter.schedule_cadence] || newsletter.schedule_cadence}
                 </td>
               </tr>
-              <tr className="border-b border-[rgba(176,141,87,0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210]">Send windows</th>
-                <td className="px-4 py-3 text-sm bg-[#0e0c0a]">
+              <tr className="border-b border-[rgb(var(--t-brass) / 0.18)]">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Send windows</th>
+                <td className="px-4 py-3 text-sm bg-ink">
                   <div className="flex flex-wrap gap-1.5">
                     {(newsletter.default_send_windows && newsletter.default_send_windows.length > 0
                       ? newsletter.default_send_windows
                       : ['morning']
                     ).map((w) => (
-                      <span key={w} className="text-xs px-2 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/80 border border-[rgba(176,141,87,0.18)]">
+                      <span key={w} className="text-xs px-2 py-0.5 rounded-sm bg-raised text-parchment/80 border border-[rgb(var(--t-brass) / 0.18)]">
                         {WINDOW_LABELS[w] || w}
                       </span>
                     ))}
                   </div>
                 </td>
               </tr>
-              <tr className="border-b border-[rgba(176,141,87,0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210]">Send days</th>
-                <td className="px-4 py-3 text-sm bg-[#0e0c0a]">
+              <tr className="border-b border-[rgb(var(--t-brass) / 0.18)]">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Send days</th>
+                <td className="px-4 py-3 text-sm bg-ink">
                   <div className="flex flex-wrap gap-1">
                     {(newsletter.send_days && newsletter.send_days.length > 0
                       ? newsletter.send_days
                       : ['mon', 'tue', 'wed', 'thu', 'fri']
                     ).map((d) => (
-                      <span key={d} className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/80 border border-[rgba(176,141,87,0.18)]">
+                      <span key={d} className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-raised text-parchment/80 border border-[rgb(var(--t-brass) / 0.18)]">
                         {DAY_LABELS[d] || d}
                       </span>
                     ))}
                   </div>
                 </td>
               </tr>
-              <tr className="border-b border-[rgba(176,141,87,0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210]">Watchlist</th>
-                <td className="px-4 py-3 text-sm bg-[#0e0c0a]">
+              <tr className="border-b border-[rgb(var(--t-brass) / 0.18)]">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Watchlist</th>
+                <td className="px-4 py-3 text-sm bg-ink">
                   {newsletter.tickers && newsletter.tickers.length > 0 ? (
                     <div className="flex flex-wrap items-center gap-1.5">
                       {newsletter.watchlist && (
                         <Link
                           href={`/watchlists/${newsletter.watchlist.id}`}
-                          className="text-xs text-[#B08D57] hover:text-[#B08D57]/80 font-medium mr-1"
+                          className="text-xs text-brass hover:text-brass/80 font-medium mr-1"
                         >
                           {newsletter.watchlist.name} →
                         </Link>
                       )}
                       {newsletter.tickers.map((t) => (
-                        <span key={t} className="text-[11px] font-mono px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/80 border border-[rgba(176,141,87,0.18)]">
+                        <span key={t} className="text-[11px] font-mono px-1.5 py-0.5 rounded-sm bg-raised text-parchment/80 border border-[rgb(var(--t-brass) / 0.18)]">
                           {t}
                         </span>
                       ))}
                     </div>
                   ) : (
-                    <span className="text-[#F5EFE0]/40">No watchlist</span>
+                    <span className="text-parchment/40">No watchlist</span>
                   )}
                 </td>
               </tr>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] bg-[#141210]">Voice memo</th>
-                <td className="px-4 py-3 text-sm bg-[#0e0c0a]">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Voice memo</th>
+                <td className="px-4 py-3 text-sm bg-ink">
                   {newsletter.audio_enabled ? (
-                    <span className="text-[#F5EFE0]/80">🎧 Enabled · subscribers can opt in for +2 credits</span>
+                    <span className="text-parchment/80">🎧 Enabled · subscribers can opt in for +2 credits</span>
                   ) : (
-                    <span className="text-[#F5EFE0]/40">Not enabled</span>
+                    <span className="text-parchment/40">Not enabled</span>
                   )}
                 </td>
               </tr>
@@ -533,9 +533,9 @@ export default function NewsletterDetailPage() {
         {latestRun && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-[#F5EFE0]/45 uppercase tracking-wider font-[var(--font-oswald)]">Latest Issue</h2>
+              <h2 className="text-sm font-semibold text-parchment/45 uppercase tracking-wider font-[var(--font-oswald)]">Latest Issue</h2>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-[#F5EFE0]/45">
+                <span className="text-xs text-parchment/45">
                   {new Date(latestRun.generated_at).toLocaleDateString('en-US', {
                     weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
                     hour: 'numeric', minute: '2-digit',
@@ -546,12 +546,12 @@ export default function NewsletterDetailPage() {
             </div>
 
             {latestRun.subject && (
-              <h3 className="text-xl font-semibold mb-4 text-[#F5EFE0]">{latestRun.subject}</h3>
+              <h3 className="text-xl font-semibold mb-4 text-parchment">{latestRun.subject}</h3>
             )}
 
-            <div className="bg-[#141210] border border-[rgba(176,141,87,0.18)] rounded p-6 sm:p-8">
+            <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-6 sm:p-8">
               <div
-                className="research-content prose prose-invert max-w-none text-[#F5EFE0]/80 leading-relaxed"
+                className="research-content prose prose-invert max-w-none text-parchment/80 leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: markdownToHtml(latestRun.content) }}
               />
             </div>
@@ -563,7 +563,7 @@ export default function NewsletterDetailPage() {
           <div className="mb-8">
             <button
               onClick={() => setShowOlderRuns(!showOlderRuns)}
-              className="flex items-center gap-2 text-sm font-semibold text-[#F5EFE0]/45 uppercase tracking-wider hover:text-[#F5EFE0] transition mb-3 font-[var(--font-oswald)]"
+              className="flex items-center gap-2 text-sm font-semibold text-parchment/45 uppercase tracking-wider hover:text-parchment transition mb-3 font-[var(--font-oswald)]"
             >
               Previous Issues ({olderRuns.length})
               <svg
@@ -577,20 +577,20 @@ export default function NewsletterDetailPage() {
             {showOlderRuns && (
               <div className="space-y-3">
                 {olderRuns.map((run) => (
-                  <div key={run.id} className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
+                  <div key={run.id} className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-hidden">
                     <button
                       onClick={() => setExpandedRunId(expandedRunId === run.id ? null : run.id)}
-                      className="w-full flex items-center justify-between p-4 hover:bg-[#1c1a17] transition text-left"
+                      className="w-full flex items-center justify-between p-4 hover:bg-raised transition text-left"
                     >
-                      <span className="text-sm text-[#F5EFE0]/80 font-medium truncate">
+                      <span className="text-sm text-parchment/80 font-medium truncate">
                         {run.subject || 'Untitled issue'}
                       </span>
                       <div className="flex items-center gap-3 shrink-0 ml-3">
-                        <span className="text-xs text-[#F5EFE0]/45">
+                        <span className="text-xs text-parchment/45">
                           {new Date(run.generated_at).toLocaleDateString()}
                         </span>
                         <svg
-                          className={`w-4 h-4 text-[#F5EFE0]/45 transition-transform ${expandedRunId === run.id ? 'rotate-180' : ''}`}
+                          className={`w-4 h-4 text-parchment/45 transition-transform ${expandedRunId === run.id ? 'rotate-180' : ''}`}
                           fill="none" viewBox="0 0 24 24" stroke="currentColor"
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -598,14 +598,14 @@ export default function NewsletterDetailPage() {
                       </div>
                     </button>
                     <div className="px-4 pb-2 -mt-1">
-                      <Link href={`/newsletter/${id}/${run.id}`} className="text-[11px] text-[#B08D57] hover:underline">
+                      <Link href={`/newsletter/${id}/${run.id}`} className="text-[11px] text-brass hover:underline">
                         View &amp; share this issue →
                       </Link>
                     </div>
                     {expandedRunId === run.id && (
-                      <div className="border-t border-[rgba(176,141,87,0.18)] p-6">
+                      <div className="border-t border-[rgb(var(--t-brass) / 0.18)] p-6">
                         <div
-                          className="research-content prose prose-invert prose-sm max-w-none text-[#F5EFE0]/80 leading-relaxed"
+                          className="research-content prose prose-invert prose-sm max-w-none text-parchment/80 leading-relaxed"
                           dangerouslySetInnerHTML={{ __html: markdownToHtml(run.content) }}
                         />
                       </div>
@@ -621,15 +621,15 @@ export default function NewsletterDetailPage() {
       {showSubscribeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowSubscribeModal(false); setFeedUrl(null); }} />
-          <div className="relative bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 max-w-sm w-full shadow-2xl space-y-5">
+          <div className="relative bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6 max-w-sm w-full shadow-2xl space-y-5">
             {feedUrl ? (
               <>
                 <div>
-                  <h2 className="text-lg font-bold text-[#F5EFE0] font-[var(--font-oswald)] uppercase tracking-wide">🎧 Your podcast feed</h2>
-                  <p className="text-sm text-[#F5EFE0]/60 mt-1">Subscribed. Add this URL to your podcast app (Apple Podcasts, Overcast, Pocket Casts) to receive voice memos as episodes.</p>
+                  <h2 className="text-lg font-bold text-parchment font-[var(--font-oswald)] uppercase tracking-wide">🎧 Your podcast feed</h2>
+                  <p className="text-sm text-parchment/60 mt-1">Subscribed. Add this URL to your podcast app (Apple Podcasts, Overcast, Pocket Casts) to receive voice memos as episodes.</p>
                 </div>
-                <div className="bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded p-3">
-                  <code className="text-xs text-[#F5EFE0]/80 break-all font-mono">{feedUrl}</code>
+                <div className="bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded p-3">
+                  <code className="text-xs text-parchment/80 break-all font-mono">{feedUrl}</code>
                 </div>
                 <button
                   onClick={() => {
@@ -638,14 +638,14 @@ export default function NewsletterDetailPage() {
                       setTimeout(() => setFeedUrlCopied(false), 2000);
                     });
                   }}
-                  className="w-full px-4 py-2.5 bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/80 rounded text-sm font-medium transition"
+                  className="w-full px-4 py-2.5 bg-raised hover:bg-raised/80 text-parchment/80 rounded text-sm font-medium transition"
                 >
                   {feedUrlCopied ? 'Copied!' : 'Copy feed URL'}
                 </button>
-                <p className="text-xs text-[#F5EFE0]/45">You'll also receive the audio in Telegram. The feed combines audio from all your subscribed dispatches.</p>
+                <p className="text-xs text-parchment/45">You'll also receive the audio in Telegram. The feed combines audio from all your subscribed dispatches.</p>
                 <button
                   onClick={() => { setShowSubscribeModal(false); setFeedUrl(null); }}
-                  className="w-full px-4 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] rounded text-sm font-medium transition font-[var(--font-oswald)] uppercase tracking-wide"
+                  className="w-full px-4 py-2.5 bg-brass hover:bg-brass/80 text-ink rounded text-sm font-medium transition font-[var(--font-oswald)] uppercase tracking-wide"
                 >
                   Done
                 </button>
@@ -653,20 +653,20 @@ export default function NewsletterDetailPage() {
             ) : (
             <>
             <div>
-              <h2 className="text-lg font-bold text-[#F5EFE0] font-[var(--font-oswald)] uppercase tracking-wide">Subscribe to {newsletter?.name}</h2>
-              <p className="text-sm text-[#F5EFE0]/60 mt-1">Where should we send it?</p>
+              <h2 className="text-lg font-bold text-parchment font-[var(--font-oswald)] uppercase tracking-wide">Subscribe to {newsletter?.name}</h2>
+              <p className="text-sm text-parchment/60 mt-1">Where should we send it?</p>
             </div>
 
             {/* Email option */}
             <div
-              className={`rounded border p-4 cursor-pointer transition ${subViaEmail ? 'border-[#B08D57]' : 'border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.45)]'}`}
+              className={`rounded border p-4 cursor-pointer transition ${subViaEmail ? 'border-brass' : 'border-[rgb(var(--t-brass) / 0.28)] hover:border-[rgb(var(--t-brass) / 0.45)]'}`}
               onClick={() => { if (!subViaEmail || subViaTelegram) setSubViaEmail(!subViaEmail); }}
             >
               <div className="flex items-center gap-3 mb-3">
-                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition ${subViaEmail ? 'bg-[#B08D57] border-[#B08D57]' : 'border-[#F5EFE0]/30'}`}>
-                  {subViaEmail && <svg className="w-3 h-3 text-[#080604]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition ${subViaEmail ? 'bg-brass border-brass' : 'border-parchment/30'}`}>
+                  {subViaEmail && <svg className="w-3 h-3 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                 </div>
-                <span className="text-sm font-medium text-[#F5EFE0]">Email</span>
+                <span className="text-sm font-medium text-parchment">Email</span>
               </div>
               {subViaEmail && (
                 <input
@@ -675,45 +675,45 @@ export default function NewsletterDetailPage() {
                   onChange={(e) => setSubEmail(e.target.value)}
                   onClick={(e) => e.stopPropagation()}
                   placeholder="you@example.com"
-                  className="w-full px-3 py-2 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
+                  className="w-full px-3 py-2 bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded text-sm text-parchment placeholder-parchment/30 focus:outline-none focus:border-brass"
                 />
               )}
             </div>
 
             {/* Telegram option */}
             <div
-              className={`rounded border p-4 transition ${subViaTelegram ? 'border-[#B08D57]' : tgLinked ? 'border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.45)]' : 'border-[rgba(176,141,87,0.15)] opacity-60'}`}
+              className={`rounded border p-4 transition ${subViaTelegram ? 'border-brass' : tgLinked ? 'border-[rgb(var(--t-brass) / 0.28)] hover:border-[rgb(var(--t-brass) / 0.45)]' : 'border-[rgb(var(--t-brass) / 0.15)] opacity-60'}`}
             >
               <div
                 className={`flex items-center gap-3 ${tgLinked ? 'cursor-pointer' : 'cursor-default'}`}
                 onClick={() => { if (tgLinked && (!subViaTelegram || subViaEmail)) setSubViaTelegram(!subViaTelegram); }}
               >
-                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition ${subViaTelegram ? 'bg-[#B08D57] border-[#B08D57]' : 'border-[#F5EFE0]/30'}`}>
-                  {subViaTelegram && <svg className="w-3 h-3 text-[#080604]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition ${subViaTelegram ? 'bg-brass border-brass' : 'border-parchment/30'}`}>
+                  {subViaTelegram && <svg className="w-3 h-3 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                 </div>
                 <div className="flex-1">
-                  <span className="text-sm font-medium text-[#F5EFE0]">Telegram</span>
+                  <span className="text-sm font-medium text-parchment">Telegram</span>
                   {tgLinked ? (
-                    <p className="text-xs text-[#F5EFE0]/45 mt-0.5">Arrives as a DM — no extra setup</p>
+                    <p className="text-xs text-parchment/45 mt-0.5">Arrives as a DM — no extra setup</p>
                   ) : (
-                    <p className="text-xs text-[#F5EFE0]/45 mt-0.5">
-                      <Link href="/settings" className="text-[#B08D57] hover:underline" onClick={(e) => e.stopPropagation()}>Link Telegram in Settings</Link> to enable
+                    <p className="text-xs text-parchment/45 mt-0.5">
+                      <Link href="/settings" className="text-brass hover:underline" onClick={(e) => e.stopPropagation()}>Link Telegram in Settings</Link> to enable
                     </p>
                   )}
                 </div>
-                {tgLinked && <span className="text-xs text-[#3ecf6a]">✓ Connected</span>}
+                {tgLinked && <span className="text-xs text-bull">✓ Connected</span>}
               </div>
 
               {subViaTelegram && (
-                <div className="mt-3 pt-3 border-t border-[rgba(176,141,87,0.18)] space-y-2">
+                <div className="mt-3 pt-3 border-t border-[rgb(var(--t-brass) / 0.18)] space-y-2">
                   <label className="flex items-center gap-2.5 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={subTgText}
                       onChange={(e) => setSubTgText(e.target.checked)}
-                      className="w-4 h-4 accent-[#B08D57]"
+                      className="w-4 h-4 accent-brass"
                     />
-                    <span className="text-sm text-[#F5EFE0]/80">Text · 2 credits/send</span>
+                    <span className="text-sm text-parchment/80">Text · 2 credits/send</span>
                   </label>
                   {newsletter?.audio_enabled && (
                     <label className="flex items-center gap-2.5 cursor-pointer">
@@ -721,9 +721,9 @@ export default function NewsletterDetailPage() {
                         type="checkbox"
                         checked={subWithAudio}
                         onChange={(e) => setSubWithAudio(e.target.checked)}
-                        className="w-4 h-4 accent-[#B08D57]"
+                        className="w-4 h-4 accent-brass"
                       />
-                      <span className="text-sm text-[#F5EFE0]/80">🎧 Voice memo · +2 credits/send</span>
+                      <span className="text-sm text-parchment/80">🎧 Voice memo · +2 credits/send</span>
                     </label>
                   )}
                 </div>
@@ -733,7 +733,7 @@ export default function NewsletterDetailPage() {
             <div className="flex gap-3 pt-1">
               <button
                 onClick={() => setShowSubscribeModal(false)}
-                className="flex-1 px-4 py-2.5 bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/80 rounded text-sm font-medium transition"
+                className="flex-1 px-4 py-2.5 bg-raised hover:bg-raised/80 text-parchment/80 rounded text-sm font-medium transition"
               >
                 Cancel
               </button>
@@ -745,7 +745,7 @@ export default function NewsletterDetailPage() {
                   (subViaEmail && !subEmail) ||
                   (subViaTelegram && !subTgText && !subWithAudio)
                 }
-                className="flex-1 px-4 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-50 text-[#080604] rounded text-sm font-medium transition font-[var(--font-oswald)] uppercase tracking-wide"
+                className="flex-1 px-4 py-2.5 bg-brass hover:bg-brass/80 disabled:opacity-50 text-ink rounded text-sm font-medium transition font-[var(--font-oswald)] uppercase tracking-wide"
               >
                 {subscribing ? 'Subscribing...' : `Subscribe — ${subViaTelegram && subWithAudio ? 4 : 2} credits/send`}
               </button>

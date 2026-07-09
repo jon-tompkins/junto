@@ -277,8 +277,8 @@ export default function OnboardingPage() {
 
   if (status === 'loading') {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0] flex items-center justify-center">
-        <div className="animate-pulse text-[#F5EFE0]/45">Loading…</div>
+      <main className="min-h-screen bg-ink text-parchment flex items-center justify-center">
+        <div className="animate-pulse text-parchment/45">Loading…</div>
       </main>
     );
   }
@@ -289,16 +289,16 @@ export default function OnboardingPage() {
     : selected.length === 0 ? '(none yet)' : `${selected.length} ${selected.length === 1 ? 'account' : 'accounts'}`;
 
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <div className="container mx-auto px-4 py-10 max-w-2xl">
         <div className="text-center mb-8">
           <Link href="/" className="text-2xl font-bold tracking-tight uppercase" style={{ fontFamily: 'var(--font-oswald)' }}>
-            <span className="text-[#F5EFE0]">my</span><span className="text-[#B08D57]">junto</span>
+            <span className="text-parchment">my</span><span className="text-brass">junto</span>
           </Link>
           <h1 className="mt-6 text-2xl font-bold uppercase tracking-wide" style={{ fontFamily: 'var(--font-oswald)' }}>
             Set up your Daily Dispatch
           </h1>
-          <p className="mt-2 text-sm text-[#F5EFE0]/55">
+          <p className="mt-2 text-sm text-parchment/55">
             A few quick questions — defaults are sensible.
           </p>
         </div>
@@ -319,14 +319,14 @@ export default function OnboardingPage() {
                   onClick={() => setTrack(t)}
                   className="px-3 py-3 rounded text-left transition"
                   style={{
-                    background: on ? 'rgba(176,141,87,0.08)' : '#080604',
-                    border: `1px solid ${on ? '#B08D57' : 'rgba(176,141,87,0.18)'}`,
+                    background: on ? 'rgb(var(--t-brass) / 0.08)' : 'rgb(var(--t-ink))',
+                    border: `1px solid ${on ? 'rgb(var(--t-brass))' : 'rgb(var(--t-brass) / 0.18)'}`,
                   }}
                 >
-                  <div className="text-sm font-bold text-[#F5EFE0] uppercase tracking-wide" style={{ fontFamily: 'var(--font-oswald)' }}>
+                  <div className="text-sm font-bold text-parchment uppercase tracking-wide" style={{ fontFamily: 'var(--font-oswald)' }}>
                     {TRACKS[t].label}
                   </div>
-                  <div className="text-xs text-[#F5EFE0]/50 mt-1">{TRACKS[t].hint}</div>
+                  <div className="text-xs text-parchment/50 mt-1">{TRACKS[t].hint}</div>
                 </button>
               );
             })}
@@ -341,18 +341,18 @@ export default function OnboardingPage() {
           onToggle={() => toggleSection('sources')}
         >
           {existingJuntoId ? (
-            <div className="rounded p-3 flex items-center justify-between" style={{ background: 'rgba(176,141,87,0.06)', border: '1px solid #B08D57' }}>
-              <div className="text-sm text-[#F5EFE0]">
-                Using existing junto: <span className="text-[#B08D57] font-bold">{existingJuntos.find(j => j.id === existingJuntoId)?.name}</span>
+            <div className="rounded p-3 flex items-center justify-between" style={{ background: 'rgb(var(--t-brass) / 0.06)', border: '1px solid rgb(var(--t-brass))' }}>
+              <div className="text-sm text-parchment">
+                Using existing junto: <span className="text-brass font-bold">{existingJuntos.find(j => j.id === existingJuntoId)?.name}</span>
               </div>
-              <button onClick={() => setExistingJuntoId(null)} className="text-xs text-[#F5EFE0]/55 hover:text-[#e8453c]">clear</button>
+              <button onClick={() => setExistingJuntoId(null)} className="text-xs text-parchment/55 hover:text-bear">clear</button>
             </div>
           ) : (
             <div className="space-y-4">
               {/* Suggested for track */}
               {trackSuggestions.length > 0 && (
                 <div>
-                  <div className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/60 font-mono mb-2">
+                  <div className="text-[10px] uppercase tracking-wider text-parchment/60 font-mono mb-2">
                     Suggested for {TRACKS[track].label.toLowerCase()}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -364,21 +364,21 @@ export default function OnboardingPage() {
                           onClick={() => toggle({ handle: s.handle, displayName: s.displayName, avatarUrl: null })}
                           className="flex items-center gap-3 px-3 py-2 rounded text-left transition"
                           style={{
-                            background: on ? 'rgba(176,141,87,0.08)' : '#080604',
-                            border: `1px solid ${on ? '#B08D57' : 'rgba(176,141,87,0.18)'}`,
+                            background: on ? 'rgb(var(--t-brass) / 0.08)' : 'rgb(var(--t-ink))',
+                            border: `1px solid ${on ? 'rgb(var(--t-brass))' : 'rgb(var(--t-brass) / 0.18)'}`,
                           }}
                         >
-                          <div className="w-7 h-7 rounded-full bg-[#B08D57]/30 flex items-center justify-center text-xs text-[#B08D57] font-bold shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-brass/30 flex items-center justify-center text-xs text-brass font-bold shrink-0">
                             {s.displayName.charAt(0).toUpperCase()}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="text-sm text-[#F5EFE0] truncate">{s.displayName}</div>
-                            <div className="text-[11px] text-[#F5EFE0]/45 truncate">@{s.handle}{s.bio ? ` · ${s.bio}` : ''}</div>
+                            <div className="text-sm text-parchment truncate">{s.displayName}</div>
+                            <div className="text-[11px] text-parchment/45 truncate">@{s.handle}{s.bio ? ` · ${s.bio}` : ''}</div>
                           </div>
                           <div className={`w-4 h-4 rounded-sm border flex items-center justify-center shrink-0 ${
-                            on ? 'bg-[#B08D57] border-[#B08D57]' : 'border-[rgba(176,141,87,0.35)]'
+                            on ? 'bg-brass border-brass' : 'border-[rgb(var(--t-brass) / 0.35)]'
                           }`}>
-                            {on && <span className="text-[#080604] text-[10px] font-bold">✓</span>}
+                            {on && <span className="text-ink text-[10px] font-bold">✓</span>}
                           </div>
                         </button>
                       );
@@ -389,7 +389,7 @@ export default function OnboardingPage() {
 
               {/* Custom search */}
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/60 font-mono mb-2">
+                <div className="text-[10px] uppercase tracking-wider text-parchment/60 font-mono mb-2">
                   Add your own
                 </div>
                 <div className="relative">
@@ -398,39 +398,39 @@ export default function OnboardingPage() {
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     placeholder="Search Twitter accounts…"
-                    className="w-full px-4 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none text-sm text-[#F5EFE0]"
+                    className="w-full px-4 py-2.5 bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded focus:border-brass focus:outline-none text-sm text-parchment"
                   />
                   {searching && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-[#B08D57]/40 border-t-[#B08D57] rounded-full animate-spin" />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-brass/40 border-t-brass rounded-full animate-spin" />
                   )}
                 </div>
                 {searchResults.length > 0 && (
-                  <div className="mt-2 rounded divide-y divide-[rgba(176,141,87,0.12)]" style={{ background: '#080604', border: '1px solid rgba(176,141,87,0.18)' }}>
+                  <div className="mt-2 rounded divide-y divide-[rgb(var(--t-brass) / 0.12)]" style={{ background: 'rgb(var(--t-ink))', border: '1px solid rgb(var(--t-brass) / 0.18)' }}>
                     {searchResults.slice(0, 8).map((src: any) => {
                       const on = isSelected(src.handle_or_url);
                       return (
                         <button
                           key={src.id}
                           onClick={() => toggle({ id: src.id, handle: src.handle_or_url, displayName: src.display_name, avatarUrl: src.avatar_url })}
-                          className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-[#141210] transition"
-                          style={on ? { background: 'rgba(176,141,87,0.06)' } : {}}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-surface transition"
+                          style={on ? { background: 'rgb(var(--t-brass) / 0.06)' } : {}}
                         >
                           {src.avatar_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={src.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
                           ) : (
-                            <div className="w-7 h-7 rounded-full bg-[#B08D57]/30 flex items-center justify-center text-xs text-[#B08D57] font-bold shrink-0">
+                            <div className="w-7 h-7 rounded-full bg-brass/30 flex items-center justify-center text-xs text-brass font-bold shrink-0">
                               {(src.display_name || src.handle_or_url).charAt(0).toUpperCase()}
                             </div>
                           )}
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-[#F5EFE0] truncate">{src.display_name || src.handle_or_url}</p>
-                            <p className="text-xs text-[#F5EFE0]/45">@{src.handle_or_url}</p>
+                            <p className="text-sm font-medium text-parchment truncate">{src.display_name || src.handle_or_url}</p>
+                            <p className="text-xs text-parchment/45">@{src.handle_or_url}</p>
                           </div>
                           <div className={`w-4 h-4 rounded-sm border flex items-center justify-center shrink-0 ${
-                            on ? 'bg-[#B08D57] border-[#B08D57]' : 'border-[rgba(176,141,87,0.35)]'
+                            on ? 'bg-brass border-brass' : 'border-[rgb(var(--t-brass) / 0.35)]'
                           }`}>
-                            {on && <span className="text-[#080604] text-[10px] font-bold">✓</span>}
+                            {on && <span className="text-ink text-[10px] font-bold">✓</span>}
                           </div>
                         </button>
                       );
@@ -442,7 +442,7 @@ export default function OnboardingPage() {
               {/* Selected chips */}
               {selected.length > 0 && (
                 <div>
-                  <div className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/60 font-mono mb-2">
+                  <div className="text-[10px] uppercase tracking-wider text-parchment/60 font-mono mb-2">
                     Selected ({selected.length})
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -450,10 +450,10 @@ export default function OnboardingPage() {
                       <button
                         key={s.handle}
                         onClick={() => toggle(s)}
-                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#B08D57]/15 border border-[rgba(176,141,87,0.35)] hover:border-[#e8453c]/50 hover:bg-[#e8453c]/10 transition group"
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brass/15 border border-[rgb(var(--t-brass) / 0.35)] hover:border-bear/50 hover:bg-bear/10 transition group"
                       >
-                        <span className="text-xs text-[#B08D57] group-hover:text-[#e8453c]">@{s.handle}</span>
-                        <span className="text-[10px] text-[#F5EFE0]/30 group-hover:text-[#e8453c]">×</span>
+                        <span className="text-xs text-brass group-hover:text-bear">@{s.handle}</span>
+                        <span className="text-[10px] text-parchment/30 group-hover:text-bear">×</span>
                       </button>
                     ))}
                   </div>
@@ -465,14 +465,14 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={() => setShowListPanel(v => !v)}
-                  className="text-[#F5EFE0]/45 hover:text-[#B08D57] underline-offset-2 hover:underline"
+                  className="text-parchment/45 hover:text-brass underline-offset-2 hover:underline"
                 >
                   or, import from a Twitter list
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowExistingPanel(v => !v)}
-                  className="text-[#F5EFE0]/45 hover:text-[#B08D57] underline-offset-2 hover:underline"
+                  className="text-parchment/45 hover:text-brass underline-offset-2 hover:underline"
                 >
                   or, use an existing junto
                 </button>
@@ -480,34 +480,34 @@ export default function OnboardingPage() {
 
               {/* List import panel */}
               {showListPanel && (
-                <div className="rounded p-3 space-y-2" style={{ background: '#080604', border: '1px solid rgba(176,141,87,0.18)' }}>
+                <div className="rounded p-3 space-y-2" style={{ background: 'rgb(var(--t-ink))', border: '1px solid rgb(var(--t-brass) / 0.18)' }}>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={listInput}
                       onChange={e => setListInput(e.target.value)}
                       placeholder="https://x.com/i/lists/… or list ID"
-                      className="flex-1 px-3 py-2 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none text-sm text-[#F5EFE0]"
+                      className="flex-1 px-3 py-2 bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded focus:border-brass focus:outline-none text-sm text-parchment"
                     />
                     <button
                       onClick={handleImportList}
                       disabled={importingList || !listInput.trim()}
-                      className="px-3 py-2 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-40 text-[#080604] rounded font-bold uppercase tracking-wide text-xs"
+                      className="px-3 py-2 bg-brass hover:bg-brass/80 disabled:opacity-40 text-ink rounded font-bold uppercase tracking-wide text-xs"
                       style={{ fontFamily: 'var(--font-oswald)' }}
                     >
                       {importingList ? 'Importing…' : 'Import'}
                     </button>
                   </div>
-                  <p className="text-[11px] text-[#F5EFE0]/40">Import may take up to 60s. Active members are added to your selection above.</p>
-                  {listError && <p className="text-xs text-[#e8453c]">{listError}</p>}
+                  <p className="text-[11px] text-parchment/40">Import may take up to 60s. Active members are added to your selection above.</p>
+                  {listError && <p className="text-xs text-bear">{listError}</p>}
                 </div>
               )}
 
               {/* Existing junto panel */}
               {showExistingPanel && (
-                <div className="rounded p-3 space-y-2" style={{ background: '#080604', border: '1px solid rgba(176,141,87,0.18)' }}>
+                <div className="rounded p-3 space-y-2" style={{ background: 'rgb(var(--t-ink))', border: '1px solid rgb(var(--t-brass) / 0.18)' }}>
                   {existingJuntos.length === 0 ? (
-                    <p className="text-xs text-[#F5EFE0]/45">You don&apos;t have any juntos yet.</p>
+                    <p className="text-xs text-parchment/45">You don&apos;t have any juntos yet.</p>
                   ) : existingJuntos.map(j => {
                     const sources = j.sources ?? [];
                     const total = j.source_count ?? sources.length;
@@ -518,11 +518,11 @@ export default function OnboardingPage() {
                         onClick={() => setExistingJuntoId(j.id)}
                         className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded text-left transition cursor-pointer"
                         style={{
-                          background: existingJuntoId === j.id ? 'rgba(176,141,87,0.08)' : '#141210',
-                          border: `1px solid ${existingJuntoId === j.id ? '#B08D57' : 'rgba(176,141,87,0.12)'}`,
+                          background: existingJuntoId === j.id ? 'rgb(var(--t-brass) / 0.08)' : 'rgb(var(--t-surface))',
+                          border: `1px solid ${existingJuntoId === j.id ? 'rgb(var(--t-brass))' : 'rgb(var(--t-brass) / 0.12)'}`,
                         }}
                       >
-                        <span className="text-sm text-[#F5EFE0] shrink-0">{j.name}</span>
+                        <span className="text-sm text-parchment shrink-0">{j.name}</span>
                         <div className="flex items-center gap-2 ml-auto">
                           {previewed.length > 0 && (
                             <div className="flex items-center">
@@ -531,9 +531,9 @@ export default function OnboardingPage() {
                                   key={s.id}
                                   className="rounded-full border-2 overflow-hidden shrink-0"
                                   style={{
-                                    width: 22, height: 22, borderColor: '#080604',
+                                    width: 22, height: 22, borderColor: 'rgb(var(--t-ink))',
                                     marginLeft: i > 0 ? -8 : 0,
-                                    background: '#1c1a17', zIndex: 10 - i, position: 'relative',
+                                    background: 'rgb(var(--t-raised))', zIndex: 10 - i, position: 'relative',
                                   }}
                                   title={s.display_name || s.handle_or_url}
                                 >
@@ -541,7 +541,7 @@ export default function OnboardingPage() {
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <img src={s.avatar_url} alt={s.handle_or_url} className="w-full h-full object-cover" />
                                   ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-[#F5EFE0]/60 text-[9px]">
+                                    <div className="w-full h-full flex items-center justify-center text-parchment/60 text-[9px]">
                                       {s.handle_or_url[0]?.toUpperCase()}
                                     </div>
                                   )}
@@ -553,7 +553,7 @@ export default function OnboardingPage() {
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); setMembersModalJunto(j); }}
-                              className="text-xs font-mono text-[#F5EFE0]/45 hover:text-[#B08D57] transition px-2 py-0.5 rounded border border-transparent hover:border-[rgba(176,141,87,0.4)]"
+                              className="text-xs font-mono text-parchment/45 hover:text-brass transition px-2 py-0.5 rounded border border-transparent hover:border-[rgb(var(--t-brass) / 0.4)]"
                             >
                               {total} {total === 1 ? 'member' : 'members'} →
                             </button>
@@ -584,12 +584,12 @@ export default function OnboardingPage() {
                   onChange={e => setTickerInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTicker(); } }}
                   placeholder="Add ticker (e.g. ABCL)"
-                  className="flex-1 px-4 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none text-sm text-[#F5EFE0] uppercase"
+                  className="flex-1 px-4 py-2.5 bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded focus:border-brass focus:outline-none text-sm text-parchment uppercase"
                 />
                 <button
                   onClick={addTicker}
                   disabled={!tickerInput.trim() || tickers.length >= 10}
-                  className="px-4 py-2.5 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-40 text-[#080604] rounded font-bold uppercase text-xs"
+                  className="px-4 py-2.5 bg-brass hover:bg-brass/80 disabled:opacity-40 text-ink rounded font-bold uppercase text-xs"
                   style={{ fontFamily: 'var(--font-oswald)' }}
                 >
                   Add
@@ -601,15 +601,15 @@ export default function OnboardingPage() {
                     <button
                       key={t}
                       onClick={() => setTickers(prev => prev.filter(x => x !== t))}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#B08D57]/15 border border-[rgba(176,141,87,0.35)] hover:border-[#e8453c]/50 transition group"
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brass/15 border border-[rgb(var(--t-brass) / 0.35)] hover:border-bear/50 transition group"
                     >
-                      <span className="text-xs text-[#B08D57] group-hover:text-[#e8453c]">${t}</span>
-                      <span className="text-[10px] text-[#F5EFE0]/30">×</span>
+                      <span className="text-xs text-brass group-hover:text-bear">${t}</span>
+                      <span className="text-[10px] text-parchment/30">×</span>
                     </button>
                   ))}
                 </div>
               )}
-              <p className="text-xs text-[#F5EFE0]/40">Up to 10. Empty is fine — leave blank to focus on signal from sources.</p>
+              <p className="text-xs text-parchment/40">Up to 10. Empty is fine — leave blank to focus on signal from sources.</p>
             </div>
           </Section>
         )}
@@ -623,7 +623,7 @@ export default function OnboardingPage() {
         >
           <div className="space-y-4">
             <div>
-              <div className="block text-[10px] uppercase tracking-wider text-[#F5EFE0]/60 font-mono mb-2">Days</div>
+              <div className="block text-[10px] uppercase tracking-wider text-parchment/60 font-mono mb-2">Days</div>
               <div className="flex gap-1.5">
                 {DAYS.map(d => {
                   const on = scheduleDays.includes(d.key);
@@ -633,9 +633,9 @@ export default function OnboardingPage() {
                       onClick={() => toggleDay(d.key)}
                       className="w-8 h-8 rounded text-xs font-bold transition"
                       style={{
-                        background: on ? '#B08D57' : '#080604',
-                        color: on ? '#080604' : 'rgba(245,239,224,0.45)',
-                        border: '1px solid rgba(176,141,87,0.28)',
+                        background: on ? 'rgb(var(--t-brass))' : 'rgb(var(--t-ink))',
+                        color: on ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.45)',
+                        border: '1px solid rgb(var(--t-brass) / 0.28)',
                       }}
                     >{d.label}</button>
                   );
@@ -643,21 +643,21 @@ export default function OnboardingPage() {
               </div>
             </div>
             <div>
-              <div className="block text-[10px] uppercase tracking-wider text-[#F5EFE0]/60 font-mono mb-2">Window</div>
+              <div className="block text-[10px] uppercase tracking-wider text-parchment/60 font-mono mb-2">Window</div>
               <select
                 value={sendWindow}
                 onChange={e => setSendWindow(e.target.value)}
-                className="w-full px-4 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none text-sm text-[#F5EFE0]"
+                className="w-full px-4 py-2.5 bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded focus:border-brass focus:outline-none text-sm text-parchment"
               >
                 {WINDOWS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
               </select>
             </div>
             <div>
-              <div className="block text-[10px] uppercase tracking-wider text-[#F5EFE0]/60 font-mono mb-2">Timezone</div>
+              <div className="block text-[10px] uppercase tracking-wider text-parchment/60 font-mono mb-2">Timezone</div>
               <select
                 value={timezone}
                 onChange={e => setTimezone(e.target.value)}
-                className="w-full px-4 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none text-sm text-[#F5EFE0]"
+                className="w-full px-4 py-2.5 bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded focus:border-brass focus:outline-none text-sm text-parchment"
               >
                 {TIMEZONES.map(tz => <option key={tz.value} value={tz.value}>{tz.label}</option>)}
               </select>
@@ -689,7 +689,7 @@ export default function OnboardingPage() {
                 value={email}
                 onChange={e => { setEmail(e.target.value); setError(''); }}
                 placeholder="you@example.com"
-                className="w-full px-3 py-2 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none text-sm text-[#F5EFE0]"
+                className="w-full px-3 py-2 bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded focus:border-brass focus:outline-none text-sm text-parchment"
               />
             </ChannelCard>
 
@@ -739,17 +739,17 @@ export default function OnboardingPage() {
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder={handle ? `${handle}'s Dispatch` : 'My Daily Dispatch'}
-            className="w-full px-4 py-2.5 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded focus:border-[#B08D57] focus:outline-none text-sm text-[#F5EFE0]"
+            className="w-full px-4 py-2.5 bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded focus:border-brass focus:outline-none text-sm text-parchment"
           />
-          <p className="mt-2 text-xs text-[#F5EFE0]/40">Optional — leave blank for an auto-generated name.</p>
+          <p className="mt-2 text-xs text-parchment/40">Optional — leave blank for an auto-generated name.</p>
         </Section>
 
-        {error && <p className="mt-4 text-sm text-[#e8453c] text-center">{error}</p>}
+        {error && <p className="mt-4 text-sm text-bear text-center">{error}</p>}
 
         <button
           onClick={handleSubmit}
           disabled={saving}
-          className="w-full mt-6 px-5 py-4 bg-[#B08D57] hover:bg-[#B08D57]/80 disabled:opacity-40 text-[#080604] rounded font-bold uppercase tracking-wide transition text-sm"
+          className="w-full mt-6 px-5 py-4 bg-brass hover:bg-brass/80 disabled:opacity-40 text-ink rounded font-bold uppercase tracking-wide transition text-sm"
           style={{ fontFamily: 'var(--font-oswald)' }}
         >
           {saving ? 'Setting up…' : 'Save & go to dashboard →'}
@@ -758,7 +758,7 @@ export default function OnboardingPage() {
         <div className="text-center mt-4">
           <button
             onClick={() => router.push('/dashboard')}
-            className="text-[#F5EFE0]/25 hover:text-[#F5EFE0]/50 text-xs transition"
+            className="text-parchment/25 hover:text-parchment/50 text-xs transition"
           >
             Skip setup
           </button>
@@ -772,46 +772,46 @@ export default function OnboardingPage() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg max-h-[80vh] flex flex-col rounded-lg border border-[rgba(176,141,87,0.32)] bg-[#141210] shadow-2xl"
+            className="w-full max-w-lg max-h-[80vh] flex flex-col rounded-lg border border-[rgb(var(--t-brass) / 0.32)] bg-surface shadow-2xl"
           >
-            <div className="flex items-center justify-between px-5 py-3 border-b border-[rgba(176,141,87,0.18)]">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-[rgb(var(--t-brass) / 0.18)]">
               <div>
-                <h3 className="text-sm font-bold text-[#F5EFE0] font-[var(--font-oswald)] uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-parchment font-[var(--font-oswald)] uppercase tracking-wider">
                   {membersModalJunto.name}
                 </h3>
-                <p className="text-xs text-[#F5EFE0]/40 mt-0.5">
+                <p className="text-xs text-parchment/40 mt-0.5">
                   {(membersModalJunto.sources?.length ?? membersModalJunto.source_count ?? 0)} members
                 </p>
               </div>
               <button
                 onClick={() => setMembersModalJunto(null)}
-                className="text-[#F5EFE0]/50 hover:text-[#F5EFE0] text-xl leading-none px-2"
+                className="text-parchment/50 hover:text-parchment text-xl leading-none px-2"
                 aria-label="Close"
               >
                 ×
               </button>
             </div>
-            <ul className="overflow-y-auto divide-y divide-[rgba(176,141,87,0.12)]">
+            <ul className="overflow-y-auto divide-y divide-[rgb(var(--t-brass) / 0.12)]">
               {(membersModalJunto.sources ?? []).length === 0 ? (
-                <li className="px-5 py-6 text-sm text-[#F5EFE0]/45 text-center">No members.</li>
+                <li className="px-5 py-6 text-sm text-parchment/45 text-center">No members.</li>
               ) : (
                 (membersModalJunto.sources ?? []).map((s) => (
                   <li key={s.id} className="flex items-center gap-3 px-5 py-2.5">
                     <div
-                      className="rounded-full overflow-hidden shrink-0 bg-[#1c1a17]"
+                      className="rounded-full overflow-hidden shrink-0 bg-raised"
                       style={{ width: 32, height: 32 }}
                     >
                       {s.avatar_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={s.avatar_url} alt={s.handle_or_url} className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[#F5EFE0]/60 text-xs">
+                        <div className="w-full h-full flex items-center justify-center text-parchment/60 text-xs">
                           {s.handle_or_url[0]?.toUpperCase()}
                         </div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm text-[#F5EFE0] truncate">
+                      <div className="text-sm text-parchment truncate">
                         {s.display_name || s.handle_or_url}
                       </div>
                       <a
@@ -819,7 +819,7 @@ export default function OnboardingPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="text-xs font-mono text-[#F5EFE0]/45 hover:text-[#B08D57] transition"
+                        className="text-xs font-mono text-parchment/45 hover:text-brass transition"
                       >
                         @{s.handle_or_url}
                       </a>
@@ -850,19 +850,19 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded mb-3" style={{ background: '#141210', border: '1px solid rgba(176,141,87,0.28)' }}>
+    <div className="rounded mb-3" style={{ background: 'rgb(var(--t-surface))', border: '1px solid rgb(var(--t-brass) / 0.28)' }}>
       <button
         onClick={onToggle}
         className="w-full flex items-center justify-between px-5 py-4 text-left"
       >
         <div>
-          <div className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-mono">{title}</div>
-          <div className="text-sm text-[#F5EFE0] mt-0.5">{summary}</div>
+          <div className="text-xs uppercase tracking-wider text-parchment/45 font-mono">{title}</div>
+          <div className="text-sm text-parchment mt-0.5">{summary}</div>
         </div>
-        <span className="text-[#B08D57] text-lg" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>⌄</span>
+        <span className="text-brass text-lg" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>⌄</span>
       </button>
       {expanded && (
-        <div className="px-5 pb-5" style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}>
+        <div className="px-5 pb-5" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.18)' }}>
           <div className="pt-4">{children}</div>
         </div>
       )}
@@ -885,21 +885,21 @@ function ChannelCard({
 }) {
   return (
     <div className="rounded p-3" style={{
-      background: checked ? 'rgba(176,141,87,0.04)' : '#080604',
-      border: `1px solid ${checked ? 'rgba(176,141,87,0.35)' : 'rgba(176,141,87,0.14)'}`,
+      background: checked ? 'rgb(var(--t-brass) / 0.04)' : 'rgb(var(--t-ink))',
+      border: `1px solid ${checked ? 'rgb(var(--t-brass) / 0.35)' : 'rgb(var(--t-brass) / 0.14)'}`,
     }}>
       <label className="flex items-start gap-3 cursor-pointer">
         <input
           type="checkbox"
           checked={checked}
           onChange={e => onChange(e.target.checked)}
-          className="mt-1 w-4 h-4 accent-[#B08D57]"
+          className="mt-1 w-4 h-4 accent-brass"
         />
         <div className="flex-1">
-          <div className="text-sm font-bold text-[#F5EFE0] uppercase tracking-wide" style={{ fontFamily: 'var(--font-oswald)' }}>
+          <div className="text-sm font-bold text-parchment uppercase tracking-wide" style={{ fontFamily: 'var(--font-oswald)' }}>
             {title}
           </div>
-          {hint && <div className="text-xs text-[#F5EFE0]/45 mt-0.5">{hint}</div>}
+          {hint && <div className="text-xs text-parchment/45 mt-0.5">{hint}</div>}
         </div>
       </label>
       {checked && children && (
@@ -929,11 +929,11 @@ function Checkbox({
         checked={checked}
         disabled={disabled}
         onChange={e => onChange(e.target.checked)}
-        className="mt-0.5 w-4 h-4 accent-[#B08D57]"
+        className="mt-0.5 w-4 h-4 accent-brass"
       />
       <div className="flex-1">
-        <div className="text-sm text-[#F5EFE0]">{label}</div>
-        {hint && <div className="text-xs text-[#F5EFE0]/45 mt-0.5">{hint}</div>}
+        <div className="text-sm text-parchment">{label}</div>
+        {hint && <div className="text-xs text-parchment/45 mt-0.5">{hint}</div>}
       </div>
     </label>
   );

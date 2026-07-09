@@ -22,8 +22,8 @@ const COLUMNS: { key: Item['status']; label: string }[] = [
 ];
 
 const PRIO_COLOR: Record<Item['priority'], string> = {
-  high: '#e8453c',
-  med: '#B08D57',
+  high: 'rgb(var(--t-bear))',
+  med: 'rgb(var(--t-brass))',
   low: '#6b7280',
 };
 
@@ -94,25 +94,25 @@ export default function AdminBacklogPage() {
   }
 
   if (status === 'loading' || loading) {
-    return <main className="min-h-screen bg-[#080604] text-[#F5EFE0]"><TopNav /><div className="max-w-6xl mx-auto px-6 py-12 text-[#F5EFE0]/45">Loading…</div></main>;
+    return <main className="min-h-screen bg-ink text-parchment"><TopNav /><div className="max-w-6xl mx-auto px-6 py-12 text-parchment/45">Loading…</div></main>;
   }
   if (error) {
-    return <main className="min-h-screen bg-[#080604] text-[#F5EFE0]"><TopNav /><div className="max-w-6xl mx-auto px-6 py-12 text-[#e8453c]">{error}</div></main>;
+    return <main className="min-h-screen bg-ink text-parchment"><TopNav /><div className="max-w-6xl mx-auto px-6 py-12 text-bear">{error}</div></main>;
   }
 
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <Link href="/admin" className="text-xs text-[#F5EFE0]/45 hover:text-[#F5EFE0]">← Admin</Link>
+            <Link href="/admin" className="text-xs text-parchment/45 hover:text-parchment">← Admin</Link>
             <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mt-1">Backlog</h1>
           </div>
         </div>
 
         {/* Add */}
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-4 mb-6 space-y-3">
+        <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-4 mb-6 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-3">
             <input value={title} onChange={e => setTitle(e.target.value)} placeholder="New item title…" className={inputCls} />
             <select value={priority} onChange={e => setPriority(e.target.value as Item['priority'])} className={inputCls}>
@@ -121,7 +121,7 @@ export default function AdminBacklogPage() {
             <input value={category} onChange={e => setCategory(e.target.value)} placeholder="category (e.g. HL)" className={inputCls} />
           </div>
           <textarea value={detail} onChange={e => setDetail(e.target.value)} rows={2} placeholder="Detail / notes (optional)" className={inputCls} />
-          <button onClick={addItem} disabled={adding || !title.trim()} className="px-4 py-2 rounded bg-[#B08D57] text-[#080604] text-sm font-bold uppercase tracking-wide disabled:opacity-50">
+          <button onClick={addItem} disabled={adding || !title.trim()} className="px-4 py-2 rounded bg-brass text-ink text-sm font-bold uppercase tracking-wide disabled:opacity-50">
             {adding ? 'Adding…' : '+ Add'}
           </button>
         </div>
@@ -131,29 +131,29 @@ export default function AdminBacklogPage() {
           {COLUMNS.map(col => {
             const colItems = items.filter(i => i.status === col.key);
             return (
-              <div key={col.key} className="bg-[#0d0b09] border border-[rgba(176,141,87,0.18)] rounded p-3">
+              <div key={col.key} className="bg-ink border border-[rgb(var(--t-brass) / 0.18)] rounded p-3">
                 <div className="flex items-center justify-between mb-3 px-1">
-                  <span className="text-xs uppercase tracking-wider text-[#F5EFE0]/45 font-[var(--font-oswald)]">{col.label}</span>
-                  <span className="text-[10px] text-[#F5EFE0]/30 font-mono">{colItems.length}</span>
+                  <span className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)]">{col.label}</span>
+                  <span className="text-[10px] text-parchment/30 font-mono">{colItems.length}</span>
                 </div>
                 <div className="space-y-2">
-                  {colItems.length === 0 && <p className="text-xs text-[#F5EFE0]/25 px-1 py-4 text-center">empty</p>}
+                  {colItems.length === 0 && <p className="text-xs text-parchment/25 px-1 py-4 text-center">empty</p>}
                   {colItems.map(item => (
-                    <div key={item.id} className="bg-[#141210] border border-[rgba(176,141,87,0.22)] rounded p-3">
+                    <div key={item.id} className="bg-surface border border-[rgb(var(--t-brass) / 0.22)] rounded p-3">
                       <div className="flex items-start gap-2">
                         <span className="mt-1 w-2 h-2 rounded-full shrink-0" style={{ background: PRIO_COLOR[item.priority] }} title={item.priority} />
                         <div className="min-w-0 flex-1">
-                          <div className={`text-sm ${item.status === 'done' ? 'line-through text-[#F5EFE0]/40' : 'text-[#F5EFE0]'}`}>{item.title}</div>
-                          {item.detail && <div className="text-xs text-[#F5EFE0]/50 mt-1 whitespace-pre-wrap">{item.detail}</div>}
-                          {item.category && <span className="inline-block mt-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#080604] border border-[rgba(176,141,87,0.28)] text-[#B08D57]">{item.category}</span>}
+                          <div className={`text-sm ${item.status === 'done' ? 'line-through text-parchment/40' : 'text-parchment'}`}>{item.title}</div>
+                          {item.detail && <div className="text-xs text-parchment/50 mt-1 whitespace-pre-wrap">{item.detail}</div>}
+                          {item.category && <span className="inline-block mt-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-ink border border-[rgb(var(--t-brass) / 0.28)] text-brass">{item.category}</span>}
                         </div>
                       </div>
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#F5EFE0]/8">
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-parchment/8">
                         <div className="flex gap-1">
-                          <button onClick={() => move(item, -1)} disabled={item.status === 'backlog'} className="text-xs px-1.5 text-[#F5EFE0]/40 hover:text-[#F5EFE0] disabled:opacity-20">◀</button>
-                          <button onClick={() => move(item, 1)} disabled={item.status === 'done'} className="text-xs px-1.5 text-[#F5EFE0]/40 hover:text-[#F5EFE0] disabled:opacity-20">▶</button>
+                          <button onClick={() => move(item, -1)} disabled={item.status === 'backlog'} className="text-xs px-1.5 text-parchment/40 hover:text-parchment disabled:opacity-20">◀</button>
+                          <button onClick={() => move(item, 1)} disabled={item.status === 'done'} className="text-xs px-1.5 text-parchment/40 hover:text-parchment disabled:opacity-20">▶</button>
                         </div>
-                        <button onClick={() => remove(item.id)} className="text-xs text-[#F5EFE0]/30 hover:text-[#e8453c]">delete</button>
+                        <button onClick={() => remove(item.id)} className="text-xs text-parchment/30 hover:text-bear">delete</button>
                       </div>
                     </div>
                   ))}
@@ -167,4 +167,4 @@ export default function AdminBacklogPage() {
   );
 }
 
-const inputCls = 'w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]';
+const inputCls = 'w-full bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-2 text-sm text-parchment focus:outline-none focus:border-brass';

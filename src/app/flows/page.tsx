@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 
-const BG = '#080604';
+const BG = 'rgb(var(--t-ink))';
 const PANEL = '#0e0c09';
-const CREAM = '#F5EFE0';
-const DIM = 'rgba(245,239,224,0.55)';
-const FAINT = 'rgba(245,239,224,0.35)';
-const BRASS = '#B08D57';
-const BRASS_DIM = 'rgba(176,141,87,0.28)';
-const STROKE = 'rgba(176,141,87,0.45)';
+const CREAM = 'rgb(var(--t-parchment))';
+const DIM = 'rgb(var(--t-parchment) / 0.55)';
+const FAINT = 'rgb(var(--t-parchment) / 0.35)';
+const BRASS = 'rgb(var(--t-brass))';
+const BRASS_DIM = 'rgb(var(--t-brass) / 0.28)';
+const STROKE = 'rgb(var(--t-brass) / 0.45)';
 
 function SectionHeader({ kicker, title, blurb }: { kicker: string; title: string; blurb: string }) {
   return (
@@ -34,7 +34,7 @@ function Box({
     <g>
       <rect
         x={x} y={y} width={w} height={h} rx={4}
-        fill={accent ? 'rgba(176,141,87,0.10)' : PANEL}
+        fill={accent ? 'rgb(var(--t-brass) / 0.10)' : PANEL}
         stroke={accent ? BRASS : STROKE}
         strokeWidth={accent ? 1.5 : 1}
       />
@@ -313,7 +313,7 @@ export default function FlowsPage() {
           <Link
             href="/docs"
             className="px-5 py-2 rounded-sm text-sm font-semibold uppercase tracking-wide whitespace-nowrap"
-            style={{ background: BRASS, color: '#080604', fontFamily: 'var(--font-oswald)' }}
+            style={{ background: BRASS, color: 'rgb(var(--t-ink))', fontFamily: 'var(--font-oswald)' }}
           >
             Read the docs
           </Link>

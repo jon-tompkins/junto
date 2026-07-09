@@ -291,23 +291,23 @@ export default function EditNewsletterPage() {
 
   if (loading || authStatus === 'loading') {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0] flex items-center justify-center">
-        <div className="animate-pulse text-[#F5EFE0]/45">Loading...</div>
+      <main className="min-h-screen bg-ink text-parchment flex items-center justify-center">
+        <div className="animate-pulse text-parchment/45">Loading...</div>
       </main>
     );
   }
 
   if (error && !newsletter) {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0] flex flex-col items-center justify-center gap-4">
-        <p className="text-[#e8453c]">{error}</p>
-        <Link href="/dashboard" className="text-[#B08D57] hover:text-[#B08D57]/80 text-sm">&larr; Dashboard</Link>
+      <main className="min-h-screen bg-ink text-parchment flex flex-col items-center justify-center gap-4">
+        <p className="text-bear">{error}</p>
+        <Link href="/dashboard" className="text-brass hover:text-brass/80 text-sm">&larr; Dashboard</Link>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -316,28 +316,28 @@ export default function EditNewsletterPage() {
         <div className="space-y-6">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Name</label>
+            <label className="block text-sm font-medium text-parchment/60 mb-2">Name</label>
             <input
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-3 text-[#F5EFE0] focus:border-[#B08D57] focus:outline-none transition"
+              className="w-full bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-4 py-3 text-parchment focus:border-brass focus:outline-none transition"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Description</label>
+            <label className="block text-sm font-medium text-parchment/60 mb-2">Description</label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={3}
-              className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-3 text-[#F5EFE0] focus:border-[#B08D57] focus:outline-none transition resize-none"
+              className="w-full bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-4 py-3 text-parchment focus:border-brass focus:outline-none transition resize-none"
             />
           </div>
 
           {/* Prompt */}
           <div>
-            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Synthesis Style</label>
+            <label className="block text-sm font-medium text-parchment/60 mb-2">Synthesis Style</label>
             <div className="grid grid-cols-2 gap-2 mb-3">
               {promptTemplates.map((t) => (
                 <button
@@ -346,12 +346,12 @@ export default function EditNewsletterPage() {
                   onClick={() => { setPromptTemplateId(t.id); setPrompt(''); }}
                   className={`p-3 rounded border text-left transition-all ${
                     promptTemplateId === t.id
-                      ? 'border-[#B08D57]/60 bg-[#B08D57]/10'
-                      : 'border-[rgba(176,141,87,0.18)] bg-[#141210] hover:border-[rgba(176,141,87,0.28)]'
+                      ? 'border-brass/60 bg-brass/10'
+                      : 'border-[rgb(var(--t-brass) / 0.18)] bg-surface hover:border-[rgb(var(--t-brass) / 0.28)]'
                   }`}
                 >
-                  <div className="text-sm font-medium text-[#F5EFE0]">{t.name}</div>
-                  <div className="text-xs text-[#F5EFE0]/60 mt-0.5 line-clamp-2">{t.description}</div>
+                  <div className="text-sm font-medium text-parchment">{t.name}</div>
+                  <div className="text-xs text-parchment/60 mt-0.5 line-clamp-2">{t.description}</div>
                 </button>
               ))}
               <button
@@ -359,12 +359,12 @@ export default function EditNewsletterPage() {
                 onClick={() => setPromptTemplateId(null)}
                 className={`p-3 rounded border text-left transition-all ${
                   promptTemplateId === null
-                    ? 'border-[#B08D57]/60 bg-[#B08D57]/10'
-                    : 'border-[rgba(176,141,87,0.18)] bg-[#141210] hover:border-[rgba(176,141,87,0.28)]'
+                    ? 'border-brass/60 bg-brass/10'
+                    : 'border-[rgb(var(--t-brass) / 0.18)] bg-surface hover:border-[rgb(var(--t-brass) / 0.28)]'
                 }`}
               >
-                <div className="text-sm font-medium text-[#F5EFE0]">Custom</div>
-                <div className="text-xs text-[#F5EFE0]/60 mt-0.5">Write your own synthesis prompt</div>
+                <div className="text-sm font-medium text-parchment">Custom</div>
+                <div className="text-xs text-parchment/60 mt-0.5">Write your own synthesis prompt</div>
               </button>
             </div>
             {promptTemplateId === null && (
@@ -373,50 +373,50 @@ export default function EditNewsletterPage() {
                 onChange={e => setPrompt(e.target.value)}
                 rows={8}
                 placeholder="Write a custom system prompt to control tone, format, and focus..."
-                className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-3 text-[#F5EFE0] font-mono text-sm focus:border-[#B08D57] focus:outline-none transition resize-none"
+                className="w-full bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-4 py-3 text-parchment font-mono text-sm focus:border-brass focus:outline-none transition resize-none"
               />
             )}
           </div>
 
           {/* Secondary Prompt */}
           <div>
-            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Secondary Prompt <span className="text-[#F5EFE0]/30">(optional)</span></label>
+            <label className="block text-sm font-medium text-parchment/60 mb-2">Secondary Prompt <span className="text-parchment/30">(optional)</span></label>
             <textarea
               value={secondaryPrompt}
               onChange={e => setSecondaryPrompt(e.target.value)}
               rows={4}
-              className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-3 text-[#F5EFE0] font-mono text-sm focus:border-[#B08D57] focus:outline-none transition resize-none"
+              className="w-full bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-4 py-3 text-parchment font-mono text-sm focus:border-brass focus:outline-none transition resize-none"
             />
           </div>
 
           {/* Labels */}
           <div>
-            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Labels <span className="text-[#F5EFE0]/30">(comma separated)</span></label>
+            <label className="block text-sm font-medium text-parchment/60 mb-2">Labels <span className="text-parchment/30">(comma separated)</span></label>
             <input
               value={labelsStr}
               onChange={e => setLabelsStr(e.target.value)}
               placeholder="crypto, defi, bitcoin"
-              className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-3 text-[#F5EFE0] focus:border-[#B08D57] focus:outline-none transition"
+              className="w-full bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-4 py-3 text-parchment focus:border-brass focus:outline-none transition"
             />
           </div>
 
           {/* Watchlist */}
           <div>
-            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">
+            <label className="block text-sm font-medium text-parchment/60 mb-2">
               Watchlist
-              <span className="text-[#F5EFE0]/30 font-normal ml-1">(optional — tickers included in the dispatch context)</span>
+              <span className="text-parchment/30 font-normal ml-1">(optional — tickers included in the dispatch context)</span>
             </label>
             <div className="flex flex-wrap gap-2 mb-2">
               {tickers.map((t) => (
                 <span
                   key={t}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs bg-[#1c1a17] text-[#F5EFE0]/85 border border-[rgba(176,141,87,0.28)]"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs bg-raised text-parchment/85 border border-[rgb(var(--t-brass) / 0.28)]"
                 >
                   ${t}
                   <button
                     type="button"
                     onClick={() => setTickers(prev => prev.filter(x => x !== t))}
-                    className="text-[#F5EFE0]/40 hover:text-[#F5EFE0]/90"
+                    className="text-parchment/40 hover:text-parchment/90"
                     aria-label={`Remove ${t}`}
                   >
                     ×
@@ -439,7 +439,7 @@ export default function EditNewsletterPage() {
                   }
                 }}
                 placeholder="AAPL, NVDA, BTC…"
-                className="flex-1 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-sm text-[#F5EFE0] focus:border-[#B08D57] focus:outline-none transition"
+                className="flex-1 bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-4 py-2.5 text-sm text-parchment focus:border-brass focus:outline-none transition"
               />
               <button
                 type="button"
@@ -451,7 +451,7 @@ export default function EditNewsletterPage() {
                   setTickerInput('');
                 }}
                 disabled={!tickerInput.trim()}
-                className="px-4 py-2.5 rounded text-sm font-medium bg-[#1c1a17] border border-[rgba(176,141,87,0.28)] text-[#F5EFE0]/80 hover:bg-[#141210] disabled:opacity-40 transition"
+                className="px-4 py-2.5 rounded text-sm font-medium bg-raised border border-[rgb(var(--t-brass) / 0.28)] text-parchment/80 hover:bg-surface disabled:opacity-40 transition"
               >
                 Add
               </button>
@@ -461,11 +461,11 @@ export default function EditNewsletterPage() {
           {/* Cadence + Visibility */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Cadence</label>
+              <label className="block text-sm font-medium text-parchment/60 mb-2">Cadence</label>
               <select
                 value={cadence}
                 onChange={e => setCadence(e.target.value)}
-                className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-3 text-[#F5EFE0] focus:border-[#B08D57] focus:outline-none transition"
+                className="w-full bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-4 py-3 text-parchment focus:border-brass focus:outline-none transition"
               >
                 {Object.entries(CADENCE_LABELS).map(([val, label]) => (
                   <option key={val} value={val}>{label}</option>
@@ -473,11 +473,11 @@ export default function EditNewsletterPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Visibility</label>
+              <label className="block text-sm font-medium text-parchment/60 mb-2">Visibility</label>
               <select
                 value={isPublic ? 'public' : 'private'}
                 onChange={e => setIsPublic(e.target.value === 'public')}
-                className="w-full bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-3 text-[#F5EFE0] focus:border-[#B08D57] focus:outline-none transition"
+                className="w-full bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-4 py-3 text-parchment focus:border-brass focus:outline-none transition"
               >
                 <option value="public">Public</option>
                 <option value="private">Private</option>
@@ -486,27 +486,27 @@ export default function EditNewsletterPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Voice memo</label>
+            <label className="block text-sm font-medium text-parchment/60 mb-2">Voice memo</label>
             <button
               type="button"
               onClick={() => setAudioEnabled(!audioEnabled)}
               className="w-full p-4 text-left transition rounded"
               style={{
-                border: `1px solid ${audioEnabled ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.28)'}`,
-                background: audioEnabled ? 'rgba(176,141,87,0.06)' : '#141210',
+                border: `1px solid ${audioEnabled ? 'rgb(var(--t-brass) / 0.55)' : 'rgb(var(--t-brass) / 0.28)'}`,
+                background: audioEnabled ? 'rgb(var(--t-brass) / 0.06)' : 'rgb(var(--t-surface))',
               }}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-semibold text-[#F5EFE0] mb-1">
+                  <div className="text-sm font-semibold text-parchment mb-1">
                     🎧 {audioEnabled ? 'Voice memo enabled' : 'Voice memo off'}
                   </div>
-                  <div className="text-xs text-[#F5EFE0]/50">
+                  <div className="text-xs text-parchment/50">
                     Generates an audio version of each dispatch. Doubles the per-send credit cost.
                   </div>
                 </div>
-                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition flex-shrink-0 ${audioEnabled ? 'bg-[#B08D57] border-[#B08D57]' : 'border-[#F5EFE0]/30'}`}>
-                  {audioEnabled && <svg className="w-3 h-3 text-[#080604]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition flex-shrink-0 ${audioEnabled ? 'bg-brass border-brass' : 'border-parchment/30'}`}>
+                  {audioEnabled && <svg className="w-3 h-3 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                 </div>
               </div>
             </button>
@@ -514,9 +514,9 @@ export default function EditNewsletterPage() {
 
           {/* Send Days */}
           <div>
-            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">
+            <label className="block text-sm font-medium text-parchment/60 mb-2">
               Generation Days
-              <span className="text-[#F5EFE0]/30 font-normal ml-1">(newsletter generates on these days)</span>
+              <span className="text-parchment/30 font-normal ml-1">(newsletter generates on these days)</span>
             </label>
             <div className="flex gap-2">
               {[
@@ -536,8 +536,8 @@ export default function EditNewsletterPage() {
                   )}
                   className={`px-3 py-2 rounded-sm text-sm font-medium transition ${
                     sendDays.includes(d.key)
-                      ? 'bg-[#B08D57] text-[#080604]'
-                      : 'bg-[#141210] text-[#F5EFE0]/60 hover:bg-[#1c1a17] border border-[rgba(176,141,87,0.18)]'
+                      ? 'bg-brass text-ink'
+                      : 'bg-surface text-parchment/60 hover:bg-raised border border-[rgb(var(--t-brass) / 0.18)]'
                   }`}
                 >
                   {d.label}
@@ -548,9 +548,9 @@ export default function EditNewsletterPage() {
 
           {/* Send Windows */}
           <div>
-            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">
+            <label className="block text-sm font-medium text-parchment/60 mb-2">
               Send Windows
-              <span className="text-[#F5EFE0]/30 font-normal ml-1">(Pacific time — newsletter generates in these windows)</span>
+              <span className="text-parchment/30 font-normal ml-1">(Pacific time — newsletter generates in these windows)</span>
             </label>
             <div className="flex flex-wrap gap-2">
               {[
@@ -567,8 +567,8 @@ export default function EditNewsletterPage() {
                   )}
                   className={`px-3 py-2 rounded-sm text-sm font-medium transition ${
                     sendWindows.includes(w.key)
-                      ? 'bg-[#B08D57] text-[#080604]'
-                      : 'bg-[#141210] text-[#F5EFE0]/60 hover:bg-[#1c1a17] border border-[rgba(176,141,87,0.18)]'
+                      ? 'bg-brass text-ink'
+                      : 'bg-surface text-parchment/60 hover:bg-raised border border-[rgb(var(--t-brass) / 0.18)]'
                   }`}
                 >
                   {w.label}
@@ -579,16 +579,16 @@ export default function EditNewsletterPage() {
 
           {/* Sources */}
           <div>
-            <label className="block text-sm font-medium text-[#F5EFE0]/60 mb-2">Sources</label>
+            <label className="block text-sm font-medium text-parchment/60 mb-2">Sources</label>
             {/* Current sources list */}
             <div className="flex gap-2 flex-wrap mb-3">
               {sources.map(s => (
-                <span key={s.id} className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded bg-[#141210] border border-[rgba(176,141,87,0.18)] text-[#F5EFE0]/80">
+                <span key={s.id} className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded bg-surface border border-[rgb(var(--t-brass) / 0.18)] text-parchment/80">
                   <span className="text-xs" title={s.type === 'youtube' ? 'YouTube' : s.type === 'newsletter' ? 'Newsletter' : 'Twitter'}>
                     {s.type === 'youtube' ? '▶️' : s.type === 'newsletter' ? '✉️' : '🐦'}
                   </span>
                   {s.type === 'newsletter' ? (s.display_name || s.handle) : s.type === 'youtube' ? s.handle : `@${s.handle}`}
-                  <button onClick={() => removeSource(s.id)} className="text-[#F5EFE0]/45 hover:text-[#e8453c] transition">
+                  <button onClick={() => removeSource(s.id)} className="text-parchment/45 hover:text-bear transition">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -602,8 +602,8 @@ export default function EditNewsletterPage() {
                 onClick={() => { setNewSourceType('twitter'); setNewSource(''); }}
                 className={`px-3 py-1 rounded text-xs font-medium transition ${
                   newSourceType === 'twitter'
-                    ? 'bg-[#B08D57] text-[#080604]'
-                    : 'bg-[#141210] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
+                    ? 'bg-brass text-ink'
+                    : 'bg-surface text-parchment/60 hover:text-parchment border border-[rgb(var(--t-brass) / 0.18)]'
                 }`}
               >
                 Twitter
@@ -612,8 +612,8 @@ export default function EditNewsletterPage() {
                 onClick={() => { setNewSourceType('youtube'); setNewSource(''); }}
                 className={`px-3 py-1 rounded text-xs font-medium transition ${
                   newSourceType === 'youtube'
-                    ? 'bg-[#e8453c] text-[#F5EFE0]'
-                    : 'bg-[#141210] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
+                    ? 'bg-bear text-parchment'
+                    : 'bg-surface text-parchment/60 hover:text-parchment border border-[rgb(var(--t-brass) / 0.18)]'
                 }`}
               >
                 YouTube
@@ -626,8 +626,8 @@ export default function EditNewsletterPage() {
                 }}
                 className={`px-3 py-1 rounded text-xs font-medium transition ${
                   newSourceType === 'newsletter'
-                    ? 'bg-[#3ecf6a] text-[#080604]'
-                    : 'bg-[#141210] text-[#F5EFE0]/60 hover:text-[#F5EFE0] border border-[rgba(176,141,87,0.18)]'
+                    ? 'bg-bull text-ink'
+                    : 'bg-surface text-parchment/60 hover:text-parchment border border-[rgb(var(--t-brass) / 0.18)]'
                 }`}
               >
                 Newsletters
@@ -642,11 +642,11 @@ export default function EditNewsletterPage() {
                   onChange={e => setNewSource(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && addSource()}
                   placeholder={newSourceType === 'twitter' ? '@handle' : 'https://www.youtube.com/@ChannelName'}
-                  className="flex-1 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-4 py-2.5 text-[#F5EFE0] text-sm focus:border-[#B08D57] focus:outline-none transition"
+                  className="flex-1 bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-4 py-2.5 text-parchment text-sm focus:border-brass focus:outline-none transition"
                 />
                 <button
                   onClick={addSource}
-                  className="px-4 py-2.5 bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0] text-sm rounded transition"
+                  className="px-4 py-2.5 bg-raised hover:bg-raised/80 text-parchment text-sm rounded transition"
                 >
                   Add
                 </button>
@@ -657,22 +657,22 @@ export default function EditNewsletterPage() {
             {newSourceType === 'newsletter' && (
               <div className="space-y-3">
                 {newslettersLoading && (
-                  <div className="text-[#F5EFE0]/45 text-sm animate-pulse">Loading newsletters...</div>
+                  <div className="text-parchment/45 text-sm animate-pulse">Loading newsletters...</div>
                 )}
                 {!newslettersLoading && newslettersLoaded && availableNewsletters.length === 0 && (
-                  <div className="text-[#F5EFE0]/45 text-sm">No newsletters available yet.</div>
+                  <div className="text-parchment/45 text-sm">No newsletters available yet.</div>
                 )}
                 {availableNewsletters.map(nl => {
                   const alreadyAdded = sources.some(s => s.type === 'newsletter' && s.handle === nl.slug);
                   return (
                     <div
                       key={nl.id}
-                      className="flex items-start justify-between gap-3 p-3 rounded bg-[#141210] border border-[rgba(176,141,87,0.18)]"
+                      className="flex items-start justify-between gap-3 p-3 rounded bg-surface border border-[rgb(var(--t-brass) / 0.18)]"
                     >
                       <div className="min-w-0">
-                        <div className="text-sm font-medium text-[#F5EFE0]">{nl.name}</div>
+                        <div className="text-sm font-medium text-parchment">{nl.name}</div>
                         {nl.description && (
-                          <div className="text-xs text-[#F5EFE0]/60 mt-0.5 line-clamp-2">{nl.description}</div>
+                          <div className="text-xs text-parchment/60 mt-0.5 line-clamp-2">{nl.description}</div>
                         )}
                       </div>
                       <button
@@ -680,8 +680,8 @@ export default function EditNewsletterPage() {
                         disabled={alreadyAdded}
                         className={`shrink-0 px-3 py-1.5 rounded text-xs font-medium transition ${
                           alreadyAdded
-                            ? 'bg-[#1c1a17] text-[#F5EFE0]/45 cursor-default'
-                            : 'bg-[#3ecf6a] hover:bg-[#3ecf6a]/80 text-[#080604]'
+                            ? 'bg-raised text-parchment/45 cursor-default'
+                            : 'bg-bull hover:bg-bull/80 text-ink'
                         }`}
                       >
                         {alreadyAdded ? 'Added' : 'Add'}
@@ -695,52 +695,52 @@ export default function EditNewsletterPage() {
                   {!showRequestForm && !requestSuccess && (
                     <button
                       onClick={() => setShowRequestForm(true)}
-                      className="text-sm text-[#F5EFE0]/60 hover:text-[#F5EFE0] underline underline-offset-2 transition"
+                      className="text-sm text-parchment/60 hover:text-parchment underline underline-offset-2 transition"
                     >
                       Request a newsletter
                     </button>
                   )}
                   {requestSuccess && (
-                    <div className="p-3 rounded bg-[#3ecf6a]/10 border border-[#3ecf6a]/30 text-[#3ecf6a] text-sm">
+                    <div className="p-3 rounded bg-bull/10 border border-bull/30 text-bull text-sm">
                       Request submitted &mdash; we&apos;ll review and add it soon.
                     </div>
                   )}
                   {showRequestForm && !requestSuccess && (
-                    <div className="space-y-2 p-3 rounded bg-[#141210] border border-[rgba(176,141,87,0.18)]">
-                      <div className="text-xs font-medium text-[#F5EFE0]/60 mb-1">Request a newsletter</div>
+                    <div className="space-y-2 p-3 rounded bg-surface border border-[rgb(var(--t-brass) / 0.18)]">
+                      <div className="text-xs font-medium text-parchment/60 mb-1">Request a newsletter</div>
                       <input
                         value={requestName}
                         onChange={e => setRequestName(e.target.value)}
                         placeholder="Newsletter name *"
-                        className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-[#F5EFE0] text-sm focus:border-[#B08D57] focus:outline-none transition"
+                        className="w-full bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-2 text-parchment text-sm focus:border-brass focus:outline-none transition"
                       />
                       <input
                         value={requestUrl}
                         onChange={e => setRequestUrl(e.target.value)}
                         placeholder="URL (optional)"
-                        className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-[#F5EFE0] text-sm focus:border-[#B08D57] focus:outline-none transition"
+                        className="w-full bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-2 text-parchment text-sm focus:border-brass focus:outline-none transition"
                       />
                       <textarea
                         value={requestDesc}
                         onChange={e => setRequestDesc(e.target.value)}
                         placeholder="Description (optional)"
                         rows={2}
-                        className="w-full bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-[#F5EFE0] text-sm focus:border-[#B08D57] focus:outline-none transition resize-none"
+                        className="w-full bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-2 text-parchment text-sm focus:border-brass focus:outline-none transition resize-none"
                       />
                       {requestError && (
-                        <div className="text-[#e8453c] text-xs">{requestError}</div>
+                        <div className="text-bear text-xs">{requestError}</div>
                       )}
                       <div className="flex gap-2 pt-1">
                         <button
                           onClick={submitNewsletterRequest}
                           disabled={requestSubmitting || !requestName.trim()}
-                          className="px-4 py-1.5 bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] text-sm rounded transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
+                          className="px-4 py-1.5 bg-brass hover:bg-brass/80 text-ink text-sm rounded transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
                         >
                           {requestSubmitting ? 'Submitting...' : 'Submit'}
                         </button>
                         <button
                           onClick={() => { setShowRequestForm(false); setRequestError(null); }}
-                          className="px-4 py-1.5 bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0] text-sm rounded transition"
+                          className="px-4 py-1.5 bg-raised hover:bg-raised/80 text-parchment text-sm rounded transition"
                         >
                           Cancel
                         </button>
@@ -754,10 +754,10 @@ export default function EditNewsletterPage() {
 
           {/* Status messages */}
           {error && (
-            <div className="p-3 rounded bg-[#e8453c]/10 border border-[#e8453c]/30 text-[#e8453c] text-sm">{error}</div>
+            <div className="p-3 rounded bg-bear/10 border border-bear/30 text-bear text-sm">{error}</div>
           )}
           {success && (
-            <div className="p-3 rounded bg-[#3ecf6a]/10 border border-[#3ecf6a]/30 text-[#3ecf6a] text-sm">Saved successfully!</div>
+            <div className="p-3 rounded bg-bull/10 border border-bull/30 text-bull text-sm">Saved successfully!</div>
           )}
 
           {/* Actions */}
@@ -765,13 +765,13 @@ export default function EditNewsletterPage() {
             <button
               onClick={handleSave}
               disabled={saving || !name || (!promptTemplateId && !prompt)}
-              className="bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] px-6 py-3 rounded font-semibold transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
+              className="bg-brass hover:bg-brass/80 text-ink px-6 py-3 rounded font-semibold transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
             >
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
             <Link
               href={`/newsletter/${id}`}
-              className="border border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.5)] text-[#F5EFE0]/60 hover:text-[#F5EFE0] px-6 py-3 rounded font-medium transition"
+              className="border border-[rgb(var(--t-brass) / 0.28)] hover:border-[rgb(var(--t-brass) / 0.5)] text-parchment/60 hover:text-parchment px-6 py-3 rounded font-medium transition"
             >
               Cancel
             </Link>

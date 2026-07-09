@@ -177,7 +177,7 @@ export default function LandingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
 
       {/* Hero */}
@@ -185,9 +185,9 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold leading-[0.95] tracking-tight">
             The signal,<br />
-            <span style={{ color: '#B08D57' }}>not the noise.</span>
+            <span style={{ color: 'rgb(var(--t-brass))' }}>not the noise.</span>
           </h1>
-          <p className="text-base sm:text-lg md:text-xl mt-4 sm:mt-6 max-w-xl mx-auto" style={{ color: 'rgba(245,239,224,0.6)' }}>
+          <p className="text-base sm:text-lg md:text-xl mt-4 sm:mt-6 max-w-xl mx-auto" style={{ color: 'rgb(var(--t-parchment) / 0.6)' }}>
             AI-synthesized briefs from the voices you actually trust. Pick your sources, set your lens, get your dispatch.
           </p>
 
@@ -195,14 +195,14 @@ export default function LandingPage() {
             <Link
               href="/onboarding"
               className="inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded font-semibold transition text-sm sm:text-base uppercase tracking-wide"
-              style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}
+              style={{ background: 'rgb(var(--t-brass))', color: 'rgb(var(--t-ink))', fontFamily: 'var(--font-oswald)' }}
             >
               Get started
             </Link>
             <Link
               href="/explore"
               className="inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded font-medium transition text-sm sm:text-base"
-              style={{ border: '1px solid rgba(176,141,87,0.28)', color: 'rgba(245,239,224,0.7)' }}
+              style={{ border: '1px solid rgb(var(--t-brass) / 0.28)', color: 'rgb(var(--t-parchment) / 0.7)' }}
             >
               Browse dispatches →
             </Link>
@@ -221,7 +221,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <div className="flex items-end justify-between mb-10">
             <h2 className="text-2xl md:text-3xl font-bold">Popular dispatches</h2>
-            <Link href="/explore" className="text-sm font-medium transition" style={{ color: '#B08D57' }}>
+            <Link href="/explore" className="text-sm font-medium transition" style={{ color: 'rgb(var(--t-brass))' }}>
               View all →
             </Link>
           </div>
@@ -230,53 +230,53 @@ export default function LandingPage() {
               <div
                 key={nl.id}
                 className="group rounded-sm transition-all duration-200"
-                style={{ border: '1px solid rgba(176,141,87,0.18)' }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(176,141,87,0.4)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(176,141,87,0.04)'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(176,141,87,0.18)'; (e.currentTarget as HTMLDivElement).style.background = ''; }}
+                style={{ border: '1px solid rgb(var(--t-brass) / 0.18)' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgb(var(--t-brass) / 0.4)'; (e.currentTarget as HTMLDivElement).style.background = 'rgb(var(--t-brass) / 0.04)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgb(var(--t-brass) / 0.18)'; (e.currentTarget as HTMLDivElement).style.background = ''; }}
               >
                 <div onClick={() => handleCardClick(nl)} className="p-5 cursor-pointer text-left">
                   <div className="flex items-start justify-between mb-3">
-                    <h3 className="font-semibold leading-tight transition" style={{ color: '#F5EFE0' }}>
+                    <h3 className="font-semibold leading-tight transition" style={{ color: 'rgb(var(--t-parchment))' }}>
                       {nl.name}
                     </h3>
-                    <span className="text-[11px] px-2 py-0.5 rounded-sm shrink-0 ml-3 font-medium" style={{ background: 'rgba(176,141,87,0.08)', color: 'rgba(245,239,224,0.45)', fontFamily: 'var(--font-mono)' }}>
+                    <span className="text-[11px] px-2 py-0.5 rounded-sm shrink-0 ml-3 font-medium" style={{ background: 'rgb(var(--t-brass) / 0.08)', color: 'rgb(var(--t-parchment) / 0.45)', fontFamily: 'var(--font-mono)' }}>
                       {CADENCE_LABELS[nl.schedule_cadence]}
                     </span>
                   </div>
-                  <p className="text-sm leading-relaxed mb-4" style={{ color: 'rgba(245,239,224,0.45)' }}>
+                  <p className="text-sm leading-relaxed mb-4" style={{ color: 'rgb(var(--t-parchment) / 0.45)' }}>
                     {nl.description}
                   </p>
                   <div className="flex items-center justify-between">
                     <div className="flex gap-1.5 flex-wrap">
                       {nl.labels.slice(0, 3).map((label) => (
-                        <span key={label} className="text-[11px] px-2 py-0.5 rounded-sm" style={{ background: 'rgba(176,141,87,0.08)', color: 'rgba(245,239,224,0.45)' }}>
+                        <span key={label} className="text-[11px] px-2 py-0.5 rounded-sm" style={{ background: 'rgb(var(--t-brass) / 0.08)', color: 'rgb(var(--t-parchment) / 0.45)' }}>
                           {label}
                         </span>
                       ))}
                     </div>
-                    <span className="text-xs" style={{ color: 'rgba(245,239,224,0.3)', fontFamily: 'var(--font-mono)' }}>{nl.source_count} sources</span>
+                    <span className="text-xs" style={{ color: 'rgb(var(--t-parchment) / 0.3)', fontFamily: 'var(--font-mono)' }}>{nl.source_count} sources</span>
                   </div>
                   {nl.curator && (
-                    <div className="flex items-center gap-1.5 mt-3 pt-3" style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}>
+                    <div className="flex items-center gap-1.5 mt-3 pt-3" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.18)' }}>
                       {nl.curator.avatar_url ? (
                         <img src={nl.curator.avatar_url} alt="" className="w-4 h-4 rounded-sm" />
                       ) : (
-                        <div className="w-4 h-4 rounded-sm" style={{ background: '#1c1a17' }} />
+                        <div className="w-4 h-4 rounded-sm" style={{ background: 'rgb(var(--t-raised))' }} />
                       )}
-                      <span className="text-xs" style={{ color: 'rgba(245,239,224,0.3)' }}>
+                      <span className="text-xs" style={{ color: 'rgb(var(--t-parchment) / 0.3)' }}>
                         {nl.curator.twitter_handle ? `@${nl.curator.twitter_handle}` : nl.curator.name || 'Anonymous'}
                       </span>
                     </div>
                   )}
                 </div>
                 {!nl.id.startsWith('placeholder-') && (
-                  <div className="px-5 pb-3 flex justify-end" style={{ borderTop: '1px solid rgba(176,141,87,0.08)' }}>
+                  <div className="px-5 pb-3 flex justify-end" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.08)' }}>
                     <Link
                       href={`/create?template_dispatch=${nl.id}`}
                       className="text-xs transition"
-                      style={{ color: 'rgba(176,141,87,0.5)' }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#B08D57'; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(176,141,87,0.5)'; }}
+                      style={{ color: 'rgb(var(--t-brass) / 0.5)' }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = 'rgb(var(--t-brass))'; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = 'rgb(var(--t-brass) / 0.5)'; }}
                     >
                       Use as starting point →
                     </Link>
@@ -289,37 +289,37 @@ export default function LandingPage() {
       </section>
 
       {/* Divider */}
-      <div style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
+      <div style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.18)' }} />
 
       {/* Pricing + Creator CTA — combined, compact */}
       <section className="container mx-auto px-4 py-20 grain">
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-3 gap-0 mb-16">
-            <div className="md:pr-10 pb-8 md:pb-0" style={{ borderRight: '1px solid rgba(176,141,87,0.18)' }}>
+            <div className="md:pr-10 pb-8 md:pb-0" style={{ borderRight: '1px solid rgb(var(--t-brass) / 0.18)' }}>
               <div className="text-4xl font-bold mb-2">{NEW_USER_BONUS_CREDITS.toLocaleString()}</div>
-              <div className="text-sm" style={{ color: 'rgba(245,239,224,0.5)' }}>free credits on signup, no card</div>
+              <div className="text-sm" style={{ color: 'rgb(var(--t-parchment) / 0.5)' }}>free credits on signup, no card</div>
             </div>
-            <div className="md:px-10 pb-8 md:pb-0" style={{ borderRight: '1px solid rgba(176,141,87,0.18)' }}>
-              <div className="text-4xl font-bold mb-2">${5}<span className="text-base font-normal" style={{ color: 'rgba(245,239,224,0.45)' }}>/mo</span></div>
-              <div className="text-sm" style={{ color: 'rgba(245,239,224,0.5)' }}>Pro: 500 credits + daily personal dispatch</div>
+            <div className="md:px-10 pb-8 md:pb-0" style={{ borderRight: '1px solid rgb(var(--t-brass) / 0.18)' }}>
+              <div className="text-4xl font-bold mb-2">${5}<span className="text-base font-normal" style={{ color: 'rgb(var(--t-parchment) / 0.45)' }}>/mo</span></div>
+              <div className="text-sm" style={{ color: 'rgb(var(--t-parchment) / 0.5)' }}>Pro: 500 credits + daily personal dispatch</div>
             </div>
             <div className="md:pl-10">
               <div className="text-4xl font-bold mb-2">50%</div>
-              <div className="text-sm" style={{ color: 'rgba(245,239,224,0.5)' }}>creator share on every subscriber</div>
+              <div className="text-sm" style={{ color: 'rgb(var(--t-parchment) / 0.5)' }}>creator share on every subscriber</div>
             </div>
           </div>
 
           <div className="text-center max-w-2xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">
-              Curate the voices. <span style={{ color: '#B08D57' }}>Earn from your edge.</span>
+              Curate the voices. <span style={{ color: 'rgb(var(--t-brass))' }}>Earn from your edge.</span>
             </h2>
-            <p className="mb-8 text-base" style={{ color: 'rgba(245,239,224,0.55)' }}>
+            <p className="mb-8 text-base" style={{ color: 'rgb(var(--t-parchment) / 0.55)' }}>
               Bundle dispatches into a junto. Charge subscribers. Keep half.
             </p>
             <Link
               href="/create"
               className="inline-flex items-center justify-center px-8 py-4 rounded font-semibold transition text-base uppercase tracking-wide"
-              style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald)' }}
+              style={{ background: 'rgb(var(--t-brass))', color: 'rgb(var(--t-ink))', fontFamily: 'var(--font-oswald)' }}
             >
               Start creating
             </Link>
@@ -328,13 +328,13 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }}>
+      <footer style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.18)' }}>
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="text-sm" style={{ color: 'rgba(245,239,224,0.35)' }}>
-              <span className="font-semibold" style={{ color: 'rgba(245,239,224,0.55)' }}>myjunto</span> — intelligence from signal, not noise
+            <div className="text-sm" style={{ color: 'rgb(var(--t-parchment) / 0.35)' }}>
+              <span className="font-semibold" style={{ color: 'rgb(var(--t-parchment) / 0.55)' }}>myjunto</span> — intelligence from signal, not noise
             </div>
-            <div className="flex gap-6 text-sm" style={{ color: 'rgba(245,239,224,0.35)' }}>
+            <div className="flex gap-6 text-sm" style={{ color: 'rgb(var(--t-parchment) / 0.35)' }}>
               <Link href="/juntos" className="transition hover:opacity-80">Juntos</Link>
               <Link href="/explore" className="transition hover:opacity-80">Explore</Link>
               <Link href="/create" className="transition hover:opacity-80">Create</Link>
@@ -406,16 +406,16 @@ function StepRow({ n, title, body, visual, reverse }: { n: string; title: string
   return (
     <div className={`grid md:grid-cols-2 gap-10 items-center ${reverse ? 'md:[direction:rtl]' : ''}`}>
       <div className="md:[direction:ltr]">
-        <div className="text-xs font-mono mb-3" style={{ color: '#B08D57' }}>{n}</div>
-        <h3 className="text-3xl md:text-4xl font-bold mb-4 leading-tight" style={{ color: '#F5EFE0' }}>
+        <div className="text-xs font-mono mb-3" style={{ color: 'rgb(var(--t-brass))' }}>{n}</div>
+        <h3 className="text-3xl md:text-4xl font-bold mb-4 leading-tight" style={{ color: 'rgb(var(--t-parchment))' }}>
           {title}
         </h3>
-        <p className="text-base leading-relaxed" style={{ color: 'rgba(245,239,224,0.6)' }}>{body}</p>
+        <p className="text-base leading-relaxed" style={{ color: 'rgb(var(--t-parchment) / 0.6)' }}>{body}</p>
       </div>
       <div className="md:[direction:ltr]">
         <div
           className="rounded-sm p-6"
-          style={{ border: '1px solid rgba(176,141,87,0.18)', background: 'rgba(176,141,87,0.02)' }}
+          style={{ border: '1px solid rgb(var(--t-brass) / 0.18)', background: 'rgb(var(--t-brass) / 0.02)' }}
         >
           {visual}
         </div>
@@ -435,19 +435,19 @@ function ChooseJuntoVisual() {
   ];
   return (
     <div className="space-y-2">
-      <div className="text-[10px] uppercase tracking-widest mb-3" style={{ color: 'rgba(245,239,224,0.4)', fontFamily: 'var(--font-oswald)' }}>
+      <div className="text-[10px] uppercase tracking-widest mb-3" style={{ color: 'rgb(var(--t-parchment) / 0.4)', fontFamily: 'var(--font-oswald)' }}>
         Your Junto · 6 voices
       </div>
       {voices.map((v) => (
-        <div key={v.handle} className="flex items-center gap-3 p-2 rounded-sm" style={{ background: 'rgba(176,141,87,0.04)' }}>
-          <div className="w-7 h-7 rounded-sm flex items-center justify-center" style={{ background: 'rgba(176,141,87,0.12)' }}>
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" style={{ color: '#B08D57' }}>
+        <div key={v.handle} className="flex items-center gap-3 p-2 rounded-sm" style={{ background: 'rgb(var(--t-brass) / 0.04)' }}>
+          <div className="w-7 h-7 rounded-sm flex items-center justify-center" style={{ background: 'rgb(var(--t-brass) / 0.12)' }}>
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'rgb(var(--t-brass))' }}>
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium truncate" style={{ color: '#F5EFE0' }}>@{v.handle}</div>
-            <div className="text-xs truncate" style={{ color: 'rgba(245,239,224,0.4)' }}>{v.name}</div>
+            <div className="text-sm font-medium truncate" style={{ color: 'rgb(var(--t-parchment))' }}>@{v.handle}</div>
+            <div className="text-xs truncate" style={{ color: 'rgb(var(--t-parchment) / 0.4)' }}>{v.name}</div>
           </div>
         </div>
       ))}
@@ -458,15 +458,15 @@ function ChooseJuntoVisual() {
 function LensVisual() {
   return (
     <div className="space-y-3">
-      <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: 'rgba(245,239,224,0.4)', fontFamily: 'var(--font-oswald)' }}>
+      <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: 'rgb(var(--t-parchment) / 0.4)', fontFamily: 'var(--font-oswald)' }}>
         Your Lens
       </div>
-      <div className="rounded-sm p-4 text-sm leading-relaxed" style={{ background: 'rgba(8,6,4,0.6)', border: '1px solid rgba(176,141,87,0.18)', color: 'rgba(245,239,224,0.85)', fontFamily: 'var(--font-mono)' }}>
-        <span style={{ color: '#B08D57' }}>&gt;</span> I&apos;m a long-only investor hunting under-followed small-caps. Surface contrarian theses, technical breakouts, and unusual options flow. Skip macro hot takes.
+      <div className="rounded-sm p-4 text-sm leading-relaxed" style={{ background: 'rgb(var(--t-ink) / 0.6)', border: '1px solid rgb(var(--t-brass) / 0.18)', color: 'rgb(var(--t-parchment) / 0.85)', fontFamily: 'var(--font-mono)' }}>
+        <span style={{ color: 'rgb(var(--t-brass))' }}>&gt;</span> I&apos;m a long-only investor hunting under-followed small-caps. Surface contrarian theses, technical breakouts, and unusual options flow. Skip macro hot takes.
       </div>
       <div className="flex gap-2 flex-wrap pt-2">
         {['small-cap', 'long-only', 'breakouts', 'contrarian'].map((tag) => (
-          <span key={tag} className="text-[11px] px-2 py-0.5 rounded-sm" style={{ background: 'rgba(176,141,87,0.08)', color: 'rgba(245,239,224,0.55)' }}>
+          <span key={tag} className="text-[11px] px-2 py-0.5 rounded-sm" style={{ background: 'rgb(var(--t-brass) / 0.08)', color: 'rgb(var(--t-parchment) / 0.55)' }}>
             {tag}
           </span>
         ))}
@@ -483,22 +483,22 @@ function DeliveryVisual() {
   ];
   return (
     <div className="space-y-2">
-      <div className="text-[10px] uppercase tracking-widest mb-3" style={{ color: 'rgba(245,239,224,0.4)', fontFamily: 'var(--font-oswald)' }}>
+      <div className="text-[10px] uppercase tracking-widest mb-3" style={{ color: 'rgb(var(--t-parchment) / 0.4)', fontFamily: 'var(--font-oswald)' }}>
         Delivery
       </div>
       {channels.map((c) => (
-        <div key={c.name} className="flex items-center justify-between p-3 rounded-sm" style={{ border: '1px solid rgba(176,141,87,0.18)', background: 'rgba(176,141,87,0.03)' }}>
+        <div key={c.name} className="flex items-center justify-between p-3 rounded-sm" style={{ border: '1px solid rgb(var(--t-brass) / 0.18)', background: 'rgb(var(--t-brass) / 0.03)' }}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-sm flex items-center justify-center text-sm" style={{ background: 'rgba(176,141,87,0.1)', color: '#B08D57' }}>
+            <div className="w-8 h-8 rounded-sm flex items-center justify-center text-sm" style={{ background: 'rgb(var(--t-brass) / 0.1)', color: 'rgb(var(--t-brass))' }}>
               {c.icon}
             </div>
             <div>
-              <div className="text-sm font-medium" style={{ color: '#F5EFE0' }}>{c.name}</div>
-              <div className="text-xs" style={{ color: 'rgba(245,239,224,0.4)' }}>{c.meta}</div>
+              <div className="text-sm font-medium" style={{ color: 'rgb(var(--t-parchment))' }}>{c.name}</div>
+              <div className="text-xs" style={{ color: 'rgb(var(--t-parchment) / 0.4)' }}>{c.meta}</div>
             </div>
           </div>
-          <div className="w-9 h-5 rounded-full p-0.5" style={{ background: 'rgba(176,141,87,0.4)' }}>
-            <div className="w-4 h-4 rounded-full ml-auto" style={{ background: '#F5EFE0' }} />
+          <div className="w-9 h-5 rounded-full p-0.5" style={{ background: 'rgb(var(--t-brass) / 0.4)' }}>
+            <div className="w-4 h-4 rounded-full ml-auto" style={{ background: 'rgb(var(--t-parchment))' }} />
           </div>
         </div>
       ))}
@@ -533,12 +533,12 @@ function NewsletterModal({
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative rounded-sm max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto" style={{ background: '#141210', border: '1px solid rgba(176,141,87,0.28)' }}>
+      <div className="relative rounded-sm max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto" style={{ background: 'rgb(var(--t-surface))', border: '1px solid rgb(var(--t-brass) / 0.28)' }}>
         {/* Close */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 transition z-10"
-          style={{ color: 'rgba(245,239,224,0.4)' }}
+          style={{ color: 'rgb(var(--t-parchment) / 0.4)' }}
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -548,7 +548,7 @@ function NewsletterModal({
         {/* Header */}
         <div className="p-6 pb-4">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-sm flex items-center justify-center text-xl shrink-0" style={{ background: '#1c1a17' }}>
+            <div className="w-12 h-12 rounded-sm flex items-center justify-center text-xl shrink-0" style={{ background: 'rgb(var(--t-raised))' }}>
               {ICON_MAP[newsletter.name] || '📬'}
             </div>
             <div className="flex-1 min-w-0 pr-6">
@@ -558,27 +558,27 @@ function NewsletterModal({
                   {newsletter.curator.avatar_url ? (
                     <img src={newsletter.curator.avatar_url} alt="" className="w-5 h-5 rounded-sm" />
                   ) : (
-                    <div className="w-5 h-5 rounded-sm" style={{ background: '#1c1a17' }} />
+                    <div className="w-5 h-5 rounded-sm" style={{ background: 'rgb(var(--t-raised))' }} />
                   )}
-                  <span className="text-xs" style={{ color: 'rgba(245,239,224,0.45)' }}>
+                  <span className="text-xs" style={{ color: 'rgb(var(--t-parchment) / 0.45)' }}>
                     Curated by{' '}
                     {newsletter.curator.twitter_handle ? (
                       <Link
                         href={`/sources/${newsletter.curator.twitter_handle}`}
                         className="transition"
-                        style={{ color: '#B08D57' }}
+                        style={{ color: 'rgb(var(--t-brass))' }}
                         onClick={(e) => e.stopPropagation()}
                       >
                         @{newsletter.curator.twitter_handle}
                       </Link>
                     ) : (
-                      <span style={{ color: 'rgba(245,239,224,0.7)' }}>{newsletter.curator.name || 'Anonymous'}</span>
+                      <span style={{ color: 'rgb(var(--t-parchment) / 0.7)' }}>{newsletter.curator.name || 'Anonymous'}</span>
                     )}
                   </span>
                 </div>
               )}
               {newsletter.description && (
-                <p className="text-sm mt-1.5 leading-relaxed" style={{ color: 'rgba(245,239,224,0.55)' }}>{newsletter.description}</p>
+                <p className="text-sm mt-1.5 leading-relaxed" style={{ color: 'rgb(var(--t-parchment) / 0.55)' }}>{newsletter.description}</p>
               )}
             </div>
           </div>
@@ -587,7 +587,7 @@ function NewsletterModal({
           {newsletter.labels.length > 0 && (
             <div className="flex gap-2 flex-wrap mt-4">
               {newsletter.labels.map((label) => (
-                <span key={label} className="text-xs px-2.5 py-1 rounded-sm font-medium" style={{ background: 'rgba(176,141,87,0.08)', color: 'rgba(245,239,224,0.55)' }}>
+                <span key={label} className="text-xs px-2.5 py-1 rounded-sm font-medium" style={{ background: 'rgb(var(--t-brass) / 0.08)', color: 'rgb(var(--t-parchment) / 0.55)' }}>
                   {label}
                 </span>
               ))}
@@ -597,7 +597,7 @@ function NewsletterModal({
 
         {/* Sources */}
         <div className="px-6 pb-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>
+          <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'rgb(var(--t-parchment) / 0.35)', fontFamily: 'var(--font-oswald)' }}>
             Sources ({newsletter.source_count})
           </h3>
           <div className="flex gap-2 flex-wrap">
@@ -606,38 +606,38 @@ function NewsletterModal({
                 <span
                   key={source.id}
                   className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-sm"
-                  style={{ background: 'rgba(176,141,87,0.06)', border: '1px solid rgba(176,141,87,0.18)', color: 'rgba(245,239,224,0.7)' }}
+                  style={{ background: 'rgb(var(--t-brass) / 0.06)', border: '1px solid rgb(var(--t-brass) / 0.18)', color: 'rgb(var(--t-parchment) / 0.7)' }}
                 >
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'rgba(245,239,224,0.35)' }}>
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'rgb(var(--t-parchment) / 0.35)' }}>
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                   </svg>
                   @{source.handle}
                 </span>
               ))
             ) : (
-              <span className="text-xs" style={{ color: 'rgba(245,239,224,0.35)' }}>{newsletter.source_count} curated sources</span>
+              <span className="text-xs" style={{ color: 'rgb(var(--t-parchment) / 0.35)' }}>{newsletter.source_count} curated sources</span>
             )}
           </div>
         </div>
 
         {/* Divider */}
-        <div className="mx-6" style={{ borderTop: '1px solid rgba(176,141,87,0.18)' }} />
+        <div className="mx-6" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.18)' }} />
 
         {/* Subscribe / Cadence Options */}
         <div className="p-6">
-          <h3 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-oswald)' }}>
+          <h3 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: 'rgb(var(--t-parchment) / 0.35)', fontFamily: 'var(--font-oswald)' }}>
             Subscribe
           </h3>
 
           {subscribeSuccess ? (
             <div className="text-center py-4">
               <div className="w-12 h-12 rounded-sm flex items-center justify-center mx-auto mb-3" style={{ background: 'rgba(62,207,106,0.12)' }}>
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: '#3ecf6a' }}>
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'rgb(var(--t-bull))' }}>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <p className="font-semibold" style={{ color: '#3ecf6a' }}>Subscribed!</p>
-              <p className="text-sm mt-1" style={{ color: 'rgba(245,239,224,0.55)' }}>
+              <p className="font-semibold" style={{ color: 'rgb(var(--t-bull))' }}>Subscribed!</p>
+              <p className="text-sm mt-1" style={{ color: 'rgb(var(--t-parchment) / 0.55)' }}>
                 You&apos;ll receive {CADENCE_LABELS[subscribeSuccess]?.toLowerCase()} updates.
               </p>
             </div>
@@ -652,21 +652,21 @@ function NewsletterModal({
                     onClick={() => onSubscribe(newsletter.id, option.value)}
                     disabled={subscribing}
                     className="w-full flex items-center justify-between p-4 rounded-sm transition-all group disabled:opacity-50 cursor-pointer"
-                    style={{ border: '1px solid rgba(176,141,87,0.18)' }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(176,141,87,0.4)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(176,141,87,0.04)'; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(176,141,87,0.18)'; (e.currentTarget as HTMLButtonElement).style.background = ''; }}
+                    style={{ border: '1px solid rgb(var(--t-brass) / 0.18)' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgb(var(--t-brass) / 0.4)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgb(var(--t-brass) / 0.04)'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgb(var(--t-brass) / 0.18)'; (e.currentTarget as HTMLButtonElement).style.background = ''; }}
                   >
                     <div className="text-left">
-                      <div className="font-medium transition" style={{ color: '#F5EFE0' }}>
+                      <div className="font-medium transition" style={{ color: 'rgb(var(--t-parchment))' }}>
                         {option.label}
                       </div>
-                      <div className="text-xs mt-0.5" style={{ color: 'rgba(245,239,224,0.4)' }}>{option.description}</div>
+                      <div className="text-xs mt-0.5" style={{ color: 'rgb(var(--t-parchment) / 0.4)' }}>{option.description}</div>
                     </div>
                     <div className="text-right shrink-0 ml-4">
-                      <div className="text-sm font-semibold" style={{ color: 'rgba(245,239,224,0.7)', fontFamily: 'var(--font-mono)' }}>
-                        {creditCost} cr<span style={{ color: 'rgba(245,239,224,0.35)' }}>/send</span>
+                      <div className="text-sm font-semibold" style={{ color: 'rgb(var(--t-parchment) / 0.7)', fontFamily: 'var(--font-mono)' }}>
+                        {creditCost} cr<span style={{ color: 'rgb(var(--t-parchment) / 0.35)' }}>/send</span>
                       </div>
-                      <div className="text-xs" style={{ color: 'rgba(245,239,224,0.35)', fontFamily: 'var(--font-mono)' }}>
+                      <div className="text-xs" style={{ color: 'rgb(var(--t-parchment) / 0.35)', fontFamily: 'var(--font-mono)' }}>
                         ~{period.perWeek} cr/wk ({creditsToDollars(period.perWeek)})
                       </div>
                     </div>
@@ -677,7 +677,7 @@ function NewsletterModal({
           )}
 
           {!isAuthenticated && !subscribeSuccess && (
-            <p className="text-xs text-center mt-4" style={{ color: 'rgba(245,239,224,0.35)' }}>
+            <p className="text-xs text-center mt-4" style={{ color: 'rgb(var(--t-parchment) / 0.35)' }}>
               Sign in required to subscribe &bull; New users get {NEW_USER_BONUS_CREDITS.toLocaleString()} free credits
             </p>
           )}

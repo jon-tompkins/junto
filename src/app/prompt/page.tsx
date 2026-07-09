@@ -140,7 +140,7 @@ export default function PromptPage() {
     return (
       <SidebarLayout>
         <div className="flex items-center justify-center h-full">
-          <div className="text-neutral-400">Loading...</div>
+          <div className="text-parchment/55">Loading...</div>
         </div>
       </SidebarLayout>
     );
@@ -151,7 +151,7 @@ export default function PromptPage() {
       <div className="px-8 py-12 max-w-3xl">
         <div className="mb-8">
           <h2 className="text-2xl font-light mb-2">Prompt</h2>
-          <p className="text-neutral-400">
+          <p className="text-parchment/55">
             Customize the system prompt used to generate your newsletter.
           </p>
         </div>
@@ -176,7 +176,7 @@ export default function PromptPage() {
               setPrompt(e.target.value);
               setSuccess('');
             }}
-            className="w-full h-64 sm:h-96 px-4 py-3 bg-neutral-950 border border-neutral-700 focus:border-white focus:outline-none transition-colors font-mono text-sm resize-none"
+            className="w-full h-64 sm:h-96 px-4 py-3 bg-ink border border-brass/28 focus:border-brass/40 focus:outline-none transition-colors font-mono text-sm resize-none"
             placeholder="Enter your custom prompt..."
           />
         </div>
@@ -186,23 +186,23 @@ export default function PromptPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 px-8 py-4 bg-white text-black hover:bg-neutral-200 transition-colors disabled:bg-neutral-600"
+            className="flex-1 px-8 py-4 bg-surface text-ink hover:bg-raised transition-colors disabled:bg-raised"
           >
             {saving ? 'Saving...' : 'Save Prompt'}
           </button>
           <button
             onClick={handleReset}
-            className="px-8 py-4 border border-neutral-700 hover:border-white transition-colors"
+            className="px-8 py-4 border border-brass/28 hover:border-brass/40 transition-colors"
           >
             Reset to Default
           </button>
         </div>
 
         {/* Tips */}
-        <div className="mt-8 p-4 border border-neutral-800 bg-neutral-950 text-sm">
+        <div className="mt-8 p-4 border border-brass/20 bg-ink text-sm">
           <div className="font-medium mb-2">Tips</div>
-          <ul className="text-neutral-400 space-y-1">
-            <li>• Use <code className="text-neutral-300">{"{{keywords}}"}</code> to insert your focus keywords</li>
+          <ul className="text-parchment/55 space-y-1">
+            <li>• Use <code className="text-parchment/70">{"{{keywords}}"}</code> to insert your focus keywords</li>
             <li>• The prompt receives tweets grouped by author</li>
             <li>• Keep the SUBJECT: line format for email subject extraction</li>
           </ul>

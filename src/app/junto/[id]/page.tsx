@@ -48,15 +48,15 @@ interface JuntoData {
 }
 
 const STANCE_BADGE: Record<string, string> = {
-  bullish: 'bg-[#3ecf6a]/15 text-[#3ecf6a] border border-[#3ecf6a]/40',
-  bearish: 'bg-[#e8453c]/15 text-[#e8453c] border border-[#e8453c]/40',
+  bullish: 'bg-bull/15 text-bull border border-bull/40',
+  bearish: 'bg-bear/15 text-bear border border-bear/40',
   cautious: 'bg-amber-900/40 text-amber-400 border border-amber-700/40',
-  neutral: 'bg-[#1c1a17] text-[#F5EFE0]/45 border border-[rgba(176,141,87,0.18)]',
+  neutral: 'bg-raised text-parchment/45 border border-[rgb(var(--t-brass) / 0.18)]',
 };
 
 const STANCE_BG: Record<string, string> = {
-  bullish: '#3ecf6a',
-  bearish: '#e8453c',
+  bullish: 'rgb(var(--t-bull))',
+  bearish: 'rgb(var(--t-bear))',
   cautious: '#d97706',
   neutral: '#4b5563',
 };
@@ -134,18 +134,18 @@ function PositionsSection({ items }: { items: HeatmapPosition[] }) {
   return (
     <section className="mb-10">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider font-[var(--font-oswald)]">
+        <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider font-[var(--font-oswald)]">
           Positions
         </h2>
-        <div className="flex rounded overflow-hidden border border-[rgba(176,141,87,0.28)]">
+        <div className="flex rounded overflow-hidden border border-[rgb(var(--t-brass) / 0.28)]">
           {(['heatmap', 'list'] as const).map(v => (
             <button
               key={v}
               onClick={() => setView(v)}
               className="px-3 py-1 text-xs transition"
               style={{
-                background: view === v ? '#B08D57' : '#141210',
-                color: view === v ? '#080604' : 'rgba(245,239,224,0.5)',
+                background: view === v ? 'rgb(var(--t-brass))' : 'rgb(var(--t-surface))',
+                color: view === v ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.5)',
                 fontFamily: 'var(--font-oswald)',
               }}
             >
@@ -156,14 +156,14 @@ function PositionsSection({ items }: { items: HeatmapPosition[] }) {
       </div>
 
       {items.length === 0 ? (
-        <p className="text-[#F5EFE0]/45 text-sm">No tracked stances across this junto yet.</p>
+        <p className="text-parchment/45 text-sm">No tracked stances across this junto yet.</p>
       ) : view === 'heatmap' ? (
         <PositionsHeatmap items={items} height={420} />
       ) : (
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
+        <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[rgba(176,141,87,0.28)] text-xs uppercase text-[#F5EFE0]/30 font-[var(--font-oswald)]">
+              <tr className="border-b border-[rgb(var(--t-brass) / 0.28)] text-xs uppercase text-parchment/30 font-[var(--font-oswald)]">
                 <th className="py-2 px-4 text-left">Ticker</th>
                 <th className="py-2 px-4 text-left">Stance</th>
                 <th className="py-2 px-4 text-right">Sources</th>
@@ -173,9 +173,9 @@ function PositionsSection({ items }: { items: HeatmapPosition[] }) {
               {items.map(item => {
                 const bg = STANCE_BG[item.stance] ?? '#4b5563';
                 return (
-                  <tr key={`${item.ticker}-${item.stance}`} className="border-b border-[rgba(176,141,87,0.1)] last:border-0">
+                  <tr key={`${item.ticker}-${item.stance}`} className="border-b border-[rgb(var(--t-brass) / 0.1)] last:border-0">
                     <td className="py-2 px-4">
-                      <Link href={`/positions/${encodeURIComponent(item.ticker)}`} className="font-mono font-bold hover:text-[#B08D57] transition">
+                      <Link href={`/positions/${encodeURIComponent(item.ticker)}`} className="font-mono font-bold hover:text-brass transition">
                         {item.ticker}
                       </Link>
                     </td>
@@ -184,7 +184,7 @@ function PositionsSection({ items }: { items: HeatmapPosition[] }) {
                         {STANCE_LABEL[item.stance] ?? item.stance}
                       </span>
                     </td>
-                    <td className="py-2 px-4 text-right text-[#F5EFE0]/60">{item.count}</td>
+                    <td className="py-2 px-4 text-right text-parchment/60">{item.count}</td>
                   </tr>
                 );
               })}
@@ -225,13 +225,13 @@ export default function JuntoViewPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+      <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
         <div className="container mx-auto px-4 py-16 max-w-4xl">
           <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-[#141210] rounded w-1/3" />
-            <div className="h-4 bg-[#141210]/60 rounded w-2/3" />
-            <div className="h-32 bg-[#141210]/40 rounded mt-6" />
+            <div className="h-8 bg-surface rounded w-1/3" />
+            <div className="h-4 bg-surface/60 rounded w-2/3" />
+            <div className="h-32 bg-surface/40 rounded mt-6" />
           </div>
         </div>
       </main>
@@ -240,11 +240,11 @@ export default function JuntoViewPage() {
 
   if (notFound || !junto) {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+      <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
         <div className="container mx-auto px-4 py-16 max-w-3xl text-center">
-          <p className="text-[#F5EFE0]/60 mb-4">Junto not found</p>
-          <Link href="/dashboard" className="text-[#B08D57] hover:text-[#B08D57]/80 text-sm">
+          <p className="text-parchment/60 mb-4">Junto not found</p>
+          <Link href="/dashboard" className="text-brass hover:text-brass/80 text-sm">
             ← Dashboard
           </Link>
         </div>
@@ -264,20 +264,20 @@ export default function JuntoViewPage() {
   const isOwner = junto.is_owner === true;
 
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Link href="/dashboard" className="text-[#F5EFE0]/45 hover:text-[#F5EFE0]/80 text-sm transition mb-6 inline-block">
+        <Link href="/dashboard" className="text-parchment/45 hover:text-parchment/80 text-sm transition mb-6 inline-block">
           ← Dashboard
         </Link>
 
         {/* Header card */}
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded p-6 mb-8">
+        <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6 mb-8">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="min-w-0 flex-1">
               <h1 className="text-3xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">{junto.name}</h1>
-              {junto.description && <p className="text-[#F5EFE0]/60 mb-3">{junto.description}</p>}
-              <p className="text-sm text-[#F5EFE0]/45">
+              {junto.description && <p className="text-parchment/60 mb-3">{junto.description}</p>}
+              <p className="text-sm text-parchment/45">
                 {sources.length} {sources.length === 1 ? 'member' : 'members'}
                 {junto.is_public && <span className="ml-3">· Public</span>}
               </p>
@@ -286,7 +286,7 @@ export default function JuntoViewPage() {
               {isOwner && (
                 <Link
                   href={`/junto/${junto.id}/edit`}
-                  className="inline-flex items-center gap-2 text-[#B08D57] hover:text-[#080604] hover:bg-[#B08D57] text-sm border border-[#B08D57] rounded px-4 py-2 font-[var(--font-oswald)] uppercase tracking-wide transition"
+                  className="inline-flex items-center gap-2 text-brass hover:text-ink hover:bg-brass text-sm border border-brass rounded px-4 py-2 font-[var(--font-oswald)] uppercase tracking-wide transition"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -296,7 +296,7 @@ export default function JuntoViewPage() {
               )}
               <Link
                 href={`/create?junto_id=${junto.id}`}
-                className="bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] rounded px-4 py-2 font-[var(--font-oswald)] uppercase tracking-wide transition"
+                className="bg-brass hover:bg-brass/80 text-ink rounded px-4 py-2 font-[var(--font-oswald)] uppercase tracking-wide transition"
               >
                 Create Dispatch →
               </Link>
@@ -311,9 +311,9 @@ export default function JuntoViewPage() {
 
         {/* Members section */}
         <section className="mb-10">
-          <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">Members</h2>
+          <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">Members</h2>
           {sources.length === 0 ? (
-            <p className="text-[#F5EFE0]/45 text-sm">No sources yet.</p>
+            <p className="text-parchment/45 text-sm">No sources yet.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {sources.map((js) => {
@@ -327,19 +327,19 @@ export default function JuntoViewPage() {
                   <Link
                     key={js.id}
                     href={`/sources/${s.handle_or_url}`}
-                    className="bg-[#141210] border border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.5)] rounded p-4 transition group"
+                    className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] hover:border-[rgb(var(--t-brass) / 0.5)] rounded p-4 transition group"
                   >
                     <div className="flex items-center gap-3 mb-3">
                       {s.avatar_url ? (
-                        <img src={s.avatar_url} alt={s.handle_or_url} className="w-10 h-10 rounded bg-[#1c1a17] object-cover" />
+                        <img src={s.avatar_url} alt={s.handle_or_url} className="w-10 h-10 rounded bg-raised object-cover" />
                       ) : (
-                        <div className="w-10 h-10 rounded bg-[#1c1a17] flex items-center justify-center text-sm font-bold text-[#F5EFE0]/80">
+                        <div className="w-10 h-10 rounded bg-raised flex items-center justify-center text-sm font-bold text-parchment/80">
                           {s.handle_or_url[0]?.toUpperCase()}
                         </div>
                       )}
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold truncate group-hover:text-[#B08D57] transition">@{s.handle_or_url}</div>
-                        {s.display_name && <div className="text-xs text-[#F5EFE0]/45 truncate">{s.display_name}</div>}
+                        <div className="text-sm font-semibold truncate group-hover:text-brass transition">@{s.handle_or_url}</div>
+                        {s.display_name && <div className="text-xs text-parchment/45 truncate">{s.display_name}</div>}
                       </div>
                     </div>
                     {topStances.length > 0 ? (
@@ -351,7 +351,7 @@ export default function JuntoViewPage() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-[#F5EFE0]/30">No tracked stances yet</p>
+                      <p className="text-xs text-parchment/30">No tracked stances yet</p>
                     )}
                   </Link>
                 );
@@ -363,23 +363,23 @@ export default function JuntoViewPage() {
         {/* Dispatches using this Junto */}
         {dispatches.length > 0 && (
           <section className="mb-10">
-            <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">Dispatches using this Junto</h2>
+            <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">Dispatches using this Junto</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {dispatches.map((d) => (
                 <Link
                   key={d.id}
                   href={`/newsletter/${d.id}`}
-                  className="bg-[#141210] border border-[rgba(176,141,87,0.28)] hover:border-[rgba(176,141,87,0.5)] rounded p-4 transition group"
+                  className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] hover:border-[rgb(var(--t-brass) / 0.5)] rounded p-4 transition group"
                 >
                   <div className="flex items-start justify-between gap-2 mb-1">
-                    <span className="font-medium text-sm group-hover:text-[#B08D57] transition">{d.name}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45 border border-[rgba(176,141,87,0.18)] shrink-0">
+                    <span className="font-medium text-sm group-hover:text-brass transition">{d.name}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-sm bg-raised text-parchment/45 border border-[rgb(var(--t-brass) / 0.18)] shrink-0">
                       {CADENCE_LABELS[d.schedule_cadence] ?? d.schedule_cadence}
                     </span>
                   </div>
-                  {d.description && <p className="text-xs text-[#F5EFE0]/45 line-clamp-2">{d.description}</p>}
+                  {d.description && <p className="text-xs text-parchment/45 line-clamp-2">{d.description}</p>}
                   {d.subscriber_count > 0 && (
-                    <p className="text-xs text-[#F5EFE0]/30 mt-2">{d.subscriber_count} subscriber{d.subscriber_count !== 1 ? 's' : ''}</p>
+                    <p className="text-xs text-parchment/30 mt-2">{d.subscriber_count} subscriber{d.subscriber_count !== 1 ? 's' : ''}</p>
                   )}
                 </Link>
               ))}

@@ -46,19 +46,19 @@ function SectionHeader({ number, title, subtitle }: { number: string; title: str
   return (
     <div className="mb-4">
       <div className="flex items-baseline gap-3 mb-1">
-        <span className="text-xs font-mono text-[#B08D57]/60 w-5">{number}</span>
-        <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-[#F5EFE0]/80" style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}>
+        <span className="text-xs font-mono text-brass/60 w-5">{number}</span>
+        <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-parchment/80" style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}>
           {title}
         </h2>
       </div>
-      {subtitle && <p className="text-xs text-[#F5EFE0]/45 ml-8">{subtitle}</p>}
+      {subtitle && <p className="text-xs text-parchment/45 ml-8">{subtitle}</p>}
     </div>
   );
 }
 
 function Section({ children }: { children: React.ReactNode }) {
   return (
-    <div className="border-b border-[rgba(176,141,87,0.12)] pb-8 mb-8">
+    <div className="border-b border-[rgb(var(--t-brass) / 0.12)] pb-8 mb-8">
       {children}
     </div>
   );
@@ -379,19 +379,19 @@ function CreatePageInner() {
 
   if (authStatus === 'unauthenticated') {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+      <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
         <div className="max-w-xl mx-auto px-6 py-16 text-center">
-          <p className="text-xs uppercase tracking-[0.2em] mb-3 font-mono" style={{ color: 'rgba(176,141,87,0.6)' }}>New Dispatch</p>
+          <p className="text-xs uppercase tracking-[0.2em] mb-3 font-mono" style={{ color: 'rgb(var(--t-brass) / 0.6)' }}>New Dispatch</p>
           <h1 className="text-3xl font-bold uppercase tracking-tight leading-none mb-4" style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}>
             Sign in to create a dispatch
           </h1>
-          <p className="text-sm text-[#F5EFE0]/55 mb-6">
+          <p className="text-sm text-parchment/55 mb-6">
             Pick sources, write a synthesis prompt, and ship it on a schedule.
           </p>
           <Link
             href="/login"
-            className="inline-block px-5 py-2.5 rounded bg-[#B08D57] text-[#080604] font-bold uppercase tracking-wide hover:bg-[#B08D57]/85 transition"
+            className="inline-block px-5 py-2.5 rounded bg-brass text-ink font-bold uppercase tracking-wide hover:bg-brass/85 transition"
             style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}
           >
             Sign in
@@ -402,22 +402,22 @@ function CreatePageInner() {
   }
 
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
 
       <div className="max-w-2xl mx-auto px-6 py-12">
 
-        <div className="mb-10" style={{ borderLeft: '4px solid #B08D57', paddingLeft: '20px' }}>
+        <div className="mb-10" style={{ borderLeft: '4px solid rgb(var(--t-brass))', paddingLeft: '20px' }}>
           {templateDispatchId && (
-            <div className="mb-4 px-3 py-2 text-xs rounded" style={{ background: 'rgba(176,141,87,0.08)', border: '1px solid rgba(176,141,87,0.28)', color: 'rgba(245,239,224,0.7)' }}>
+            <div className="mb-4 px-3 py-2 text-xs rounded" style={{ background: 'rgb(var(--t-brass) / 0.08)', border: '1px solid rgb(var(--t-brass) / 0.28)', color: 'rgb(var(--t-parchment) / 0.7)' }}>
               Forking a dispatch — sources pre-loaded below. Adjust anything before publishing.
             </div>
           )}
-          <p className="text-xs uppercase tracking-[0.2em] mb-2 font-mono" style={{ color: 'rgba(176,141,87,0.6)' }}>New Dispatch</p>
+          <p className="text-xs uppercase tracking-[0.2em] mb-2 font-mono" style={{ color: 'rgb(var(--t-brass) / 0.6)' }}>New Dispatch</p>
           <h1 className="text-4xl font-bold uppercase tracking-tight leading-none" style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}>
             Create a Dispatch
           </h1>
-          <p className="text-sm mt-3" style={{ color: 'rgba(245,239,224,0.55)' }}>
+          <p className="text-sm mt-3" style={{ color: 'rgb(var(--t-parchment) / 0.55)' }}>
             Pick your analysts, set the synthesis style, and it runs on your schedule.
           </p>
         </div>
@@ -430,8 +430,8 @@ function CreatePageInner() {
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="e.g., Crypto Intelligence Brief"
-            className="w-full bg-[#141210] px-4 py-3 text-base text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none transition"
-            style={{ border: '1px solid rgba(176,141,87,0.28)' }}
+            className="w-full bg-surface px-4 py-3 text-base text-parchment placeholder-parchment/30 focus:outline-none transition"
+            style={{ border: '1px solid rgb(var(--t-brass) / 0.28)' }}
           />
         </Section>
 
@@ -440,15 +440,15 @@ function CreatePageInner() {
           <SectionHeader number="02" title="Sources" subtitle="Pick a Junto or add analysts directly." />
 
           {/* Toggle: Junto vs Ad-hoc */}
-          <div className="flex mb-5" style={{ border: '1px solid rgba(176,141,87,0.28)' }}>
+          <div className="flex mb-5" style={{ border: '1px solid rgb(var(--t-brass) / 0.28)' }}>
             <button
               onClick={() => { setAdHocMode(false); }}
               className="flex-1 py-2.5 text-xs uppercase tracking-wider font-semibold transition"
               style={{
                 fontFamily: 'var(--font-oswald, sans-serif)',
-                background: !adHocMode ? '#B08D57' : 'transparent',
-                color: !adHocMode ? '#080604' : 'rgba(245,239,224,0.5)',
-                borderRight: '1px solid rgba(176,141,87,0.18)',
+                background: !adHocMode ? 'rgb(var(--t-brass))' : 'transparent',
+                color: !adHocMode ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.5)',
+                borderRight: '1px solid rgb(var(--t-brass) / 0.18)',
               }}
             >
               Choose a Junto
@@ -458,8 +458,8 @@ function CreatePageInner() {
               className="flex-1 py-2.5 text-xs uppercase tracking-wider font-semibold transition"
               style={{
                 fontFamily: 'var(--font-oswald, sans-serif)',
-                background: adHocMode ? '#B08D57' : 'transparent',
-                color: adHocMode ? '#080604' : 'rgba(245,239,224,0.5)',
+                background: adHocMode ? 'rgb(var(--t-brass))' : 'transparent',
+                color: adHocMode ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.5)',
               }}
             >
               Add Sources Directly
@@ -470,13 +470,13 @@ function CreatePageInner() {
           {!adHocMode && (
             <div>
               {juntosLoading ? (
-                <p className="text-xs text-[#F5EFE0]/40 py-4">Loading juntos...</p>
+                <p className="text-xs text-parchment/40 py-4">Loading juntos...</p>
               ) : juntos.length === 0 ? (
-                <div className="text-center py-6" style={{ border: '1px dashed rgba(176,141,87,0.2)', borderRadius: '4px' }}>
-                  <p className="text-sm text-[#F5EFE0]/40 mb-2">
+                <div className="text-center py-6" style={{ border: '1px dashed rgb(var(--t-brass) / 0.2)', borderRadius: '4px' }}>
+                  <p className="text-sm text-parchment/40 mb-2">
                     {session?.user ? 'No juntos yet.' : 'Sign in to see your juntos.'}
                   </p>
-                  <button onClick={() => setAdHocMode(true)} className="text-xs text-[#B08D57] hover:opacity-80 transition">
+                  <button onClick={() => setAdHocMode(true)} className="text-xs text-brass hover:opacity-80 transition">
                     Add sources directly →
                   </button>
                 </div>
@@ -490,7 +490,7 @@ function CreatePageInner() {
                       onChange={e => setJuntoFilter(e.target.value)}
                       placeholder="Filter by profile — type a handle or name"
                       className="w-full px-3 py-2 text-xs focus:outline-none transition"
-                      style={{ background: '#0d0b09', border: '1px solid rgba(176,141,87,0.2)', color: '#F5EFE0' }}
+                      style={{ background: '#0d0b09', border: '1px solid rgb(var(--t-brass) / 0.2)', color: 'rgb(var(--t-parchment))' }}
                     />
                   </div>
 
@@ -510,7 +510,7 @@ function CreatePageInner() {
 
                     if (visibleJuntos.length === 0) {
                       return (
-                        <p className="text-xs py-3 text-center" style={{ color: 'rgba(245,239,224,0.4)' }}>
+                        <p className="text-xs py-3 text-center" style={{ color: 'rgb(var(--t-parchment) / 0.4)' }}>
                           No juntos contain those profiles.
                         </p>
                       );
@@ -524,7 +524,7 @@ function CreatePageInner() {
                           const isExpanded = expandedJuntoId === j.id;
                           const filterTermsLower = juntoFilter.trim().toLowerCase().split(/[\s,]+/).filter(Boolean);
                           return (
-                            <div key={j.id} style={{ border: `1px solid ${isSelected ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`, background: isSelected ? 'rgba(176,141,87,0.06)' : '#141210' }}>
+                            <div key={j.id} style={{ border: `1px solid ${isSelected ? 'rgb(var(--t-brass) / 0.55)' : 'rgb(var(--t-brass) / 0.18)'}`, background: isSelected ? 'rgb(var(--t-brass) / 0.06)' : 'rgb(var(--t-surface))' }}>
                               <div className="flex items-center gap-3 px-4 py-3">
                                 <button
                                   onClick={() => { setSelectedJuntoId(j.id); setSelectedJunto(j); }}
@@ -533,14 +533,14 @@ function CreatePageInner() {
                                   <div
                                     className="w-3.5 h-3.5 rounded-full border flex-shrink-0 transition"
                                     style={{
-                                      borderColor: isSelected ? '#B08D57' : 'rgba(245,239,224,0.25)',
-                                      background: isSelected ? '#B08D57' : 'transparent',
+                                      borderColor: isSelected ? 'rgb(var(--t-brass))' : 'rgb(var(--t-parchment) / 0.25)',
+                                      background: isSelected ? 'rgb(var(--t-brass))' : 'transparent',
                                     }}
                                   />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <span className="text-sm font-medium text-[#F5EFE0]">{j.name}</span>
-                                      <span className="text-xs text-[#F5EFE0]/40">{sources.length} source{sources.length !== 1 ? 's' : ''}</span>
+                                      <span className="text-sm font-medium text-parchment">{j.name}</span>
+                                      <span className="text-xs text-parchment/40">{sources.length} source{sources.length !== 1 ? 's' : ''}</span>
                                     </div>
                                     {/* Avatar stack — always visible */}
                                     {sources.length > 0 && !isExpanded && (
@@ -559,8 +559,8 @@ function CreatePageInner() {
                                               title={label}
                                               style={{
                                                 width: 20, height: 20, borderRadius: '2px', objectFit: 'cover', flexShrink: 0,
-                                                border: isMatch ? '1px solid #B08D57' : '1px solid rgba(176,141,87,0.15)',
-                                                boxShadow: isMatch ? '0 0 0 1px rgba(176,141,87,0.4)' : 'none',
+                                                border: isMatch ? '1px solid rgb(var(--t-brass))' : '1px solid rgb(var(--t-brass) / 0.15)',
+                                                boxShadow: isMatch ? '0 0 0 1px rgb(var(--t-brass) / 0.4)' : 'none',
                                               }}
                                             />
                                           ) : (
@@ -569,10 +569,10 @@ function CreatePageInner() {
                                               title={label}
                                               style={{
                                                 width: 20, height: 20, borderRadius: '2px', flexShrink: 0,
-                                                background: isMatch ? 'rgba(176,141,87,0.2)' : 'rgba(176,141,87,0.08)',
-                                                border: isMatch ? '1px solid #B08D57' : '1px solid rgba(176,141,87,0.18)',
+                                                background: isMatch ? 'rgb(var(--t-brass) / 0.2)' : 'rgb(var(--t-brass) / 0.08)',
+                                                border: isMatch ? '1px solid rgb(var(--t-brass))' : '1px solid rgb(var(--t-brass) / 0.18)',
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                fontSize: 7, color: isMatch ? '#B08D57' : 'rgba(176,141,87,0.6)',
+                                                fontSize: 7, color: isMatch ? 'rgb(var(--t-brass))' : 'rgb(var(--t-brass) / 0.6)',
                                                 fontFamily: 'var(--font-oswald, sans-serif)',
                                               }}
                                             >
@@ -581,7 +581,7 @@ function CreatePageInner() {
                                           );
                                         })}
                                         {sources.length > 7 && (
-                                          <span style={{ fontSize: 9, color: 'rgba(245,239,224,0.35)' }}>+{sources.length - 7}</span>
+                                          <span style={{ fontSize: 9, color: 'rgb(var(--t-parchment) / 0.35)' }}>+{sources.length - 7}</span>
                                         )}
                                       </div>
                                     )}
@@ -591,16 +591,16 @@ function CreatePageInner() {
                                   <button
                                     onClick={() => setExpandedJuntoId(isExpanded ? null : j.id)}
                                     className="text-[10px] uppercase tracking-wider transition font-mono flex-shrink-0"
-                                    style={{ color: isExpanded ? '#B08D57' : 'rgba(176,141,87,0.5)' }}
-                                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#B08D57')}
-                                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = isExpanded ? '#B08D57' : 'rgba(176,141,87,0.5)')}
+                                    style={{ color: isExpanded ? 'rgb(var(--t-brass))' : 'rgb(var(--t-brass) / 0.5)' }}
+                                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'rgb(var(--t-brass))')}
+                                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = isExpanded ? 'rgb(var(--t-brass))' : 'rgb(var(--t-brass) / 0.5)')}
                                   >
                                     {isExpanded ? 'hide' : 'see who'}
                                   </button>
                                 )}
                               </div>
                               {isExpanded && sources.length > 0 && (
-                                <div className="px-4 pb-3 pt-2 space-y-2" style={{ borderTop: '1px solid rgba(176,141,87,0.12)' }}>
+                                <div className="px-4 pb-3 pt-2 space-y-2" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.12)' }}>
                                   {sources.map(s => {
                                     const label = s.display_name || s.handle_or_url;
                                     const handle = s.type === 'twitter' ? `@${s.handle_or_url}` : s.handle_or_url;
@@ -608,13 +608,13 @@ function CreatePageInner() {
                                     return (
                                       <div key={s.id} className="flex items-center gap-2.5">
                                         {s.avatar_url ? (
-                                          <img src={s.avatar_url} alt={label || ''} style={{ width: 24, height: 24, borderRadius: '2px', objectFit: 'cover', border: '1px solid rgba(176,141,87,0.18)', flexShrink: 0 }} />
+                                          <img src={s.avatar_url} alt={label || ''} style={{ width: 24, height: 24, borderRadius: '2px', objectFit: 'cover', border: '1px solid rgb(var(--t-brass) / 0.18)', flexShrink: 0 }} />
                                         ) : (
-                                          <div style={{ width: 24, height: 24, borderRadius: '2px', background: 'rgba(176,141,87,0.1)', border: '1px solid rgba(176,141,87,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: '#B08D57', fontFamily: 'var(--font-oswald, sans-serif)', flexShrink: 0 }}>{initials}</div>
+                                          <div style={{ width: 24, height: 24, borderRadius: '2px', background: 'rgb(var(--t-brass) / 0.1)', border: '1px solid rgb(var(--t-brass) / 0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: 'rgb(var(--t-brass))', fontFamily: 'var(--font-oswald, sans-serif)', flexShrink: 0 }}>{initials}</div>
                                         )}
                                         <div className="min-w-0">
-                                          <div className="text-xs font-medium text-[#F5EFE0] truncate">{label}</div>
-                                          {s.display_name && <div className="text-[10px] font-mono truncate" style={{ color: 'rgba(245,239,224,0.4)' }}>{handle}</div>}
+                                          <div className="text-xs font-medium text-parchment truncate">{label}</div>
+                                          {s.display_name && <div className="text-[10px] font-mono truncate" style={{ color: 'rgb(var(--t-parchment) / 0.4)' }}>{handle}</div>}
                                         </div>
                                       </div>
                                     );
@@ -635,10 +635,10 @@ function CreatePageInner() {
           {/* Ad-hoc source entry */}
           {adHocMode && (
             <div>
-              <p className="text-xs text-[#F5EFE0]/40 mb-3">
+              <p className="text-xs text-parchment/40 mb-3">
                 A Junto will be created automatically in the background.
               </p>
-              <div className="flex mb-3 text-xs" style={{ border: '1px solid rgba(176,141,87,0.18)' }}>
+              <div className="flex mb-3 text-xs" style={{ border: '1px solid rgb(var(--t-brass) / 0.18)' }}>
                 {(['twitter', 'youtube'] as SourceType[]).map((t, i) => (
                   <button
                     key={t}
@@ -646,9 +646,9 @@ function CreatePageInner() {
                     className="px-4 py-2 uppercase tracking-wider font-semibold transition"
                     style={{
                       fontFamily: 'var(--font-oswald, sans-serif)',
-                      background: sourceType === t ? (t === 'youtube' ? '#e8453c' : '#B08D57') : 'transparent',
-                      color: sourceType === t ? '#080604' : 'rgba(245,239,224,0.5)',
-                      borderRight: i === 0 ? '1px solid rgba(176,141,87,0.18)' : 'none',
+                      background: sourceType === t ? (t === 'youtube' ? 'rgb(var(--t-bear))' : 'rgb(var(--t-brass))') : 'transparent',
+                      color: sourceType === t ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.5)',
+                      borderRight: i === 0 ? '1px solid rgb(var(--t-brass) / 0.18)' : 'none',
                     }}
                   >
                     {t === 'twitter' ? 'Twitter / X' : 'YouTube'}
@@ -661,26 +661,26 @@ function CreatePageInner() {
                     <button
                       type="button"
                       onClick={() => { setShowListImport(true); setListImportError(''); }}
-                      className="text-xs text-[#B08D57] hover:text-[#B08D57]/80 transition"
+                      className="text-xs text-brass hover:text-brass/80 transition"
                       style={{ fontFamily: 'var(--font-oswald, sans-serif)', textTransform: 'uppercase', letterSpacing: '0.08em' }}
                     >
                       + Import from X list
                     </button>
                   ) : (
-                    <div className="p-3" style={{ border: '1px solid rgba(176,141,87,0.28)', background: '#141210' }}>
+                    <div className="p-3" style={{ border: '1px solid rgb(var(--t-brass) / 0.28)', background: 'rgb(var(--t-surface))' }}>
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-[#F5EFE0]/60" style={{ fontFamily: 'var(--font-oswald, sans-serif)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        <span className="text-xs text-parchment/60" style={{ fontFamily: 'var(--font-oswald, sans-serif)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                           Import from X list
                         </span>
                         <button
                           type="button"
                           onClick={() => { setShowListImport(false); setListImportError(''); setListInput(''); }}
-                          className="text-xs text-[#F5EFE0]/40 hover:text-[#F5EFE0]/80 transition"
+                          className="text-xs text-parchment/40 hover:text-parchment/80 transition"
                         >
                           cancel
                         </button>
                       </div>
-                      <p className="text-[11px] text-[#F5EFE0]/45 mb-2 leading-relaxed">
+                      <p className="text-[11px] text-parchment/45 mb-2 leading-relaxed">
                         Paste a public X list URL (e.g. <span className="font-mono">x.com/i/lists/12345…</span>). We only surface members who&apos;ve tweeted recently — inactive accounts on the list won&apos;t appear and can be added manually. You&apos;ll review and × any handles before creating.
                       </p>
                       <div className="flex gap-2">
@@ -690,36 +690,36 @@ function CreatePageInner() {
                           onChange={e => setListInput(e.target.value)}
                           disabled={importingList}
                           placeholder="https://x.com/i/lists/..."
-                          className="flex-1 bg-[#080604] px-3 py-2 text-xs text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none transition disabled:opacity-50"
-                          style={{ border: '1px solid rgba(176,141,87,0.28)' }}
+                          className="flex-1 bg-ink px-3 py-2 text-xs text-parchment placeholder-parchment/30 focus:outline-none transition disabled:opacity-50"
+                          style={{ border: '1px solid rgb(var(--t-brass) / 0.28)' }}
                         />
                         <button
                           type="button"
                           onClick={importList}
                           disabled={!listInput.trim() || importingList}
                           className="px-4 py-2 text-xs font-semibold transition disabled:opacity-30"
-                          style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald, sans-serif)' }}
+                          style={{ background: 'rgb(var(--t-brass))', color: 'rgb(var(--t-ink))', fontFamily: 'var(--font-oswald, sans-serif)' }}
                         >
                           {importingList ? 'Scraping…' : 'Scrape'}
                         </button>
                       </div>
                       {importingList && (
-                        <p className="text-[11px] text-[#B08D57]/70 mt-2">Scraping list — can take up to a minute…</p>
+                        <p className="text-[11px] text-brass/70 mt-2">Scraping list — can take up to a minute…</p>
                       )}
                       {listImportError && (
-                        <p className="text-[11px] text-[#e8453c] mt-2">{listImportError}</p>
+                        <p className="text-[11px] text-bear mt-2">{listImportError}</p>
                       )}
                     </div>
                   )}
                   {lastImportSummary && !showListImport && (
-                    <p className="text-[11px] text-[#3ecf6a] mt-2">{lastImportSummary}</p>
+                    <p className="text-[11px] text-bull mt-2">{lastImportSummary}</p>
                   )}
                 </div>
               )}
               <div className="flex gap-2 mb-3 relative">
                 <div className="relative flex-1">
                   {sourceType === 'twitter' && (
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#F5EFE0]/40 text-sm">@</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-parchment/40 text-sm">@</span>
                   )}
                   <input
                     type="text"
@@ -729,11 +729,11 @@ function CreatePageInner() {
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                     onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSource())}
                     placeholder={sourceType === 'twitter' ? 'twitter_handle' : 'https://youtube.com/@channel'}
-                    className="w-full bg-[#141210] px-4 py-2.5 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none transition"
-                    style={{ paddingLeft: sourceType === 'twitter' ? '28px' : '16px', border: '1px solid rgba(176,141,87,0.28)' }}
+                    className="w-full bg-surface px-4 py-2.5 text-sm text-parchment placeholder-parchment/30 focus:outline-none transition"
+                    style={{ paddingLeft: sourceType === 'twitter' ? '28px' : '16px', border: '1px solid rgb(var(--t-brass) / 0.28)' }}
                   />
                   {sourceType === 'twitter' && showSuggestions && sourceSuggestions.length > 0 && (
-                    <div className="absolute z-20 left-0 right-0 mt-1 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded shadow-xl max-h-64 overflow-y-auto">
+                    <div className="absolute z-20 left-0 right-0 mt-1 bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded shadow-xl max-h-64 overflow-y-auto">
                       {sourceSuggestions.map((r) => {
                         const alreadyAdded = adHocSources.some(s => s.handle === r.handle_or_url && s.type === 'twitter');
                         return (
@@ -748,20 +748,20 @@ function CreatePageInner() {
                               setSourceInput('');
                               setShowSuggestions(false);
                             }}
-                            className={`w-full text-left flex items-center gap-3 px-3 py-2 transition ${alreadyAdded ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#1c1a17]'}`}
+                            className={`w-full text-left flex items-center gap-3 px-3 py-2 transition ${alreadyAdded ? 'opacity-50 cursor-not-allowed' : 'hover:bg-raised'}`}
                           >
                             {r.avatar_url ? (
-                              <img src={r.avatar_url} alt={r.handle_or_url} className="w-8 h-8 rounded bg-[#1c1a17] object-cover" />
+                              <img src={r.avatar_url} alt={r.handle_or_url} className="w-8 h-8 rounded bg-raised object-cover" />
                             ) : (
-                              <div className="w-8 h-8 rounded bg-[#1c1a17] flex items-center justify-center text-xs font-bold text-[#F5EFE0]/80">
+                              <div className="w-8 h-8 rounded bg-raised flex items-center justify-center text-xs font-bold text-parchment/80">
                                 {r.handle_or_url[0]?.toUpperCase()}
                               </div>
                             )}
                             <div className="min-w-0 flex-1">
                               <div className="text-sm font-medium truncate">@{r.handle_or_url}</div>
-                              {r.display_name && <div className="text-xs text-[#F5EFE0]/60 truncate">{r.display_name}</div>}
+                              {r.display_name && <div className="text-xs text-parchment/60 truncate">{r.display_name}</div>}
                             </div>
-                            {alreadyAdded && <span className="text-xs text-[#3ecf6a]">added</span>}
+                            {alreadyAdded && <span className="text-xs text-bull">added</span>}
                           </button>
                         );
                       })}
@@ -772,7 +772,7 @@ function CreatePageInner() {
                   onClick={addSource}
                   disabled={!sourceInput.trim()}
                   className="px-5 py-2.5 text-sm font-semibold transition disabled:opacity-30"
-                  style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald, sans-serif)' }}
+                  style={{ background: 'rgb(var(--t-brass))', color: 'rgb(var(--t-ink))', fontFamily: 'var(--font-oswald, sans-serif)' }}
                 >
                   Add
                 </button>
@@ -784,23 +784,23 @@ function CreatePageInner() {
                       key={src.handle}
                       className="flex items-center justify-between px-3 py-2 text-xs"
                       style={{
-                        border: `1px solid ${src.status === 'valid' ? 'rgba(62,207,106,0.3)' : src.status === 'invalid' ? 'rgba(232,69,60,0.3)' : 'rgba(176,141,87,0.15)'}`,
-                        background: src.status === 'valid' ? 'rgba(62,207,106,0.04)' : src.status === 'invalid' ? 'rgba(232,69,60,0.04)' : '#141210',
+                        border: `1px solid ${src.status === 'valid' ? 'rgba(62,207,106,0.3)' : src.status === 'invalid' ? 'rgba(232,69,60,0.3)' : 'rgb(var(--t-brass) / 0.15)'}`,
+                        background: src.status === 'valid' ? 'rgba(62,207,106,0.04)' : src.status === 'invalid' ? 'rgba(232,69,60,0.04)' : 'rgb(var(--t-surface))',
                       }}
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        {src.status === 'validating' && <div className="w-3 h-3 border border-[#B08D57]/30 border-t-[#B08D57] rounded-full animate-spin flex-shrink-0" />}
-                        {src.status === 'valid' && <span className="text-[#3ecf6a] flex-shrink-0">✓</span>}
-                        {src.status === 'invalid' && <span className="text-[#e8453c] flex-shrink-0">✗</span>}
-                        {src.status === 'pending' && <div className="w-3 h-3 rounded-full bg-[#1c1a17] flex-shrink-0" />}
-                        <span className="font-mono truncate text-[#F5EFE0]/80">
+                        {src.status === 'validating' && <div className="w-3 h-3 border border-brass/30 border-t-brass rounded-full animate-spin flex-shrink-0" />}
+                        {src.status === 'valid' && <span className="text-bull flex-shrink-0">✓</span>}
+                        {src.status === 'invalid' && <span className="text-bear flex-shrink-0">✗</span>}
+                        {src.status === 'pending' && <div className="w-3 h-3 rounded-full bg-raised flex-shrink-0" />}
+                        <span className="font-mono truncate text-parchment/80">
                           {src.type === 'youtube' ? '' : '@'}{src.name || src.handle}
                         </span>
-                        {src.status === 'invalid' && <span className="text-[#e8453c]/80 truncate">{src.error}</span>}
+                        {src.status === 'invalid' && <span className="text-bear/80 truncate">{src.error}</span>}
                       </div>
                       <button
                         onClick={() => setAdHocSources(prev => prev.filter(s => s.handle !== src.handle))}
-                        className="text-[#F5EFE0]/30 hover:text-[#e8453c] ml-3 flex-shrink-0 transition"
+                        className="text-parchment/30 hover:text-bear ml-3 flex-shrink-0 transition"
                       >
                         ×
                       </button>
@@ -826,9 +826,9 @@ function CreatePageInner() {
                   onClick={() => { setPromptTemplateId(t.id); setPrompt(''); setCustomStyle(false); }}
                   className="text-left px-3 py-3 text-xs transition"
                   style={{
-                    border: `1px solid ${isSelected ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`,
-                    background: isSelected ? 'rgba(176,141,87,0.08)' : '#141210',
-                    color: isSelected ? '#B08D57' : 'rgba(245,239,224,0.6)',
+                    border: `1px solid ${isSelected ? 'rgb(var(--t-brass) / 0.55)' : 'rgb(var(--t-brass) / 0.18)'}`,
+                    background: isSelected ? 'rgb(var(--t-brass) / 0.08)' : 'rgb(var(--t-surface))',
+                    color: isSelected ? 'rgb(var(--t-brass))' : 'rgb(var(--t-parchment) / 0.6)',
                     fontFamily: 'var(--font-oswald, sans-serif)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
@@ -842,9 +842,9 @@ function CreatePageInner() {
               onClick={() => { setCustomStyle(true); setPromptTemplateId(null); }}
               className="text-left px-3 py-3 text-xs transition"
               style={{
-                border: `1px solid ${customStyle ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`,
-                background: customStyle ? 'rgba(176,141,87,0.08)' : '#141210',
-                color: customStyle ? '#B08D57' : 'rgba(245,239,224,0.6)',
+                border: `1px solid ${customStyle ? 'rgb(var(--t-brass) / 0.55)' : 'rgb(var(--t-brass) / 0.18)'}`,
+                background: customStyle ? 'rgb(var(--t-brass) / 0.08)' : 'rgb(var(--t-surface))',
+                color: customStyle ? 'rgb(var(--t-brass))' : 'rgb(var(--t-parchment) / 0.6)',
                 fontFamily: 'var(--font-oswald, sans-serif)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
@@ -859,7 +859,7 @@ function CreatePageInner() {
             const t = promptTemplates.find(t => t.id === promptTemplateId);
             if (!t) return null;
             return (
-              <div className="px-4 py-3 text-xs" style={{ background: '#0d0b09', border: '1px solid rgba(176,141,87,0.18)', color: 'rgba(245,239,224,0.6)' }}>
+              <div className="px-4 py-3 text-xs" style={{ background: '#0d0b09', border: '1px solid rgb(var(--t-brass) / 0.18)', color: 'rgb(var(--t-parchment) / 0.6)' }}>
                 {t.description || 'Using the default prompt for this style.'}
               </div>
             );
@@ -867,7 +867,7 @@ function CreatePageInner() {
 
           {customStyle && (
             <div>
-              <label className="block text-[10px] uppercase tracking-[0.15em] text-[#F5EFE0]/40 mb-2 font-mono">
+              <label className="block text-[10px] uppercase tracking-[0.15em] text-parchment/40 mb-2 font-mono">
                 Custom prompt
               </label>
               <textarea
@@ -875,8 +875,8 @@ function CreatePageInner() {
                 onChange={e => setPrompt(e.target.value)}
                 placeholder="Describe what the AI should synthesize and how it should be structured..."
                 rows={8}
-                className="w-full bg-[#141210] px-4 py-3 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/25 focus:outline-none resize-y font-mono leading-relaxed transition"
-                style={{ border: '1px solid rgba(176,141,87,0.28)' }}
+                className="w-full bg-surface px-4 py-3 text-sm text-parchment placeholder-parchment/25 focus:outline-none resize-y font-mono leading-relaxed transition"
+                style={{ border: '1px solid rgb(var(--t-brass) / 0.28)' }}
               />
             </div>
           )}
@@ -889,7 +889,7 @@ function CreatePageInner() {
 
             {/* Time windows */}
             <div>
-              <p className="text-xs mb-3" style={{ color: 'rgba(245,239,224,0.45)' }}>Dispatch times <span className="font-mono" style={{ color: 'rgba(245,239,224,0.3)' }}>(Pacific time)</span></p>
+              <p className="text-xs mb-3" style={{ color: 'rgb(var(--t-parchment) / 0.45)' }}>Dispatch times <span className="font-mono" style={{ color: 'rgb(var(--t-parchment) / 0.3)' }}>(Pacific time)</span></p>
               <div className="grid grid-cols-2 gap-2">
                 {([
                   { key: 'morning', label: 'Morning', time: '6:00 AM' },
@@ -906,35 +906,35 @@ function CreatePageInner() {
                       )}
                       className="flex items-center gap-3 px-4 py-3 text-left transition"
                       style={{
-                        border: `1px solid ${on ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`,
-                        background: on ? 'rgba(176,141,87,0.08)' : '#141210',
+                        border: `1px solid ${on ? 'rgb(var(--t-brass) / 0.55)' : 'rgb(var(--t-brass) / 0.18)'}`,
+                        background: on ? 'rgb(var(--t-brass) / 0.08)' : 'rgb(var(--t-surface))',
                       }}
                     >
                       <div
                         className="w-4 h-4 flex-shrink-0 flex items-center justify-center transition"
                         style={{
-                          border: `1px solid ${on ? '#B08D57' : 'rgba(245,239,224,0.2)'}`,
-                          background: on ? '#B08D57' : 'transparent',
+                          border: `1px solid ${on ? 'rgb(var(--t-brass))' : 'rgb(var(--t-parchment) / 0.2)'}`,
+                          background: on ? 'rgb(var(--t-brass))' : 'transparent',
                         }}
                       >
-                        {on && <span style={{ color: '#080604', fontSize: 9, fontWeight: 700 }}>✓</span>}
+                        {on && <span style={{ color: 'rgb(var(--t-ink))', fontSize: 9, fontWeight: 700 }}>✓</span>}
                       </div>
                       <div>
-                        <div className="text-sm font-semibold" style={{ color: on ? '#F5EFE0' : 'rgba(245,239,224,0.6)', fontFamily: 'var(--font-oswald, sans-serif)' }}>{w.label}</div>
-                        <div className="text-xs font-mono" style={{ color: on ? 'rgba(176,141,87,0.8)' : 'rgba(245,239,224,0.3)' }}>{w.time}</div>
+                        <div className="text-sm font-semibold" style={{ color: on ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.6)', fontFamily: 'var(--font-oswald, sans-serif)' }}>{w.label}</div>
+                        <div className="text-xs font-mono" style={{ color: on ? 'rgb(var(--t-brass) / 0.8)' : 'rgb(var(--t-parchment) / 0.3)' }}>{w.time}</div>
                       </div>
                     </button>
                   );
                 })}
               </div>
               {sendWindows.length === 0 && (
-                <p className="text-xs mt-2" style={{ color: '#e8453c' }}>Select at least one time.</p>
+                <p className="text-xs mt-2" style={{ color: 'rgb(var(--t-bear))' }}>Select at least one time.</p>
               )}
             </div>
 
             {/* Active days */}
             <div>
-              <p className="text-xs mb-3" style={{ color: 'rgba(245,239,224,0.45)' }}>Active days</p>
+              <p className="text-xs mb-3" style={{ color: 'rgb(var(--t-parchment) / 0.45)' }}>Active days</p>
               <div className="flex gap-1.5">
                 {[
                   { key: 'mon', label: 'M' },
@@ -952,9 +952,9 @@ function CreatePageInner() {
                     )}
                     className="w-9 h-9 text-xs font-semibold transition"
                     style={{
-                      border: `1px solid ${sendDays.includes(d.key) ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`,
-                      background: sendDays.includes(d.key) ? '#B08D57' : '#141210',
-                      color: sendDays.includes(d.key) ? '#080604' : 'rgba(245,239,224,0.45)',
+                      border: `1px solid ${sendDays.includes(d.key) ? 'rgb(var(--t-brass) / 0.55)' : 'rgb(var(--t-brass) / 0.18)'}`,
+                      background: sendDays.includes(d.key) ? 'rgb(var(--t-brass))' : 'rgb(var(--t-surface))',
+                      color: sendDays.includes(d.key) ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.45)',
                     }}
                   >
                     {d.label}
@@ -973,23 +973,23 @@ function CreatePageInner() {
               onClick={() => setIsPublic(true)}
               className="p-4 text-left transition"
               style={{
-                border: `1px solid ${isPublic ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`,
-                background: isPublic ? 'rgba(176,141,87,0.06)' : '#141210',
+                border: `1px solid ${isPublic ? 'rgb(var(--t-brass) / 0.55)' : 'rgb(var(--t-brass) / 0.18)'}`,
+                background: isPublic ? 'rgb(var(--t-brass) / 0.06)' : 'rgb(var(--t-surface))',
               }}
             >
-              <div className="text-sm font-semibold text-[#F5EFE0] mb-1" style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}>Public</div>
-              <div className="text-xs text-[#F5EFE0]/50">Anyone can discover and subscribe. You earn 50% of each delivery.</div>
+              <div className="text-sm font-semibold text-parchment mb-1" style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}>Public</div>
+              <div className="text-xs text-parchment/50">Anyone can discover and subscribe. You earn 50% of each delivery.</div>
             </button>
             <button
               onClick={() => setIsPublic(false)}
               className="p-4 text-left transition"
               style={{
-                border: `1px solid ${!isPublic ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`,
-                background: !isPublic ? 'rgba(176,141,87,0.06)' : '#141210',
+                border: `1px solid ${!isPublic ? 'rgb(var(--t-brass) / 0.55)' : 'rgb(var(--t-brass) / 0.18)'}`,
+                background: !isPublic ? 'rgb(var(--t-brass) / 0.06)' : 'rgb(var(--t-surface))',
               }}
             >
-              <div className="text-sm font-semibold text-[#F5EFE0] mb-1" style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}>Private</div>
-              <div className="text-xs text-[#F5EFE0]/50">Only you receive it. Personal intelligence brief.</div>
+              <div className="text-sm font-semibold text-parchment mb-1" style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}>Private</div>
+              <div className="text-xs text-parchment/50">Only you receive it. Personal intelligence brief.</div>
             </button>
           </div>
 
@@ -999,21 +999,21 @@ function CreatePageInner() {
               onClick={() => setAudioEnabled(!audioEnabled)}
               className="w-full p-4 text-left transition"
               style={{
-                border: `1px solid ${audioEnabled ? 'rgba(176,141,87,0.55)' : 'rgba(176,141,87,0.18)'}`,
-                background: audioEnabled ? 'rgba(176,141,87,0.06)' : '#141210',
+                border: `1px solid ${audioEnabled ? 'rgb(var(--t-brass) / 0.55)' : 'rgb(var(--t-brass) / 0.18)'}`,
+                background: audioEnabled ? 'rgb(var(--t-brass) / 0.06)' : 'rgb(var(--t-surface))',
               }}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-semibold text-[#F5EFE0] mb-1" style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}>
-                    🎧 Voice memo {audioEnabled && <span className="text-[#B08D57]">— on</span>}
+                  <div className="text-sm font-semibold text-parchment mb-1" style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}>
+                    🎧 Voice memo {audioEnabled && <span className="text-brass">— on</span>}
                   </div>
-                  <div className="text-xs text-[#F5EFE0]/50">
+                  <div className="text-xs text-parchment/50">
                     Adds an audio version of each dispatch (delivered via Telegram + RSS feed). Doubles per-send credit cost.
                   </div>
                 </div>
-                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition flex-shrink-0 ${audioEnabled ? 'bg-[#B08D57] border-[#B08D57]' : 'border-[#F5EFE0]/30'}`}>
-                  {audioEnabled && <svg className="w-3 h-3 text-[#080604]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition flex-shrink-0 ${audioEnabled ? 'bg-brass border-brass' : 'border-parchment/30'}`}>
+                  {audioEnabled && <svg className="w-3 h-3 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                 </div>
               </div>
             </button>
@@ -1023,20 +1023,20 @@ function CreatePageInner() {
         {/* ─── SUBMIT ──────────────────────────────────── */}
         <div>
           {error && (
-            <div className="mb-5 px-4 py-3 text-sm" style={{ background: 'rgba(232,69,60,0.08)', border: '1px solid rgba(232,69,60,0.3)', color: '#e8453c' }}>
+            <div className="mb-5 px-4 py-3 text-sm" style={{ background: 'rgba(232,69,60,0.08)', border: '1px solid rgba(232,69,60,0.3)', color: 'rgb(var(--t-bear))' }}>
               {error}
             </div>
           )}
 
           <div className="flex items-center justify-between">
-            <p className="text-xs font-mono" style={{ color: 'rgba(245,239,224,0.35)' }}>
+            <p className="text-xs font-mono" style={{ color: 'rgb(var(--t-parchment) / 0.35)' }}>
               Owner cost: {calculateOwnerCreditCost(sourceCount, audioEnabled)} credits/send · Subscribers: {audioEnabled ? 'from 2 (4 with voice)' : '2'} credits/send
             </p>
             <button
               onClick={handleCreate}
               disabled={creating || !canCreate}
               className="px-8 py-3 font-bold text-sm uppercase tracking-wide transition disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90"
-              style={{ background: '#B08D57', color: '#080604', fontFamily: 'var(--font-oswald, sans-serif)' }}
+              style={{ background: 'rgb(var(--t-brass))', color: 'rgb(var(--t-ink))', fontFamily: 'var(--font-oswald, sans-serif)' }}
             >
               {creating ? 'Creating…' : 'Create Dispatch →'}
             </button>
@@ -1057,11 +1057,11 @@ function CreatePageInner() {
 export default function CreatePage() {
   return (
     <Suspense fallback={
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+      <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
         <div className="max-w-2xl mx-auto px-6 py-16 animate-pulse">
-          <div className="h-8 bg-[#141210] rounded w-56 mb-4" />
-          <div className="h-4 bg-[#141210]/60 rounded w-80" />
+          <div className="h-8 bg-surface rounded w-56 mb-4" />
+          <div className="h-4 bg-surface/60 rounded w-80" />
         </div>
       </main>
     }>

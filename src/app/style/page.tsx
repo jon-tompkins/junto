@@ -1,17 +1,17 @@
 'use client';
 
 // Federalist palette — inspired by Benjamin Franklin's Junto (1727)
-// Navy #1B2951 · Parchment #F5EFE0 · Brass #B08D57 · Oxblood #722F37 · Ink #1A1814
+// Navy #1B2951 · Parchment rgb(var(--t-parchment)) · Brass rgb(var(--t-brass)) · Oxblood #722F37 · Ink #1A1814
 
-const BRASS = '#B08D57';
-const PARCHMENT = '#F5EFE0';
+const BRASS = 'rgb(var(--t-brass))';
+const PARCHMENT = 'rgb(var(--t-parchment))';
 const NAVY = '#1B2951';
 const OXBLOOD = '#722F37';
-const INK = '#080604';
+const INK = 'rgb(var(--t-ink))';
 
 // Signal colors — bright/saturated to pop against dark backgrounds
-const BULL = '#3ecf6a';   // bright green, high saturation
-const BEAR = '#e8453c';   // vivid red, distinct from oxblood
+const BULL = 'rgb(var(--t-bull))';   // bright green, high saturation
+const BEAR = 'rgb(var(--t-bear))';   // vivid red, distinct from oxblood
 
 export default function StylePage() {
   return (
@@ -27,7 +27,7 @@ export default function StylePage() {
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
-          backgroundImage: `linear-gradient(rgba(176,141,87,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(176,141,87,0.015) 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(rgb(var(--t-brass) / 0.015) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--t-brass) / 0.015) 1px, transparent 1px)`,
           backgroundSize: '40px 40px',
         }}
       />
@@ -61,7 +61,7 @@ export default function StylePage() {
           <div className="space-y-10">
             <div>
               <Label>Full palette — the Federalist five</Label>
-              <div className="grid grid-cols-5 gap-0" style={{ border: '1px solid rgba(176,141,87,0.32)' }}>
+              <div className="grid grid-cols-5 gap-0" style={{ border: '1px solid rgb(var(--t-brass) / 0.32)' }}>
                 {[
                   { name: 'Brass', hex: BRASS, role: 'Primary accent', light: false },
                   { name: 'Parchment', hex: PARCHMENT, role: 'Text / light bg', light: true },
@@ -72,7 +72,7 @@ export default function StylePage() {
                   <div
                     key={c.name}
                     className="p-4"
-                    style={{ borderRight: i < 4 ? '1px solid rgba(176,141,87,0.20)' : 'none' }}
+                    style={{ borderRight: i < 4 ? '1px solid rgb(var(--t-brass) / 0.20)' : 'none' }}
                   >
                     <div className="h-10 mb-3" style={{ background: c.hex }} />
                     <p className="text-xs font-semibold" style={{ color: PARCHMENT }}>{c.name}</p>
@@ -85,20 +85,20 @@ export default function StylePage() {
 
             <div>
               <Label>Background scale — dark mode</Label>
-              <div className="flex overflow-hidden" style={{ border: '1px solid rgba(176,141,87,0.32)' }}>
+              <div className="flex overflow-hidden" style={{ border: '1px solid rgb(var(--t-brass) / 0.32)' }}>
                 {[
                   { label: 'Ink / Page', bg: INK },
-                  { label: 'Surface', bg: '#141210' },
-                  { label: 'Raised', bg: '#1c1a17' },
+                  { label: 'Surface', bg: 'rgb(var(--t-surface))' },
+                  { label: 'Raised', bg: 'rgb(var(--t-raised))' },
                   { label: 'Hover', bg: '#232017' },
-                  { label: 'Border', bg: 'rgba(176,141,87,0.25)' },
+                  { label: 'Border', bg: 'rgb(var(--t-brass) / 0.25)' },
                 ].map((c, i) => (
                   <div
                     key={c.label}
                     className="flex-1 p-4"
-                    style={{ borderRight: i < 4 ? '1px solid rgba(176,141,87,0.20)' : 'none' }}
+                    style={{ borderRight: i < 4 ? '1px solid rgb(var(--t-brass) / 0.20)' : 'none' }}
                   >
-                    <div className="h-8 mb-3" style={{ background: c.bg, border: '1px solid rgba(176,141,87,0.20)' }} />
+                    <div className="h-8 mb-3" style={{ background: c.bg, border: '1px solid rgb(var(--t-brass) / 0.20)' }} />
                     <p className="text-[10px] font-semibold" style={{ color: PARCHMENT }}>{c.label}</p>
                     <p className="text-[10px] font-mono mt-0.5" style={{ color: `${PARCHMENT}60` }}>{c.bg}</p>
                   </div>
@@ -108,7 +108,7 @@ export default function StylePage() {
 
             <div>
               <Label>Text scale</Label>
-              <div style={{ border: '1px solid rgba(176,141,87,0.32)' }}>
+              <div style={{ border: '1px solid rgb(var(--t-brass) / 0.32)' }}>
                 {[
                   { label: 'Primary', color: PARCHMENT, s: 'Market intelligence from signal.' },
                   { label: 'Secondary', color: `${PARCHMENT}cc`, s: 'Market intelligence from signal.' },
@@ -122,7 +122,7 @@ export default function StylePage() {
                   <div
                     key={t.label}
                     className="flex items-center px-4 py-3 gap-8"
-                    style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(176,141,87,0.14)' : 'none' }}
+                    style={{ borderBottom: i < arr.length - 1 ? '1px solid rgb(var(--t-brass) / 0.14)' : 'none' }}
                   >
                     <span className="text-xs w-24 shrink-0 font-mono" style={{ color: `${PARCHMENT}52`, fontFamily: 'var(--font-mono)' }}>{t.label}</span>
                     <span className="text-sm" style={{ color: t.color }}>{t.s}</span>
@@ -136,7 +136,7 @@ export default function StylePage() {
         {/* ── Typography ─────────────────────────── */}
         <section>
           <SectionLabel>02 / Typography</SectionLabel>
-          <div style={{ border: '1px solid rgba(176,141,87,0.32)' }} className="p-6 space-y-6">
+          <div style={{ border: '1px solid rgb(var(--t-brass) / 0.32)' }} className="p-6 space-y-6">
             <div>
               <Mono>Display / H1 — Oswald 700, parchment</Mono>
               <p
@@ -195,7 +195,7 @@ export default function StylePage() {
         {/* ── Buttons ────────────────────────────── */}
         <section>
           <SectionLabel>03 / Buttons</SectionLabel>
-          <div style={{ border: '1px solid rgba(176,141,87,0.32)' }} className="p-6 space-y-8">
+          <div style={{ border: '1px solid rgb(var(--t-brass) / 0.32)' }} className="p-6 space-y-8">
 
             <div>
               <Label>Primary — brass fill, ink text</Label>
@@ -289,10 +289,10 @@ export default function StylePage() {
 
             <div>
               <Label>Dispatch card — default vs active (brass left-border)</Label>
-              <div className="grid md:grid-cols-2 gap-0" style={{ border: '1px solid rgba(176,141,87,0.32)' }}>
+              <div className="grid md:grid-cols-2 gap-0" style={{ border: '1px solid rgb(var(--t-brass) / 0.32)' }}>
                 <div
                   className="group p-5 cursor-pointer transition"
-                  style={{ borderRight: '1px solid rgba(176,141,87,0.20)' }}
+                  style={{ borderRight: '1px solid rgb(var(--t-brass) / 0.20)' }}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <h3
@@ -304,7 +304,7 @@ export default function StylePage() {
                     <span
                       className="text-[10px] px-2 py-1 ml-3 uppercase tracking-wide shrink-0"
                       style={{
-                        border: `1px solid rgba(176,141,87,0.2)`,
+                        border: `1px solid rgb(var(--t-brass) / 0.2)`,
                         color: `${PARCHMENT}78`,
                         fontFamily: 'var(--font-mono), monospace',
                       }}
@@ -318,7 +318,7 @@ export default function StylePage() {
                   <div className="flex items-center justify-between">
                     <div className="flex gap-2">
                       {['crypto', 'defi'].map(l => (
-                        <span key={l} className="text-[10px] px-2 py-0.5 uppercase" style={{ border: '1px solid rgba(176,141,87,0.25)', color: `${PARCHMENT}52` }}>{l}</span>
+                        <span key={l} className="text-[10px] px-2 py-0.5 uppercase" style={{ border: '1px solid rgb(var(--t-brass) / 0.25)', color: `${PARCHMENT}52` }}>{l}</span>
                       ))}
                     </div>
                     <span className="text-xs font-mono" style={{ color: `${PARCHMENT}48`, fontFamily: 'var(--font-mono)' }}>12 sources</span>
@@ -361,13 +361,13 @@ export default function StylePage() {
 
             <div>
               <Label>Stat box</Label>
-              <div className="grid grid-cols-3 divide-x" style={{ border: '1px solid rgba(176,141,87,0.32)', borderRight: 'none' }}>
+              <div className="grid grid-cols-3 divide-x" style={{ border: '1px solid rgb(var(--t-brass) / 0.32)', borderRight: 'none' }}>
                 {[
                   { n: '1,000', label: 'free credits', sub: '$1.00 value' },
                   { n: '1,000', label: 'credits per $1', sub: 'top up anytime' },
                   { n: '50%', label: 'revenue share', sub: 'earn from subscribers' },
                 ].map((s) => (
-                  <div key={s.label} className="p-6" style={{ borderRight: '1px solid rgba(176,141,87,0.32)' }}>
+                  <div key={s.label} className="p-6" style={{ borderRight: '1px solid rgb(var(--t-brass) / 0.32)' }}>
                     <div className="text-4xl font-bold leading-none mb-2" style={{ fontFamily: 'var(--font-oswald), sans-serif', color: BRASS }}>{s.n}</div>
                     <div className="text-sm" style={{ color: PARCHMENT }}>{s.label}</div>
                     <div className="text-xs mt-1" style={{ color: `${PARCHMENT}60` }}>{s.sub}</div>
@@ -395,13 +395,13 @@ export default function StylePage() {
 
             <div>
               <Label>Form inputs</Label>
-              <div className="space-y-3 max-w-sm p-5" style={{ border: '1px solid rgba(176,141,87,0.32)' }}>
+              <div className="space-y-3 max-w-sm p-5" style={{ border: '1px solid rgb(var(--t-brass) / 0.32)' }}>
                 <input
                   type="text"
                   placeholder="Dispatch name"
                   className="w-full bg-transparent px-4 py-2.5 text-sm outline-none transition"
                   style={{
-                    border: '1px solid rgba(176,141,87,0.2)',
+                    border: '1px solid rgb(var(--t-brass) / 0.2)',
                     color: PARCHMENT,
                   }}
                 />
@@ -409,11 +409,11 @@ export default function StylePage() {
                   placeholder="Describe your lens — what angle should this dispatch take?"
                   rows={3}
                   className="w-full bg-transparent px-4 py-2.5 text-sm outline-none transition resize-none"
-                  style={{ border: '1px solid rgba(176,141,87,0.2)', color: PARCHMENT }}
+                  style={{ border: '1px solid rgb(var(--t-brass) / 0.2)', color: PARCHMENT }}
                 />
                 <select
                   className="w-full px-4 py-2.5 text-sm outline-none"
-                  style={{ background: '#141210', border: '1px solid rgba(176,141,87,0.2)', color: `${PARCHMENT}80` }}
+                  style={{ background: 'rgb(var(--t-surface))', border: '1px solid rgb(var(--t-brass) / 0.2)', color: `${PARCHMENT}80` }}
                 >
                   <option>Daily</option>
                   <option>Twice daily</option>
@@ -428,7 +428,7 @@ export default function StylePage() {
         {/* ── Logo ───────────────────────────────── */}
         <section>
           <SectionLabel>05 / Logo &amp; Nav</SectionLabel>
-          <div className="p-6 space-y-6" style={{ border: '1px solid rgba(176,141,87,0.32)' }}>
+          <div className="p-6 space-y-6" style={{ border: '1px solid rgb(var(--t-brass) / 0.32)' }}>
             <div>
               <Label>App icon / favicon — “mj” mark</Label>
               <div className="flex items-center gap-6 flex-wrap">
@@ -492,13 +492,13 @@ export default function StylePage() {
           <SectionLabel>06 / Analyst Profile — Sample</SectionLabel>
           <p className="text-xs mb-6" style={{ color: `${PARCHMENT}60`, fontFamily: 'var(--font-mono)' }}>Dummy data. Showing profile page layout with this palette.</p>
 
-          <div style={{ border: `1px solid rgba(176,141,87,0.2)` }}>
+          <div style={{ border: `1px solid rgb(var(--t-brass) / 0.2)` }}>
 
             {/* Profile header */}
-            <div className="p-6 flex items-start gap-5" style={{ borderBottom: '1px solid rgba(176,141,87,0.25)' }}>
+            <div className="p-6 flex items-start gap-5" style={{ borderBottom: '1px solid rgb(var(--t-brass) / 0.25)' }}>
               <div
                 className="w-16 h-16 flex items-center justify-center shrink-0"
-                style={{ background: '#222018', border: `1px solid rgba(176,141,87,0.2)` }}
+                style={{ background: '#222018', border: `1px solid rgb(var(--t-brass) / 0.2)` }}
               >
                 <span className="text-2xl font-bold" style={{ fontFamily: 'var(--font-oswald), sans-serif', color: BRASS }}>SW</span>
               </div>
@@ -517,7 +517,7 @@ export default function StylePage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="px-3 py-1 text-xs font-mono uppercase" style={{ border: `1px solid ${BULL}50`, color: BULL }}>Bullish</span>
-                    <span className="px-3 py-1 text-xs font-mono uppercase" style={{ border: `1px solid rgba(176,141,87,0.2)`, color: `${PARCHMENT}78` }}>Macro</span>
+                    <span className="px-3 py-1 text-xs font-mono uppercase" style={{ border: `1px solid rgb(var(--t-brass) / 0.2)`, color: `${PARCHMENT}78` }}>Macro</span>
                   </div>
                 </div>
                 <p className="text-sm leading-relaxed mt-3 max-w-xl" style={{ color: `${PARCHMENT}a8` }}>
@@ -528,7 +528,7 @@ export default function StylePage() {
             </div>
 
             {/* Stats row */}
-            <div className="grid grid-cols-4" style={{ borderBottom: '1px solid rgba(176,141,87,0.25)' }}>
+            <div className="grid grid-cols-4" style={{ borderBottom: '1px solid rgb(var(--t-brass) / 0.25)' }}>
               {[
                 { label: 'Tweets tracked', val: '1,847' },
                 { label: 'Avg conviction', val: 'High' },
@@ -538,7 +538,7 @@ export default function StylePage() {
                 <div
                   key={s.label}
                   className="p-4 text-center"
-                  style={{ borderRight: i < 3 ? '1px solid rgba(176,141,87,0.20)' : 'none' }}
+                  style={{ borderRight: i < 3 ? '1px solid rgb(var(--t-brass) / 0.20)' : 'none' }}
                 >
                   <div className="text-xl font-bold leading-none mb-1" style={{ fontFamily: 'var(--font-oswald), sans-serif', color: PARCHMENT }}>{s.val}</div>
                   <div className="text-[10px] uppercase tracking-wide font-mono" style={{ color: `${PARCHMENT}52`, fontFamily: 'var(--font-mono)' }}>{s.label}</div>
@@ -547,7 +547,7 @@ export default function StylePage() {
             </div>
 
             {/* Positions */}
-            <div className="p-5" style={{ borderBottom: '1px solid rgba(176,141,87,0.25)' }}>
+            <div className="p-5" style={{ borderBottom: '1px solid rgb(var(--t-brass) / 0.25)' }}>
               <p className="text-[10px] uppercase tracking-widest font-mono mb-4" style={{ color: `${PARCHMENT}60`, fontFamily: 'var(--font-mono)' }}>
                 Current Positions
               </p>
@@ -594,7 +594,7 @@ export default function StylePage() {
                   <div
                     key={t.date}
                     className="py-3 flex gap-4 items-start"
-                    style={{ borderTop: i > 0 ? '1px solid rgba(176,141,87,0.14)' : 'none' }}
+                    style={{ borderTop: i > 0 ? '1px solid rgb(var(--t-brass) / 0.14)' : 'none' }}
                   >
                     <span className="text-[10px] font-mono shrink-0 pt-0.5 w-28" style={{ color: `${PARCHMENT}48`, fontFamily: 'var(--font-mono)' }}>{t.date}</span>
                     <p className="text-sm leading-relaxed flex-1" style={{ color: `${PARCHMENT}75` }}>{t.text}</p>
@@ -609,7 +609,7 @@ export default function StylePage() {
           </div>
         </section>
 
-        <div className="pb-12" style={{ borderTop: '1px solid rgba(176,141,87,0.20)', marginTop: '2rem' }} />
+        <div className="pb-12" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.20)', marginTop: '2rem' }} />
       </div>
     </main>
   );
@@ -618,17 +618,17 @@ export default function StylePage() {
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-4 mb-8">
-      <h2 className="text-xs uppercase tracking-[0.2em] shrink-0" style={{ fontFamily: 'var(--font-mono), monospace', color: 'rgba(245,239,224,0.35)' }}>
+      <h2 className="text-xs uppercase tracking-[0.2em] shrink-0" style={{ fontFamily: 'var(--font-mono), monospace', color: 'rgb(var(--t-parchment) / 0.35)' }}>
         {children}
       </h2>
-      <div className="flex-1 h-px" style={{ background: 'rgba(176,141,87,0.25)' }} />
+      <div className="flex-1 h-px" style={{ background: 'rgb(var(--t-brass) / 0.25)' }} />
     </div>
   );
 }
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-xs mb-3 uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono), monospace', color: 'rgba(245,239,224,0.3)' }}>
+    <p className="text-xs mb-3 uppercase tracking-wide" style={{ fontFamily: 'var(--font-mono), monospace', color: 'rgb(var(--t-parchment) / 0.3)' }}>
       {children}
     </p>
   );
@@ -636,7 +636,7 @@ function Label({ children }: { children: React.ReactNode }) {
 
 function Mono({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] uppercase tracking-widest mb-1" style={{ fontFamily: 'var(--font-mono), monospace', color: 'rgba(176,141,87,0.5)' }}>
+    <p className="text-[10px] uppercase tracking-widest mb-1" style={{ fontFamily: 'var(--font-mono), monospace', color: 'rgb(var(--t-brass) / 0.5)' }}>
       {children}
     </p>
   );

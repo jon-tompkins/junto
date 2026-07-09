@@ -52,28 +52,28 @@ export default async function TickerCoveragePage({
   };
 
   return (
-    <div className="min-h-screen bg-[#0e0c0a] text-[#F5EFE0]">
+    <div className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <main className="max-w-3xl mx-auto px-5 py-8">
         <h1 className="text-2xl md:text-3xl font-semibold mb-1">
-          <span className="text-[#B08D57]">${t}</span> — dispatch coverage
+          <span className="text-brass">${t}</span> — dispatch coverage
         </h1>
-        <p className="text-sm text-[#F5EFE0]/55 mb-6">
+        <p className="text-sm text-parchment/55 mb-6">
           {runs.length} public MyJunto dispatch{runs.length === 1 ? '' : 'es'} mentioning ${t}, newest first.
         </p>
 
-        <ul className="divide-y divide-[rgba(176,141,87,0.18)]">
+        <ul className="divide-y divide-[rgb(var(--t-brass) / 0.18)]">
           {runs.map((r) => (
             <li key={r.id} className="py-3">
-              <Link href={`/newsletter/${r.newsletter_id}/${r.id}`} className="block hover:bg-[#141210] rounded px-2 -mx-2 py-1">
+              <Link href={`/newsletter/${r.newsletter_id}/${r.id}`} className="block hover:bg-surface rounded px-2 -mx-2 py-1">
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-sm text-[#F5EFE0]/90 line-clamp-1">{r.subject || r.newsletter_name}</span>
-                  <span className="text-[11px] font-mono text-[#F5EFE0]/40 whitespace-nowrap">
+                  <span className="text-sm text-parchment/90 line-clamp-1">{r.subject || r.newsletter_name}</span>
+                  <span className="text-[11px] font-mono text-parchment/40 whitespace-nowrap">
                     {r.generated_at ? new Date(r.generated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
                   </span>
                 </div>
-                <span className="text-[11px] uppercase tracking-wide text-[#B08D57]/70 font-[var(--font-oswald)]">{r.newsletter_name}</span>
+                <span className="text-[11px] uppercase tracking-wide text-brass/70 font-[var(--font-oswald)]">{r.newsletter_name}</span>
               </Link>
             </li>
           ))}

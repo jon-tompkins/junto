@@ -79,18 +79,18 @@ export default async function DispatchIssuePage({
   };
 
   return (
-    <div className="min-h-screen bg-[#0e0c0a] text-[#F5EFE0]">
+    <div className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <main className="max-w-3xl mx-auto px-5 py-8">
         <div className="mb-6 text-sm">
-          <Link href={`/newsletter/${id}`} className="text-[#B08D57] hover:underline">
+          <Link href={`/newsletter/${id}`} className="text-brass hover:underline">
             ← {newsletter.name}
           </Link>
         </div>
 
         <h1 className="text-2xl md:text-3xl font-semibold mb-2">{run.subject || newsletter.name}</h1>
-        {date && <p className="text-[12px] text-[#F5EFE0]/45 mb-4 font-mono">{date}</p>}
+        {date && <p className="text-[12px] text-parchment/45 mb-4 font-mono">{date}</p>}
 
         {tickers.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-6">
@@ -98,7 +98,7 @@ export default async function DispatchIssuePage({
               <Link
                 key={t}
                 href={`/tickers/${encodeURIComponent(t)}`}
-                className="text-[11px] font-mono px-2 py-1 rounded bg-[#1c1a17] border border-[rgba(176,141,87,0.28)] text-[#B08D57] hover:bg-[#241f18]"
+                className="text-[11px] font-mono px-2 py-1 rounded bg-raised border border-[rgb(var(--t-brass) / 0.28)] text-brass hover:bg-raised"
               >
                 ${t}
               </Link>
@@ -111,13 +111,13 @@ export default async function DispatchIssuePage({
           dangerouslySetInnerHTML={{ __html: markdownToHtml(run.content || '') }}
         />
 
-        <div className="mt-10 p-5 rounded bg-[#141210] border border-[rgba(176,141,87,0.28)]">
-          <p className="text-sm text-[#F5EFE0]/80 mb-3">
-            Get <span className="text-[#B08D57]">{newsletter.name}</span> delivered — AI-synthesized from curated sources, daily.
+        <div className="mt-10 p-5 rounded bg-surface border border-[rgb(var(--t-brass) / 0.28)]">
+          <p className="text-sm text-parchment/80 mb-3">
+            Get <span className="text-brass">{newsletter.name}</span> delivered — AI-synthesized from curated sources, daily.
           </p>
           <Link
             href={`/newsletter/${id}`}
-            className="inline-block text-sm font-medium px-4 py-2 rounded bg-[#B08D57] text-[#0e0c0a] hover:bg-[#c79e63]"
+            className="inline-block text-sm font-medium px-4 py-2 rounded bg-brass text-ink hover:bg-brasslit"
           >
             🔔 Subscribe
           </Link>

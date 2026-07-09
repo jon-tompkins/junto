@@ -66,7 +66,7 @@ export function TradingViewChart({ ticker, className = '' }: { ticker: string; c
   const tvUrl = `https://www.tradingview.com/chart/g53lUOaf/?symbol=${encodeURIComponent(symbol)}`;
 
   return (
-    <div className={`relative rounded border border-[rgba(176,141,87,0.18)] overflow-hidden ${className}`}>
+    <div className={`relative rounded border border-[rgb(var(--t-brass) / 0.18)] overflow-hidden ${className}`}>
       <div
         ref={containerRef}
         className="tradingview-widget-container"

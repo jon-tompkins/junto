@@ -28,9 +28,9 @@ function DashboardShareButton() {
     <div className="flex items-center gap-2">
       <button
         onClick={copyLink}
-        className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-[#F5EFE0]/45 hover:text-[#F5EFE0]/70 hover:bg-[#1c1a17] transition"
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-parchment/45 hover:text-parchment/70 hover:bg-raised transition"
       >
-        {copied ? <span className="text-[#3ecf6a]">Copied!</span> : (
+        {copied ? <span className="text-bull">Copied!</span> : (
           <>
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -43,7 +43,7 @@ function DashboardShareButton() {
         href={xUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-[#F5EFE0]/45 hover:text-[#F5EFE0]/70 hover:bg-[#1c1a17] transition"
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-parchment/45 hover:text-parchment/70 hover:bg-raised transition"
       >
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.632zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -173,13 +173,13 @@ function Section({
     <div className="mb-4">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-2 py-2 text-left text-[10px] uppercase tracking-[0.18em] text-[#F5EFE0]/45 hover:text-[#F5EFE0]/75 transition font-[var(--font-oswald)]"
+        className="w-full flex items-center justify-between px-2 py-2 text-left text-[10px] uppercase tracking-[0.18em] text-parchment/45 hover:text-parchment/75 transition font-[var(--font-oswald)]"
       >
         <span className="flex items-center gap-2">
-          <span className="inline-block w-3 text-[#B08D57]">{open ? '▾' : '▸'}</span>
+          <span className="inline-block w-3 text-brass">{open ? '▾' : '▸'}</span>
           <span>{label}</span>
           {badge !== undefined && badge !== null && (
-            <span className="text-[10px] text-[#F5EFE0]/35 normal-case tracking-normal font-mono">
+            <span className="text-[10px] text-parchment/35 normal-case tracking-normal font-mono">
               {badge}
             </span>
           )}
@@ -258,20 +258,20 @@ function LatestDispatchCard() {
     }
   }
 
-  if (loading) return <div className="h-24 rounded bg-[#141210] animate-pulse" />;
+  if (loading) return <div className="h-24 rounded bg-surface animate-pulse" />;
 
   if (proRequired) {
     return (
-      <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/70">
+      <div className="p-4 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface text-sm text-parchment/70">
         Personal dispatch is part of Pro.{' '}
-        <Link href="/pricing" className="text-[#B08D57] hover:underline">See plans →</Link>
+        <Link href="/pricing" className="text-brass hover:underline">See plans →</Link>
       </div>
     );
   }
 
   if (!payload?.latest || history.length === 0) {
     return (
-      <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
+      <div className="p-4 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface text-sm text-parchment/55">
         {payload?.has_featured_junto
           ? 'No dispatch yet — your first will arrive at the next cron run.'
           : 'Pick a primary junto below to start receiving a daily personal dispatch.'}
@@ -285,14 +285,14 @@ function LatestDispatchCard() {
   const hasOlder = currentIndex < history.length - 1;
 
   return (
-    <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] p-5">
+    <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface p-5">
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
         <div className="flex items-center gap-1">
           <button
             onClick={() => loadByIndex(currentIndex + 1)}
             disabled={!hasOlder}
             aria-label="Older dispatch"
-            className="px-2 py-1 rounded text-xs bg-[#1c1a17] border border-[rgba(176,141,87,0.18)] text-[#F5EFE0]/70 hover:text-[#F5EFE0] disabled:opacity-30"
+            className="px-2 py-1 rounded text-xs bg-raised border border-[rgb(var(--t-brass) / 0.18)] text-parchment/70 hover:text-parchment disabled:opacity-30"
           >‹</button>
           <select
             value={currentMeta.id}
@@ -300,7 +300,7 @@ function LatestDispatchCard() {
               const idx = history.findIndex((h) => h.id === e.target.value);
               if (idx >= 0) loadByIndex(idx);
             }}
-            className="bg-[#1c1a17] border border-[rgba(176,141,87,0.18)] rounded px-2 py-1 text-xs text-[#F5EFE0] font-mono focus:outline-none focus:border-[#B08D57]"
+            className="bg-raised border border-[rgb(var(--t-brass) / 0.18)] rounded px-2 py-1 text-xs text-parchment font-mono focus:outline-none focus:border-brass"
           >
             {history.map((h) => (
               <option key={h.id} value={h.id}>{h.dispatch_date}</option>
@@ -310,25 +310,25 @@ function LatestDispatchCard() {
             onClick={() => loadByIndex(currentIndex - 1)}
             disabled={!hasNewer}
             aria-label="Newer dispatch"
-            className="px-2 py-1 rounded text-xs bg-[#1c1a17] border border-[rgba(176,141,87,0.18)] text-[#F5EFE0]/70 hover:text-[#F5EFE0] disabled:opacity-30"
+            className="px-2 py-1 rounded text-xs bg-raised border border-[rgb(var(--t-brass) / 0.18)] text-parchment/70 hover:text-parchment disabled:opacity-30"
           >›</button>
         </div>
-        <span className="text-[10px] text-[#F5EFE0]/40 font-mono">
+        <span className="text-[10px] text-parchment/40 font-mono">
           {currentMeta.source_count} sources · {currentMeta.ticker_count} tickers
         </span>
       </div>
       {navLoading || !current ? (
-        <div className="h-32 rounded bg-[#1c1a17] animate-pulse" />
+        <div className="h-32 rounded bg-raised animate-pulse" />
       ) : (
         <>
           <div
-            className={`research-content prose prose-invert max-w-none text-sm text-[#F5EFE0]/80 leading-relaxed ${expanded ? '' : 'max-h-[24rem] overflow-y-auto pr-1'}`}
+            className={`research-content prose prose-invert max-w-none text-sm text-parchment/80 leading-relaxed ${expanded ? '' : 'max-h-[24rem] overflow-y-auto pr-1'}`}
             dangerouslySetInnerHTML={{ __html: markdownToHtml(current.content) }}
           />
-          <div className="mt-3 pt-3 border-t border-[rgba(176,141,87,0.18)] flex justify-end">
+          <div className="mt-3 pt-3 border-t border-[rgb(var(--t-brass) / 0.18)] flex justify-end">
             <button
               onClick={() => setExpanded((v) => !v)}
-              className="text-[10px] uppercase tracking-wider text-[#B08D57] hover:text-[#F5EFE0] transition font-[var(--font-oswald)]"
+              className="text-[10px] uppercase tracking-wider text-brass hover:text-parchment transition font-[var(--font-oswald)]"
             >
               {expanded ? 'Collapse' : 'Expand full'}
             </button>
@@ -361,28 +361,28 @@ function MyPositionLevelsCard() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="h-24 rounded bg-[#141210] animate-pulse" />;
+  if (loading) return <div className="h-24 rounded bg-surface animate-pulse" />;
   if (!levels || levels.length === 0) {
     return (
-      <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
+      <div className="p-4 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface text-sm text-parchment/55">
         No manual stop/target levels set yet. Visit a position page to set one.
       </div>
     );
   }
   return (
-    <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] divide-y divide-[rgba(176,141,87,0.18)]">
+    <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface divide-y divide-[rgb(var(--t-brass) / 0.18)]">
       {levels.map((l) => (
         <Link
           key={l.ticker}
           href={`/positions/${encodeURIComponent(l.ticker)}`}
-          className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[#1a1815] transition"
+          className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-raised transition"
         >
-          <span className="text-sm font-mono text-[#F5EFE0]">{l.ticker}</span>
+          <span className="text-sm font-mono text-parchment">{l.ticker}</span>
           <div className="flex items-center gap-4 text-xs font-mono">
-            <span className="text-[#F5EFE0]/45">
+            <span className="text-parchment/45">
               stop {l.stop_price !== null ? `$${l.stop_price.toFixed(2)}` : '—'}
             </span>
-            <span className="text-[#F5EFE0]/45">
+            <span className="text-parchment/45">
               target {l.target_price !== null ? `$${l.target_price.toFixed(2)}` : '—'}
             </span>
           </div>
@@ -420,10 +420,10 @@ function ReceivedDispatchesFeed() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="h-24 rounded bg-[#141210] animate-pulse" />;
+  if (loading) return <div className="h-24 rounded bg-surface animate-pulse" />;
   if (!items || items.length === 0) {
     return (
-      <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
+      <div className="p-4 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface text-sm text-parchment/55">
         No dispatches received yet.
       </div>
     );
@@ -433,24 +433,24 @@ function ReceivedDispatchesFeed() {
   const hasMore = visible < items.length;
 
   return (
-    <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210]">
-      <div className="divide-y divide-[rgba(176,141,87,0.18)]">
+    <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface">
+      <div className="divide-y divide-[rgb(var(--t-brass) / 0.18)]">
         {shown.map((it) => (
           <Link
             key={`${it.run_id}-${it.delivered_at}`}
             href={`/newsletter/${it.newsletter_id}`}
-            className="block px-4 py-3 hover:bg-[#1a1815] transition"
+            className="block px-4 py-3 hover:bg-raised transition"
           >
             <div className="flex items-baseline justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-[#F5EFE0] truncate">{it.subject || '(no subject)'}</p>
-                <p className="text-xs text-[#F5EFE0]/45 mt-0.5 truncate">
+                <p className="text-sm text-parchment truncate">{it.subject || '(no subject)'}</p>
+                <p className="text-xs text-parchment/45 mt-0.5 truncate">
                   {it.newsletter_name}
-                  {it.is_personal && <span className="text-[#B08D57]/80"> · personal</span>}
-                  {it.methods.length > 0 && <span className="text-[#F5EFE0]/35"> · {it.methods.join(', ')}</span>}
+                  {it.is_personal && <span className="text-brass/80"> · personal</span>}
+                  {it.methods.length > 0 && <span className="text-parchment/35"> · {it.methods.join(', ')}</span>}
                 </p>
               </div>
-              <span className="text-[10px] text-[#F5EFE0]/40 font-mono whitespace-nowrap">
+              <span className="text-[10px] text-parchment/40 font-mono whitespace-nowrap">
                 {it.dispatch_date || it.delivered_at.slice(0, 10)}
               </span>
             </div>
@@ -458,15 +458,15 @@ function ReceivedDispatchesFeed() {
         ))}
       </div>
       {(hasMore || visible > RECEIVED_PAGE_SIZE) && (
-        <div className="px-4 py-2 border-t border-[rgba(176,141,87,0.18)] flex items-center justify-between">
-          <span className="text-[10px] text-[#F5EFE0]/35 font-mono">
+        <div className="px-4 py-2 border-t border-[rgb(var(--t-brass) / 0.18)] flex items-center justify-between">
+          <span className="text-[10px] text-parchment/35 font-mono">
             Showing {shown.length} of {items.length}
           </span>
           <div className="flex items-center gap-3">
             {visible > RECEIVED_PAGE_SIZE && (
               <button
                 onClick={() => setVisible(RECEIVED_PAGE_SIZE)}
-                className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 hover:text-[#F5EFE0] transition font-[var(--font-oswald)]"
+                className="text-[10px] uppercase tracking-wider text-parchment/45 hover:text-parchment transition font-[var(--font-oswald)]"
               >
                 Show less
               </button>
@@ -474,7 +474,7 @@ function ReceivedDispatchesFeed() {
             {hasMore && (
               <button
                 onClick={() => setVisible((v) => v + RECEIVED_PAGE_SIZE)}
-                className="text-[10px] uppercase tracking-wider text-[#B08D57] hover:text-[#F5EFE0] transition font-[var(--font-oswald)]"
+                className="text-[10px] uppercase tracking-wider text-brass hover:text-parchment transition font-[var(--font-oswald)]"
               >
                 Load more
               </button>
@@ -540,64 +540,64 @@ function WatchlistTickersCard({
 
   if (!watchlistId) {
     return (
-      <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
+      <div className="p-4 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface text-sm text-parchment/55">
         Pick a primary watchlist above to track tickers.
       </div>
     );
   }
 
   return (
-    <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] overflow-hidden">
+    <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface overflow-hidden">
       <form
         onSubmit={(e) => {
           e.preventDefault();
           if (!input.trim()) return;
           Promise.resolve(onAdd(input)).then(() => setInput(''));
         }}
-        className="flex gap-2 px-3 py-2 border-b border-[rgba(176,141,87,0.18)]"
+        className="flex gap-2 px-3 py-2 border-b border-[rgb(var(--t-brass) / 0.18)]"
       >
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Add ticker (e.g. NVDA)"
           disabled={busy}
-          className="flex-1 bg-[#1c1a17] border border-[rgba(176,141,87,0.18)] rounded px-2 py-1 text-xs font-mono uppercase text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
+          className="flex-1 bg-raised border border-[rgb(var(--t-brass) / 0.18)] rounded px-2 py-1 text-xs font-mono uppercase text-parchment placeholder-parchment/30 focus:outline-none focus:border-brass"
         />
         <button
           type="submit"
           disabled={!input.trim() || busy}
-          className="px-3 py-1 text-xs font-medium rounded bg-[#B08D57] text-[#080604] disabled:opacity-40 hover:opacity-90 transition"
+          className="px-3 py-1 text-xs font-medium rounded bg-brass text-ink disabled:opacity-40 hover:opacity-90 transition"
         >
           Add
         </button>
       </form>
-      {error && <p className="text-xs text-[#e8453c] px-3 py-1">{error}</p>}
+      {error && <p className="text-xs text-bear px-3 py-1">{error}</p>}
       {tickers.length === 0 ? (
-        <div className="px-4 py-6 text-sm text-[#F5EFE0]/45 text-center">
+        <div className="px-4 py-6 text-sm text-parchment/45 text-center">
           No tickers yet. Add one above.
         </div>
       ) : (
-        <ul className="divide-y divide-[rgba(176,141,87,0.12)] max-h-[24rem] overflow-y-auto">
+        <ul className="divide-y divide-[rgb(var(--t-brass) / 0.12)] max-h-[24rem] overflow-y-auto">
           {tickers.map((t) => {
             const q = quotes[t.toUpperCase()];
             const pct = q?.changePercent;
             const pctColor = pct == null
-              ? 'text-[#F5EFE0]/35'
-              : pct > 0 ? 'text-[#3ecf6a]' : pct < 0 ? 'text-[#e8453c]' : 'text-[#F5EFE0]/45';
+              ? 'text-parchment/35'
+              : pct > 0 ? 'text-bull' : pct < 0 ? 'text-bear' : 'text-parchment/45';
             return (
-              <li key={t} className="flex items-center gap-3 px-3 py-2 hover:bg-[#1a1815] transition group">
+              <li key={t} className="flex items-center gap-3 px-3 py-2 hover:bg-raised transition group">
                 <Link
                   href={`/positions/${t}`}
                   className="flex-1 flex items-center gap-3 min-w-0"
                 >
-                  <span className="font-mono font-bold text-sm text-[#F5EFE0] w-16 shrink-0">${t}</span>
-                  <span className="font-mono text-sm text-[#F5EFE0]/85 w-20 shrink-0 text-right">
+                  <span className="font-mono font-bold text-sm text-parchment w-16 shrink-0">${t}</span>
+                  <span className="font-mono text-sm text-parchment/85 w-20 shrink-0 text-right">
                     {q?.price != null ? `$${q.price.toFixed(2)}` : '—'}
                   </span>
                   <span className={`font-mono text-xs w-16 shrink-0 text-right ${pctColor}`}>
                     {pct != null ? `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%` : ''}
                   </span>
-                  <span className="text-[10px] uppercase tracking-wider text-[#B08D57]/60 group-hover:text-[#B08D57] transition ml-auto">
+                  <span className="text-[10px] uppercase tracking-wider text-brass/60 group-hover:text-brass transition ml-auto">
                     Details →
                   </span>
                 </Link>
@@ -605,7 +605,7 @@ function WatchlistTickersCard({
                   onClick={() => onRemove(t)}
                   disabled={busy}
                   title="Remove from watchlist"
-                  className="text-[#F5EFE0]/30 hover:text-[#e8453c] transition text-lg leading-none px-1 disabled:opacity-40"
+                  className="text-parchment/30 hover:text-bear transition text-lg leading-none px-1 disabled:opacity-40"
                   aria-label={`Remove ${t}`}
                 >
                   ×
@@ -648,12 +648,12 @@ function PositionsSnapshotCard({ juntoId }: { juntoId: string | null | undefined
 
   if (!juntoId) {
     return (
-      <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
+      <div className="p-4 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface text-sm text-parchment/55">
         Pick a primary junto below to see its top tracked positions.
       </div>
     );
   }
-  if (loading) return <div className="h-32 rounded bg-[#141210] animate-pulse" />;
+  if (loading) return <div className="h-32 rounded bg-surface animate-pulse" />;
 
   const top = [...rows]
     .sort((a, b) => b.fresh_count - a.fresh_count || b.count - a.count)
@@ -661,7 +661,7 @@ function PositionsSnapshotCard({ juntoId }: { juntoId: string | null | undefined
 
   if (top.length === 0) {
     return (
-      <div className="p-4 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-sm text-[#F5EFE0]/55">
+      <div className="p-4 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface text-sm text-parchment/55">
         No tracked positions yet for this junto.
       </div>
     );
@@ -669,27 +669,27 @@ function PositionsSnapshotCard({ juntoId }: { juntoId: string | null | undefined
 
   const stanceColor = (s: string) => {
     const k = s.toLowerCase();
-    if (k.includes('bull')) return 'text-[#3ecf6a]';
-    if (k.includes('bear')) return 'text-[#e8453c]';
-    if (k.includes('caut')) return 'text-[#B08D57]';
-    return 'text-[#F5EFE0]/60';
+    if (k.includes('bull')) return 'text-bull';
+    if (k.includes('bear')) return 'text-bear';
+    if (k.includes('caut')) return 'text-brass';
+    return 'text-parchment/60';
   };
 
   return (
-    <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[rgba(176,141,87,0.18)]">
-        <span className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)]">
+    <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[rgb(var(--t-brass) / 0.18)]">
+        <span className="text-[10px] uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)]">
           Top {top.length}
         </span>
-        <div className="flex rounded overflow-hidden border border-[rgba(176,141,87,0.28)]">
+        <div className="flex rounded overflow-hidden border border-[rgb(var(--t-brass) / 0.28)]">
           {(['heatmap', 'table'] as const).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
               className="px-2 py-0.5 text-[10px] uppercase tracking-wider transition font-[var(--font-oswald)]"
               style={{
-                background: view === v ? '#B08D57' : '#141210',
-                color: view === v ? '#080604' : 'rgba(245,239,224,0.5)',
+                background: view === v ? 'rgb(var(--t-brass))' : 'rgb(var(--t-surface))',
+                color: view === v ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.5)',
               }}
             >
               {v === 'heatmap' ? '⊞ Heatmap' : '≡ Table'}
@@ -717,7 +717,7 @@ function PositionsSnapshotCard({ juntoId }: { juntoId: string | null | undefined
       ) : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[rgba(176,141,87,0.18)] text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 font-[var(--font-oswald)]">
+            <tr className="border-b border-[rgb(var(--t-brass) / 0.18)] text-[10px] uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)]">
               <th className="py-2 px-4 text-left">Ticker</th>
               <th className="py-2 px-4 text-left">Stance</th>
               <th className="py-2 px-4 text-right">Sources</th>
@@ -726,23 +726,23 @@ function PositionsSnapshotCard({ juntoId }: { juntoId: string | null | undefined
           </thead>
           <tbody>
             {top.map((p) => (
-              <tr key={`${p.ticker}::${p.stance}`} className="border-b border-[rgba(176,141,87,0.1)] last:border-0 hover:bg-[#1c1a17] transition">
+              <tr key={`${p.ticker}::${p.stance}`} className="border-b border-[rgb(var(--t-brass) / 0.1)] last:border-0 hover:bg-raised transition">
                 <td className="py-2 px-4 font-mono text-xs">
-                  <Link href={`/positions/${p.ticker}`} className="text-[#F5EFE0]/85 hover:text-[#B08D57]">
+                  <Link href={`/positions/${p.ticker}`} className="text-parchment/85 hover:text-brass">
                     ${p.ticker}
                   </Link>
                 </td>
                 <td className={`py-2 px-4 text-xs uppercase ${stanceColor(p.stance)}`}>{p.stance}</td>
-                <td className="py-2 px-4 text-xs text-right text-[#F5EFE0]/60 font-mono">{p.count}</td>
-                <td className="py-2 px-4 text-xs text-right text-[#F5EFE0]/60 font-mono">{p.fresh_count}</td>
+                <td className="py-2 px-4 text-xs text-right text-parchment/60 font-mono">{p.count}</td>
+                <td className="py-2 px-4 text-xs text-right text-parchment/60 font-mono">{p.fresh_count}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
 
-      <div className="px-4 py-2 border-t border-[rgba(176,141,87,0.18)] text-right">
-        <Link href={`/positions?junto_id=${juntoId}`} className="text-xs text-[#B08D57] hover:underline">
+      <div className="px-4 py-2 border-t border-[rgb(var(--t-brass) / 0.18)] text-right">
+        <Link href={`/positions?junto_id=${juntoId}`} className="text-xs text-brass hover:underline">
           View all positions →
         </Link>
       </div>
@@ -781,9 +781,9 @@ function fmtUsdDash(n: number | null | undefined): string {
 function DashStat({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: string }) {
   return (
     <div>
-      <div className="text-[#F5EFE0]/45 uppercase tracking-wider text-[10px] font-[var(--font-oswald)] mb-1">{label}</div>
-      <div className="font-mono text-sm leading-tight" style={{ color: accent || '#F5EFE0' }}>{value}</div>
-      {sub && <div className="text-[10px] text-[#F5EFE0]/40 font-mono mt-0.5">{sub}</div>}
+      <div className="text-parchment/45 uppercase tracking-wider text-[10px] font-[var(--font-oswald)] mb-1">{label}</div>
+      <div className="font-mono text-sm leading-tight" style={{ color: accent || 'rgb(var(--t-parchment))' }}>{value}</div>
+      {sub && <div className="text-[10px] text-parchment/40 font-mono mt-0.5">{sub}</div>}
     </div>
   );
 }
@@ -844,42 +844,42 @@ function TradingPortfolioCard() {
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-2 px-1">
-        <h2 className="text-[10px] uppercase tracking-[0.18em] text-[#F5EFE0]/45 font-[var(--font-oswald)]">
+        <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/45 font-[var(--font-oswald)]">
           Trading Portfolio
         </h2>
-        <Link href="/trading" className="text-[10px] uppercase tracking-wider text-[#B08D57] hover:text-[#F5EFE0] transition font-[var(--font-oswald)]">
+        <Link href="/trading" className="text-[10px] uppercase tracking-wider text-brass hover:text-parchment transition font-[var(--font-oswald)]">
           Manage
         </Link>
       </div>
-      <div className="rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] overflow-hidden">
+      <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface overflow-hidden">
         {portfolio && (
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 p-4 border-b border-[rgba(176,141,87,0.18)]">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 p-4 border-b border-[rgb(var(--t-brass) / 0.18)]">
             <DashStat label="Equity" value={fmtUsdDash(portfolio.total_equity)} sub={`capital ${fmtUsdDash(portfolio.total_capital)}`} />
             <DashStat label="Cash" value={fmtUsdDash(portfolio.total_cash)} sub={portfolio.cash_pct == null ? undefined : `${portfolio.cash_pct.toFixed(1)}% of equity`} />
-            <DashStat label="Unrealized" value={fmtUsdDash(portfolio.total_unrealized_pnl)} accent={portfolio.total_unrealized_pnl >= 0 ? '#3ecf6a' : '#e8453c'} />
-            <DashStat label="Realized" value={fmtUsdDash(portfolio.total_realized_pnl)} accent={portfolio.total_realized_pnl >= 0 ? '#3ecf6a' : '#e8453c'} />
-            <DashStat label="Total P/L" value={fmtUsdDash(totalPl)} accent={totalPl >= 0 ? '#3ecf6a' : '#e8453c'} />
+            <DashStat label="Unrealized" value={fmtUsdDash(portfolio.total_unrealized_pnl)} accent={portfolio.total_unrealized_pnl >= 0 ? 'rgb(var(--t-bull))' : 'rgb(var(--t-bear))'} />
+            <DashStat label="Realized" value={fmtUsdDash(portfolio.total_realized_pnl)} accent={portfolio.total_realized_pnl >= 0 ? 'rgb(var(--t-bull))' : 'rgb(var(--t-bear))'} />
+            <DashStat label="Total P/L" value={fmtUsdDash(totalPl)} accent={totalPl >= 0 ? 'rgb(var(--t-bull))' : 'rgb(var(--t-bear))'} />
             <DashStat label="Mandates" value={String(portfolio.mandate_count)} />
           </div>
         )}
-        <div className="divide-y divide-[rgba(176,141,87,0.12)]">
+        <div className="divide-y divide-[rgb(var(--t-brass) / 0.12)]">
           {mandates.map((m) => (
             <Link
               key={m.id}
               href={`/trading/${m.id}`}
-              className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[#1a1815] transition"
+              className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-raised transition"
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-[#F5EFE0] truncate">{m.name}</span>
-                  <span className={`px-1.5 py-px rounded text-[9px] font-mono ${m.mode === 'live' ? 'bg-[#e8453c]/20 text-[#e8453c]' : 'bg-[#3ecf6a]/20 text-[#3ecf6a]'}`}>{m.mode}</span>
+                  <span className="text-sm text-parchment truncate">{m.name}</span>
+                  <span className={`px-1.5 py-px rounded text-[9px] font-mono ${m.mode === 'live' ? 'bg-bear/20 text-bear' : 'bg-bull/20 text-bull'}`}>{m.mode}</span>
                 </div>
-                <div className="text-[11px] text-[#F5EFE0]/40 mt-0.5">
+                <div className="text-[11px] text-parchment/40 mt-0.5">
                   {m.junto_name || 'no junto'} · {m.stats.open} open · {m.stats.closed} closed
                 </div>
               </div>
               <div className="flex items-center gap-4 text-xs font-mono whitespace-nowrap">
-                <span title="Unrealized P/L" style={{ color: m.stats.unrealized == null ? 'rgba(245,239,224,0.45)' : m.stats.unrealized >= 0 ? '#3ecf6a' : '#e8453c' }}>
+                <span title="Unrealized P/L" style={{ color: m.stats.unrealized == null ? 'rgb(var(--t-parchment) / 0.45)' : m.stats.unrealized >= 0 ? 'rgb(var(--t-bull))' : 'rgb(var(--t-bear))' }}>
                   {fmtUsdDash(m.stats.unrealized)}
                 </span>
               </div>
@@ -1258,41 +1258,41 @@ export default function DashboardPage() {
 
   const creditColor =
     creditBalance !== null && creditBalance <= 50
-      ? 'text-[#e8453c]'
+      ? 'text-bear'
       : creditBalance !== null && creditBalance <= 100
         ? 'text-amber-400'
-        : 'text-[#3ecf6a]';
+        : 'text-bull';
 
   if (status === 'loading') {
     return (
-      <main className="min-h-screen bg-[#080604] text-[#F5EFE0] flex items-center justify-center">
-        <div className="animate-pulse text-[#F5EFE0]/45">Loading...</div>
+      <main className="min-h-screen bg-ink text-parchment flex items-center justify-center">
+        <div className="animate-pulse text-parchment/45">Loading...</div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {subSuccess && (
-          <div className="mb-6 p-4 bg-[#3ecf6a]/10 border border-[#3ecf6a]/40 rounded flex items-center gap-3">
-            <svg className="w-5 h-5 text-[#3ecf6a] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="mb-6 p-4 bg-bull/10 border border-bull/40 rounded flex items-center gap-3">
+            <svg className="w-5 h-5 text-bull flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
             <div>
-              <p className="text-[#3ecf6a] font-medium text-sm">Welcome to Pro!</p>
-              <p className="text-[#3ecf6a]/70 text-xs mt-0.5">1,000 credits added. You can now create dispatches and add watchlist tickers.</p>
+              <p className="text-bull font-medium text-sm">Welcome to Pro!</p>
+              <p className="text-bull/70 text-xs mt-0.5">1,000 credits added. You can now create dispatches and add watchlist tickers.</p>
             </div>
           </div>
         )}
 
         {accountEmail === null && !loading && (
-          <div className="mb-8 p-4 bg-[#B08D57]/10 border border-[rgba(176,141,87,0.28)] rounded flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="mb-8 p-4 bg-brass/10 border border-[rgb(var(--t-brass) / 0.28)] rounded flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="flex-1">
-              <p className="text-[#B08D57] font-medium text-sm">Add your email to receive dispatches</p>
-              <p className="text-[#B08D57]/60 text-xs mt-0.5">Used as the default delivery email for your subscriptions.</p>
+              <p className="text-brass font-medium text-sm">Add your email to receive dispatches</p>
+              <p className="text-brass/60 text-xs mt-0.5">Used as the default delivery email for your subscriptions.</p>
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
               <input
@@ -1300,12 +1300,12 @@ export default function DashboardPage() {
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 placeholder="you@example.com"
-                className="flex-1 sm:w-64 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-1.5 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
+                className="flex-1 sm:w-64 bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-1.5 text-sm text-parchment placeholder-parchment/30 focus:outline-none focus:border-brass"
               />
               <button
                 onClick={handleSaveEmail}
                 disabled={savingEmail || !emailInput.trim()}
-                className="px-4 py-1.5 bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] text-sm font-medium rounded transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
+                className="px-4 py-1.5 bg-brass hover:bg-brass/80 text-ink text-sm font-medium rounded transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
               >
                 {savingEmail ? 'Saving...' : 'Save'}
               </button>
@@ -1317,7 +1317,7 @@ export default function DashboardPage() {
         <div className="flex items-start justify-between mb-10">
           <div>
             <h1 className="text-3xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Dashboard</h1>
-            <p className="text-[#F5EFE0]/60">
+            <p className="text-parchment/60">
               Welcome back{session?.user?.name ? `, ${session.user.name}` : ''}.
             </p>
           </div>
@@ -1325,14 +1325,14 @@ export default function DashboardPage() {
             {creditBalance !== null && (
               <Link
                 href="/settings"
-                className={`px-3 py-2.5 rounded border border-[rgba(176,141,87,0.28)] bg-[#141210] text-xs font-mono ${creditColor}`}
+                className={`px-3 py-2.5 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface text-xs font-mono ${creditColor}`}
               >
                 {creditBalance.toLocaleString()} credits
               </Link>
             )}
             <Link
               href="/create"
-              className="bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] px-5 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition text-sm shrink-0"
+              className="bg-brass hover:bg-brass/80 text-ink px-5 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition text-sm shrink-0"
             >
               + New Dispatch
             </Link>
@@ -1341,7 +1341,7 @@ export default function DashboardPage() {
 
         {/* ─── Today's Dispatch (focal point) ──────────── */}
         <div className="mb-8">
-          <h2 className="text-[10px] uppercase tracking-[0.18em] text-[#F5EFE0]/45 font-[var(--font-oswald)] mb-2 px-1">
+          <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/45 font-[var(--font-oswald)] mb-2 px-1">
             Today&apos;s Dispatch
           </h2>
           <LatestDispatchCard />
@@ -1355,28 +1355,28 @@ export default function DashboardPage() {
           {/* Watchlist column */}
           <div>
             <div className="flex items-center justify-between mb-2 px-1">
-              <h2 className="text-[10px] uppercase tracking-[0.18em] text-[#F5EFE0]/45 font-[var(--font-oswald)]">
+              <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/45 font-[var(--font-oswald)]">
                 Watchlist{featuredWatchlist?.name ? ` · ${featuredWatchlist.name}` : ''}
               </h2>
               <div className="flex items-center gap-2">
                 {featuredWatchlist && (
                   <Link
                     href={`/watchlists/${featuredWatchlist.id}`}
-                    className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 hover:text-[#F5EFE0] transition font-[var(--font-oswald)]"
+                    className="text-[10px] uppercase tracking-wider text-parchment/45 hover:text-parchment transition font-[var(--font-oswald)]"
                   >
                     Edit
                   </Link>
                 )}
                 <button
                   onClick={() => setShowWatchlistPicker((p) => !p)}
-                  className="text-[10px] uppercase tracking-wider text-[#B08D57] hover:text-[#F5EFE0] transition font-[var(--font-oswald)]"
+                  className="text-[10px] uppercase tracking-wider text-brass hover:text-parchment transition font-[var(--font-oswald)]"
                 >
                   Change
                 </button>
               </div>
             </div>
             {showWatchlistPicker && (
-              <div className="mb-2 px-3 py-2 rounded border border-[rgba(176,141,87,0.18)] bg-[#0f0e0c]">
+              <div className="mb-2 px-3 py-2 rounded border border-[rgb(var(--t-brass) / 0.18)] bg-ink">
                 <div className="flex flex-wrap gap-1.5">
                   {allWatchlists.map((w) => (
                     <button
@@ -1384,8 +1384,8 @@ export default function DashboardPage() {
                       onClick={() => handleChangeFeaturedWatchlist(w.id)}
                       className={`text-xs px-2.5 py-1 rounded-sm transition ${
                         w.id === featuredWatchlist?.id
-                          ? 'bg-[#B08D57] text-[#080604] font-semibold'
-                          : 'bg-[#1c1a17] text-[#F5EFE0]/70 hover:text-[#F5EFE0]'
+                          ? 'bg-brass text-ink font-semibold'
+                          : 'bg-raised text-parchment/70 hover:text-parchment'
                       }`}
                     >
                       {w.name} <span className="opacity-50 ml-1">({w.tickers.length})</span>
@@ -1393,7 +1393,7 @@ export default function DashboardPage() {
                   ))}
                   <button
                     onClick={handleCreateWatchlist}
-                    className="text-xs px-2.5 py-1 rounded-sm border border-dashed border-[rgba(176,141,87,0.35)] text-[#B08D57] hover:bg-[#1c1a17] transition"
+                    className="text-xs px-2.5 py-1 rounded-sm border border-dashed border-[rgb(var(--t-brass) / 0.35)] text-brass hover:bg-raised transition"
                   >
                     + New
                   </button>
@@ -1413,28 +1413,28 @@ export default function DashboardPage() {
           {/* Junto column */}
           <div>
             <div className="flex items-center justify-between mb-2 px-1">
-              <h2 className="text-[10px] uppercase tracking-[0.18em] text-[#F5EFE0]/45 font-[var(--font-oswald)]">
+              <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/45 font-[var(--font-oswald)]">
                 Junto{featuredJunto?.name ? ` · ${featuredJunto.name}` : ''}
               </h2>
               <div className="flex items-center gap-2">
                 {featuredJunto && allJuntos.some((j) => j.id === featuredJunto.id) && (
                   <Link
                     href={`/junto/${featuredJunto.id}/edit`}
-                    className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/45 hover:text-[#F5EFE0] transition font-[var(--font-oswald)]"
+                    className="text-[10px] uppercase tracking-wider text-parchment/45 hover:text-parchment transition font-[var(--font-oswald)]"
                   >
                     Edit
                   </Link>
                 )}
                 <button
                   onClick={() => setShowJuntoPicker((p) => !p)}
-                  className="text-[10px] uppercase tracking-wider text-[#B08D57] hover:text-[#F5EFE0] transition font-[var(--font-oswald)]"
+                  className="text-[10px] uppercase tracking-wider text-brass hover:text-parchment transition font-[var(--font-oswald)]"
                 >
                   Change
                 </button>
               </div>
             </div>
             {showJuntoPicker && (
-              <div className="mb-2 px-3 py-2 rounded border border-[rgba(176,141,87,0.18)] bg-[#0f0e0c]">
+              <div className="mb-2 px-3 py-2 rounded border border-[rgb(var(--t-brass) / 0.18)] bg-ink">
                 <div className="flex flex-wrap gap-1.5">
                   {allJuntos.map((j) => (
                     <button
@@ -1442,8 +1442,8 @@ export default function DashboardPage() {
                       onClick={() => handleChangeFeaturedJunto(j.id)}
                       className={`text-xs px-2.5 py-1 rounded-sm transition ${
                         j.id === featuredJunto?.id
-                          ? 'bg-[#B08D57] text-[#080604] font-semibold'
-                          : 'bg-[#1c1a17] text-[#F5EFE0]/70 hover:text-[#F5EFE0]'
+                          ? 'bg-brass text-ink font-semibold'
+                          : 'bg-raised text-parchment/70 hover:text-parchment'
                       }`}
                     >
                       {j.name}
@@ -1451,7 +1451,7 @@ export default function DashboardPage() {
                   ))}
                   <Link
                     href="/junto/new"
-                    className="text-xs px-2.5 py-1 rounded-sm border border-dashed border-[rgba(176,141,87,0.35)] text-[#B08D57] hover:bg-[#1c1a17] transition"
+                    className="text-xs px-2.5 py-1 rounded-sm border border-dashed border-[rgb(var(--t-brass) / 0.35)] text-brass hover:bg-raised transition"
                   >
                     + New
                   </Link>
@@ -1459,7 +1459,7 @@ export default function DashboardPage() {
               </div>
             )}
             {featuredJunto && featuredJunto.junto_sources.length > 0 && (
-              <div className="mb-2 px-3 py-2 rounded border border-[rgba(176,141,87,0.18)] bg-[#141210] flex flex-wrap items-center gap-1.5">
+              <div className="mb-2 px-3 py-2 rounded border border-[rgb(var(--t-brass) / 0.18)] bg-surface flex flex-wrap items-center gap-1.5">
                 {featuredJunto.junto_sources.slice(0, 16).map((js) => {
                   const src = js.source;
                   if (!src) return null;
@@ -1468,21 +1468,21 @@ export default function DashboardPage() {
                       key={js.id}
                       href={`/sources/${src.handle_or_url}`}
                       title={src.display_name || src.handle_or_url}
-                      className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#1c1a17] hover:bg-[#1c1a17]/70 transition"
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-raised hover:bg-raised/70 transition"
                     >
                       {src.avatar_url ? (
                         <img src={src.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
                       ) : (
-                        <span className="w-4 h-4 rounded-full bg-[#B08D57]/30 flex items-center justify-center text-[7px] text-[#B08D57] font-bold">
+                        <span className="w-4 h-4 rounded-full bg-brass/30 flex items-center justify-center text-[7px] text-brass font-bold">
                           {(src.display_name || src.handle_or_url).charAt(0).toUpperCase()}
                         </span>
                       )}
-                      <span className="text-[11px] text-[#F5EFE0]/70">@{src.handle_or_url}</span>
+                      <span className="text-[11px] text-parchment/70">@{src.handle_or_url}</span>
                     </Link>
                   );
                 })}
                 {featuredJunto.junto_sources.length > 16 && (
-                  <span className="text-[11px] text-[#F5EFE0]/40">+{featuredJunto.junto_sources.length - 16}</span>
+                  <span className="text-[11px] text-parchment/40">+{featuredJunto.junto_sources.length - 16}</span>
                 )}
               </div>
             )}
@@ -1493,7 +1493,7 @@ export default function DashboardPage() {
         {/* ─── Junto Chat ────────────────────────────────── */}
         {featuredJunto && (
           <div className="mb-8">
-            <h2 className="text-[10px] uppercase tracking-[0.18em] text-[#F5EFE0]/45 font-[var(--font-oswald)] mb-2 px-1">
+            <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/45 font-[var(--font-oswald)] mb-2 px-1">
               Chat with {featuredJunto.name}
             </h2>
             <JuntoChat juntoId={featuredJunto.id} juntoName={featuredJunto.name} />
@@ -1502,7 +1502,7 @@ export default function DashboardPage() {
 
         {/* ─── Received dispatches feed ─────────────────── */}
         <div className="mb-8">
-          <h2 className="text-[10px] uppercase tracking-[0.18em] text-[#F5EFE0]/45 font-[var(--font-oswald)] mb-2 px-1">
+          <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/45 font-[var(--font-oswald)] mb-2 px-1">
             Received Dispatches
           </h2>
           <ReceivedDispatchesFeed />
@@ -1510,12 +1510,12 @@ export default function DashboardPage() {
 
         {/* ─── Legacy primary-junto detail panel (hidden) ── */}
         <div className="hidden">
-        <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(176,141,87,0.18)]">
+        <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[rgb(var(--t-brass) / 0.18)]">
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-[#B08D57]/70 font-mono mb-0.5">Your Primary Junto</p>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-brass/70 font-mono mb-0.5">Your Primary Junto</p>
               {juntoLoading ? (
-                <div className="h-5 w-40 bg-[#1c1a17] rounded animate-pulse" />
+                <div className="h-5 w-40 bg-raised rounded animate-pulse" />
               ) : editingJuntoName ? (
                 <div className="flex items-center gap-2">
                   <input
@@ -1527,25 +1527,25 @@ export default function DashboardPage() {
                       if (e.key === 'Enter') handleRenameJunto();
                       if (e.key === 'Escape') setEditingJuntoName(false);
                     }}
-                    className="bg-[#080604] border border-[rgba(176,141,87,0.4)] rounded px-2 py-1 text-base font-semibold text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]"
+                    className="bg-ink border border-[rgb(var(--t-brass) / 0.4)] rounded px-2 py-1 text-base font-semibold text-parchment focus:outline-none focus:border-brass"
                   />
                   <button
                     onClick={handleRenameJunto}
                     disabled={savingJuntoName || !juntoNameDraft.trim()}
-                    className="text-xs px-2 py-1 rounded-sm bg-[#B08D57] text-[#080604] disabled:opacity-40 font-[var(--font-oswald)] uppercase tracking-wide"
+                    className="text-xs px-2 py-1 rounded-sm bg-brass text-ink disabled:opacity-40 font-[var(--font-oswald)] uppercase tracking-wide"
                   >
                     {savingJuntoName ? '...' : 'Save'}
                   </button>
                   <button
                     onClick={() => setEditingJuntoName(false)}
-                    className="text-xs px-2 py-1 rounded-sm text-[#F5EFE0]/50 hover:text-[#F5EFE0]"
+                    className="text-xs px-2 py-1 rounded-sm text-parchment/50 hover:text-parchment"
                   >
                     Cancel
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base font-semibold text-[#F5EFE0] truncate">
+                  <h2 className="text-base font-semibold text-parchment truncate">
                     {featuredJunto?.name ?? 'Loading…'}
                   </h2>
                   {featuredJunto && allJuntos.some(j => j.id === featuredJunto.id) && (
@@ -1554,7 +1554,7 @@ export default function DashboardPage() {
                         setJuntoNameDraft(featuredJunto.name);
                         setEditingJuntoName(true);
                       }}
-                      className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/35 hover:text-[#B08D57] transition"
+                      className="text-[10px] uppercase tracking-wider text-parchment/35 hover:text-brass transition"
                       title="Rename"
                     >
                       Rename
@@ -1569,14 +1569,14 @@ export default function DashboardPage() {
                   {allJuntos.some(j => j.id === featuredJunto.id) && (
                     <Link
                       href={`/junto/${featuredJunto.id}/edit`}
-                      className="text-xs px-3 py-1.5 rounded-sm bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/70 transition"
+                      className="text-xs px-3 py-1.5 rounded-sm bg-raised hover:bg-raised/80 text-parchment/70 transition"
                     >
                       Edit sources
                     </Link>
                   )}
                   <button
                     onClick={() => setShowJuntoPicker(p => !p)}
-                    className="text-xs px-3 py-1.5 rounded-sm bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#B08D57] transition"
+                    className="text-xs px-3 py-1.5 rounded-sm bg-raised hover:bg-raised/80 text-brass transition"
                   >
                     Change
                   </button>
@@ -1586,9 +1586,9 @@ export default function DashboardPage() {
           </div>
 
           {showJuntoPicker && (
-            <div className="px-5 py-3 bg-[#0f0e0c] border-b border-[rgba(176,141,87,0.18)] space-y-3">
+            <div className="px-5 py-3 bg-ink border-b border-[rgb(var(--t-brass) / 0.18)] space-y-3">
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 mb-2 font-[var(--font-oswald)]">Your juntos</p>
+                <p className="text-[10px] uppercase tracking-wider text-parchment/40 mb-2 font-[var(--font-oswald)]">Your juntos</p>
                 <div className="flex flex-wrap gap-2">
                   {allJuntos.map(j => (
                     <button
@@ -1596,21 +1596,21 @@ export default function DashboardPage() {
                       onClick={() => handleChangeFeaturedJunto(j.id)}
                       className={`text-xs px-3 py-1.5 rounded-sm transition ${
                         j.id === featuredJunto?.id
-                          ? 'bg-[#B08D57] text-[#080604] font-semibold'
-                          : 'bg-[#1c1a17] text-[#F5EFE0]/70 hover:text-[#F5EFE0]'
+                          ? 'bg-brass text-ink font-semibold'
+                          : 'bg-raised text-parchment/70 hover:text-parchment'
                       }`}
                     >
                       {j.name}
                     </button>
                   ))}
-                  <Link href="/junto/new" className="text-xs px-3 py-1.5 rounded-sm border border-dashed border-[rgba(176,141,87,0.35)] text-[#B08D57] hover:bg-[#1c1a17] transition">
+                  <Link href="/junto/new" className="text-xs px-3 py-1.5 rounded-sm border border-dashed border-[rgb(var(--t-brass) / 0.35)] text-brass hover:bg-raised transition">
                     + New
                   </Link>
                 </div>
               </div>
               {publicJuntos.length > 0 && (
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 mb-2 font-[var(--font-oswald)]">Public juntos</p>
+                  <p className="text-[10px] uppercase tracking-wider text-parchment/40 mb-2 font-[var(--font-oswald)]">Public juntos</p>
                   <div className="flex flex-wrap gap-2">
                     {publicJuntos.slice(0, 24).map(j => (
                       <button
@@ -1618,14 +1618,14 @@ export default function DashboardPage() {
                         onClick={() => handleChangeFeaturedJunto(j.id)}
                         className={`text-xs px-3 py-1.5 rounded-sm transition ${
                           j.id === featuredJunto?.id
-                            ? 'bg-[#B08D57] text-[#080604] font-semibold'
-                            : 'bg-[#1c1a17] text-[#F5EFE0]/70 hover:text-[#F5EFE0]'
+                            ? 'bg-brass text-ink font-semibold'
+                            : 'bg-raised text-parchment/70 hover:text-parchment'
                         }`}
                       >
                         {j.name}
                       </button>
                     ))}
-                    <Link href="/juntos" className="text-xs px-3 py-1.5 text-[#B08D57] hover:underline self-center">
+                    <Link href="/juntos" className="text-xs px-3 py-1.5 text-brass hover:underline self-center">
                       Browse all →
                     </Link>
                   </div>
@@ -1637,7 +1637,7 @@ export default function DashboardPage() {
           <div className="px-5 py-4">
             {juntoLoading ? (
               <div className="flex gap-2">
-                {[1,2,3].map(i => <div key={i} className="w-9 h-9 rounded-full bg-[#1c1a17] animate-pulse" />)}
+                {[1,2,3].map(i => <div key={i} className="w-9 h-9 rounded-full bg-raised animate-pulse" />)}
               </div>
             ) : featuredJunto && featuredJunto.junto_sources.length > 0 ? (
               <div className="flex flex-wrap items-center gap-2">
@@ -1650,20 +1650,20 @@ export default function DashboardPage() {
                       key={js.id}
                       href={`/sources/${src.handle_or_url}`}
                       title={src.display_name || src.handle_or_url}
-                      className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1c1a17] hover:bg-[#1c1a17]/70 transition group"
+                      className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-raised hover:bg-raised/70 transition group"
                     >
                       {src.avatar_url ? (
                         <img src={src.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
                       ) : (
-                        <div className="w-5 h-5 rounded-full bg-[#B08D57]/30 flex items-center justify-center text-[8px] text-[#B08D57] font-bold">
+                        <div className="w-5 h-5 rounded-full bg-brass/30 flex items-center justify-center text-[8px] text-brass font-bold">
                           {(src.display_name || src.handle_or_url).charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <span className="text-xs text-[#F5EFE0]/70">@{src.handle_or_url}</span>
+                      <span className="text-xs text-parchment/70">@{src.handle_or_url}</span>
                       {isSilent && (
                         <>
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#F5EFE0]/25 flex-shrink-0" />
-                          <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-max max-w-[180px] px-2 py-1 rounded text-[10px] text-[#F5EFE0]/70 bg-[#0f0e0a] border border-[#F5EFE0]/10 opacity-0 group-hover:opacity-100 transition whitespace-normal text-center z-10">
+                          <span className="w-1.5 h-1.5 rounded-full bg-parchment/25 flex-shrink-0" />
+                          <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-max max-w-[180px] px-2 py-1 rounded text-[10px] text-parchment/70 bg-ink border border-parchment/10 opacity-0 group-hover:opacity-100 transition whitespace-normal text-center z-10">
                             Source hasn&apos;t tweeted since addition to myjunto
                           </span>
                         </>
@@ -1672,14 +1672,14 @@ export default function DashboardPage() {
                   );
                 })}
                 {featuredJunto.junto_sources.length > 12 && (
-                  <span className="text-xs text-[#F5EFE0]/40">+{featuredJunto.junto_sources.length - 12} more</span>
+                  <span className="text-xs text-parchment/40">+{featuredJunto.junto_sources.length - 12} more</span>
                 )}
               </div>
             ) : (
-              <div className="text-sm text-[#F5EFE0]/45">
+              <div className="text-sm text-parchment/45">
                 No accounts yet.{' '}
                 {featuredJunto && (
-                  <Link href={`/junto/${featuredJunto.id}/edit`} className="text-[#B08D57] hover:opacity-80">
+                  <Link href={`/junto/${featuredJunto.id}/edit`} className="text-brass hover:opacity-80">
                     Add the accounts you follow →
                   </Link>
                 )}
@@ -1694,26 +1694,26 @@ export default function DashboardPage() {
                   onClick={handleSynthesize}
                   disabled={synthesizing}
                   className="px-4 py-2 text-xs font-semibold uppercase tracking-wide rounded-sm transition disabled:opacity-40 font-[var(--font-oswald)]"
-                  style={{ background: '#B08D57', color: '#080604' }}
+                  style={{ background: 'rgb(var(--t-brass))', color: 'rgb(var(--t-ink))' }}
                 >
                   {synthesizing ? 'Synthesizing…' : 'What are they talking about?'}
                 </button>
                 <Link
                   href={`/positions?junto_id=${featuredJunto.id}`}
-                  className="text-xs text-[#B08D57] hover:opacity-80 transition"
+                  className="text-xs text-brass hover:opacity-80 transition"
                 >
                   View positions →
                 </Link>
               </div>
 
               {synthError && (
-                <p className="text-xs text-[#e8453c]">{synthError}</p>
+                <p className="text-xs text-bear">{synthError}</p>
               )}
 
               {synthesis && (
-                <div className="border-t border-[rgba(176,141,87,0.18)] pt-4">
-                  <div className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-[#F5EFE0]/35 font-[var(--font-mono)]">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#B08D57]" />
+                <div className="border-t border-[rgb(var(--t-brass) / 0.18)] pt-4">
+                  <div className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-parchment/35 font-[var(--font-mono)]">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-brass" />
                     Live synthesis
                   </div>
                   <div
@@ -1731,12 +1731,12 @@ export default function DashboardPage() {
 
         {/* ─── Legacy watchlist editor (hidden) ─────────── */}
         <div className="hidden">
-        <section className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[rgba(176,141,87,0.18)]">
+        <section className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[rgb(var(--t-brass) / 0.18)]">
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-[#B08D57]/70 font-mono mb-0.5">Your Primary Watchlist</p>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-brass/70 font-mono mb-0.5">Your Primary Watchlist</p>
               {watchlistLoading ? (
-                <div className="h-5 w-40 bg-[#1c1a17] rounded animate-pulse" />
+                <div className="h-5 w-40 bg-raised rounded animate-pulse" />
               ) : editingWatchlistName ? (
                 <div className="flex items-center gap-2">
                   <input
@@ -1748,25 +1748,25 @@ export default function DashboardPage() {
                       if (e.key === 'Enter') handleRenameWatchlist();
                       if (e.key === 'Escape') setEditingWatchlistName(false);
                     }}
-                    className="bg-[#080604] border border-[rgba(176,141,87,0.4)] rounded px-2 py-1 text-base font-semibold text-[#F5EFE0] focus:outline-none focus:border-[#B08D57]"
+                    className="bg-ink border border-[rgb(var(--t-brass) / 0.4)] rounded px-2 py-1 text-base font-semibold text-parchment focus:outline-none focus:border-brass"
                   />
                   <button
                     onClick={handleRenameWatchlist}
                     disabled={savingWatchlistName || !watchlistNameDraft.trim()}
-                    className="text-xs px-2 py-1 rounded-sm bg-[#B08D57] text-[#080604] disabled:opacity-40 font-[var(--font-oswald)] uppercase tracking-wide"
+                    className="text-xs px-2 py-1 rounded-sm bg-brass text-ink disabled:opacity-40 font-[var(--font-oswald)] uppercase tracking-wide"
                   >
                     {savingWatchlistName ? '...' : 'Save'}
                   </button>
                   <button
                     onClick={() => setEditingWatchlistName(false)}
-                    className="text-xs px-2 py-1 rounded-sm text-[#F5EFE0]/50 hover:text-[#F5EFE0]"
+                    className="text-xs px-2 py-1 rounded-sm text-parchment/50 hover:text-parchment"
                   >
                     Cancel
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base font-semibold text-[#F5EFE0] truncate">
+                  <h2 className="text-base font-semibold text-parchment truncate">
                     {featuredWatchlist?.name ?? 'Loading…'}
                   </h2>
                   {featuredWatchlist && (
@@ -1775,7 +1775,7 @@ export default function DashboardPage() {
                         setWatchlistNameDraft(featuredWatchlist.name);
                         setEditingWatchlistName(true);
                       }}
-                      className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/35 hover:text-[#B08D57] transition"
+                      className="text-[10px] uppercase tracking-wider text-parchment/35 hover:text-brass transition"
                       title="Rename"
                     >
                       Rename
@@ -1789,13 +1789,13 @@ export default function DashboardPage() {
                 <>
                   <Link
                     href={`/watchlists/${featuredWatchlist.id}`}
-                    className="text-xs px-3 py-1.5 rounded-sm bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#F5EFE0]/70 transition"
+                    className="text-xs px-3 py-1.5 rounded-sm bg-raised hover:bg-raised/80 text-parchment/70 transition"
                   >
                     Edit
                   </Link>
                   <button
                     onClick={() => setShowWatchlistPicker(p => !p)}
-                    className="text-xs px-3 py-1.5 rounded-sm bg-[#1c1a17] hover:bg-[#1c1a17]/80 text-[#B08D57] transition"
+                    className="text-xs px-3 py-1.5 rounded-sm bg-raised hover:bg-raised/80 text-brass transition"
                   >
                     Change
                   </button>
@@ -1805,8 +1805,8 @@ export default function DashboardPage() {
           </div>
 
           {showWatchlistPicker && (
-            <div className="px-5 py-3 bg-[#0f0e0c] border-b border-[rgba(176,141,87,0.18)]">
-              <p className="text-[10px] uppercase tracking-wider text-[#F5EFE0]/40 mb-2 font-[var(--font-oswald)]">Your watchlists</p>
+            <div className="px-5 py-3 bg-ink border-b border-[rgb(var(--t-brass) / 0.18)]">
+              <p className="text-[10px] uppercase tracking-wider text-parchment/40 mb-2 font-[var(--font-oswald)]">Your watchlists</p>
               <div className="flex flex-wrap gap-2">
                 {allWatchlists.map((w) => (
                   <button
@@ -1814,8 +1814,8 @@ export default function DashboardPage() {
                     onClick={() => handleChangeFeaturedWatchlist(w.id)}
                     className={`text-xs px-3 py-1.5 rounded-sm transition ${
                       w.id === featuredWatchlist?.id
-                        ? 'bg-[#B08D57] text-[#080604] font-semibold'
-                        : 'bg-[#1c1a17] text-[#F5EFE0]/70 hover:text-[#F5EFE0]'
+                        ? 'bg-brass text-ink font-semibold'
+                        : 'bg-raised text-parchment/70 hover:text-parchment'
                     }`}
                   >
                     {w.name} <span className="opacity-50 ml-1">({w.tickers.length})</span>
@@ -1823,7 +1823,7 @@ export default function DashboardPage() {
                 ))}
                 <button
                   onClick={handleCreateWatchlist}
-                  className="text-xs px-3 py-1.5 rounded-sm border border-dashed border-[rgba(176,141,87,0.35)] text-[#B08D57] hover:bg-[#1c1a17] transition"
+                  className="text-xs px-3 py-1.5 rounded-sm border border-dashed border-[rgb(var(--t-brass) / 0.35)] text-brass hover:bg-raised transition"
                 >
                   + New
                 </button>
@@ -1842,34 +1842,34 @@ export default function DashboardPage() {
                 onChange={(e) => setWlTickerInput(e.target.value)}
                 placeholder="AAPL, MSFT, NVDA"
                 disabled={!featuredWatchlist || wlTickerBusy}
-                className="flex-1 bg-[#080604] border border-[rgba(176,141,87,0.28)] rounded px-3 py-1.5 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 font-mono focus:outline-none focus:border-[#B08D57]"
+                className="flex-1 bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-1.5 text-sm text-parchment placeholder-parchment/30 font-mono focus:outline-none focus:border-brass"
               />
               <button
                 type="submit"
                 disabled={!wlTickerInput.trim() || wlTickerBusy || !featuredWatchlist}
-                className="text-xs px-3 py-1.5 rounded bg-[#B08D57] text-[#080604] font-[var(--font-oswald)] uppercase tracking-wide disabled:opacity-40"
+                className="text-xs px-3 py-1.5 rounded bg-brass text-ink font-[var(--font-oswald)] uppercase tracking-wide disabled:opacity-40"
               >
                 Add
               </button>
             </form>
-            {wlTickerError && <p className="text-xs text-[#e8453c] mb-2">{wlTickerError}</p>}
+            {wlTickerError && <p className="text-xs text-bear mb-2">{wlTickerError}</p>}
 
             {watchlistLoading ? (
               <div className="flex gap-2">
-                {[1,2,3].map(i => <div key={i} className="w-16 h-7 rounded-sm bg-[#1c1a17] animate-pulse" />)}
+                {[1,2,3].map(i => <div key={i} className="w-16 h-7 rounded-sm bg-raised animate-pulse" />)}
               </div>
             ) : featuredWatchlist && featuredWatchlist.tickers.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {featuredWatchlist.tickers.map((t) => (
                   <span
                     key={t}
-                    className="inline-flex items-center gap-1.5 text-xs font-mono px-2 py-1 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/85 border border-[rgba(176,141,87,0.28)]"
+                    className="inline-flex items-center gap-1.5 text-xs font-mono px-2 py-1 rounded-sm bg-raised text-parchment/85 border border-[rgb(var(--t-brass) / 0.28)]"
                   >
-                    <Link href={`/positions/${t}`} className="hover:text-[#B08D57] transition">${t}</Link>
+                    <Link href={`/positions/${t}`} className="hover:text-brass transition">${t}</Link>
                     <button
                       onClick={() => removeWatchlistTicker(t)}
                       disabled={wlTickerBusy}
-                      className="text-[#F5EFE0]/40 hover:text-[#e8453c] transition disabled:opacity-30"
+                      className="text-parchment/40 hover:text-bear transition disabled:opacity-30"
                       aria-label={`Remove ${t}`}
                     >
                       ×
@@ -1878,7 +1878,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-[#F5EFE0]/45">No tickers yet — add one above.</p>
+              <p className="text-sm text-parchment/45">No tickers yet — add one above.</p>
             )}
           </div>
         </section>
@@ -1894,15 +1894,15 @@ export default function DashboardPage() {
           subsTab === 'juntos' ? allJuntos.length :
           ownedDispatches.length
         }>
-        <div className="flex gap-1 mb-4 border-b border-[rgba(176,141,87,0.18)]">
+        <div className="flex gap-1 mb-4 border-b border-[rgb(var(--t-brass) / 0.18)]">
           {(['subscriptions', 'dispatches', 'juntos'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setSubsTab(t)}
               className={`px-3 py-1.5 text-xs font-[var(--font-oswald)] uppercase tracking-wide transition border-b-2 -mb-px ${
                 subsTab === t
-                  ? 'border-[#B08D57] text-[#F5EFE0]'
-                  : 'border-transparent text-[#F5EFE0]/40 hover:text-[#F5EFE0]/70'
+                  ? 'border-brass text-parchment'
+                  : 'border-transparent text-parchment/40 hover:text-parchment/70'
               }`}
             >
               {t === 'subscriptions' ? `Subscriptions (${activeSubscriptions.length})` :
@@ -1913,42 +1913,42 @@ export default function DashboardPage() {
         </div>
 
         {subsTab === 'juntos' && (
-          <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
+          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-hidden">
             {allJuntos.length === 0 ? (
-              <p className="text-sm text-[#F5EFE0]/45 p-4">No juntos yet.</p>
+              <p className="text-sm text-parchment/45 p-4">No juntos yet.</p>
             ) : (
-              <ul className="divide-y divide-[rgba(176,141,87,0.18)]">
+              <ul className="divide-y divide-[rgb(var(--t-brass) / 0.18)]">
                 {allJuntos.map((j) => (
-                  <li key={j.id} className="flex items-center justify-between px-4 py-3 hover:bg-[#141210] transition">
-                    <Link href={`/junto/${j.id}/edit`} className="text-sm text-[#F5EFE0] hover:text-[#B08D57] truncate">
+                  <li key={j.id} className="flex items-center justify-between px-4 py-3 hover:bg-surface transition">
+                    <Link href={`/junto/${j.id}/edit`} className="text-sm text-parchment hover:text-brass truncate">
                       {j.name}
                     </Link>
                     {featuredJunto?.id === j.id && (
-                      <span className="text-[10px] text-[#B08D57] font-[var(--font-oswald)] uppercase tracking-wide">primary</span>
+                      <span className="text-[10px] text-brass font-[var(--font-oswald)] uppercase tracking-wide">primary</span>
                     )}
                   </li>
                 ))}
               </ul>
             )}
-            <div className="px-4 py-2 border-t border-[rgba(176,141,87,0.18)]">
-              <Link href="/junto/new" className="text-xs text-[#B08D57] hover:underline">+ New junto</Link>
+            <div className="px-4 py-2 border-t border-[rgb(var(--t-brass) / 0.18)]">
+              <Link href="/junto/new" className="text-xs text-brass hover:underline">+ New junto</Link>
             </div>
           </div>
         )}
 
         {subsTab === 'dispatches' && (
-          <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
+          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-hidden">
             {ownedDispatches.length === 0 ? (
-              <p className="text-sm text-[#F5EFE0]/45 p-4">You don&apos;t own any dispatches yet.</p>
+              <p className="text-sm text-parchment/45 p-4">You don&apos;t own any dispatches yet.</p>
             ) : (
-              <ul className="divide-y divide-[rgba(176,141,87,0.18)]">
+              <ul className="divide-y divide-[rgb(var(--t-brass) / 0.18)]">
                 {ownedDispatches.map((d) => (
-                  <li key={d.id} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[#141210] transition">
+                  <li key={d.id} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface transition">
                     <div className="min-w-0 flex-1">
-                      <Link href={`/newsletter/${d.id}`} className="text-sm text-[#F5EFE0] hover:text-[#B08D57] truncate block">
+                      <Link href={`/newsletter/${d.id}`} className="text-sm text-parchment hover:text-brass truncate block">
                         {d.name}
                       </Link>
-                      <p className="text-[10px] text-[#F5EFE0]/40 mt-0.5">
+                      <p className="text-[10px] text-parchment/40 mt-0.5">
                         {d.schedule_cadence}
                         {' · '}
                         {d.subscriber_count ?? 0} subscriber{(d.subscriber_count ?? 0) === 1 ? '' : 's'}
@@ -1958,7 +1958,7 @@ export default function DashboardPage() {
                     </div>
                     <Link
                       href={`/newsletter/${d.id}/edit`}
-                      className="text-[10px] uppercase tracking-wider text-[#B08D57] hover:text-[#F5EFE0] transition font-[var(--font-oswald)]"
+                      className="text-[10px] uppercase tracking-wider text-brass hover:text-parchment transition font-[var(--font-oswald)]"
                     >
                       Edit
                     </Link>
@@ -1966,8 +1966,8 @@ export default function DashboardPage() {
                 ))}
               </ul>
             )}
-            <div className="px-4 py-2 border-t border-[rgba(176,141,87,0.18)]">
-              <Link href="/create" className="text-xs text-[#B08D57] hover:underline">+ New dispatch</Link>
+            <div className="px-4 py-2 border-t border-[rgb(var(--t-brass) / 0.18)]">
+              <Link href="/create" className="text-xs text-brass hover:underline">+ New dispatch</Link>
             </div>
           </div>
         )}
@@ -1975,10 +1975,10 @@ export default function DashboardPage() {
         {subsTab === 'subscriptions' && (
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">
+            <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">
               Active Subscriptions ({activeSubscriptions.length})
             </h2>
-            <Link href="/explore" className="text-xs text-[#B08D57] hover:underline">
+            <Link href="/explore" className="text-xs text-brass hover:underline">
               Explore →
             </Link>
           </div>
@@ -1993,41 +1993,41 @@ export default function DashboardPage() {
               actionHref="/explore"
             />
           ) : (
-            <div className="rounded border border-[rgba(176,141,87,0.28)] overflow-hidden">
+            <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-hidden">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-[#141210] border-b border-[rgba(176,141,87,0.28)]">
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)]">Dispatch</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Send times</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Days</th>
-                    <th className="px-4 py-2.5 text-right text-xs font-semibold text-[#F5EFE0]/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap"></th>
+                  <tr className="bg-surface border-b border-[rgb(var(--t-brass) / 0.28)]">
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">Dispatch</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Send times</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Days</th>
+                    <th className="px-4 py-2.5 text-right text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {activeSubscriptions.map((sub) => (
                     <React.Fragment key={sub.id}>
-                      <tr className={`border-b border-[rgba(176,141,87,0.18)] hover:bg-[#141210] transition-colors ${sub.is_active ? '' : 'opacity-60'}`}>
+                      <tr className={`border-b border-[rgb(var(--t-brass) / 0.18)] hover:bg-surface transition-colors ${sub.is_active ? '' : 'opacity-60'}`}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <Link href={`/newsletter/${sub.newsletter.id}`} className="text-sm font-medium hover:text-[#B08D57] transition">
+                            <Link href={`/newsletter/${sub.newsletter.id}`} className="text-sm font-medium hover:text-brass transition">
                               {sub.newsletter.name}
                             </Link>
                             {!sub.is_active && (
-                              <span className="text-xs px-1.5 py-0.5 rounded-sm bg-[#1c1a17] text-[#F5EFE0]/45">Paused</span>
+                              <span className="text-xs px-1.5 py-0.5 rounded-sm bg-raised text-parchment/45">Paused</span>
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-xs text-[#F5EFE0]/55">
+                        <td className="px-4 py-3 whitespace-nowrap text-xs text-parchment/55">
                           {(sub.receive_windows || sub.send_windows || ['morning']).map(w => LOCAL_WINDOW_LABELS[w] || w).join(', ')}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-xs text-[#F5EFE0]/55">
+                        <td className="px-4 py-3 whitespace-nowrap text-xs text-parchment/55">
                           {(sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']).map(d => DAY_LABELS[d] || d).join(', ')}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-right">
                           <div className="flex items-center gap-2 justify-end">
                             <button
                               onClick={() => editingSubId === sub.id ? setEditingSubId(null) : startEditSub(sub)}
-                              className="text-xs px-2.5 py-1 rounded-sm bg-[#141210] hover:bg-[#1c1a17] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] transition"
+                              className="text-xs px-2.5 py-1 rounded-sm bg-surface hover:bg-raised text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)] transition"
                             >
                               {editingSubId === sub.id ? 'Cancel' : 'Edit'}
                             </button>
@@ -2035,8 +2035,8 @@ export default function DashboardPage() {
                               onClick={() => handleToggleSubscription(sub.id, sub.is_active)}
                               className={`text-xs px-2.5 py-1 rounded-sm border transition ${
                                 sub.is_active
-                                  ? 'border-[rgba(176,141,87,0.18)] text-[#F5EFE0]/40 hover:text-[#e8453c] hover:border-[#e8453c]/30'
-                                  : 'border-[#3ecf6a]/30 text-[#3ecf6a]'
+                                  ? 'border-[rgb(var(--t-brass) / 0.18)] text-parchment/40 hover:text-bear hover:border-bear/30'
+                                  : 'border-bull/30 text-bull'
                               }`}
                             >
                               {sub.is_active ? 'Pause' : 'Resume'}
@@ -2046,11 +2046,11 @@ export default function DashboardPage() {
                       </tr>
 
                       {editingSubId === sub.id && (
-                        <tr className="border-b border-[rgba(176,141,87,0.18)] bg-[#080604]">
+                        <tr className="border-b border-[rgb(var(--t-brass) / 0.18)] bg-ink">
                           <td colSpan={4} className="px-4 py-4">
                             <div className="space-y-4">
                               <div>
-                                <label className="text-xs text-[#F5EFE0]/50 font-medium block mb-2">Send times (your local timezone)</label>
+                                <label className="text-xs text-parchment/50 font-medium block mb-2">Send times (your local timezone)</label>
                                 <div className="flex gap-2 flex-wrap">
                                   {WINDOW_OPTIONS.map((w) => (
                                     <button
@@ -2058,8 +2058,8 @@ export default function DashboardPage() {
                                       onClick={() => toggleWindow(w.key)}
                                       className={`px-3 py-1.5 rounded-sm text-xs font-medium transition ${
                                         editWindows.includes(w.key)
-                                          ? 'bg-[#B08D57] text-[#080604]'
-                                          : 'bg-[#141210] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17]'
+                                          ? 'bg-brass text-ink'
+                                          : 'bg-surface text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)] hover:bg-raised'
                                       }`}
                                     >
                                       {LOCAL_WINDOW_LABELS[w.key]}
@@ -2068,7 +2068,7 @@ export default function DashboardPage() {
                                 </div>
                               </div>
                               <div>
-                                <label className="text-xs text-[#F5EFE0]/50 font-medium block mb-2">Days</label>
+                                <label className="text-xs text-parchment/50 font-medium block mb-2">Days</label>
                                 <div className="flex gap-1.5">
                                   {DAY_OPTIONS.map((d) => (
                                     <button
@@ -2076,8 +2076,8 @@ export default function DashboardPage() {
                                       onClick={() => toggleDay(d.key)}
                                       className={`w-8 h-8 rounded-sm text-xs font-medium transition ${
                                         editDays.includes(d.key)
-                                          ? 'bg-[#B08D57] text-[#080604]'
-                                          : 'bg-[#141210] text-[#F5EFE0]/60 border border-[rgba(176,141,87,0.18)] hover:bg-[#1c1a17]'
+                                          ? 'bg-brass text-ink'
+                                          : 'bg-surface text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)] hover:bg-raised'
                                       }`}
                                       title={DAY_LABELS[d.key]}
                                     >
@@ -2087,19 +2087,19 @@ export default function DashboardPage() {
                                 </div>
                               </div>
                               <div>
-                                <label className="text-xs text-[#F5EFE0]/50 font-medium block mb-2">Delivery email</label>
+                                <label className="text-xs text-parchment/50 font-medium block mb-2">Delivery email</label>
                                 <input
                                   type="email"
                                   value={editEmail}
                                   onChange={(e) => setEditEmail(e.target.value)}
                                   placeholder={accountEmail || 'you@example.com'}
-                                  className="w-full sm:w-72 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-1.5 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 focus:outline-none focus:border-[#B08D57]"
+                                  className="w-full sm:w-72 bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-1.5 text-sm text-parchment placeholder-parchment/30 focus:outline-none focus:border-brass"
                                 />
                               </div>
                               <button
                                 onClick={() => handleUpdateSubscription(sub.id)}
                                 disabled={saving || editWindows.length === 0 || editDays.length === 0}
-                                className="px-4 py-1.5 bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] text-xs font-medium rounded transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
+                                className="px-4 py-1.5 bg-brass hover:bg-brass/80 text-ink text-xs font-medium rounded transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
                               >
                                 {saving ? 'Saving...' : 'Save Changes'}
                               </button>
@@ -2119,8 +2119,8 @@ export default function DashboardPage() {
           );
         })()}
 
-        <p className="text-xs text-[#F5EFE0]/35 text-center">
-          Looking for your dispatches or credit history? <Link href="/profile" className="text-[#B08D57] hover:underline">Profile →</Link>
+        <p className="text-xs text-parchment/35 text-center">
+          Looking for your dispatches or credit history? <Link href="/profile" className="text-brass hover:underline">Profile →</Link>
         </p>
       </div>
     </main>
@@ -2131,11 +2131,11 @@ export default function DashboardPage() {
 
 function LoadingSkeleton() {
   return (
-    <div className="rounded border border-[rgba(176,141,87,0.18)] overflow-hidden animate-pulse">
+    <div className="rounded border border-[rgb(var(--t-brass) / 0.18)] overflow-hidden animate-pulse">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-[rgba(176,141,87,0.18)] last:border-0">
-          <div className="h-4 bg-[#1c1a17] rounded w-1/4" />
-          <div className="h-3 bg-[#1c1a17]/60 rounded w-1/3" />
+        <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-[rgb(var(--t-brass) / 0.18)] last:border-0">
+          <div className="h-4 bg-raised rounded w-1/4" />
+          <div className="h-3 bg-raised/60 rounded w-1/3" />
         </div>
       ))}
     </div>
@@ -2156,18 +2156,18 @@ function EmptyState({ icon, title, subtitle, actionLabel, actionHref }: {
   };
 
   return (
-    <div className="text-center py-16 border border-dashed border-[rgba(176,141,87,0.28)] rounded">
-      <div className="w-14 h-14 rounded bg-[#141210] border border-[rgba(176,141,87,0.18)] flex items-center justify-center mx-auto mb-4">
-        <svg className="w-7 h-7 text-[#F5EFE0]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div className="text-center py-16 border border-dashed border-[rgb(var(--t-brass) / 0.28)] rounded">
+      <div className="w-14 h-14 rounded bg-surface border border-[rgb(var(--t-brass) / 0.18)] flex items-center justify-center mx-auto mb-4">
+        <svg className="w-7 h-7 text-parchment/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={iconPaths[icon] || iconPaths.mail} />
         </svg>
       </div>
-      <p className="text-[#F5EFE0]/60 font-medium mb-2">{title}</p>
-      <p className="text-[#F5EFE0]/45 text-sm mb-6">{subtitle}</p>
+      <p className="text-parchment/60 font-medium mb-2">{title}</p>
+      <p className="text-parchment/45 text-sm mb-6">{subtitle}</p>
       {actionLabel && actionHref && (
         <Link
           href={actionHref}
-          className="inline-block bg-[#B08D57] hover:bg-[#B08D57]/80 text-[#080604] px-6 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition"
+          className="inline-block bg-brass hover:bg-brass/80 text-ink px-6 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition"
         >
           {actionLabel}
         </Link>

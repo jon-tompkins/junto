@@ -66,11 +66,11 @@ export default function AdminSourcesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#080604] text-[#F5EFE0]">
+    <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <div className="max-w-4xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-2">Tracked Sources</h1>
-        <p className="text-[#F5EFE0]/50 text-sm mb-6">
+        <p className="text-parchment/50 text-sm mb-6">
           Sources here are pulled regardless of junto membership. Use this to load up accounts without juggling juntos.
         </p>
 
@@ -80,29 +80,29 @@ export default function AdminSourcesPage() {
             value={handle}
             onChange={(e) => setHandle(e.target.value)}
             placeholder="twitter handle (no @)"
-            className="flex-1 bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded px-3 py-2 text-sm text-[#F5EFE0] placeholder-[#F5EFE0]/30 font-mono focus:outline-none focus:border-[#B08D57]"
+            className="flex-1 bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-2 text-sm text-parchment placeholder-parchment/30 font-mono focus:outline-none focus:border-brass"
           />
           <button
             type="submit"
             disabled={submitting || !handle.trim()}
-            className="px-4 py-2 bg-[#B08D57] text-[#080604] rounded text-sm font-medium disabled:opacity-50"
+            className="px-4 py-2 bg-brass text-ink rounded text-sm font-medium disabled:opacity-50"
           >
             {submitting ? 'Adding…' : 'Track'}
           </button>
         </form>
 
         {error && (
-          <div className="mb-4 text-sm text-[#e8453c]">{error}</div>
+          <div className="mb-4 text-sm text-bear">{error}</div>
         )}
 
         {loading ? (
-          <div className="text-[#F5EFE0]/40">Loading…</div>
+          <div className="text-parchment/40">Loading…</div>
         ) : sources.length === 0 ? (
-          <div className="text-[#F5EFE0]/40">No tracked sources yet.</div>
+          <div className="text-parchment/40">No tracked sources yet.</div>
         ) : (
-          <div className="bg-[#141210] border border-[rgba(176,141,87,0.28)] rounded overflow-hidden">
+          <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase text-[#F5EFE0]/30 border-b border-[rgba(176,141,87,0.28)] font-[var(--font-oswald)]">
+              <thead className="text-left text-xs uppercase text-parchment/30 border-b border-[rgb(var(--t-brass) / 0.28)] font-[var(--font-oswald)]">
                 <tr>
                   <th className="py-2 px-4">Handle</th>
                   <th className="py-2 px-4">Type</th>
@@ -112,16 +112,16 @@ export default function AdminSourcesPage() {
               </thead>
               <tbody>
                 {sources.map((s) => (
-                  <tr key={s.id} className="border-b border-[rgba(176,141,87,0.18)] last:border-0">
-                    <td className="py-2 px-4 font-mono text-[#F5EFE0]">@{s.handle_or_url}</td>
-                    <td className="py-2 px-4 text-[#F5EFE0]/60">{s.type}</td>
-                    <td className="py-2 px-4 text-[#F5EFE0]/45 text-xs">
+                  <tr key={s.id} className="border-b border-[rgb(var(--t-brass) / 0.18)] last:border-0">
+                    <td className="py-2 px-4 font-mono text-parchment">@{s.handle_or_url}</td>
+                    <td className="py-2 px-4 text-parchment/60">{s.type}</td>
+                    <td className="py-2 px-4 text-parchment/45 text-xs">
                       {s.updated_at ? new Date(s.updated_at).toLocaleString() : '—'}
                     </td>
                     <td className="py-2 px-4 text-right">
                       <button
                         onClick={() => untrack(s.id)}
-                        className="text-xs text-[#F5EFE0]/40 hover:text-[#e8453c] transition"
+                        className="text-xs text-parchment/40 hover:text-bear transition"
                       >
                         untrack
                       </button>
