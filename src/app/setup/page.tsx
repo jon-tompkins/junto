@@ -198,7 +198,7 @@ export default function SetupPage() {
                     className="px-3 py-1 bg-surface text-ink text-sm flex items-center gap-2"
                   >
                     @{username}
-                    <span className="text-parchment/45">×</span>
+                    <span className="text-parchment/60">×</span>
                   </button>
                 ))}
               </div>
@@ -239,11 +239,11 @@ export default function SetupPage() {
           {/* Following list */}
           <div className="border border-brass/20 divide-y divide-neutral-800 max-h-80 overflow-y-auto">
             {loading ? (
-              <div className="p-8 text-center text-parchment/45">
+              <div className="p-8 text-center text-parchment/60">
                 Loading your following list...
               </div>
             ) : filtered.length === 0 ? (
-              <div className="p-8 text-center text-parchment/45">
+              <div className="p-8 text-center text-parchment/60">
                 {search ? 'No matches found' : 'No accounts found'}
               </div>
             ) : (
@@ -273,7 +273,7 @@ export default function SetupPage() {
                     <div className="font-medium truncate">{user.name}</div>
                     <div className="text-sm text-parchment/55">@{user.username}</div>
                   </div>
-                  <div className="text-sm text-parchment/45">
+                  <div className="text-sm text-parchment/60">
                     {user.public_metrics?.followers_count?.toLocaleString() || 0} followers
                   </div>
                   {selected.includes(user.username) && (

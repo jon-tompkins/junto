@@ -96,13 +96,13 @@ export default function AdminSourcesPage() {
         )}
 
         {loading ? (
-          <div className="text-parchment/40">Loading…</div>
+          <div className="text-parchment/55">Loading…</div>
         ) : sources.length === 0 ? (
-          <div className="text-parchment/40">No tracked sources yet.</div>
+          <div className="text-parchment/55">No tracked sources yet.</div>
         ) : (
           <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase text-parchment/30 border-b border-[rgb(var(--t-brass) / 0.28)] font-[var(--font-oswald)]">
+              <thead className="text-left text-xs uppercase text-parchment/45 border-b border-[rgb(var(--t-brass) / 0.28)] font-[var(--font-oswald)]">
                 <tr>
                   <th className="py-2 px-4">Handle</th>
                   <th className="py-2 px-4">Type</th>
@@ -115,13 +115,13 @@ export default function AdminSourcesPage() {
                   <tr key={s.id} className="border-b border-[rgb(var(--t-brass) / 0.18)] last:border-0">
                     <td className="py-2 px-4 font-mono text-parchment">@{s.handle_or_url}</td>
                     <td className="py-2 px-4 text-parchment/60">{s.type}</td>
-                    <td className="py-2 px-4 text-parchment/45 text-xs">
+                    <td className="py-2 px-4 text-parchment/60 text-xs">
                       {s.updated_at ? new Date(s.updated_at).toLocaleString() : '—'}
                     </td>
                     <td className="py-2 px-4 text-right">
                       <button
                         onClick={() => untrack(s.id)}
-                        className="text-xs text-parchment/40 hover:text-bear transition"
+                        className="text-xs text-parchment/55 hover:text-bear transition"
                       >
                         untrack
                       </button>

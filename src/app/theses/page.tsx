@@ -55,7 +55,7 @@ export default function ThesesDashboard() {
     return (
       <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
-        <div className="max-w-6xl mx-auto px-6 py-16 text-parchment/45 text-sm font-mono">Loading…</div>
+        <div className="max-w-6xl mx-auto px-6 py-16 text-parchment/60 text-sm font-mono">Loading…</div>
       </main>
     );
   }
@@ -165,7 +165,7 @@ export default function ThesesDashboard() {
         </div>
 
         {loading ? (
-          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface p-8 text-sm text-parchment/45 font-mono">Loading…</div>
+          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface p-8 text-sm text-parchment/60 font-mono">Loading…</div>
         ) : theses.length === 0 ? (
           <div
             className="text-center py-16 px-6"
@@ -188,11 +188,11 @@ export default function ThesesDashboard() {
             <table className="w-full">
               <thead>
                 <tr className="bg-surface border-b border-[rgb(var(--t-brass) / 0.28)]">
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">Title</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Conv</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Horizon</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">Tags</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">V / I / T</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)]">Title</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Conv</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Horizon</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)]">Tags</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">V / I / T</th>
                 </tr>
               </thead>
               <tbody>
@@ -234,9 +234,9 @@ export default function ThesesDashboard() {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-right text-xs font-mono">
                       <span className="text-bull">{t.validation_count}</span>
-                      <span className="text-parchment/30 mx-1">/</span>
+                      <span className="text-parchment/45 mx-1">/</span>
                       <span className="text-bear">{t.invalidation_count}</span>
-                      <span className="text-parchment/30 mx-1">/</span>
+                      <span className="text-parchment/45 mx-1">/</span>
                       <span className="text-parchment">{t.trade_count}</span>
                     </td>
                   </tr>

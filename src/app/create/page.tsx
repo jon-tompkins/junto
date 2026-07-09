@@ -51,7 +51,7 @@ function SectionHeader({ number, title, subtitle }: { number: string; title: str
           {title}
         </h2>
       </div>
-      {subtitle && <p className="text-xs text-parchment/45 ml-8">{subtitle}</p>}
+      {subtitle && <p className="text-xs text-parchment/60 ml-8">{subtitle}</p>}
     </div>
   );
 }
@@ -470,10 +470,10 @@ function CreatePageInner() {
           {!adHocMode && (
             <div>
               {juntosLoading ? (
-                <p className="text-xs text-parchment/40 py-4">Loading juntos...</p>
+                <p className="text-xs text-parchment/55 py-4">Loading juntos...</p>
               ) : juntos.length === 0 ? (
                 <div className="text-center py-6" style={{ border: '1px dashed rgb(var(--t-brass) / 0.2)', borderRadius: '4px' }}>
-                  <p className="text-sm text-parchment/40 mb-2">
+                  <p className="text-sm text-parchment/55 mb-2">
                     {session?.user ? 'No juntos yet.' : 'Sign in to see your juntos.'}
                   </p>
                   <button onClick={() => setAdHocMode(true)} className="text-xs text-brass hover:opacity-80 transition">
@@ -540,7 +540,7 @@ function CreatePageInner() {
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
                                       <span className="text-sm font-medium text-parchment">{j.name}</span>
-                                      <span className="text-xs text-parchment/40">{sources.length} source{sources.length !== 1 ? 's' : ''}</span>
+                                      <span className="text-xs text-parchment/55">{sources.length} source{sources.length !== 1 ? 's' : ''}</span>
                                     </div>
                                     {/* Avatar stack — always visible */}
                                     {sources.length > 0 && !isExpanded && (
@@ -635,7 +635,7 @@ function CreatePageInner() {
           {/* Ad-hoc source entry */}
           {adHocMode && (
             <div>
-              <p className="text-xs text-parchment/40 mb-3">
+              <p className="text-xs text-parchment/55 mb-3">
                 A Junto will be created automatically in the background.
               </p>
               <div className="flex mb-3 text-xs" style={{ border: '1px solid rgb(var(--t-brass) / 0.18)' }}>
@@ -675,12 +675,12 @@ function CreatePageInner() {
                         <button
                           type="button"
                           onClick={() => { setShowListImport(false); setListImportError(''); setListInput(''); }}
-                          className="text-xs text-parchment/40 hover:text-parchment/80 transition"
+                          className="text-xs text-parchment/55 hover:text-parchment/80 transition"
                         >
                           cancel
                         </button>
                       </div>
-                      <p className="text-[11px] text-parchment/45 mb-2 leading-relaxed">
+                      <p className="text-[11px] text-parchment/60 mb-2 leading-relaxed">
                         Paste a public X list URL (e.g. <span className="font-mono">x.com/i/lists/12345…</span>). We only surface members who&apos;ve tweeted recently — inactive accounts on the list won&apos;t appear and can be added manually. You&apos;ll review and × any handles before creating.
                       </p>
                       <div className="flex gap-2">
@@ -719,7 +719,7 @@ function CreatePageInner() {
               <div className="flex gap-2 mb-3 relative">
                 <div className="relative flex-1">
                   {sourceType === 'twitter' && (
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-parchment/40 text-sm">@</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-parchment/55 text-sm">@</span>
                   )}
                   <input
                     type="text"
@@ -800,7 +800,7 @@ function CreatePageInner() {
                       </div>
                       <button
                         onClick={() => setAdHocSources(prev => prev.filter(s => s.handle !== src.handle))}
-                        className="text-parchment/30 hover:text-bear ml-3 flex-shrink-0 transition"
+                        className="text-parchment/45 hover:text-bear ml-3 flex-shrink-0 transition"
                       >
                         ×
                       </button>
@@ -867,7 +867,7 @@ function CreatePageInner() {
 
           {customStyle && (
             <div>
-              <label className="block text-[10px] uppercase tracking-[0.15em] text-parchment/40 mb-2 font-mono">
+              <label className="block text-[10px] uppercase tracking-[0.15em] text-parchment/55 mb-2 font-mono">
                 Custom prompt
               </label>
               <textarea

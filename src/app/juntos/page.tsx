@@ -282,7 +282,7 @@ export default function JuntosPage() {
         </div>
 
         {loading ? (
-          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface p-8 text-sm text-parchment/45 font-mono">Loading…</div>
+          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface p-8 text-sm text-parchment/60 font-mono">Loading…</div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20">
             {juntos.length === 0 ? (
@@ -301,10 +301,10 @@ export default function JuntosPage() {
             <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="bg-surface border-b border-[rgb(var(--t-brass) / 0.28)]">
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">Name</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">Description</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">Sources</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">Dispatches</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)]">Name</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)]">Description</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)]">Sources</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)]">Dispatches</th>
                 </tr>
               </thead>
               <tbody>
@@ -339,7 +339,7 @@ export default function JuntosPage() {
                         {junto.sources.length > 0 ? (
                           <AvatarStack sources={junto.sources} max={6} />
                         ) : null}
-                        <span className="text-xs text-parchment/40 font-mono">
+                        <span className="text-xs text-parchment/55 font-mono">
                           {junto.source_count}
                         </span>
                       </div>
@@ -356,10 +356,10 @@ export default function JuntosPage() {
                           </span>
                         ))}
                         {junto.dispatches.length > 2 && (
-                          <span className="text-[11px] text-parchment/35">+{junto.dispatches.length - 2}</span>
+                          <span className="text-[11px] text-parchment/50">+{junto.dispatches.length - 2}</span>
                         )}
                         {junto.dispatches.length === 0 && (
-                          <span className="text-xs text-parchment/30">—</span>
+                          <span className="text-xs text-parchment/45">—</span>
                         )}
                       </div>
                     </td>

@@ -258,7 +258,7 @@ export default function NewThesisPage() {
               {/* File mode */}
               {mode === 'file' && (
                 <div>
-                  <Label>File <span className="normal-case tracking-normal text-parchment/40">— PDF, JPEG, PNG</span></Label>
+                  <Label>File <span className="normal-case tracking-normal text-parchment/55">— PDF, JPEG, PNG</span></Label>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -289,11 +289,11 @@ export default function NewThesisPage() {
                       <div className="flex items-center gap-3">
                         <span className="text-bull text-sm">✓</span>
                         <span className="text-sm text-parchment/80 font-mono truncate">{file.name}</span>
-                        <span className="text-xs text-parchment/40">({(file.size / 1024).toFixed(0)} KB)</span>
+                        <span className="text-xs text-parchment/55">({(file.size / 1024).toFixed(0)} KB)</span>
                       </div>
                       <button
                         onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
-                        className="text-xs text-parchment/40 hover:text-bear transition ml-3"
+                        className="text-xs text-parchment/55 hover:text-bear transition ml-3"
                       >
                         Remove
                       </button>
@@ -306,9 +306,9 @@ export default function NewThesisPage() {
               <div>
                 <Label>
                   {mode === 'text' ? (
-                    <>Your context <span className="normal-case tracking-normal text-parchment/40">— optional, but adds conviction</span></>
+                    <>Your context <span className="normal-case tracking-normal text-parchment/55">— optional, but adds conviction</span></>
                   ) : (
-                    <>Your context <span className="normal-case tracking-normal text-parchment/40">— required</span></>
+                    <>Your context <span className="normal-case tracking-normal text-parchment/55">— required</span></>
                   )}
                 </Label>
                 <textarea
@@ -332,7 +332,7 @@ export default function NewThesisPage() {
                 >
                   {generating ? 'Generating…' : 'Generate Thesis →'}
                 </button>
-                <p className="text-xs text-parchment/40 font-mono">
+                <p className="text-xs text-parchment/55 font-mono">
                   Typically 10–20 seconds. Output is an editable draft.
                 </p>
               </div>
@@ -533,7 +533,7 @@ function ListCard({ title, accent, rows, emptyText }: {
         {title}
       </div>
       {rows.length === 0 ? (
-        <p className="px-4 py-3 text-xs text-parchment/40">{emptyText || 'None.'}</p>
+        <p className="px-4 py-3 text-xs text-parchment/55">{emptyText || 'None.'}</p>
       ) : (
         <ul>
           {rows.map((r, i) => (

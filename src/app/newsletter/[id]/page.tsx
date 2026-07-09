@@ -79,7 +79,7 @@ function ShareButton({ url, title }: { url: string; title: string }) {
       <button
         onClick={copyLink}
         title="Copy link"
-        className="flex items-center gap-1 px-2 py-1 rounded text-xs text-parchment/45 hover:text-parchment/75 hover:bg-raised transition"
+        className="flex items-center gap-1 px-2 py-1 rounded text-xs text-parchment/60 hover:text-parchment/75 hover:bg-raised transition"
       >
         {copied ? (
           <span className="text-bull">Copied!</span>
@@ -97,7 +97,7 @@ function ShareButton({ url, title }: { url: string; title: string }) {
         target="_blank"
         rel="noopener noreferrer"
         title="Share on X"
-        className="flex items-center gap-1 px-2 py-1 rounded text-xs text-parchment/45 hover:text-parchment/75 hover:bg-raised transition"
+        className="flex items-center gap-1 px-2 py-1 rounded text-xs text-parchment/60 hover:text-parchment/75 hover:bg-raised transition"
       >
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.632zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -271,7 +271,7 @@ export default function NewsletterDetailPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-ink text-parchment flex items-center justify-center">
-        <div className="animate-pulse text-parchment/45">Loading...</div>
+        <div className="animate-pulse text-parchment/60">Loading...</div>
       </main>
     );
   }
@@ -309,7 +309,7 @@ export default function NewsletterDetailPage() {
                     <div className="w-7 h-7 rounded bg-raised ring-1 ring-[rgb(var(--t-brass) / 0.28)]" />
                   )}
                   <div className="flex items-center gap-1.5 text-sm">
-                    <span className="text-parchment/45">Curated by</span>
+                    <span className="text-parchment/60">Curated by</span>
                     {newsletter.curator.twitter_handle ? (
                       <Link
                         href={`/sources/${newsletter.curator.twitter_handle}`}
@@ -387,7 +387,7 @@ export default function NewsletterDetailPage() {
             onClick={() => setSettingsOpen(!settingsOpen)}
             className="flex w-full items-center justify-between px-4 py-3 text-left bg-surface"
           >
-            <span className="text-sm font-semibold text-parchment/45 uppercase tracking-wider font-[var(--font-oswald)]">Settings</span>
+            <span className="text-sm font-semibold text-parchment/60 uppercase tracking-wider font-[var(--font-oswald)]">Settings</span>
             <span className="text-brass text-xs">{settingsOpen ? '−' : '+'}</span>
           </button>
 
@@ -396,7 +396,7 @@ export default function NewsletterDetailPage() {
               {/* Sources inside Settings */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="text-xs text-parchment/45 uppercase tracking-wider font-[var(--font-oswald)]">Sources ({newsletter.sources.length})</div>
+                  <div className="text-xs text-parchment/60 uppercase tracking-wider font-[var(--font-oswald)]">Sources ({newsletter.sources.length})</div>
                   {newsletter.junto ? (
                     <Link
                       href={`/junto/${newsletter.junto.id}`}
@@ -406,11 +406,11 @@ export default function NewsletterDetailPage() {
                       Junto: {newsletter.junto.name}
                     </Link>
                   ) : (
-                    <span className="text-xs text-parchment/40">Not in a junto</span>
+                    <span className="text-xs text-parchment/55">Not in a junto</span>
                   )}
                 </div>
                 {newsletter.sources.length === 0 ? (
-                  <p className="text-sm text-parchment/45">No sources yet.</p>
+                  <p className="text-sm text-parchment/60">No sources yet.</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {newsletter.sources.map((src) => (
@@ -434,7 +434,7 @@ export default function NewsletterDetailPage() {
           <table className="w-full">
             <tbody>
               <tr className="border-b border-[rgb(var(--t-brass) / 0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] bg-surface w-48">Prompt</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] bg-surface w-48">Prompt</th>
                 <td className="px-4 py-3 text-sm bg-ink">
                   {newsletter.prompt_template ? (
                     <div className="flex items-center gap-2">
@@ -453,13 +453,13 @@ export default function NewsletterDetailPage() {
                 </td>
               </tr>
               <tr className="border-b border-[rgb(var(--t-brass) / 0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Cadence</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Cadence</th>
                 <td className="px-4 py-3 text-sm text-parchment bg-ink">
                   {CADENCE_LABELS[newsletter.schedule_cadence] || newsletter.schedule_cadence}
                 </td>
               </tr>
               <tr className="border-b border-[rgb(var(--t-brass) / 0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Send windows</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Send windows</th>
                 <td className="px-4 py-3 text-sm bg-ink">
                   <div className="flex flex-wrap gap-1.5">
                     {(newsletter.default_send_windows && newsletter.default_send_windows.length > 0
@@ -474,7 +474,7 @@ export default function NewsletterDetailPage() {
                 </td>
               </tr>
               <tr className="border-b border-[rgb(var(--t-brass) / 0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Send days</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Send days</th>
                 <td className="px-4 py-3 text-sm bg-ink">
                   <div className="flex flex-wrap gap-1">
                     {(newsletter.send_days && newsletter.send_days.length > 0
@@ -489,7 +489,7 @@ export default function NewsletterDetailPage() {
                 </td>
               </tr>
               <tr className="border-b border-[rgb(var(--t-brass) / 0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Watchlist</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Watchlist</th>
                 <td className="px-4 py-3 text-sm bg-ink">
                   {newsletter.tickers && newsletter.tickers.length > 0 ? (
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -508,17 +508,17 @@ export default function NewsletterDetailPage() {
                       ))}
                     </div>
                   ) : (
-                    <span className="text-parchment/40">No watchlist</span>
+                    <span className="text-parchment/55">No watchlist</span>
                   )}
                 </td>
               </tr>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Voice memo</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Voice memo</th>
                 <td className="px-4 py-3 text-sm bg-ink">
                   {newsletter.audio_enabled ? (
                     <span className="text-parchment/80">🎧 Enabled · subscribers can opt in for +2 credits</span>
                   ) : (
-                    <span className="text-parchment/40">Not enabled</span>
+                    <span className="text-parchment/55">Not enabled</span>
                   )}
                 </td>
               </tr>
@@ -533,9 +533,9 @@ export default function NewsletterDetailPage() {
         {latestRun && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-parchment/45 uppercase tracking-wider font-[var(--font-oswald)]">Latest Issue</h2>
+              <h2 className="text-sm font-semibold text-parchment/60 uppercase tracking-wider font-[var(--font-oswald)]">Latest Issue</h2>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-parchment/45">
+                <span className="text-xs text-parchment/60">
                   {new Date(latestRun.generated_at).toLocaleDateString('en-US', {
                     weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
                     hour: 'numeric', minute: '2-digit',
@@ -563,7 +563,7 @@ export default function NewsletterDetailPage() {
           <div className="mb-8">
             <button
               onClick={() => setShowOlderRuns(!showOlderRuns)}
-              className="flex items-center gap-2 text-sm font-semibold text-parchment/45 uppercase tracking-wider hover:text-parchment transition mb-3 font-[var(--font-oswald)]"
+              className="flex items-center gap-2 text-sm font-semibold text-parchment/60 uppercase tracking-wider hover:text-parchment transition mb-3 font-[var(--font-oswald)]"
             >
               Previous Issues ({olderRuns.length})
               <svg
@@ -586,11 +586,11 @@ export default function NewsletterDetailPage() {
                         {run.subject || 'Untitled issue'}
                       </span>
                       <div className="flex items-center gap-3 shrink-0 ml-3">
-                        <span className="text-xs text-parchment/45">
+                        <span className="text-xs text-parchment/60">
                           {new Date(run.generated_at).toLocaleDateString()}
                         </span>
                         <svg
-                          className={`w-4 h-4 text-parchment/45 transition-transform ${expandedRunId === run.id ? 'rotate-180' : ''}`}
+                          className={`w-4 h-4 text-parchment/60 transition-transform ${expandedRunId === run.id ? 'rotate-180' : ''}`}
                           fill="none" viewBox="0 0 24 24" stroke="currentColor"
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -642,7 +642,7 @@ export default function NewsletterDetailPage() {
                 >
                   {feedUrlCopied ? 'Copied!' : 'Copy feed URL'}
                 </button>
-                <p className="text-xs text-parchment/45">You'll also receive the audio in Telegram. The feed combines audio from all your subscribed dispatches.</p>
+                <p className="text-xs text-parchment/60">You'll also receive the audio in Telegram. The feed combines audio from all your subscribed dispatches.</p>
                 <button
                   onClick={() => { setShowSubscribeModal(false); setFeedUrl(null); }}
                   className="w-full px-4 py-2.5 bg-brass hover:bg-brass/80 text-ink rounded text-sm font-medium transition font-[var(--font-oswald)] uppercase tracking-wide"
@@ -694,9 +694,9 @@ export default function NewsletterDetailPage() {
                 <div className="flex-1">
                   <span className="text-sm font-medium text-parchment">Telegram</span>
                   {tgLinked ? (
-                    <p className="text-xs text-parchment/45 mt-0.5">Arrives as a DM — no extra setup</p>
+                    <p className="text-xs text-parchment/60 mt-0.5">Arrives as a DM — no extra setup</p>
                   ) : (
-                    <p className="text-xs text-parchment/45 mt-0.5">
+                    <p className="text-xs text-parchment/60 mt-0.5">
                       <Link href="/settings" className="text-brass hover:underline" onClick={(e) => e.stopPropagation()}>Link Telegram in Settings</Link> to enable
                     </p>
                   )}

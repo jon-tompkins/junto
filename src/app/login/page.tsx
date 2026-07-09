@@ -54,7 +54,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <p className="text-xs text-parchment/30 text-center mt-8">
+          <p className="text-xs text-parchment/45 text-center mt-8">
             By signing in you agree to our terms of service.
           </p>
         </div>

@@ -59,7 +59,7 @@ export function PositionsHeatmap({
 
   if (items.length === 0) {
     return (
-      <div className={`flex items-center justify-center text-parchment/40 text-sm ${className}`} style={{ height }}>
+      <div className={`flex items-center justify-center text-parchment/55 text-sm ${className}`} style={{ height }}>
         No positions yet.
       </div>
     );

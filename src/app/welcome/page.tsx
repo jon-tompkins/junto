@@ -308,7 +308,7 @@ export default function WelcomePage() {
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-semibold text-parchment">{j.name}</span>
-                      <span className="text-[10px] text-parchment/45 font-mono">{j.source_count} sources</span>
+                      <span className="text-[10px] text-parchment/60 font-mono">{j.source_count} sources</span>
                     </div>
                     {j.description && (
                       <p className="text-xs text-parchment/55">{j.description}</p>
@@ -323,7 +323,7 @@ export default function WelcomePage() {
               })}
             </div>
 
-            <div className="mt-3 text-xs text-parchment/45">
+            <div className="mt-3 text-xs text-parchment/60">
               None of these fit? <Link href="/explore" className="text-brass hover:underline">Browse all public juntos</Link>.
             </div>
 
@@ -357,7 +357,7 @@ export default function WelcomePage() {
                 </button>
               ))}
               {tickers.length === 0 && (
-                <span className="text-xs text-parchment/40 italic">No tickers added — that&apos;s fine, you can skip.</span>
+                <span className="text-xs text-parchment/55 italic">No tickers added — that&apos;s fine, you can skip.</span>
               )}
             </div>
 
@@ -417,7 +417,7 @@ export default function WelcomePage() {
                   className="w-full bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-2 text-sm text-parchment placeholder-parchment/30 focus:outline-none focus:border-brass"
                 />
                 {!hasAccountEmail && (
-                  <p className="mt-1 text-xs text-parchment/45">
+                  <p className="mt-1 text-xs text-parchment/60">
                     Your account has no email on file — add one so your dispatch can reach you.
                   </p>
                 )}
@@ -489,7 +489,7 @@ export default function WelcomePage() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-baseline gap-3">
-      <span className="text-[10px] uppercase tracking-wider text-parchment/45 font-mono shrink-0">{label}</span>
+      <span className="text-[10px] uppercase tracking-wider text-parchment/60 font-mono shrink-0">{label}</span>
       <span className="text-parchment text-right truncate">{value}</span>
     </div>
   );

@@ -51,7 +51,7 @@ const STANCE_BADGE: Record<string, string> = {
   bullish: 'bg-bull/15 text-bull border border-bull/40',
   bearish: 'bg-bear/15 text-bear border border-bear/40',
   cautious: 'bg-amber-900/40 text-amber-400 border border-amber-700/40',
-  neutral: 'bg-raised text-parchment/45 border border-[rgb(var(--t-brass) / 0.18)]',
+  neutral: 'bg-raised text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)]',
 };
 
 const STANCE_BG: Record<string, string> = {
@@ -134,7 +134,7 @@ function PositionsSection({ items }: { items: HeatmapPosition[] }) {
   return (
     <section className="mb-10">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider font-[var(--font-oswald)]">
+        <h2 className="text-xs font-semibold text-parchment/60 uppercase tracking-wider font-[var(--font-oswald)]">
           Positions
         </h2>
         <div className="flex rounded overflow-hidden border border-[rgb(var(--t-brass) / 0.28)]">
@@ -156,14 +156,14 @@ function PositionsSection({ items }: { items: HeatmapPosition[] }) {
       </div>
 
       {items.length === 0 ? (
-        <p className="text-parchment/45 text-sm">No tracked stances across this junto yet.</p>
+        <p className="text-parchment/60 text-sm">No tracked stances across this junto yet.</p>
       ) : view === 'heatmap' ? (
         <PositionsHeatmap items={items} height={420} />
       ) : (
         <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[rgb(var(--t-brass) / 0.28)] text-xs uppercase text-parchment/30 font-[var(--font-oswald)]">
+              <tr className="border-b border-[rgb(var(--t-brass) / 0.28)] text-xs uppercase text-parchment/45 font-[var(--font-oswald)]">
                 <th className="py-2 px-4 text-left">Ticker</th>
                 <th className="py-2 px-4 text-left">Stance</th>
                 <th className="py-2 px-4 text-right">Sources</th>
@@ -267,7 +267,7 @@ export default function JuntoViewPage() {
     <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Link href="/dashboard" className="text-parchment/45 hover:text-parchment/80 text-sm transition mb-6 inline-block">
+        <Link href="/dashboard" className="text-parchment/60 hover:text-parchment/80 text-sm transition mb-6 inline-block">
           ← Dashboard
         </Link>
 
@@ -277,7 +277,7 @@ export default function JuntoViewPage() {
             <div className="min-w-0 flex-1">
               <h1 className="text-3xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">{junto.name}</h1>
               {junto.description && <p className="text-parchment/60 mb-3">{junto.description}</p>}
-              <p className="text-sm text-parchment/45">
+              <p className="text-sm text-parchment/60">
                 {sources.length} {sources.length === 1 ? 'member' : 'members'}
                 {junto.is_public && <span className="ml-3">· Public</span>}
               </p>
@@ -311,9 +311,9 @@ export default function JuntoViewPage() {
 
         {/* Members section */}
         <section className="mb-10">
-          <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">Members</h2>
+          <h2 className="text-xs font-semibold text-parchment/60 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">Members</h2>
           {sources.length === 0 ? (
-            <p className="text-parchment/45 text-sm">No sources yet.</p>
+            <p className="text-parchment/60 text-sm">No sources yet.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {sources.map((js) => {
@@ -339,7 +339,7 @@ export default function JuntoViewPage() {
                       )}
                       <div className="min-w-0">
                         <div className="text-sm font-semibold truncate group-hover:text-brass transition">@{s.handle_or_url}</div>
-                        {s.display_name && <div className="text-xs text-parchment/45 truncate">{s.display_name}</div>}
+                        {s.display_name && <div className="text-xs text-parchment/60 truncate">{s.display_name}</div>}
                       </div>
                     </div>
                     {topStances.length > 0 ? (
@@ -351,7 +351,7 @@ export default function JuntoViewPage() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-parchment/30">No tracked stances yet</p>
+                      <p className="text-xs text-parchment/45">No tracked stances yet</p>
                     )}
                   </Link>
                 );
@@ -363,7 +363,7 @@ export default function JuntoViewPage() {
         {/* Dispatches using this Junto */}
         {dispatches.length > 0 && (
           <section className="mb-10">
-            <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">Dispatches using this Junto</h2>
+            <h2 className="text-xs font-semibold text-parchment/60 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">Dispatches using this Junto</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {dispatches.map((d) => (
                 <Link
@@ -373,13 +373,13 @@ export default function JuntoViewPage() {
                 >
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <span className="font-medium text-sm group-hover:text-brass transition">{d.name}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-sm bg-raised text-parchment/45 border border-[rgb(var(--t-brass) / 0.18)] shrink-0">
+                    <span className="text-[10px] px-2 py-0.5 rounded-sm bg-raised text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)] shrink-0">
                       {CADENCE_LABELS[d.schedule_cadence] ?? d.schedule_cadence}
                     </span>
                   </div>
-                  {d.description && <p className="text-xs text-parchment/45 line-clamp-2">{d.description}</p>}
+                  {d.description && <p className="text-xs text-parchment/60 line-clamp-2">{d.description}</p>}
                   {d.subscriber_count > 0 && (
-                    <p className="text-xs text-parchment/30 mt-2">{d.subscriber_count} subscriber{d.subscriber_count !== 1 ? 's' : ''}</p>
+                    <p className="text-xs text-parchment/45 mt-2">{d.subscriber_count} subscriber{d.subscriber_count !== 1 ? 's' : ''}</p>
                   )}
                 </Link>
               ))}

@@ -241,7 +241,7 @@ export default function DocsPage() {
                 <span className="text-parchment/80">Subscriber cost with voice</span>
                 <span className="text-parchment font-medium">4 credits</span>
               </div>
-              <p className="text-xs text-parchment/30">
+              <p className="text-xs text-parchment/45">
                 Owner cost doubles when voice generation is enabled. Subscriber
                 payments split 50/50 between the platform and the dispatch owner.
               </p>

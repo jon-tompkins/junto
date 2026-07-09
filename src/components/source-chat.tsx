@@ -82,8 +82,8 @@ export function SourceChat({ sourceId, handle, disabled }: SourceChatProps) {
           <h3 className="text-sm font-semibold text-parchment">Ask about @{handle}</h3>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-parchment/40">10 credits/query • Operator/Pro</span>
-          <span className={`text-parchment/40 text-xs transition-transform ${collapsed ? '' : 'rotate-180'}`}>▾</span>
+          <span className="text-xs text-parchment/55">10 credits/query • Operator/Pro</span>
+          <span className={`text-parchment/55 text-xs transition-transform ${collapsed ? '' : 'rotate-180'}`}>▾</span>
         </div>
       </button>
 
@@ -92,7 +92,7 @@ export function SourceChat({ sourceId, handle, disabled }: SourceChatProps) {
       {/* Messages */}
       <div ref={scrollRef} className="h-80 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 && (
-          <div className="text-center py-8 text-parchment/30 text-sm">
+          <div className="text-center py-8 text-parchment/45 text-sm">
             <p className="mb-2">Ask about what @{handle} is discussing or positioned in</p>
             <p className="text-xs">e.g. &ldquo;What is their current stance on NVDA?&rdquo;</p>
             <p className="text-xs mt-1">&ldquo;What have they been posting about this week?&rdquo;</p>
@@ -125,7 +125,7 @@ export function SourceChat({ sourceId, handle, disabled }: SourceChatProps) {
 
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-raised rounded-lg px-4 py-3 text-sm text-parchment/40">
+            <div className="bg-raised rounded-lg px-4 py-3 text-sm text-parchment/55">
               Analyzing @{handle}&rsquo;s content...
             </div>
           </div>

@@ -202,7 +202,7 @@ export default function PositionsPage() {
                 <button
                   onClick={() => setSearch('')}
                   aria-label="Clear search"
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-xs text-parchment/35 hover:text-parchment/70 w-4 h-4 leading-none"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-xs text-parchment/50 hover:text-parchment/70 w-4 h-4 leading-none"
                 >
                   ×
                 </button>
@@ -337,7 +337,7 @@ export default function PositionsPage() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-parchment/40">No positions yet.</div>
+          <div className="text-center py-20 text-parchment/55">No positions yet.</div>
         ) : view === 'heatmap' ? (
           // ─── Heatmap (squarified treemap) ──────────────────────────
           <div
@@ -461,8 +461,8 @@ export default function PositionsPage() {
                       </span>
                     </th>
                   ))}
-                  <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)]">Type</th>
-                  <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)]">Profiles</th>
+                  <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-parchment/55 font-[var(--font-oswald)]">Type</th>
+                  <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-parchment/55 font-[var(--font-oswald)]">Profiles</th>
                   {session?.user && <th className="px-3 py-3 w-8" />}
                 </tr>
               </thead>
@@ -515,14 +515,14 @@ export default function PositionsPage() {
                           </div>
                           <span className="text-parchment/70 tabular-nums">{shownCount}</span>
                           {!includeStale && staleHidden > 0 && (
-                            <span className="text-[10px] text-parchment/30 tabular-nums" title={`${staleHidden} stale source${staleHidden === 1 ? '' : 's'} hidden`}>
+                            <span className="text-[10px] text-parchment/45 tabular-nums" title={`${staleHidden} stale source${staleHidden === 1 ? '' : 's'} hidden`}>
                               (+{staleHidden})
                             </span>
                           )}
                         </div>
                       </td>
                       <td className="px-5 py-3">
-                        <span className="text-xs capitalize text-parchment/35">{item.category}</span>
+                        <span className="text-xs capitalize text-parchment/50">{item.category}</span>
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex flex-wrap gap-2">
@@ -545,7 +545,7 @@ export default function PositionsPage() {
                             </Link>
                           ))}
                           {visibleSources.length > 5 && (
-                            <span className="text-xs text-parchment/30 self-center">+{visibleSources.length - 5} more</span>
+                            <span className="text-xs text-parchment/45 self-center">+{visibleSources.length - 5} more</span>
                           )}
                         </div>
                       </td>

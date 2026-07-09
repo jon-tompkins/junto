@@ -9,7 +9,7 @@ export default async function TradingLayout({ children }: { children: React.Reac
   return (
     <>
       {children}
-      <footer className="max-w-6xl mx-auto px-4 sm:px-6 pb-10 pt-2 text-[11px] text-parchment/35 font-[var(--font-oswald)] uppercase tracking-wide flex items-center gap-2">
+      <footer className="max-w-6xl mx-auto px-4 sm:px-6 pb-10 pt-2 text-[11px] text-parchment/50 font-[var(--font-oswald)] uppercase tracking-wide flex items-center gap-2">
         <span>Powered by</span>
         <a
           href="https://alpaca.markets"

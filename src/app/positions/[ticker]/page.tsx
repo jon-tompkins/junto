@@ -22,7 +22,7 @@ const STANCE_COLORS: Record<string, string> = {
   bullish: 'bg-bull/15 text-bull border border-bull/40',
   bearish: 'bg-bear/15 text-bear border border-bear/40',
   cautious: 'bg-amber-900/40 text-amber-400 border border-amber-700/40',
-  neutral: 'bg-raised text-parchment/45 border border-[rgb(var(--t-brass) / 0.18)]',
+  neutral: 'bg-raised text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)]',
 };
 
 const STANCE_ICONS: Record<string, string> = {
@@ -184,8 +184,8 @@ function SocialPulse({ ticker }: { ticker: string }) {
         onClick={() => setCollapsed((c) => !c)}
         className={`w-full flex items-center justify-between ${collapsed ? '' : 'mb-4'} text-left`}
       >
-        <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] flex items-center gap-2">
-          <span className="text-parchment/45 text-[10px]">{collapsed ? '▸' : '▾'}</span>
+        <h2 className="text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] flex items-center gap-2">
+          <span className="text-parchment/60 text-[10px]">{collapsed ? '▸' : '▾'}</span>
           Social Pulse
         </h2>
         <span className="text-[10px] uppercase tracking-wide text-brass/70 font-[var(--font-oswald)]">
@@ -195,11 +195,11 @@ function SocialPulse({ ticker }: { ticker: string }) {
 
       {!collapsed && <>
       {status === 'loading' && (
-        <p className="text-sm text-parchment/45">Loading social pulse…</p>
+        <p className="text-sm text-parchment/60">Loading social pulse…</p>
       )}
 
       {status === 'empty' && (
-        <p className="text-sm text-parchment/45">
+        <p className="text-sm text-parchment/60">
           No reports yet. A daily report for ${ticker} will be generated on the next cron cycle.
         </p>
       )}
@@ -212,7 +212,7 @@ function SocialPulse({ ticker }: { ticker: string }) {
                 className="research-content text-sm max-w-none"
                 dangerouslySetInnerHTML={{ __html: markdownToHtml(summary.summary) }}
               />
-              <p className="text-[11px] text-parchment/40 mt-3">
+              <p className="text-[11px] text-parchment/55 mt-3">
                 {pulseCountLabel(summary.mention_count, summary.tweet_count)} · updated {new Date(summary.updated_at).toLocaleString()}
               </p>
             </div>
@@ -221,7 +221,7 @@ function SocialPulse({ ticker }: { ticker: string }) {
           {reports.length > 0 && (
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-[10px] uppercase tracking-wide text-parchment/45 font-[var(--font-oswald)]">
+                <tr className="text-left text-[10px] uppercase tracking-wide text-parchment/60 font-[var(--font-oswald)]">
                   <th className="py-2 pr-4 w-6"></th>
                   <th className="py-2 pr-4">Date</th>
                   <th className="py-2 pr-4">Summary</th>
@@ -237,10 +237,10 @@ function SocialPulse({ ticker }: { ticker: string }) {
                         className="border-t border-[rgb(var(--t-brass) / 0.18)] hover:bg-raised cursor-pointer"
                         onClick={() => setOpenId(open ? null : r.id)}
                       >
-                        <td className="py-2 pr-2 text-parchment/45 text-[10px] align-top">{open ? '▾' : '▸'}</td>
+                        <td className="py-2 pr-2 text-parchment/60 text-[10px] align-top">{open ? '▾' : '▸'}</td>
                         <td className="py-2 pr-4 font-mono text-parchment/60 align-top whitespace-nowrap">{r.report_date}</td>
                         <td className={`py-2 pr-4 text-parchment/80 ${open ? '' : 'line-clamp-2'}`}>{r.summary}</td>
-                        <td className="py-2 pr-4 text-right text-parchment/45 font-mono align-top">{r.mention_count || r.tweet_count}</td>
+                        <td className="py-2 pr-4 text-right text-parchment/60 font-mono align-top">{r.mention_count || r.tweet_count}</td>
                       </tr>
                       {open && (
                         <tr className="bg-ink">
@@ -250,12 +250,12 @@ function SocialPulse({ ticker }: { ticker: string }) {
                               className="research-content text-sm max-w-none"
                               dangerouslySetInnerHTML={{ __html: markdownToHtml(r.content) }}
                             />
-                            <p className="text-[11px] text-parchment/40 mt-3">
+                            <p className="text-[11px] text-parchment/55 mt-3">
                               {pulseCountLabel(r.mention_count, r.tweet_count)}
                             </p>
                             {r.tweet_refs?.length > 0 && (
                               <div className="mt-3 space-y-2">
-                                <p className="text-[10px] uppercase tracking-wide text-parchment/45 font-[var(--font-oswald)]">
+                                <p className="text-[10px] uppercase tracking-wide text-parchment/60 font-[var(--font-oswald)]">
                                   Top tweets analyzed
                                 </p>
                                 {r.tweet_refs.map((t) => (
@@ -269,9 +269,9 @@ function SocialPulse({ ticker }: { ticker: string }) {
                                     <div className="flex items-center gap-2 mb-1 flex-wrap text-[11px]">
                                       <span className="text-brass">@{t.author_handle}</span>
                                       {t.author_followers != null && (
-                                        <span className="text-parchment/40">{t.author_followers.toLocaleString()} followers</span>
+                                        <span className="text-parchment/55">{t.author_followers.toLocaleString()} followers</span>
                                       )}
-                                      <span className="text-parchment/40 ml-auto">
+                                      <span className="text-parchment/55 ml-auto">
                                         {t.likes}❤ {t.retweets}🔁
                                       </span>
                                     </div>
@@ -392,7 +392,7 @@ function ResearchReports({ ticker }: { ticker: string }) {
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">
+        <h2 className="text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)]">
           Research Reports
         </h2>
         <button
@@ -414,7 +414,7 @@ function ResearchReports({ ticker }: { ticker: string }) {
       {loading ? (
         <div className="h-16 bg-surface rounded animate-pulse" />
       ) : reports.length === 0 ? (
-        <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 text-sm text-parchment/45">
+        <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 text-sm text-parchment/60">
           No public research reports for {ticker} yet. Generate one on{' '}
           <a href={base} target="_blank" rel="noopener" className="text-brass hover:underline">
             Ailmanack
@@ -424,7 +424,7 @@ function ResearchReports({ ticker }: { ticker: string }) {
         <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-x-auto">
           <table className="w-full min-w-[560px] text-sm">
             <thead>
-              <tr className="border-b border-[rgb(var(--t-brass) / 0.28)] text-[10px] uppercase tracking-wider text-parchment/30 font-[var(--font-oswald)]">
+              <tr className="border-b border-[rgb(var(--t-brass) / 0.28)] text-[10px] uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)]">
                 <th className="py-2 px-4 text-left">Date</th>
                 <th className="py-2 px-4 text-right">Price</th>
                 <th className="py-2 px-4 text-left">Trade</th>
@@ -442,7 +442,7 @@ function ResearchReports({ ticker }: { ticker: string }) {
                     {r.report_price != null ? (
                       <span className="text-parchment/80">${r.report_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     ) : (
-                      <span className="text-parchment/30">—</span>
+                      <span className="text-parchment/45">—</span>
                     )}
                   </td>
                   <td className="py-2 px-4">
@@ -451,7 +451,7 @@ function ResearchReports({ ticker }: { ticker: string }) {
                         {r.rating}
                       </span>
                     ) : (
-                      <span className="text-xs text-parchment/30">—</span>
+                      <span className="text-xs text-parchment/45">—</span>
                     )}
                   </td>
                   <td className="py-2 px-4 text-parchment/80 truncate max-w-[280px]">
@@ -508,7 +508,7 @@ const TRADE_STATUS_COLORS: Record<string, string> = {
   closed: 'text-parchment/60 border-[rgb(var(--t-brass) / 0.28)] bg-raised',
   proposed: 'text-amber-400 border-amber-700/40 bg-amber-900/20',
   rejected: 'text-bear border-bear/30 bg-bear/5',
-  cancelled: 'text-parchment/40 border-[rgb(var(--t-brass) / 0.18)] bg-surface',
+  cancelled: 'text-parchment/55 border-[rgb(var(--t-brass) / 0.18)] bg-surface',
 };
 
 // Owner-only: the viewer's own trades on this ticker plus their journal notes.
@@ -517,7 +517,7 @@ const TRADE_STATUS_COLORS: Record<string, string> = {
 function TradingActivity({ ticker, trades }: { ticker: string; trades: ActivityTrade[] }) {
   if (trades.length === 0) {
     return (
-      <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 text-sm text-parchment/45">
+      <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 text-sm text-parchment/60">
         You have no trades on {ticker} yet.
       </div>
     );
@@ -557,7 +557,7 @@ function TradingActivity({ ticker, trades }: { ticker: string; trades: ActivityT
                 )}
               </div>
 
-              <div className="flex gap-4 text-xs text-parchment/45 flex-wrap font-mono">
+              <div className="flex gap-4 text-xs text-parchment/60 flex-wrap font-mono">
                 {t.entry_price != null && (
                   <span>entry ${t.entry_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 )}
@@ -581,12 +581,12 @@ function TradingActivity({ ticker, trades }: { ticker: string; trades: ActivityT
                           {n.kind}
                         </span>
                         {n.process_score != null && (
-                          <span className="text-parchment/40">process {n.process_score}/10</span>
+                          <span className="text-parchment/55">process {n.process_score}/10</span>
                         )}
                         {n.outcome_score != null && (
-                          <span className="text-parchment/40">outcome {n.outcome_score}/10</span>
+                          <span className="text-parchment/55">outcome {n.outcome_score}/10</span>
                         )}
-                        <span className="text-parchment/30 ml-auto">
+                        <span className="text-parchment/45 ml-auto">
                           {new Date(n.created_at).toLocaleDateString()}
                         </span>
                       </div>
@@ -607,13 +607,13 @@ const CLOSED_OUTCOME_PILL: Record<string, string> = {
   win: 'bg-bull/15 text-bull border border-bull/40',
   loss: 'bg-bear/15 text-bear border border-bear/40',
   flat: 'bg-raised text-parchment/50 border border-[rgb(var(--t-brass) / 0.18)]',
-  unscored: 'bg-raised text-parchment/35 border border-[rgb(var(--t-brass) / 0.12)]',
+  unscored: 'bg-raised text-parchment/50 border border-[rgb(var(--t-brass) / 0.12)]',
 };
 
 function TickerClosedCalls({ calls, ticker }: { calls: ClosedTickerCall[]; ticker: string }) {
   if (calls.length === 0) {
     return (
-      <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 text-sm text-parchment/45">
+      <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 text-sm text-parchment/60">
         No source has closed a call on {ticker} yet.
       </div>
     );
@@ -647,7 +647,7 @@ function TickerClosedCalls({ calls, ticker }: { calls: ClosedTickerCall[]; ticke
                   {outcome}
                 </span>
               </div>
-              <div className="text-[11px] text-parchment/40 mt-1">
+              <div className="text-[11px] text-parchment/55 mt-1">
                 {c.entry_price != null ? `$${c.entry_price.toFixed(2)}` : '—'} → {c.exit_price != null ? `$${c.exit_price.toFixed(2)}` : '—'}
                 {c.exit_date ? ` · closed ${new Date(c.exit_date).toLocaleDateString()}` : ''}
                 {c.close_reason ? ` · ${c.close_reason}` : ''}
@@ -777,7 +777,7 @@ export default function PositionPage() {
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         <Link
           href="/sources"
-          className="text-sm text-parchment/45 hover:text-parchment/80 transition mb-6 inline-block"
+          className="text-sm text-parchment/60 hover:text-parchment/80 transition mb-6 inline-block"
         >
           ← All positions
         </Link>
@@ -849,7 +849,7 @@ export default function PositionPage() {
                       <span key={s}>
                         <span className="font-mono font-semibold" style={{ color: STANCE_BAR_COLOR[s] }}>{breakdown[s]}</span>
                         <span className="ml-1 capitalize" style={{ color: STANCE_BAR_COLOR[s] }}>{s}</span>
-                        {i < arr.length - 1 && <span className="text-parchment/30 mx-1.5">·</span>}
+                        {i < arr.length - 1 && <span className="text-parchment/45 mx-1.5">·</span>}
                       </span>
                     ))}
                   </p>
@@ -873,14 +873,14 @@ export default function PositionPage() {
             <div className="flex gap-1 border-b border-[rgb(var(--t-brass) / 0.18)] mb-4">
               <button
                 onClick={() => setActiveTab('sources')}
-                className={`px-3 py-2 text-xs uppercase tracking-wide font-[var(--font-oswald)] border-b-2 -mb-px transition ${activeTab === 'sources' ? 'border-brass text-parchment' : 'border-transparent text-parchment/45 hover:text-parchment/70'}`}
+                className={`px-3 py-2 text-xs uppercase tracking-wide font-[var(--font-oswald)] border-b-2 -mb-px transition ${activeTab === 'sources' ? 'border-brass text-parchment' : 'border-transparent text-parchment/60 hover:text-parchment/70'}`}
               >
                 Sources{total > 0 ? ` (${total})` : ''}
               </button>
               {closedCalls.length > 0 && (
                 <button
                   onClick={() => setActiveTab('closed')}
-                  className={`px-3 py-2 text-xs uppercase tracking-wide font-[var(--font-oswald)] border-b-2 -mb-px transition ${activeTab === 'closed' ? 'border-brass text-parchment' : 'border-transparent text-parchment/45 hover:text-parchment/70'}`}
+                  className={`px-3 py-2 text-xs uppercase tracking-wide font-[var(--font-oswald)] border-b-2 -mb-px transition ${activeTab === 'closed' ? 'border-brass text-parchment' : 'border-transparent text-parchment/60 hover:text-parchment/70'}`}
                 >
                   Closed ({closedCalls.length})
                 </button>
@@ -888,7 +888,7 @@ export default function PositionPage() {
               {activityTrades.length > 0 && (
                 <button
                   onClick={() => setActiveTab('activity')}
-                  className={`px-3 py-2 text-xs uppercase tracking-wide font-[var(--font-oswald)] border-b-2 -mb-px transition ${activeTab === 'activity' ? 'border-brass text-parchment' : 'border-transparent text-parchment/45 hover:text-parchment/70'}`}
+                  className={`px-3 py-2 text-xs uppercase tracking-wide font-[var(--font-oswald)] border-b-2 -mb-px transition ${activeTab === 'activity' ? 'border-brass text-parchment' : 'border-transparent text-parchment/60 hover:text-parchment/70'}`}
                 >
                   My Activity ({activityTrades.length})
                 </button>
@@ -900,7 +900,7 @@ export default function PositionPage() {
             ) : activeTab === 'activity' ? (
               <TradingActivity ticker={ticker} trades={activityTrades} />
             ) : !data || total === 0 ? (
-              <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 text-sm text-parchment/45">
+              <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 text-sm text-parchment/60">
                 No source currently has a live stance on {ticker}. Research and any past activity above remain available.
               </div>
             ) : (
@@ -931,7 +931,7 @@ export default function PositionPage() {
                   </div>
                 )}
                 {viewTotal === 0 ? (
-                  <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 text-sm text-parchment/45">
+                  <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-4 text-sm text-parchment/60">
                     No source{activeJunto ? ` in ${activeJunto.name}` : ''} has a live stance on {ticker}.
                   </div>
                 ) : (
@@ -959,7 +959,7 @@ export default function PositionPage() {
                             @{a.handle}
                           </span>
                           {a.display_name && (
-                            <span className="text-xs text-parchment/45">{a.display_name}</span>
+                            <span className="text-xs text-parchment/60">{a.display_name}</span>
                           )}
                           {stalenessLevel(a) === 'stale' && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded border border-bear/20 bg-bear/10 text-bear/80 font-medium">
@@ -980,7 +980,7 @@ export default function PositionPage() {
                         {a.note && (
                           <p className="text-xs text-parchment/60 line-clamp-2 mb-1">{a.note}</p>
                         )}
-                        <div className="flex gap-3 text-xs text-parchment/30 flex-wrap items-center">
+                        <div className="flex gap-3 text-xs text-parchment/45 flex-wrap items-center">
                           <span>since {new Date(a.since).toLocaleDateString()}</span>
                           {a.track_record && a.track_record.scored > 0 && (
                             <span
@@ -990,7 +990,7 @@ export default function PositionPage() {
                               <span className="text-parchment/55 font-medium">
                                 {Math.round((a.track_record.wins / a.track_record.scored) * 100)}% on {ticker}
                               </span>
-                              <span className="text-parchment/30 font-mono">
+                              <span className="text-parchment/45 font-mono">
                                 {a.track_record.wins}-{a.track_record.losses}
                               </span>
                               {a.track_record.avg_return_pct != null && (

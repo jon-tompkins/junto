@@ -119,7 +119,7 @@ export default function ApiKeysPage() {
         )}
 
         <div className="mb-8 p-4 rounded border border-[rgb(var(--t-brass) / 0.28)]">
-          <label className="block text-xs uppercase tracking-wider text-parchment/45 mb-2 font-[var(--font-oswald)]">
+          <label className="block text-xs uppercase tracking-wider text-parchment/60 mb-2 font-[var(--font-oswald)]">
             Create new key
           </label>
           <div className="flex gap-2">
@@ -142,20 +142,20 @@ export default function ApiKeysPage() {
           {error && <p className="text-xs text-bear mt-2">{error}</p>}
         </div>
 
-        <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wide mb-3 font-[var(--font-oswald)]">
+        <h2 className="text-xs font-semibold text-parchment/60 uppercase tracking-wide mb-3 font-[var(--font-oswald)]">
           Your keys
         </h2>
         {loading ? (
-          <p className="text-sm text-parchment/45">Loading…</p>
+          <p className="text-sm text-parchment/60">Loading…</p>
         ) : keys.length === 0 ? (
-          <p className="text-sm text-parchment/45 border border-dashed border-[rgb(var(--t-brass) / 0.28)] rounded p-6 text-center">
+          <p className="text-sm text-parchment/60 border border-dashed border-[rgb(var(--t-brass) / 0.28)] rounded p-6 text-center">
             No keys yet.
           </p>
         ) : (
           <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-surface text-[10px] uppercase tracking-[0.12em] text-parchment/45">
+                <tr className="bg-surface text-[10px] uppercase tracking-[0.12em] text-parchment/60">
                   <th className="text-left px-4 py-2 font-normal">Name</th>
                   <th className="text-left px-4 py-2 font-normal">Prefix</th>
                   <th className="text-left px-4 py-2 font-normal">Last used</th>

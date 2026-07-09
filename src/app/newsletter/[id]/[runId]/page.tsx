@@ -90,7 +90,7 @@ export default async function DispatchIssuePage({
         </div>
 
         <h1 className="text-2xl md:text-3xl font-semibold mb-2">{run.subject || newsletter.name}</h1>
-        {date && <p className="text-[12px] text-parchment/45 mb-4 font-mono">{date}</p>}
+        {date && <p className="text-[12px] text-parchment/60 mb-4 font-mono">{date}</p>}
 
         {tickers.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-6">

@@ -292,7 +292,7 @@ export default function EditNewsletterPage() {
   if (loading || authStatus === 'loading') {
     return (
       <main className="min-h-screen bg-ink text-parchment flex items-center justify-center">
-        <div className="animate-pulse text-parchment/45">Loading...</div>
+        <div className="animate-pulse text-parchment/60">Loading...</div>
       </main>
     );
   }
@@ -380,7 +380,7 @@ export default function EditNewsletterPage() {
 
           {/* Secondary Prompt */}
           <div>
-            <label className="block text-sm font-medium text-parchment/60 mb-2">Secondary Prompt <span className="text-parchment/30">(optional)</span></label>
+            <label className="block text-sm font-medium text-parchment/60 mb-2">Secondary Prompt <span className="text-parchment/45">(optional)</span></label>
             <textarea
               value={secondaryPrompt}
               onChange={e => setSecondaryPrompt(e.target.value)}
@@ -391,7 +391,7 @@ export default function EditNewsletterPage() {
 
           {/* Labels */}
           <div>
-            <label className="block text-sm font-medium text-parchment/60 mb-2">Labels <span className="text-parchment/30">(comma separated)</span></label>
+            <label className="block text-sm font-medium text-parchment/60 mb-2">Labels <span className="text-parchment/45">(comma separated)</span></label>
             <input
               value={labelsStr}
               onChange={e => setLabelsStr(e.target.value)}
@@ -404,7 +404,7 @@ export default function EditNewsletterPage() {
           <div>
             <label className="block text-sm font-medium text-parchment/60 mb-2">
               Watchlist
-              <span className="text-parchment/30 font-normal ml-1">(optional — tickers included in the dispatch context)</span>
+              <span className="text-parchment/45 font-normal ml-1">(optional — tickers included in the dispatch context)</span>
             </label>
             <div className="flex flex-wrap gap-2 mb-2">
               {tickers.map((t) => (
@@ -416,7 +416,7 @@ export default function EditNewsletterPage() {
                   <button
                     type="button"
                     onClick={() => setTickers(prev => prev.filter(x => x !== t))}
-                    className="text-parchment/40 hover:text-parchment/90"
+                    className="text-parchment/55 hover:text-parchment/90"
                     aria-label={`Remove ${t}`}
                   >
                     ×
@@ -516,7 +516,7 @@ export default function EditNewsletterPage() {
           <div>
             <label className="block text-sm font-medium text-parchment/60 mb-2">
               Generation Days
-              <span className="text-parchment/30 font-normal ml-1">(newsletter generates on these days)</span>
+              <span className="text-parchment/45 font-normal ml-1">(newsletter generates on these days)</span>
             </label>
             <div className="flex gap-2">
               {[
@@ -550,7 +550,7 @@ export default function EditNewsletterPage() {
           <div>
             <label className="block text-sm font-medium text-parchment/60 mb-2">
               Send Windows
-              <span className="text-parchment/30 font-normal ml-1">(Pacific time — newsletter generates in these windows)</span>
+              <span className="text-parchment/45 font-normal ml-1">(Pacific time — newsletter generates in these windows)</span>
             </label>
             <div className="flex flex-wrap gap-2">
               {[
@@ -588,7 +588,7 @@ export default function EditNewsletterPage() {
                     {s.type === 'youtube' ? '▶️' : s.type === 'newsletter' ? '✉️' : '🐦'}
                   </span>
                   {s.type === 'newsletter' ? (s.display_name || s.handle) : s.type === 'youtube' ? s.handle : `@${s.handle}`}
-                  <button onClick={() => removeSource(s.id)} className="text-parchment/45 hover:text-bear transition">
+                  <button onClick={() => removeSource(s.id)} className="text-parchment/60 hover:text-bear transition">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -657,10 +657,10 @@ export default function EditNewsletterPage() {
             {newSourceType === 'newsletter' && (
               <div className="space-y-3">
                 {newslettersLoading && (
-                  <div className="text-parchment/45 text-sm animate-pulse">Loading newsletters...</div>
+                  <div className="text-parchment/60 text-sm animate-pulse">Loading newsletters...</div>
                 )}
                 {!newslettersLoading && newslettersLoaded && availableNewsletters.length === 0 && (
-                  <div className="text-parchment/45 text-sm">No newsletters available yet.</div>
+                  <div className="text-parchment/60 text-sm">No newsletters available yet.</div>
                 )}
                 {availableNewsletters.map(nl => {
                   const alreadyAdded = sources.some(s => s.type === 'newsletter' && s.handle === nl.slug);
@@ -680,7 +680,7 @@ export default function EditNewsletterPage() {
                         disabled={alreadyAdded}
                         className={`shrink-0 px-3 py-1.5 rounded text-xs font-medium transition ${
                           alreadyAdded
-                            ? 'bg-raised text-parchment/45 cursor-default'
+                            ? 'bg-raised text-parchment/60 cursor-default'
                             : 'bg-bull hover:bg-bull/80 text-ink'
                         }`}
                       >

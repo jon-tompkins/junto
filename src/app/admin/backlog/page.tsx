@@ -94,7 +94,7 @@ export default function AdminBacklogPage() {
   }
 
   if (status === 'loading' || loading) {
-    return <main className="min-h-screen bg-ink text-parchment"><TopNav /><div className="max-w-6xl mx-auto px-6 py-12 text-parchment/45">Loading…</div></main>;
+    return <main className="min-h-screen bg-ink text-parchment"><TopNav /><div className="max-w-6xl mx-auto px-6 py-12 text-parchment/60">Loading…</div></main>;
   }
   if (error) {
     return <main className="min-h-screen bg-ink text-parchment"><TopNav /><div className="max-w-6xl mx-auto px-6 py-12 text-bear">{error}</div></main>;
@@ -106,7 +106,7 @@ export default function AdminBacklogPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <Link href="/admin" className="text-xs text-parchment/45 hover:text-parchment">← Admin</Link>
+            <Link href="/admin" className="text-xs text-parchment/60 hover:text-parchment">← Admin</Link>
             <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mt-1">Backlog</h1>
           </div>
         </div>
@@ -133,8 +133,8 @@ export default function AdminBacklogPage() {
             return (
               <div key={col.key} className="bg-ink border border-[rgb(var(--t-brass) / 0.18)] rounded p-3">
                 <div className="flex items-center justify-between mb-3 px-1">
-                  <span className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)]">{col.label}</span>
-                  <span className="text-[10px] text-parchment/30 font-mono">{colItems.length}</span>
+                  <span className="text-xs uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)]">{col.label}</span>
+                  <span className="text-[10px] text-parchment/45 font-mono">{colItems.length}</span>
                 </div>
                 <div className="space-y-2">
                   {colItems.length === 0 && <p className="text-xs text-parchment/25 px-1 py-4 text-center">empty</p>}
@@ -143,17 +143,17 @@ export default function AdminBacklogPage() {
                       <div className="flex items-start gap-2">
                         <span className="mt-1 w-2 h-2 rounded-full shrink-0" style={{ background: PRIO_COLOR[item.priority] }} title={item.priority} />
                         <div className="min-w-0 flex-1">
-                          <div className={`text-sm ${item.status === 'done' ? 'line-through text-parchment/40' : 'text-parchment'}`}>{item.title}</div>
+                          <div className={`text-sm ${item.status === 'done' ? 'line-through text-parchment/55' : 'text-parchment'}`}>{item.title}</div>
                           {item.detail && <div className="text-xs text-parchment/50 mt-1 whitespace-pre-wrap">{item.detail}</div>}
                           {item.category && <span className="inline-block mt-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-ink border border-[rgb(var(--t-brass) / 0.28)] text-brass">{item.category}</span>}
                         </div>
                       </div>
                       <div className="flex items-center justify-between mt-2 pt-2 border-t border-parchment/8">
                         <div className="flex gap-1">
-                          <button onClick={() => move(item, -1)} disabled={item.status === 'backlog'} className="text-xs px-1.5 text-parchment/40 hover:text-parchment disabled:opacity-20">◀</button>
-                          <button onClick={() => move(item, 1)} disabled={item.status === 'done'} className="text-xs px-1.5 text-parchment/40 hover:text-parchment disabled:opacity-20">▶</button>
+                          <button onClick={() => move(item, -1)} disabled={item.status === 'backlog'} className="text-xs px-1.5 text-parchment/55 hover:text-parchment disabled:opacity-20">◀</button>
+                          <button onClick={() => move(item, 1)} disabled={item.status === 'done'} className="text-xs px-1.5 text-parchment/55 hover:text-parchment disabled:opacity-20">▶</button>
                         </div>
-                        <button onClick={() => remove(item.id)} className="text-xs text-parchment/30 hover:text-bear">delete</button>
+                        <button onClick={() => remove(item.id)} className="text-xs text-parchment/45 hover:text-bear">delete</button>
                       </div>
                     </div>
                   ))}

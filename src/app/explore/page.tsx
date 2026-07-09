@@ -144,7 +144,7 @@ export default function ExplorePage() {
         {/* Search + Filters */}
         <div className="mb-8 space-y-4">
           <div className="relative max-w-md">
-            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-parchment/45" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-parchment/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
@@ -174,16 +174,16 @@ export default function ExplorePage() {
 
         {/* Grid */}
         {loading ? (
-          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface p-8 text-sm text-parchment/45 font-mono">Loading…</div>
+          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface p-8 text-sm text-parchment/60 font-mono">Loading…</div>
         ) : newsletters.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-16 h-16 rounded bg-surface border border-[rgb(var(--t-brass) / 0.18)] flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-parchment/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-8 h-8 text-parchment/45" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
               </svg>
             </div>
             <p className="text-parchment/60 text-lg mb-2 font-medium">No dispatches found</p>
-            <p className="text-parchment/45 text-sm mb-6">Be the first to create an intelligence brief.</p>
+            <p className="text-parchment/60 text-sm mb-6">Be the first to create an intelligence brief.</p>
             <Link
               href="/create"
               className="inline-block bg-brass hover:bg-brass/80 text-ink px-6 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition"
@@ -196,12 +196,12 @@ export default function ExplorePage() {
             <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="bg-surface border-b border-[rgb(var(--t-brass) / 0.28)]">
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">Dispatch</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Curator</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Cadence</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">Labels</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Subs</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap"></th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)]">Dispatch</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Curator</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Cadence</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)]">Labels</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Subs</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap"></th>
                 </tr>
               </thead>
               <tbody>
@@ -232,7 +232,7 @@ export default function ExplorePage() {
                             </span>
                           </div>
                         ) : (
-                          <span className="text-xs text-parchment/30">—</span>
+                          <span className="text-xs text-parchment/45">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
@@ -322,9 +322,9 @@ export default function ExplorePage() {
                 <div className="flex-1">
                   <span className="text-sm font-medium text-parchment">Telegram</span>
                   {tgLinked ? (
-                    <p className="text-xs text-parchment/45 mt-0.5">Arrives as a DM — no extra setup</p>
+                    <p className="text-xs text-parchment/60 mt-0.5">Arrives as a DM — no extra setup</p>
                   ) : (
-                    <p className="text-xs text-parchment/45 mt-0.5">
+                    <p className="text-xs text-parchment/60 mt-0.5">
                       <Link href="/settings" className="text-brass hover:underline" onClick={(e) => e.stopPropagation()}>Link Telegram in Settings</Link> to enable
                     </p>
                   )}

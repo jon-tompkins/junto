@@ -173,9 +173,9 @@ function Endpoint({
         <span className="font-mono text-sm text-parchment">{path}</span>
       </div>
       <p className="text-sm text-parchment/65 mb-3">{description}</p>
-      <div className="text-[10px] uppercase tracking-wider text-parchment/45 mb-1 mt-3 font-[var(--font-oswald)]">Request</div>
+      <div className="text-[10px] uppercase tracking-wider text-parchment/60 mb-1 mt-3 font-[var(--font-oswald)]">Request</div>
       <Code>{example}</Code>
-      <div className="text-[10px] uppercase tracking-wider text-parchment/45 mb-1 mt-3 font-[var(--font-oswald)]">Response</div>
+      <div className="text-[10px] uppercase tracking-wider text-parchment/60 mb-1 mt-3 font-[var(--font-oswald)]">Response</div>
       <Code>{response}</Code>
     </div>
   );

@@ -93,7 +93,7 @@ export default function OpenAccountPage() {
     return (
       <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
-        <div className="max-w-2xl mx-auto px-6 py-12 text-parchment/45">Loading…</div>
+        <div className="max-w-2xl mx-auto px-6 py-12 text-parchment/60">Loading…</div>
       </main>
     );
   }
@@ -115,20 +115,20 @@ export default function OpenAccountPage() {
         <TopNav />
         <div className="max-w-2xl mx-auto px-6 py-12">
           <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-2">Brokerage account</h1>
-          <p className="text-sm text-parchment/45 mb-8">Managed by myjunto via Alpaca</p>
+          <p className="text-sm text-parchment/60 mb-8">Managed by myjunto via Alpaca</p>
 
           <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6 mb-6">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-parchment/45 font-mono mb-1">Status</div>
+                <div className="text-[10px] uppercase tracking-wider text-parchment/60 font-mono mb-1">Status</div>
                 <div className="text-parchment">{existing.status}</div>
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-parchment/45 font-mono mb-1">Account #</div>
+                <div className="text-[10px] uppercase tracking-wider text-parchment/60 font-mono mb-1">Account #</div>
                 <div className="text-parchment font-mono">{existing.account_number || '—'}</div>
               </div>
               <div className="col-span-2">
-                <div className="text-[10px] uppercase tracking-wider text-parchment/45 font-mono mb-1">Account ID</div>
+                <div className="text-[10px] uppercase tracking-wider text-parchment/60 font-mono mb-1">Account ID</div>
                 <div className="text-parchment/60 font-mono text-xs">{existing.id}</div>
               </div>
             </div>
@@ -136,7 +136,7 @@ export default function OpenAccountPage() {
 
           <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6">
             <h2 className="text-sm uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] mb-3">Next: fund the account</h2>
-            <p className="text-xs text-parchment/45 mb-4">
+            <p className="text-xs text-parchment/60 mb-4">
               ACH funding via Plaid is wired as a stub for now. Production-ready funding ships once Broker API agreement is signed.
             </p>
             <button
@@ -159,7 +159,7 @@ export default function OpenAccountPage() {
       <TopNav />
       <div className="max-w-2xl mx-auto px-6 py-10">
         <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-2">Open a brokerage account</h1>
-        <p className="text-sm text-parchment/45 mb-8">
+        <p className="text-sm text-parchment/60 mb-8">
           Skip the &quot;create an Alpaca account and paste keys&quot; dance — open a managed account in myjunto.
           Trading happens through your Alpaca account but lives inside this app.
         </p>
@@ -275,7 +275,7 @@ export default function OpenAccountPage() {
             {saving ? 'Opening account…' : 'Open account'}
           </button>
 
-          <p className="text-[11px] text-parchment/35 text-center">
+          <p className="text-[11px] text-parchment/50 text-center">
             By submitting, you authorize Alpaca Securities LLC (the underlying broker-dealer) to open an account in your name.
             myjunto routes trades but does not custody funds.
           </p>
@@ -303,7 +303,7 @@ function Row({ children }: { children: React.ReactNode }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="text-[10px] uppercase tracking-wider text-parchment/45 font-mono block mb-1">{label}</span>
+      <span className="text-[10px] uppercase tracking-wider text-parchment/60 font-mono block mb-1">{label}</span>
       {children}
     </label>
   );

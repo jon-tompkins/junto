@@ -295,7 +295,7 @@ export default function SettingsPage() {
       <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
         <div className="flex items-center justify-center h-64">
-          <div className="animate-pulse text-parchment/45">Loading...</div>
+          <div className="animate-pulse text-parchment/60">Loading...</div>
         </div>
       </main>
     );
@@ -406,7 +406,7 @@ export default function SettingsPage() {
           <div>
             <label className="block text-sm text-parchment/60 mb-2">
               Default Email
-              <span className="text-parchment/30 ml-1">(dispatch delivery fallback)</span>
+              <span className="text-parchment/45 ml-1">(dispatch delivery fallback)</span>
             </label>
             <input
               type="email"
@@ -421,7 +421,7 @@ export default function SettingsPage() {
           <div>
             <label className="block text-sm text-parchment/60 mb-2">
               Timezone
-              <span className="text-parchment/30 ml-1">(send times shown in your local time)</span>
+              <span className="text-parchment/45 ml-1">(send times shown in your local time)</span>
             </label>
             <select
               value={timezone}
@@ -440,7 +440,7 @@ export default function SettingsPage() {
           <button
             onClick={saveSettings}
             disabled={saving || !hasChanges}
-            className="w-full px-5 py-3 bg-brass hover:bg-brass/80 disabled:bg-raised disabled:text-parchment/30 text-ink rounded text-sm font-semibold uppercase tracking-wide font-[var(--font-oswald)] transition"
+            className="w-full px-5 py-3 bg-brass hover:bg-brass/80 disabled:bg-raised disabled:text-parchment/45 text-ink rounded text-sm font-semibold uppercase tracking-wide font-[var(--font-oswald)] transition"
           >
             {saving ? 'Saving...' : 'Save Settings'}
           </button>
@@ -456,7 +456,7 @@ export default function SettingsPage() {
           </div>
 
           {tgLinked === null ? (
-            <div className="text-sm text-parchment/45">Loading…</div>
+            <div className="text-sm text-parchment/60">Loading…</div>
           ) : tgLinked ? (
             <>
               <div className="flex items-center justify-between gap-3 p-3 bg-bull/10 border border-bull/30 rounded">
@@ -474,7 +474,7 @@ export default function SettingsPage() {
 
               {isPro && (
                 <div className="pt-2">
-                  <div className="text-xs uppercase tracking-wider text-parchment/45 mb-2 font-[var(--font-oswald)]">
+                  <div className="text-xs uppercase tracking-wider text-parchment/60 mb-2 font-[var(--font-oswald)]">
                     Daily dispatch delivery
                   </div>
                   <div className="space-y-2">
@@ -487,7 +487,7 @@ export default function SettingsPage() {
                         className="w-4 h-4 accent-brass"
                       />
                       <span>Text brief</span>
-                      <span className="text-xs text-parchment/40">— the full markdown dispatch</span>
+                      <span className="text-xs text-parchment/55">— the full markdown dispatch</span>
                     </label>
                     <label className="flex items-center gap-3 cursor-pointer text-sm text-parchment/85">
                       <input
@@ -498,7 +498,7 @@ export default function SettingsPage() {
                         className="w-4 h-4 accent-brass"
                       />
                       <span>Audio brief</span>
-                      <span className="text-xs text-parchment/40">— 3-5 min narrated MP3</span>
+                      <span className="text-xs text-parchment/55">— 3-5 min narrated MP3</span>
                     </label>
                   </div>
                 </div>
@@ -525,13 +525,13 @@ export default function SettingsPage() {
               >
                 <div className="flex items-center justify-between gap-2">
                   <code className="text-sm text-brass font-mono">/start {tgCode}</code>
-                  <span className={`text-xs ${tgCopied ? 'text-bull' : 'text-parchment/30 group-hover:text-parchment/60'} transition`}>
+                  <span className={`text-xs ${tgCopied ? 'text-bull' : 'text-parchment/45 group-hover:text-parchment/60'} transition`}>
                     {tgCopied ? '✓ copied' : 'tap to copy'}
                   </span>
                 </div>
               </button>
 
-              <div className="flex items-center gap-2 text-xs text-parchment/45">
+              <div className="flex items-center gap-2 text-xs text-parchment/60">
                 <div className="w-1.5 h-1.5 rounded-full bg-brass animate-pulse" />
                 {tgPolling ? 'Waiting for you to send the message…' : 'Checking link status…'}
               </div>
@@ -580,7 +580,7 @@ export default function SettingsPage() {
               >
                 <div className="flex items-center justify-between gap-2">
                   <code className="text-xs text-brass font-mono truncate">{feedUrl}</code>
-                  <span className={`text-xs whitespace-nowrap ${feedCopied ? 'text-bull' : 'text-parchment/30 group-hover:text-parchment/60'} transition`}>
+                  <span className={`text-xs whitespace-nowrap ${feedCopied ? 'text-bull' : 'text-parchment/45 group-hover:text-parchment/60'} transition`}>
                     {feedCopied ? '✓ copied' : 'tap to copy'}
                   </span>
                 </div>
@@ -606,7 +606,7 @@ export default function SettingsPage() {
         })()}
 
         {/* Provider Info */}
-        <div className="p-4 bg-surface rounded border border-[rgb(var(--t-brass) / 0.18)] text-sm text-parchment/45">
+        <div className="p-4 bg-surface rounded border border-[rgb(var(--t-brass) / 0.18)] text-sm text-parchment/60">
           <p>
             Signed in via{' '}
             <span className="text-parchment/80">

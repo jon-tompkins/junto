@@ -254,7 +254,7 @@ export default function NewJuntoPage() {
     <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Link href="/dashboard" className="text-parchment/45 hover:text-parchment/80 text-sm transition mb-6 inline-block">
+        <Link href="/dashboard" className="text-parchment/60 hover:text-parchment/80 text-sm transition mb-6 inline-block">
           ← Dashboard
         </Link>
 
@@ -348,12 +348,12 @@ export default function NewJuntoPage() {
                     <button
                       type="button"
                       onClick={() => { setShowListImport(false); setListImportError(''); setListInput(''); }}
-                      className="text-xs text-parchment/40 hover:text-parchment/80 transition"
+                      className="text-xs text-parchment/55 hover:text-parchment/80 transition"
                     >
                       cancel
                     </button>
                   </div>
-                  <p className="text-[11px] text-parchment/45 mb-2 leading-relaxed">
+                  <p className="text-[11px] text-parchment/60 mb-2 leading-relaxed">
                     Paste a public X list URL (e.g. <span className="font-mono">x.com/i/lists/12345…</span>). We only surface members who&apos;ve tweeted recently — inactive accounts on the list won&apos;t appear and can be added manually. Review and × any handles before creating.
                   </p>
                   <div className="flex gap-2">
@@ -457,7 +457,7 @@ export default function NewJuntoPage() {
                       <div className="text-sm font-medium text-brass">
                         {adding ? 'Adding...' : `Add @${query.trim().replace('@', '')}`}
                       </div>
-                      <div className="text-xs text-parchment/45">New source — {TYPE_PULL_TEXT.twitter}</div>
+                      <div className="text-xs text-parchment/60">New source — {TYPE_PULL_TEXT.twitter}</div>
                     </div>
                   </button>
                 )}
@@ -465,7 +465,7 @@ export default function NewJuntoPage() {
             )}
           </div>
           {isUrlType && (
-            <p className="text-xs text-parchment/45 mt-2">
+            <p className="text-xs text-parchment/60 mt-2">
               New source — {TYPE_PULL_TEXT[sourceType]}
             </p>
           )}
@@ -495,7 +495,7 @@ export default function NewJuntoPage() {
                     </div>
                     <button
                       onClick={() => removeSource(s.id)}
-                      className="text-parchment/45 hover:text-bear transition text-lg leading-none px-2"
+                      className="text-parchment/60 hover:text-bear transition text-lg leading-none px-2"
                       aria-label="Remove"
                     >
                       ×

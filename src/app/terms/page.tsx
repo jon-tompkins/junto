@@ -18,7 +18,7 @@ export default function TermsPage() {
           <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-2">
             Terms &amp; Disclosures
           </h1>
-          <p className="text-sm text-parchment/45">
+          <p className="text-sm text-parchment/60">
             Last updated {LAST_UPDATED}. This is a first-pass draft for review — it
             should be blessed by a securities attorney before it goes live.
           </p>
@@ -250,7 +250,7 @@ export default function TermsPage() {
           </SubSection>
         </Section>
 
-        <footer className="mt-12 pt-6 border-t border-[rgb(var(--t-brass) / 0.28)] text-sm text-parchment/45">
+        <footer className="mt-12 pt-6 border-t border-[rgb(var(--t-brass) / 0.28)] text-sm text-parchment/60">
           <p className="mb-3">
             Bracketed items ([JURISDICTION TBD], arbitration specifics) and the entire
             document require sign-off from a licensed securities attorney before

@@ -84,8 +84,8 @@ export function JuntoChat({ juntoId, juntoName, disabled }: JuntoChatProps) {
           <h3 className="text-sm font-semibold text-parchment">Chat with {juntoName}</h3>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-parchment/40">10 credits/query • Operator/Pro</span>
-          <span className={`text-parchment/40 text-xs transition-transform ${collapsed ? '' : 'rotate-180'}`}>▾</span>
+          <span className="text-xs text-parchment/55">10 credits/query • Operator/Pro</span>
+          <span className={`text-parchment/55 text-xs transition-transform ${collapsed ? '' : 'rotate-180'}`}>▾</span>
         </div>
       </button>
 
@@ -94,7 +94,7 @@ export function JuntoChat({ juntoId, juntoName, disabled }: JuntoChatProps) {
       {/* Messages */}
       <div ref={scrollRef} className="h-80 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 && (
-          <div className="text-center py-8 text-parchment/30 text-sm">
+          <div className="text-center py-8 text-parchment/45 text-sm">
             <p className="mb-2">Ask about what your junto sources are discussing</p>
             <p className="text-xs">e.g. &ldquo;Is now a good time to accumulate BB?&rdquo;</p>
             <p className="text-xs mt-1">&ldquo;What are people saying about ETH?&rdquo;</p>
@@ -127,7 +127,7 @@ export function JuntoChat({ juntoId, juntoName, disabled }: JuntoChatProps) {
 
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-raised rounded-lg px-4 py-3 text-sm text-parchment/40">
+            <div className="bg-raised rounded-lg px-4 py-3 text-sm text-parchment/55">
               Analyzing junto content...
             </div>
           </div>

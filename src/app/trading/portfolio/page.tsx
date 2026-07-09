@@ -77,13 +77,13 @@ export default function JuntoPortfolioPage() {
       <TopNav />
       <div className="max-w-4xl mx-auto px-6 py-10">
         <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">Junto Portfolio Tool</h1>
-        <p className="text-sm text-parchment/45 mt-1">
+        <p className="text-sm text-parchment/60 mt-1">
           Conviction-weighted target book from a junto&apos;s <span className="text-bull">fresh</span> positioning. Read-only — no orders.
         </p>
 
         <div className="mt-6 flex flex-wrap items-end gap-3">
           <label className="block">
-            <span className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] block mb-1">Junto</span>
+            <span className="text-xs uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] block mb-1">Junto</span>
             <select
               value={juntoId}
               onChange={(e) => setJuntoId(e.target.value)}
@@ -94,7 +94,7 @@ export default function JuntoPortfolioPage() {
             </select>
           </label>
           <label className="block">
-            <span className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] block mb-1">Portfolio value ($)</span>
+            <span className="text-xs uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] block mb-1">Portfolio value ($)</span>
             <input
               type="number"
               value={value}
@@ -103,7 +103,7 @@ export default function JuntoPortfolioPage() {
             />
           </label>
           <label className="block">
-            <span className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] block mb-1">Max positions</span>
+            <span className="text-xs uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] block mb-1">Max positions</span>
             <input
               type="number"
               min={1}
@@ -137,11 +137,11 @@ export default function JuntoPortfolioPage() {
               <span>value {fmtUsd(result.portfolio_value)}</span>
             </div>
             {result.holdings.length === 0 ? (
-              <p className="text-sm text-parchment/40">No fresh directional positions in this junto right now.</p>
+              <p className="text-sm text-parchment/55">No fresh directional positions in this junto right now.</p>
             ) : (
               <div className="overflow-x-auto rounded border border-[rgb(var(--t-brass) / 0.2)]">
                 <table className="w-full text-sm min-w-[560px]">
-                  <thead className="text-left text-[10px] uppercase tracking-wider text-parchment/40 border-b border-[rgb(var(--t-brass) / 0.2)] font-[var(--font-oswald)]">
+                  <thead className="text-left text-[10px] uppercase tracking-wider text-parchment/55 border-b border-[rgb(var(--t-brass) / 0.2)] font-[var(--font-oswald)]">
                     <tr>
                       <th className="px-4 py-3">Ticker</th>
                       <th className="px-3 py-3">Dir</th>
@@ -179,7 +179,7 @@ export default function JuntoPortfolioPage() {
                 </table>
               </div>
             )}
-            <p className="mt-3 text-[11px] text-parchment/30">
+            <p className="mt-3 text-[11px] text-parchment/45">
               v1: fresh directional positions only (stale dropped), weighted by net conviction (bullish − bearish), normalized to 100%. Neutral/cautious excluded. Iterative — cash target, per-source grading, and current-vs-target diff to come.
             </p>
           </div>

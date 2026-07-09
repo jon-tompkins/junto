@@ -217,7 +217,7 @@ export default function AdminDashboard() {
     return (
       <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
-        <div className="max-w-6xl mx-auto px-6 py-12 text-parchment/45">Loading admin dashboard…</div>
+        <div className="max-w-6xl mx-auto px-6 py-12 text-parchment/60">Loading admin dashboard…</div>
       </main>
     );
   }
@@ -254,7 +254,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
             <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">Admin</h1>
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-parchment/35 uppercase tracking-wider font-[var(--font-oswald)]">Tools</span>
+              <span className="text-parchment/50 uppercase tracking-wider font-[var(--font-oswald)]">Tools</span>
               <Link
                 href="/admin/backlog"
                 className="px-3 py-1.5 rounded border border-[rgb(var(--t-brass) / 0.28)] text-parchment/80 hover:text-brass hover:border-brass transition"
@@ -301,7 +301,7 @@ export default function AdminDashboard() {
                 className={`px-4 py-2 text-sm font-medium uppercase tracking-wider font-[var(--font-oswald)] transition border-b-2 -mb-px ${
                   tab === t
                     ? 'border-brass text-parchment'
-                    : 'border-transparent text-parchment/40 hover:text-parchment/70'
+                    : 'border-transparent text-parchment/55 hover:text-parchment/70'
                 }`}
               >
                 {t}
@@ -366,7 +366,7 @@ function CostsTab({
   return (
     <>
       <div className="flex items-center justify-between mb-6">
-        <p className="text-sm text-parchment/45">
+        <p className="text-sm text-parchment/60">
           Since {new Date(summary.since).toLocaleDateString()} · {summary.total_calls.toLocaleString()} API calls
         </p>
         <div className="flex gap-2">
@@ -387,9 +387,9 @@ function CostsTab({
       </div>
 
       <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-8 mb-8">
-        <div className="text-sm text-parchment/45 uppercase tracking-wider mb-1 font-[var(--font-oswald)]">Total platform spend</div>
+        <div className="text-sm text-parchment/60 uppercase tracking-wider mb-1 font-[var(--font-oswald)]">Total platform spend</div>
         <div className="text-5xl font-bold mb-2 text-parchment">{fmtUsd(summary.total_cents)}</div>
-        <div className="text-sm text-parchment/45">
+        <div className="text-sm text-parchment/60">
           {summary.total_calls.toLocaleString()} calls · avg {fmtUsd(summary.total_cents / Math.max(summary.total_calls, 1))} per call
         </div>
       </div>
@@ -399,22 +399,22 @@ function CostsTab({
           <div key={supplier} className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5">
             <div className="flex items-center gap-2 mb-2">
               <div className={`w-2 h-2 rounded-full ${SUPPLIER_COLORS[supplier] || 'bg-parchment/30'}`} />
-              <div className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)]">{supplier}</div>
+              <div className="text-xs uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)]">{supplier}</div>
             </div>
             <div className="text-2xl font-bold text-parchment">{fmtUsd(stats.cost_cents)}</div>
-            <div className="text-xs text-parchment/30 mt-1">
+            <div className="text-xs text-parchment/45 mt-1">
               {stats.calls.toLocaleString()} calls · {stats.usage_amount.toLocaleString()} units
             </div>
           </div>
         ))}
         {suppliers.length === 0 && (
-          <div className="col-span-4 text-parchment/45 text-sm text-center py-6">No cost events recorded yet.</div>
+          <div className="col-span-4 text-parchment/60 text-sm text-center py-6">No cost events recorded yet.</div>
         )}
       </div>
 
       {summary.daily.length > 0 && (
         <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6 mb-8">
-          <h2 className="text-sm uppercase tracking-wider text-parchment/45 mb-4 font-[var(--font-oswald)]">Daily Spend</h2>
+          <h2 className="text-sm uppercase tracking-wider text-parchment/60 mb-4 font-[var(--font-oswald)]">Daily Spend</h2>
           <div className="flex items-stretch gap-1 h-32">
             {summary.daily.map((d) => {
               const total = Number(d.total) || 0;
@@ -429,7 +429,7 @@ function CostsTab({
               );
             })}
           </div>
-          <div className="flex justify-between text-xs text-parchment/30 mt-2">
+          <div className="flex justify-between text-xs text-parchment/45 mt-2">
             <span>{summary.daily[0]?.day}</span>
             <span>{summary.daily[summary.daily.length - 1]?.day}</span>
           </div>
@@ -437,13 +437,13 @@ function CostsTab({
       )}
 
       <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6 mb-8">
-        <h2 className="text-sm uppercase tracking-wider text-parchment/45 mb-4 font-[var(--font-oswald)]">By Operation</h2>
+        <h2 className="text-sm uppercase tracking-wider text-parchment/60 mb-4 font-[var(--font-oswald)]">By Operation</h2>
         <div className="space-y-2">
           {operations.map(([op, stats]) => (
             <div key={op} className="flex items-center justify-between py-2 border-b border-[rgb(var(--t-brass) / 0.18)] last:border-0">
               <div>
                 <div className="font-mono text-sm text-parchment/80">{op}</div>
-                <div className="text-xs text-parchment/30">{stats.calls} calls</div>
+                <div className="text-xs text-parchment/45">{stats.calls} calls</div>
               </div>
               <div className="text-sm font-semibold text-parchment">{fmtUsd(stats.cost_cents)}</div>
             </div>
@@ -452,10 +452,10 @@ function CostsTab({
       </div>
 
       <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6">
-        <h2 className="text-sm uppercase tracking-wider text-parchment/45 mb-4 font-[var(--font-oswald)]">Recent events</h2>
+        <h2 className="text-sm uppercase tracking-wider text-parchment/60 mb-4 font-[var(--font-oswald)]">Recent events</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-left text-xs uppercase text-parchment/30 border-b border-[rgb(var(--t-brass) / 0.28)] font-[var(--font-oswald)]">
+            <thead className="text-left text-xs uppercase text-parchment/45 border-b border-[rgb(var(--t-brass) / 0.28)] font-[var(--font-oswald)]">
               <tr>
                 <th className="py-2 pr-4">When</th>
                 <th className="py-2 pr-4">Supplier</th>
@@ -467,16 +467,16 @@ function CostsTab({
             <tbody>
               {summary.recent_events.map((e, i) => (
                 <tr key={i} className="border-b border-[rgb(var(--t-brass) / 0.18)] last:border-0">
-                  <td className="py-2 pr-4 text-parchment/45 whitespace-nowrap">{new Date(e.created_at).toLocaleString()}</td>
+                  <td className="py-2 pr-4 text-parchment/60 whitespace-nowrap">{new Date(e.created_at).toLocaleString()}</td>
                   <td className="py-2 pr-4 text-parchment/80">
                     <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${SUPPLIER_COLORS[e.supplier] || 'bg-parchment/30'}`} />
                     {e.supplier}
                   </td>
                   <td className="py-2 pr-4 font-mono text-xs text-parchment/60">{e.operation}</td>
-                  <td className="py-2 pr-4 text-parchment/45">
+                  <td className="py-2 pr-4 text-parchment/60">
                     {e.usage_amount.toLocaleString()} {e.usage_unit}
                     {e.input_tokens !== null && (
-                      <span className="text-parchment/30 ml-2 text-xs">({e.input_tokens} in / {e.output_tokens} out)</span>
+                      <span className="text-parchment/45 ml-2 text-xs">({e.input_tokens} in / {e.output_tokens} out)</span>
                     )}
                   </td>
                   <td className="py-2 pr-4 text-right font-semibold text-parchment">{fmtUsd(e.cost_cents)}</td>
@@ -524,13 +524,13 @@ function DataTab(props: {
     <>
       {/* Users */}
       <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6 mb-8">
-        <h2 className="text-sm uppercase tracking-wider text-parchment/45 mb-4 font-[var(--font-oswald)]">Users · {users.length}</h2>
+        <h2 className="text-sm uppercase tracking-wider text-parchment/60 mb-4 font-[var(--font-oswald)]">Users · {users.length}</h2>
         {users.length === 0 ? (
-          <p className="text-parchment/45 text-sm">No users yet.</p>
+          <p className="text-parchment/60 text-sm">No users yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase text-parchment/30 border-b border-[rgb(var(--t-brass) / 0.28)] font-[var(--font-oswald)]">
+              <thead className="text-left text-xs uppercase text-parchment/45 border-b border-[rgb(var(--t-brass) / 0.28)] font-[var(--font-oswald)]">
                 <tr>
                   <th className="py-2 pr-6">Email</th>
                   <th className="py-2 pr-6 text-right">Plan</th>
@@ -552,7 +552,7 @@ function DataTab(props: {
                             ? 'bg-bear text-parchment hover:bg-bear/80'
                             : tier === 'pro'
                               ? 'bg-brass text-ink hover:bg-brass/70'
-                              : 'bg-surface border border-[rgb(var(--t-brass) / 0.28)] text-parchment/40 hover:text-parchment/70';
+                              : 'bg-surface border border-[rgb(var(--t-brass) / 0.28)] text-parchment/55 hover:text-parchment/70';
                         const label = tier === 'operator' ? 'Operator' : tier === 'pro' ? 'Pro' : 'Free';
                         return (
                           <button
@@ -577,10 +577,10 @@ function DataTab(props: {
                       </button>
                     </td>
                     <td className="py-2 pr-6 text-right">
-                      <span className={`font-semibold ${u.active > 0 ? 'text-bull' : 'text-parchment/30'}`}>{u.active}</span>
+                      <span className={`font-semibold ${u.active > 0 ? 'text-bull' : 'text-parchment/45'}`}>{u.active}</span>
                     </td>
-                    <td className="py-2 pr-6 text-right text-parchment/45">{u.total}</td>
-                    <td className="py-2 text-right text-parchment/30 text-xs whitespace-nowrap">
+                    <td className="py-2 pr-6 text-right text-parchment/60">{u.total}</td>
+                    <td className="py-2 text-right text-parchment/45 text-xs whitespace-nowrap">
                       {u.joined_at ? new Date(u.joined_at).toLocaleDateString() : '—'}
                     </td>
                   </tr>
@@ -593,8 +593,8 @@ function DataTab(props: {
 
       {/* Tracked sources */}
       <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6 mb-8">
-        <h2 className="text-sm uppercase tracking-wider text-parchment/45 mb-2 font-[var(--font-oswald)]">Tracked sources · {sources.length}</h2>
-        <p className="text-xs text-parchment/30 mb-4">Pulled regardless of junto/newsletter membership.</p>
+        <h2 className="text-sm uppercase tracking-wider text-parchment/60 mb-2 font-[var(--font-oswald)]">Tracked sources · {sources.length}</h2>
+        <p className="text-xs text-parchment/45 mb-4">Pulled regardless of junto/newsletter membership.</p>
         <form onSubmit={addSource} className="flex gap-2 mb-4">
           <input
             type="text"
@@ -612,10 +612,10 @@ function DataTab(props: {
           </button>
         </form>
         {sources.length === 0 ? (
-          <p className="text-sm text-parchment/30">No tracked sources yet.</p>
+          <p className="text-sm text-parchment/45">No tracked sources yet.</p>
         ) : (
           <table className="w-full text-sm">
-            <thead className="text-left text-xs uppercase text-parchment/30 border-b border-[rgb(var(--t-brass) / 0.28)] font-[var(--font-oswald)]">
+            <thead className="text-left text-xs uppercase text-parchment/45 border-b border-[rgb(var(--t-brass) / 0.28)] font-[var(--font-oswald)]">
               <tr>
                 <th className="py-2 pr-4">Handle</th>
                 <th className="py-2 pr-4">Type</th>
@@ -628,9 +628,9 @@ function DataTab(props: {
                 <tr key={s.id} className="border-b border-[rgb(var(--t-brass) / 0.18)] last:border-0">
                   <td className="py-2 pr-4 font-mono text-parchment">@{s.handle_or_url}</td>
                   <td className="py-2 pr-4 text-parchment/60">{s.type}</td>
-                  <td className="py-2 pr-4 text-parchment/45 text-xs">{s.updated_at ? new Date(s.updated_at).toLocaleString() : '—'}</td>
+                  <td className="py-2 pr-4 text-parchment/60 text-xs">{s.updated_at ? new Date(s.updated_at).toLocaleString() : '—'}</td>
                   <td className="py-2 pr-4 text-right">
-                    <button onClick={() => untrackSource(s.id)} className="text-xs text-parchment/40 hover:text-bear transition">untrack</button>
+                    <button onClick={() => untrackSource(s.id)} className="text-xs text-parchment/55 hover:text-bear transition">untrack</button>
                   </td>
                 </tr>
               ))}
@@ -641,7 +641,7 @@ function DataTab(props: {
 
       {/* Promo codes */}
       <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6">
-        <h2 className="text-sm uppercase tracking-wider text-parchment/45 mb-4 font-[var(--font-oswald)]">Promo codes</h2>
+        <h2 className="text-sm uppercase tracking-wider text-parchment/60 mb-4 font-[var(--font-oswald)]">Promo codes</h2>
         <div className="flex flex-wrap gap-2 mb-5">
           <input
             type="text"
@@ -674,10 +674,10 @@ function DataTab(props: {
           </button>
         </div>
         {promoCodes.length === 0 ? (
-          <p className="text-sm text-parchment/30">No promo codes yet.</p>
+          <p className="text-sm text-parchment/45">No promo codes yet.</p>
         ) : (
           <table className="w-full text-sm">
-            <thead className="text-left text-xs uppercase text-parchment/30 border-b border-[rgb(var(--t-brass) / 0.28)] font-[var(--font-oswald)]">
+            <thead className="text-left text-xs uppercase text-parchment/45 border-b border-[rgb(var(--t-brass) / 0.28)] font-[var(--font-oswald)]">
               <tr>
                 <th className="py-2 pr-6">Code</th>
                 <th className="py-2 pr-6">Description</th>
@@ -694,7 +694,7 @@ function DataTab(props: {
                   <td className="py-2 pr-6 text-parchment/60 text-xs">{c.description || '—'}</td>
                   <td className="py-2 pr-6 text-center">{c.grants_pro ? '✓' : '—'}</td>
                   <td className="py-2 pr-6 text-right text-parchment/60">{c.uses_count}/{c.max_uses}</td>
-                  <td className="py-2 text-right text-parchment/30 text-xs whitespace-nowrap">{new Date(c.created_at).toLocaleDateString()}</td>
+                  <td className="py-2 text-right text-parchment/45 text-xs whitespace-nowrap">{new Date(c.created_at).toLocaleDateString()}</td>
                   <td className="py-2 pl-4">
                     <button onClick={() => deletePromoCode(c.id)} className="text-xs text-bear/60 hover:text-bear transition">Delete</button>
                   </td>
@@ -712,7 +712,7 @@ function TradingTab() {
   return (
     <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-8">
       <h2 className="text-lg font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-2">Trading</h2>
-      <p className="text-sm text-parchment/45 mb-6">
+      <p className="text-sm text-parchment/60 mb-6">
         Mandates, proposals, monitoring, and ticks.
       </p>
       <Link

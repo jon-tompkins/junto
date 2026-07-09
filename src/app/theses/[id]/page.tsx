@@ -178,7 +178,7 @@ export default function ThesisDetailPage() {
     return (
       <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
-        <div className="max-w-5xl mx-auto px-6 py-16 text-parchment/45 text-sm font-mono">Loading…</div>
+        <div className="max-w-5xl mx-auto px-6 py-16 text-parchment/60 text-sm font-mono">Loading…</div>
       </main>
     );
   }
@@ -266,15 +266,15 @@ export default function ThesisDetailPage() {
                     </span>
                     <span className="text-parchment/70">
                       Conviction <span className="font-bold text-brass">{thesis.conviction}</span>
-                      <span className="text-parchment/40">/5</span>
+                      <span className="text-parchment/55">/5</span>
                     </span>
                     {thesis.horizon && (
                       <>
-                        <span className="text-parchment/30">·</span>
+                        <span className="text-parchment/45">·</span>
                         <span className="text-parchment/70">{thesis.horizon}</span>
                       </>
                     )}
-                    <span className="text-parchment/30">·</span>
+                    <span className="text-parchment/45">·</span>
                     <span className="text-parchment/50">
                       updated {new Date(thesis.updated_at).toLocaleDateString()}
                     </span>
@@ -405,7 +405,7 @@ export default function ThesisDetailPage() {
                     </span>
                     <span className="text-parchment/85 flex-1 min-w-[200px]">{s.ref}</span>
                     {s.ref_date && (
-                      <span className="text-[10px] text-parchment/40 font-mono">{s.ref_date}</span>
+                      <span className="text-[10px] text-parchment/55 font-mono">{s.ref_date}</span>
                     )}
                   </div>
                 </li>
@@ -482,7 +482,7 @@ function Section({
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="px-4 py-3 text-xs text-parchment/40 font-mono">{children}</p>;
+  return <p className="px-4 py-3 text-xs text-parchment/55 font-mono">{children}</p>;
 }
 
 function CriterionRow({
@@ -498,7 +498,7 @@ function CriterionRow({
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="text-[10px] font-mono text-parchment/45">{c.criterion_id}</span>
+            <span className="text-[10px] font-mono text-parchment/60">{c.criterion_id}</span>
             <span
               className="text-[9px] uppercase tracking-wider px-1.5 py-0.5"
               style={{ color: cs.color, background: cs.bg, border: `1px solid ${cs.color}33` }}
@@ -513,17 +513,17 @@ function CriterionRow({
                 {c.weight}
               </span>
             )}
-            <span className="text-[9px] uppercase tracking-wider text-parchment/40 font-mono">{c.type}</span>
+            <span className="text-[9px] uppercase tracking-wider text-parchment/55 font-mono">{c.type}</span>
           </div>
           <p className="text-sm text-parchment/85 mb-1">{c.description}</p>
           {c.threshold && (
             <p className="text-[11px] text-parchment/50 font-mono">
-              <span className="text-parchment/35">threshold:</span> {c.threshold}
+              <span className="text-parchment/50">threshold:</span> {c.threshold}
             </p>
           )}
           {c.timeframe && (
             <p className="text-[11px] text-parchment/50 font-mono">
-              <span className="text-parchment/35">timeframe:</span> {c.timeframe}
+              <span className="text-parchment/50">timeframe:</span> {c.timeframe}
             </p>
           )}
         </div>
@@ -550,7 +550,7 @@ function TradeRow({ t, onUpdate }: { t: Trade; onUpdate: (s: Trade['status']) =>
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="font-mono font-bold text-base text-parchment">${t.symbol}</span>
-            {t.venue && <span className="text-[10px] text-parchment/40 font-mono">{t.venue}</span>}
+            {t.venue && <span className="text-[10px] text-parchment/55 font-mono">{t.venue}</span>}
             {t.role && (
               <span
                 className="text-[9px] uppercase tracking-wider px-1.5 py-0.5"
@@ -560,7 +560,7 @@ function TradeRow({ t, onUpdate }: { t: Trade; onUpdate: (s: Trade['status']) =>
               </span>
             )}
             {t.type && (
-              <span className="text-[9px] uppercase tracking-wider text-parchment/40 font-mono">{t.type}</span>
+              <span className="text-[9px] uppercase tracking-wider text-parchment/55 font-mono">{t.type}</span>
             )}
           </div>
           {t.name && <p className="text-xs text-parchment/55">{t.name}</p>}
@@ -580,22 +580,22 @@ function TradeRow({ t, onUpdate }: { t: Trade; onUpdate: (s: Trade['status']) =>
       </div>
       <div className="grid grid-cols-3 gap-0 mt-2 text-[10px]" style={{ border: '1px solid rgb(var(--t-brass) / 0.15)' }}>
         <div className="px-3 py-2" style={{ borderRight: '1px solid rgb(var(--t-brass) / 0.12)' }}>
-          <div className="text-parchment/40 uppercase tracking-wider mb-0.5 font-mono">Entry</div>
+          <div className="text-parchment/55 uppercase tracking-wider mb-0.5 font-mono">Entry</div>
           <div className="text-parchment/85 font-mono">
             {t.entry_zone_low || '—'}
             {t.entry_zone_high && ` → ${t.entry_zone_high}`}
           </div>
         </div>
         <div className="px-3 py-2" style={{ borderRight: '1px solid rgb(var(--t-brass) / 0.12)' }}>
-          <div className="text-parchment/40 uppercase tracking-wider mb-0.5 font-mono">Target</div>
+          <div className="text-parchment/55 uppercase tracking-wider mb-0.5 font-mono">Target</div>
           <div className="font-mono" style={{ color: 'rgb(var(--t-bull))' }}>{t.exit_target || '—'}</div>
         </div>
         <div className="px-3 py-2">
-          <div className="text-parchment/40 uppercase tracking-wider mb-0.5 font-mono">Stop</div>
+          <div className="text-parchment/55 uppercase tracking-wider mb-0.5 font-mono">Stop</div>
           <div className="font-mono" style={{ color: 'rgb(var(--t-bear))' }}>{t.exit_stop || '—'}</div>
         </div>
       </div>
-      {t.sizing && <p className="text-[11px] text-parchment/50 mt-2 font-mono"><span className="text-parchment/35">sizing:</span> {t.sizing}</p>}
+      {t.sizing && <p className="text-[11px] text-parchment/50 mt-2 font-mono"><span className="text-parchment/50">sizing:</span> {t.sizing}</p>}
       {t.rationale_md && <p className="text-xs text-parchment/60 mt-2 italic leading-relaxed">{t.rationale_md}</p>}
     </li>
   );

@@ -43,7 +43,7 @@ const STANCE_COLORS: Record<string, string> = {
   bullish: 'bg-bull/15 text-bull border border-bull/40',
   bearish: 'bg-bear/15 text-bear border border-bear/40',
   cautious: 'bg-amber-900/40 text-amber-400 border border-amber-700/40',
-  neutral: 'bg-raised text-parchment/45 border border-[rgb(var(--t-brass) / 0.18)]',
+  neutral: 'bg-raised text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)]',
 };
 
 const STANCE_ICONS: Record<string, string> = {
@@ -87,7 +87,7 @@ function AnalystRow({ p }: { p: SourceProfile }) {
                 @{handle}
               </Link>
               {p.source.display_name && (
-                <div className="text-xs text-parchment/45">{p.source.display_name}</div>
+                <div className="text-xs text-parchment/60">{p.source.display_name}</div>
               )}
             </div>
           </div>
@@ -96,7 +96,7 @@ function AnalystRow({ p }: { p: SourceProfile }) {
         {/* Summary snippet */}
         <td className="px-4 py-3 max-w-sm">
           <p className="text-sm text-parchment/60 line-clamp-1">
-            {p.summary || <span className="text-parchment/30 italic">No analysis yet</span>}
+            {p.summary || <span className="text-parchment/45 italic">No analysis yet</span>}
           </p>
         </td>
 
@@ -114,18 +114,18 @@ function AnalystRow({ p }: { p: SourceProfile }) {
               </Link>
             ))}
             {positionEntries.length > 5 && (
-              <span className="text-xs px-2 py-0.5 rounded-sm bg-raised text-parchment/45">
+              <span className="text-xs px-2 py-0.5 rounded-sm bg-raised text-parchment/60">
                 +{positionEntries.length - 5}
               </span>
             )}
             {positionEntries.length === 0 && (
-              <span className="text-xs text-parchment/30">—</span>
+              <span className="text-xs text-parchment/45">—</span>
             )}
           </div>
         </td>
 
         {/* Updated */}
-        <td className="px-4 py-3 whitespace-nowrap text-xs text-parchment/30 text-right">
+        <td className="px-4 py-3 whitespace-nowrap text-xs text-parchment/45 text-right">
           <div className="flex items-center justify-end gap-2">
             <span>{new Date(p.last_updated).toLocaleDateString()}</span>
             <span className="text-parchment/20">{expanded ? '▲' : '▼'}</span>
@@ -316,7 +316,7 @@ export default function SourcesPage() {
           {/* Junto multi-select */}
           {juntos.length > 0 && (
             <div className="flex gap-2 flex-wrap items-center">
-              <span className="text-xs text-parchment/45 font-medium">Junto:</span>
+              <span className="text-xs text-parchment/60 font-medium">Junto:</span>
               {juntos.map((j) => (
                 <button
                   key={j.id}
@@ -333,7 +333,7 @@ export default function SourcesPage() {
               {juntoFilter.size > 0 && (
                 <button
                   onClick={() => setJuntoFilter(new Set())}
-                  className="text-xs text-parchment/45 hover:text-parchment/80 transition px-1"
+                  className="text-xs text-parchment/60 hover:text-parchment/80 transition px-1"
                 >
                   clear
                 </button>
@@ -354,7 +354,7 @@ export default function SourcesPage() {
             <p className="text-parchment/60 font-medium mb-2">
               {profiles.length === 0 ? 'No profiles yet' : 'No matches'}
             </p>
-            <p className="text-parchment/45 text-sm">
+            <p className="text-parchment/60 text-sm">
               {profiles.length === 0
                 ? 'Profiles populate automatically as content is pulled from sources.'
                 : 'Try adjusting your filters.'}
@@ -365,10 +365,10 @@ export default function SourcesPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-surface border-b border-[rgb(var(--t-brass) / 0.28)]">
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide w-48 font-[var(--font-oswald)]">Source</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">Analysis</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide w-72 font-[var(--font-oswald)]">Positions</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-parchment/45 uppercase tracking-wide w-28 font-[var(--font-oswald)]">Updated</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide w-48 font-[var(--font-oswald)]">Source</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)]">Analysis</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide w-72 font-[var(--font-oswald)]">Positions</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-parchment/60 uppercase tracking-wide w-28 font-[var(--font-oswald)]">Updated</th>
                 </tr>
               </thead>
               <tbody>
@@ -381,7 +381,7 @@ export default function SourcesPage() {
         )}
 
         {!loading && filtered.length > 0 && (
-          <p className="text-xs text-parchment/30 mt-4 text-right">
+          <p className="text-xs text-parchment/45 mt-4 text-right">
             {filtered.length} source{filtered.length !== 1 ? 's' : ''}
             {filtered.length !== profiles.length ? ` of ${profiles.length}` : ''}
           </p>

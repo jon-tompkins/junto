@@ -321,7 +321,7 @@ export default function EditJuntoPage() {
     <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Link href={`/junto/${id}`} className="text-parchment/45 hover:text-parchment/80 text-sm transition mb-6 inline-block">
+        <Link href={`/junto/${id}`} className="text-parchment/60 hover:text-parchment/80 text-sm transition mb-6 inline-block">
           ← Back to junto
         </Link>
 
@@ -421,7 +421,7 @@ export default function EditJuntoPage() {
                     <button
                       type="button"
                       onClick={() => { setShowListImport(false); setListInput(''); setImportResult(null); }}
-                      className="text-xs text-parchment/40 hover:text-parchment/70"
+                      className="text-xs text-parchment/55 hover:text-parchment/70"
                     >
                       cancel
                     </button>
@@ -532,16 +532,16 @@ export default function EditJuntoPage() {
                         <div className="text-sm font-medium text-brass">
                           {adding ? 'Adding...' : `Add @${query.trim().replace('@', '')}`}
                         </div>
-                        <div className="text-xs text-parchment/45">New source — {TYPE_PULL_TEXT.twitter}</div>
+                        <div className="text-xs text-parchment/60">New source — {TYPE_PULL_TEXT.twitter}</div>
                       </div>
                     </button>
                   ) : (
                     <div className="flex items-center justify-between px-3 py-2.5 border-t border-[rgb(var(--t-brass) / 0.18)]">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded bg-parchment/5 flex items-center justify-center text-parchment/30 text-sm">+</div>
+                        <div className="w-8 h-8 rounded bg-parchment/5 flex items-center justify-center text-parchment/45 text-sm">+</div>
                         <div>
-                          <div className="text-sm text-parchment/40">@{query.trim().replace('@', '')} not in myjunto yet</div>
-                          <div className="text-xs text-parchment/30">Adding new accounts requires Pro</div>
+                          <div className="text-sm text-parchment/55">@{query.trim().replace('@', '')} not in myjunto yet</div>
+                          <div className="text-xs text-parchment/45">Adding new accounts requires Pro</div>
                         </div>
                       </div>
                       <a href="/pricing" className="text-xs px-2.5 py-1 rounded bg-brass text-ink font-bold font-[var(--font-oswald)] uppercase tracking-wide hover:bg-brass/80 transition whitespace-nowrap">
@@ -554,7 +554,7 @@ export default function EditJuntoPage() {
             )}
           </div>
           {isUrlType && (
-            <p className="text-xs text-parchment/45 mt-2">
+            <p className="text-xs text-parchment/60 mt-2">
               {isPro ? `New source — ${TYPE_PULL_TEXT[sourceType]}` : (
                 <>Adding new sources requires <a href="/pricing" className="text-brass hover:opacity-80">Pro</a></>
               )}
@@ -562,11 +562,11 @@ export default function EditJuntoPage() {
           )}
 
           <div className="mt-4">
-            <h3 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider mb-2 font-[var(--font-oswald)]">
+            <h3 className="text-xs font-semibold text-parchment/60 uppercase tracking-wider mb-2 font-[var(--font-oswald)]">
               Current Members ({junto.junto_sources.length})
             </h3>
             {junto.junto_sources.length === 0 ? (
-              <p className="text-sm text-parchment/45">No sources yet.</p>
+              <p className="text-sm text-parchment/60">No sources yet.</p>
             ) : (
               <div className="space-y-2">
                 {junto.junto_sources.map((js) => {
@@ -594,7 +594,7 @@ export default function EditJuntoPage() {
                       </div>
                       <button
                         onClick={() => removeSource(js.source_id)}
-                        className="text-parchment/45 hover:text-bear transition text-lg leading-none px-2"
+                        className="text-parchment/60 hover:text-bear transition text-lg leading-none px-2"
                         aria-label="Remove"
                       >
                         ×

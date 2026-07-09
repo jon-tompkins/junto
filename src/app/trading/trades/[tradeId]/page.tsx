@@ -157,7 +157,7 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
     return (
       <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
-        <div className="max-w-4xl mx-auto px-6 py-12 text-parchment/45">Loading…</div>
+        <div className="max-w-4xl mx-auto px-6 py-12 text-parchment/60">Loading…</div>
       </main>
     );
   }
@@ -169,7 +169,7 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
       <TopNav />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {mandate && (
-          <Link href={`/trading/${mandate.id}`} className="text-xs text-parchment/45 hover:text-parchment">← {mandate.name}</Link>
+          <Link href={`/trading/${mandate.id}`} className="text-xs text-parchment/60 hover:text-parchment">← {mandate.name}</Link>
         )}
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-3 mb-6 sm:mb-8">
@@ -183,7 +183,7 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
                   ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               )}
-              <span className="text-sm text-parchment/45">{trade.side} · {trade.qty}</span>
+              <span className="text-sm text-parchment/60">{trade.side} · {trade.qty}</span>
             </h1>
             <Link
               href={`/positions/${encodeURIComponent(trade.ticker)}`}
@@ -191,7 +191,7 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
             >
               View {trade.ticker} position →
             </Link>
-            <p className="text-sm text-parchment/45 mt-1">
+            <p className="text-sm text-parchment/60 mt-1">
               Entry {trade.entry_price ? `$${trade.entry_price.toFixed(2)}` : '—'}
               {' · '}Stop {trade.stop_price ? `$${trade.stop_price.toFixed(2)}` : '—'}
               {' · '}Target {trade.target_price ? `$${trade.target_price.toFixed(2)}` : '—'}
@@ -238,7 +238,7 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
                   <span className="inline-block w-3 h-3 border-2 border-brass border-t-transparent rounded-full animate-spin" />
                   Awaiting fill
                 </div>
-                <div className="text-[10px] text-parchment/40 max-w-[260px] text-right">
+                <div className="text-[10px] text-parchment/55 max-w-[260px] text-right">
                   Order submitted — confirming fill & attaching protection…
                 </div>
               </div>
@@ -264,18 +264,18 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
 
         {postMortem && (postMortem.process_score || postMortem.outcome_score) && (
           <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5 mb-6">
-            <h2 className="text-sm uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] mb-3">2x2 Verdict</h2>
+            <h2 className="text-sm uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] mb-3">2x2 Verdict</h2>
             <div className="flex items-center gap-6">
               <div>
-                <div className="text-[10px] text-parchment/30 uppercase tracking-wider">Process</div>
+                <div className="text-[10px] text-parchment/45 uppercase tracking-wider">Process</div>
                 <div className="text-2xl font-bold text-parchment">{postMortem.process_score}/5</div>
               </div>
               <div>
-                <div className="text-[10px] text-parchment/30 uppercase tracking-wider">Outcome</div>
+                <div className="text-[10px] text-parchment/45 uppercase tracking-wider">Outcome</div>
                 <div className="text-2xl font-bold text-parchment">{postMortem.outcome_score}/5</div>
               </div>
               <div>
-                <div className="text-[10px] text-parchment/30 uppercase tracking-wider">Verdict</div>
+                <div className="text-[10px] text-parchment/45 uppercase tracking-wider">Verdict</div>
                 <div className="text-2xl font-bold text-brass">{quadrant(postMortem.process_score, postMortem.outcome_score)}</div>
               </div>
             </div>
@@ -314,12 +314,12 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
                   <span className="w-2 h-2 rounded-full" style={{ background: KIND_COLORS[e.kind] }} />
                   <span className="text-xs uppercase tracking-wider font-[var(--font-oswald)]" style={{ color: KIND_COLORS[e.kind] }}>{e.kind.replace('_', ' ')}</span>
                 </div>
-                <span className="text-xs text-parchment/30">{new Date(e.created_at).toLocaleString()}</span>
+                <span className="text-xs text-parchment/45">{new Date(e.created_at).toLocaleString()}</span>
               </div>
               <p className="text-sm text-parchment/80 whitespace-pre-wrap">{e.content}</p>
               {e.source_urls && e.source_urls.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-[rgb(var(--t-brass) / 0.18)]">
-                  <div className="text-[10px] text-parchment/30 uppercase tracking-wider mb-1.5">Sources</div>
+                  <div className="text-[10px] text-parchment/45 uppercase tracking-wider mb-1.5">Sources</div>
                   <div className="flex flex-wrap gap-2">
                     {e.source_urls.map((url, i) => (
                       <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-brass hover:underline break-all">
@@ -332,7 +332,7 @@ export default function TradeDetailPage({ params }: { params: Promise<{ tradeId:
             </div>
           ))}
           {entries.length === 0 && (
-            <p className="text-sm text-parchment/30 text-center py-6">No journal entries yet.</p>
+            <p className="text-sm text-parchment/45 text-center py-6">No journal entries yet.</p>
           )}
         </div>
       </div>

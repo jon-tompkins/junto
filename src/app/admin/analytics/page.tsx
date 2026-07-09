@@ -51,7 +51,7 @@ export default function AnalyticsPage() {
     return (
       <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
-        <div className="max-w-6xl mx-auto px-6 py-12 text-parchment/45">Loading traffic…</div>
+        <div className="max-w-6xl mx-auto px-6 py-12 text-parchment/60">Loading traffic…</div>
       </main>
     );
   }
@@ -89,7 +89,7 @@ export default function AnalyticsPage() {
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
             <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">Traffic</h1>
-            <p className="text-sm text-parchment/45 mt-1">
+            <p className="text-sm text-parchment/60 mt-1">
               Real visitors (you&apos;re excluded) since {new Date(data.since).toLocaleDateString()}
             </p>
           </div>
@@ -120,7 +120,7 @@ export default function AnalyticsPage() {
         </div>
 
         <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6 mb-8">
-          <h2 className="text-sm uppercase tracking-wider text-parchment/45 mb-4 font-[var(--font-oswald)]">Daily views</h2>
+          <h2 className="text-sm uppercase tracking-wider text-parchment/60 mb-4 font-[var(--font-oswald)]">Daily views</h2>
           <div className="flex items-stretch gap-1 h-32">
             {data.daily.map((d) => {
               const heightPct = (d.views / maxViews) * 100;
@@ -137,7 +137,7 @@ export default function AnalyticsPage() {
               );
             })}
           </div>
-          <div className="flex justify-between text-xs text-parchment/30 mt-2">
+          <div className="flex justify-between text-xs text-parchment/45 mt-2">
             <span>{data.daily[0]?.day}</span>
             <span>{data.daily[data.daily.length - 1]?.day}</span>
           </div>
@@ -150,7 +150,7 @@ export default function AnalyticsPage() {
 
         {funnel.length > 0 && (
           <div className="mt-8">
-            <h2 className="text-sm uppercase tracking-wider text-parchment/45 mb-4 font-[var(--font-oswald)]">
+            <h2 className="text-sm uppercase tracking-wider text-parchment/60 mb-4 font-[var(--font-oswald)]">
               Funnel — last {days}d
             </h2>
             <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6">
@@ -174,7 +174,7 @@ export default function AnalyticsPage() {
                         <span className="text-[10px] text-brass font-semibold pb-1">{convPct}%</span>
                       </div>
                       <span className="text-lg font-bold text-parchment">{row.users.toLocaleString()}</span>
-                      <span className="text-[10px] uppercase tracking-wider text-parchment/40">
+                      <span className="text-[10px] uppercase tracking-wider text-parchment/55">
                         {row.event.replace(/_/g, ' ')}
                       </span>
                     </div>
@@ -186,7 +186,7 @@ export default function AnalyticsPage() {
         )}
 
         {data.capped && (
-          <p className="text-xs text-parchment/30 mt-6">
+          <p className="text-xs text-parchment/45 mt-6">
             Note: showing the most recent 10,000 events — older views in this window are not counted.
           </p>
         )}
@@ -198,8 +198,8 @@ export default function AnalyticsPage() {
 function Metric({ label, value, accent, muted }: { label: string; value: string; accent?: boolean; muted?: boolean }) {
   return (
     <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6">
-      <div className="text-xs uppercase tracking-wider text-parchment/45 mb-2 font-[var(--font-oswald)]">{label}</div>
-      <div className={`text-4xl font-bold ${accent ? 'text-bull' : muted ? 'text-parchment/40' : 'text-parchment'}`}>{value}</div>
+      <div className="text-xs uppercase tracking-wider text-parchment/60 mb-2 font-[var(--font-oswald)]">{label}</div>
+      <div className={`text-4xl font-bold ${accent ? 'text-bull' : muted ? 'text-parchment/55' : 'text-parchment'}`}>{value}</div>
     </div>
   );
 }
@@ -208,9 +208,9 @@ function ListCard({ title, rows, mono }: { title: string; rows: Array<{ key: str
   const max = Math.max(...rows.map((r) => r.count), 1);
   return (
     <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6">
-      <h2 className="text-sm uppercase tracking-wider text-parchment/45 mb-4 font-[var(--font-oswald)]">{title}</h2>
+      <h2 className="text-sm uppercase tracking-wider text-parchment/60 mb-4 font-[var(--font-oswald)]">{title}</h2>
       {rows.length === 0 ? (
-        <p className="text-sm text-parchment/30">No data yet.</p>
+        <p className="text-sm text-parchment/45">No data yet.</p>
       ) : (
         <div className="space-y-2">
           {rows.map((r) => (

@@ -18,7 +18,7 @@ export default function PrivacyPage() {
           <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide mb-2">
             Privacy Policy
           </h1>
-          <p className="text-sm text-parchment/45">
+          <p className="text-sm text-parchment/60">
             Last updated {LAST_UPDATED}. This is a first-pass draft for review — it
             should be reviewed by counsel before it governs real users.
           </p>
@@ -181,7 +181,7 @@ export default function PrivacyPage() {
           </p>
         </Section>
 
-        <footer className="mt-12 pt-6 border-t border-[rgb(var(--t-brass) / 0.28)] text-sm text-parchment/45">
+        <footer className="mt-12 pt-6 border-t border-[rgb(var(--t-brass) / 0.28)] text-sm text-parchment/60">
           <p className="mb-3">
             Bracketed items and the entire document require review by counsel before it
             governs real users.

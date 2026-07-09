@@ -130,7 +130,7 @@ export default function WatchlistEditorPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-ink text-parchment flex items-center justify-center">
-        <div className="animate-pulse text-parchment/45">Loading...</div>
+        <div className="animate-pulse text-parchment/60">Loading...</div>
       </main>
     );
   }
@@ -155,20 +155,20 @@ export default function WatchlistEditorPage() {
     <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <div className="container mx-auto px-4 py-8 max-w-3xl">
-        <Link href="/watchlists" className="text-xs text-parchment/45 hover:text-parchment/70 uppercase tracking-wider font-[var(--font-oswald)]">
+        <Link href="/watchlists" className="text-xs text-parchment/60 hover:text-parchment/70 uppercase tracking-wider font-[var(--font-oswald)]">
           ← All watchlists
         </Link>
 
         <div className="mt-4 mb-8">
           <h1 className="text-2xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">{watchlist.name}</h1>
-          <p className="text-xs text-parchment/45 mt-1">{watchlist.tickers.length} tickers</p>
+          <p className="text-xs text-parchment/60 mt-1">{watchlist.tickers.length} tickers</p>
         </div>
 
         <section className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5 mb-6">
-          <p className="text-xs text-parchment/45 uppercase tracking-wider font-[var(--font-oswald)] mb-3">Details</p>
+          <p className="text-xs text-parchment/60 uppercase tracking-wider font-[var(--font-oswald)] mb-3">Details</p>
           <div className="space-y-3">
             <div>
-              <label className="text-[11px] text-parchment/45 uppercase tracking-wider block mb-1">Name</label>
+              <label className="text-[11px] text-parchment/60 uppercase tracking-wider block mb-1">Name</label>
               <input
                 type="text"
                 value={name}
@@ -177,7 +177,7 @@ export default function WatchlistEditorPage() {
               />
             </div>
             <div>
-              <label className="text-[11px] text-parchment/45 uppercase tracking-wider block mb-1">Description</label>
+              <label className="text-[11px] text-parchment/60 uppercase tracking-wider block mb-1">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -200,7 +200,7 @@ export default function WatchlistEditorPage() {
         </section>
 
         <section className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5 mb-6">
-          <p className="text-xs text-parchment/45 uppercase tracking-wider font-[var(--font-oswald)] mb-3">Tickers</p>
+          <p className="text-xs text-parchment/60 uppercase tracking-wider font-[var(--font-oswald)] mb-3">Tickers</p>
 
           <div className="flex gap-2 mb-4">
             <input
@@ -221,7 +221,7 @@ export default function WatchlistEditorPage() {
           </div>
 
           {watchlist.tickers.length === 0 ? (
-            <p className="text-sm text-parchment/45">No tickers yet.</p>
+            <p className="text-sm text-parchment/60">No tickers yet.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {watchlist.tickers.map((t) => (
@@ -233,7 +233,7 @@ export default function WatchlistEditorPage() {
                   <button
                     onClick={() => removeTicker(t)}
                     disabled={tickerBusy}
-                    className="text-parchment/40 hover:text-bear transition disabled:opacity-30"
+                    className="text-parchment/55 hover:text-bear transition disabled:opacity-30"
                     aria-label={`Remove ${t}`}
                   >
                     ×

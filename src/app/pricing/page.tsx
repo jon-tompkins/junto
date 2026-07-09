@@ -175,9 +175,9 @@ function PricingPageInner() {
           {/* Free */}
           <div className="flex flex-col p-6 rounded border border-[rgb(var(--t-brass) / 0.2)] bg-ink">
             <div className="mb-5">
-              <div className="text-xs font-[var(--font-oswald)] uppercase tracking-widest text-parchment/40 mb-2">Free</div>
+              <div className="text-xs font-[var(--font-oswald)] uppercase tracking-widest text-parchment/55 mb-2">Free</div>
               <div className="text-4xl font-bold font-[var(--font-oswald)]">$0</div>
-              <div className="text-parchment/40 text-sm mt-1">forever</div>
+              <div className="text-parchment/55 text-sm mt-1">forever</div>
             </div>
 
             <ul className="space-y-2.5 flex-1 mb-6">
@@ -199,7 +199,7 @@ function PricingPageInner() {
                 'Deep dive reports',
                 'Ailmanack access',
               ].map(f => (
-                <li key={f} className="flex items-start gap-2 text-sm text-parchment/30">
+                <li key={f} className="flex items-start gap-2 text-sm text-parchment/45">
                   <DASH />{f}
                 </li>
               ))}
@@ -223,7 +223,7 @@ function PricingPageInner() {
               <div className="text-xs font-[var(--font-oswald)] uppercase tracking-widest text-brass/80 mb-2">Pro</div>
               <div className="flex items-baseline gap-2">
                 <div className="text-4xl font-bold font-[var(--font-oswald)] text-brass">$5</div>
-                <div className="text-parchment/40 text-sm">/ month</div>
+                <div className="text-parchment/55 text-sm">/ month</div>
               </div>
               <div className="text-parchment/55 text-sm mt-2">
                 or <span className="text-brass font-bold">$50/year</span>
@@ -275,7 +275,7 @@ function PricingPageInner() {
               <div className="text-xs font-[var(--font-oswald)] uppercase tracking-widest text-bear/90 mb-2">Operator</div>
               <div className="flex items-baseline gap-2">
                 <div className="text-4xl font-bold font-[var(--font-oswald)] text-bear">$20</div>
-                <div className="text-parchment/40 text-sm">/ month</div>
+                <div className="text-parchment/55 text-sm">/ month</div>
               </div>
               <div className="text-parchment/55 text-sm mt-2">
                 or <span className="text-bear font-bold">$200/year</span>
@@ -319,9 +319,9 @@ function PricingPageInner() {
           {/* Top-Up */}
           <div className="flex flex-col p-6 rounded border border-[rgb(var(--t-brass) / 0.2)] bg-ink">
             <div className="mb-5">
-              <div className="text-xs font-[var(--font-oswald)] uppercase tracking-widest text-parchment/40 mb-2">Top-Up</div>
+              <div className="text-xs font-[var(--font-oswald)] uppercase tracking-widest text-parchment/55 mb-2">Top-Up</div>
               <div className="text-4xl font-bold font-[var(--font-oswald)]">Pay as you go</div>
-              <div className="text-parchment/40 text-sm mt-1">100 credits = $1</div>
+              <div className="text-parchment/55 text-sm mt-1">100 credits = $1</div>
             </div>
 
             <p className="text-sm text-parchment/55 mb-5 leading-relaxed">
@@ -356,13 +356,13 @@ function PricingPageInner() {
               ))}
             </div>
 
-            <p className="text-xs text-parchment/30 text-center">Credits never expire</p>
+            <p className="text-xs text-parchment/45 text-center">Credits never expire</p>
           </div>
         </div>
 
         {/* What costs credits */}
         <div className="mb-14">
-          <h2 className="text-sm font-[var(--font-oswald)] uppercase tracking-widest text-parchment/40 text-center mb-5">
+          <h2 className="text-sm font-[var(--font-oswald)] uppercase tracking-widest text-parchment/55 text-center mb-5">
             What costs credits
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -377,7 +377,7 @@ function PricingPageInner() {
 
         {/* What happens when Pro lapses */}
         <div className="p-5 rounded border border-[rgb(var(--t-brass) / 0.15)] bg-ink max-w-2xl mx-auto text-center">
-          <div className="text-xs font-[var(--font-oswald)] uppercase tracking-widest text-parchment/30 mb-2">If you cancel Pro</div>
+          <div className="text-xs font-[var(--font-oswald)] uppercase tracking-widest text-parchment/45 mb-2">If you cancel Pro</div>
           <p className="text-sm text-parchment/55 leading-relaxed">
             Your juntos and dispatches stay. Dispatch sends pause until you resubscribe or top up.
             Any remaining credits are yours to keep — they never expire.

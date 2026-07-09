@@ -278,7 +278,7 @@ export default function OnboardingPage() {
   if (status === 'loading') {
     return (
       <main className="min-h-screen bg-ink text-parchment flex items-center justify-center">
-        <div className="animate-pulse text-parchment/45">Loading…</div>
+        <div className="animate-pulse text-parchment/60">Loading…</div>
       </main>
     );
   }
@@ -373,7 +373,7 @@ export default function OnboardingPage() {
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="text-sm text-parchment truncate">{s.displayName}</div>
-                            <div className="text-[11px] text-parchment/45 truncate">@{s.handle}{s.bio ? ` · ${s.bio}` : ''}</div>
+                            <div className="text-[11px] text-parchment/60 truncate">@{s.handle}{s.bio ? ` · ${s.bio}` : ''}</div>
                           </div>
                           <div className={`w-4 h-4 rounded-sm border flex items-center justify-center shrink-0 ${
                             on ? 'bg-brass border-brass' : 'border-[rgb(var(--t-brass) / 0.35)]'
@@ -425,7 +425,7 @@ export default function OnboardingPage() {
                           )}
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium text-parchment truncate">{src.display_name || src.handle_or_url}</p>
-                            <p className="text-xs text-parchment/45">@{src.handle_or_url}</p>
+                            <p className="text-xs text-parchment/60">@{src.handle_or_url}</p>
                           </div>
                           <div className={`w-4 h-4 rounded-sm border flex items-center justify-center shrink-0 ${
                             on ? 'bg-brass border-brass' : 'border-[rgb(var(--t-brass) / 0.35)]'
@@ -453,7 +453,7 @@ export default function OnboardingPage() {
                         className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brass/15 border border-[rgb(var(--t-brass) / 0.35)] hover:border-bear/50 hover:bg-bear/10 transition group"
                       >
                         <span className="text-xs text-brass group-hover:text-bear">@{s.handle}</span>
-                        <span className="text-[10px] text-parchment/30 group-hover:text-bear">×</span>
+                        <span className="text-[10px] text-parchment/45 group-hover:text-bear">×</span>
                       </button>
                     ))}
                   </div>
@@ -465,14 +465,14 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={() => setShowListPanel(v => !v)}
-                  className="text-parchment/45 hover:text-brass underline-offset-2 hover:underline"
+                  className="text-parchment/60 hover:text-brass underline-offset-2 hover:underline"
                 >
                   or, import from a Twitter list
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowExistingPanel(v => !v)}
-                  className="text-parchment/45 hover:text-brass underline-offset-2 hover:underline"
+                  className="text-parchment/60 hover:text-brass underline-offset-2 hover:underline"
                 >
                   or, use an existing junto
                 </button>
@@ -498,7 +498,7 @@ export default function OnboardingPage() {
                       {importingList ? 'Importing…' : 'Import'}
                     </button>
                   </div>
-                  <p className="text-[11px] text-parchment/40">Import may take up to 60s. Active members are added to your selection above.</p>
+                  <p className="text-[11px] text-parchment/55">Import may take up to 60s. Active members are added to your selection above.</p>
                   {listError && <p className="text-xs text-bear">{listError}</p>}
                 </div>
               )}
@@ -507,7 +507,7 @@ export default function OnboardingPage() {
               {showExistingPanel && (
                 <div className="rounded p-3 space-y-2" style={{ background: 'rgb(var(--t-ink))', border: '1px solid rgb(var(--t-brass) / 0.18)' }}>
                   {existingJuntos.length === 0 ? (
-                    <p className="text-xs text-parchment/45">You don&apos;t have any juntos yet.</p>
+                    <p className="text-xs text-parchment/60">You don&apos;t have any juntos yet.</p>
                   ) : existingJuntos.map(j => {
                     const sources = j.sources ?? [];
                     const total = j.source_count ?? sources.length;
@@ -553,7 +553,7 @@ export default function OnboardingPage() {
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); setMembersModalJunto(j); }}
-                              className="text-xs font-mono text-parchment/45 hover:text-brass transition px-2 py-0.5 rounded border border-transparent hover:border-[rgb(var(--t-brass) / 0.4)]"
+                              className="text-xs font-mono text-parchment/60 hover:text-brass transition px-2 py-0.5 rounded border border-transparent hover:border-[rgb(var(--t-brass) / 0.4)]"
                             >
                               {total} {total === 1 ? 'member' : 'members'} →
                             </button>
@@ -604,12 +604,12 @@ export default function OnboardingPage() {
                       className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brass/15 border border-[rgb(var(--t-brass) / 0.35)] hover:border-bear/50 transition group"
                     >
                       <span className="text-xs text-brass group-hover:text-bear">${t}</span>
-                      <span className="text-[10px] text-parchment/30">×</span>
+                      <span className="text-[10px] text-parchment/45">×</span>
                     </button>
                   ))}
                 </div>
               )}
-              <p className="text-xs text-parchment/40">Up to 10. Empty is fine — leave blank to focus on signal from sources.</p>
+              <p className="text-xs text-parchment/55">Up to 10. Empty is fine — leave blank to focus on signal from sources.</p>
             </div>
           </Section>
         )}
@@ -741,7 +741,7 @@ export default function OnboardingPage() {
             placeholder={handle ? `${handle}'s Dispatch` : 'My Daily Dispatch'}
             className="w-full px-4 py-2.5 bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded focus:border-brass focus:outline-none text-sm text-parchment"
           />
-          <p className="mt-2 text-xs text-parchment/40">Optional — leave blank for an auto-generated name.</p>
+          <p className="mt-2 text-xs text-parchment/55">Optional — leave blank for an auto-generated name.</p>
         </Section>
 
         {error && <p className="mt-4 text-sm text-bear text-center">{error}</p>}
@@ -779,7 +779,7 @@ export default function OnboardingPage() {
                 <h3 className="text-sm font-bold text-parchment font-[var(--font-oswald)] uppercase tracking-wider">
                   {membersModalJunto.name}
                 </h3>
-                <p className="text-xs text-parchment/40 mt-0.5">
+                <p className="text-xs text-parchment/55 mt-0.5">
                   {(membersModalJunto.sources?.length ?? membersModalJunto.source_count ?? 0)} members
                 </p>
               </div>
@@ -793,7 +793,7 @@ export default function OnboardingPage() {
             </div>
             <ul className="overflow-y-auto divide-y divide-[rgb(var(--t-brass) / 0.12)]">
               {(membersModalJunto.sources ?? []).length === 0 ? (
-                <li className="px-5 py-6 text-sm text-parchment/45 text-center">No members.</li>
+                <li className="px-5 py-6 text-sm text-parchment/60 text-center">No members.</li>
               ) : (
                 (membersModalJunto.sources ?? []).map((s) => (
                   <li key={s.id} className="flex items-center gap-3 px-5 py-2.5">
@@ -819,7 +819,7 @@ export default function OnboardingPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="text-xs font-mono text-parchment/45 hover:text-brass transition"
+                        className="text-xs font-mono text-parchment/60 hover:text-brass transition"
                       >
                         @{s.handle_or_url}
                       </a>
@@ -856,7 +856,7 @@ function Section({
         className="w-full flex items-center justify-between px-5 py-4 text-left"
       >
         <div>
-          <div className="text-xs uppercase tracking-wider text-parchment/45 font-mono">{title}</div>
+          <div className="text-xs uppercase tracking-wider text-parchment/60 font-mono">{title}</div>
           <div className="text-sm text-parchment mt-0.5">{summary}</div>
         </div>
         <span className="text-brass text-lg" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>⌄</span>
@@ -899,7 +899,7 @@ function ChannelCard({
           <div className="text-sm font-bold text-parchment uppercase tracking-wide" style={{ fontFamily: 'var(--font-oswald)' }}>
             {title}
           </div>
-          {hint && <div className="text-xs text-parchment/45 mt-0.5">{hint}</div>}
+          {hint && <div className="text-xs text-parchment/60 mt-0.5">{hint}</div>}
         </div>
       </label>
       {checked && children && (
@@ -933,7 +933,7 @@ function Checkbox({
       />
       <div className="flex-1">
         <div className="text-sm text-parchment">{label}</div>
-        {hint && <div className="text-xs text-parchment/45 mt-0.5">{hint}</div>}
+        {hint && <div className="text-xs text-parchment/60 mt-0.5">{hint}</div>}
       </div>
     </label>
   );

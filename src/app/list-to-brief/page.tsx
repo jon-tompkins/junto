@@ -186,7 +186,7 @@ function ListToBriefInner() {
                 style={{ border: '1px solid rgb(var(--t-brass) / 0.28)' }}
               />
             </div>
-            <p className="text-[11px] text-parchment/45">
+            <p className="text-[11px] text-parchment/60">
               Scraping the list can take up to a minute. You&apos;ll review the members before anything is created.
             </p>
             {error && <p className="text-xs text-bear">{error}</p>}
@@ -251,7 +251,7 @@ function ListToBriefInner() {
                 <label className="text-xs uppercase tracking-wider text-parchment/55" style={{ fontFamily: 'var(--font-oswald, sans-serif)' }}>
                   Sources ({keeperCount} of {members.length})
                 </label>
-                <span className="text-[11px] text-parchment/40">× to remove</span>
+                <span className="text-[11px] text-parchment/55">× to remove</span>
               </div>
               <div className="space-y-1 max-h-[420px] overflow-y-auto pr-1">
                 {members.map(m => {
@@ -275,7 +275,7 @@ function ListToBriefInner() {
                         )}
                         <div className="min-w-0">
                           <div className="font-mono truncate text-parchment/85">@{m.handle}</div>
-                          {m.displayName && <div className="truncate text-[10px] text-parchment/40">{m.displayName}</div>}
+                          {m.displayName && <div className="truncate text-[10px] text-parchment/55">{m.displayName}</div>}
                         </div>
                       </div>
                       <button
@@ -286,7 +286,7 @@ function ListToBriefInner() {
                           return next;
                         })}
                         disabled={stage === 'creating'}
-                        className="ml-3 flex-shrink-0 text-parchment/40 hover:text-bear transition disabled:opacity-30"
+                        className="ml-3 flex-shrink-0 text-parchment/55 hover:text-bear transition disabled:opacity-30"
                       >
                         {isRemoved ? '+' : '×'}
                       </button>
@@ -294,7 +294,7 @@ function ListToBriefInner() {
                   );
                 })}
               </div>
-              <p className="text-[11px] text-parchment/45 mt-3">
+              <p className="text-[11px] text-parchment/60 mt-3">
                 Need a handle that&apos;s not in the list? You can add more from the dispatch&apos;s edit page after creation.
               </p>
             </div>

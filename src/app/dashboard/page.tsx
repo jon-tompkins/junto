@@ -28,7 +28,7 @@ function DashboardShareButton() {
     <div className="flex items-center gap-2">
       <button
         onClick={copyLink}
-        className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-parchment/45 hover:text-parchment/70 hover:bg-raised transition"
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-parchment/60 hover:text-parchment/70 hover:bg-raised transition"
       >
         {copied ? <span className="text-bull">Copied!</span> : (
           <>
@@ -43,7 +43,7 @@ function DashboardShareButton() {
         href={xUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-parchment/45 hover:text-parchment/70 hover:bg-raised transition"
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-parchment/60 hover:text-parchment/70 hover:bg-raised transition"
       >
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.632zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -173,13 +173,13 @@ function Section({
     <div className="mb-4">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-2 py-2 text-left text-[10px] uppercase tracking-[0.18em] text-parchment/45 hover:text-parchment/75 transition font-[var(--font-oswald)]"
+        className="w-full flex items-center justify-between px-2 py-2 text-left text-[10px] uppercase tracking-[0.18em] text-parchment/60 hover:text-parchment/75 transition font-[var(--font-oswald)]"
       >
         <span className="flex items-center gap-2">
           <span className="inline-block w-3 text-brass">{open ? '▾' : '▸'}</span>
           <span>{label}</span>
           {badge !== undefined && badge !== null && (
-            <span className="text-[10px] text-parchment/35 normal-case tracking-normal font-mono">
+            <span className="text-[10px] text-parchment/50 normal-case tracking-normal font-mono">
               {badge}
             </span>
           )}
@@ -313,7 +313,7 @@ function LatestDispatchCard() {
             className="px-2 py-1 rounded text-xs bg-raised border border-[rgb(var(--t-brass) / 0.18)] text-parchment/70 hover:text-parchment disabled:opacity-30"
           >›</button>
         </div>
-        <span className="text-[10px] text-parchment/40 font-mono">
+        <span className="text-[10px] text-parchment/55 font-mono">
           {currentMeta.source_count} sources · {currentMeta.ticker_count} tickers
         </span>
       </div>
@@ -379,10 +379,10 @@ function MyPositionLevelsCard() {
         >
           <span className="text-sm font-mono text-parchment">{l.ticker}</span>
           <div className="flex items-center gap-4 text-xs font-mono">
-            <span className="text-parchment/45">
+            <span className="text-parchment/60">
               stop {l.stop_price !== null ? `$${l.stop_price.toFixed(2)}` : '—'}
             </span>
-            <span className="text-parchment/45">
+            <span className="text-parchment/60">
               target {l.target_price !== null ? `$${l.target_price.toFixed(2)}` : '—'}
             </span>
           </div>
@@ -444,13 +444,13 @@ function ReceivedDispatchesFeed() {
             <div className="flex items-baseline justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-parchment truncate">{it.subject || '(no subject)'}</p>
-                <p className="text-xs text-parchment/45 mt-0.5 truncate">
+                <p className="text-xs text-parchment/60 mt-0.5 truncate">
                   {it.newsletter_name}
                   {it.is_personal && <span className="text-brass/80"> · personal</span>}
-                  {it.methods.length > 0 && <span className="text-parchment/35"> · {it.methods.join(', ')}</span>}
+                  {it.methods.length > 0 && <span className="text-parchment/50"> · {it.methods.join(', ')}</span>}
                 </p>
               </div>
-              <span className="text-[10px] text-parchment/40 font-mono whitespace-nowrap">
+              <span className="text-[10px] text-parchment/55 font-mono whitespace-nowrap">
                 {it.dispatch_date || it.delivered_at.slice(0, 10)}
               </span>
             </div>
@@ -459,14 +459,14 @@ function ReceivedDispatchesFeed() {
       </div>
       {(hasMore || visible > RECEIVED_PAGE_SIZE) && (
         <div className="px-4 py-2 border-t border-[rgb(var(--t-brass) / 0.18)] flex items-center justify-between">
-          <span className="text-[10px] text-parchment/35 font-mono">
+          <span className="text-[10px] text-parchment/50 font-mono">
             Showing {shown.length} of {items.length}
           </span>
           <div className="flex items-center gap-3">
             {visible > RECEIVED_PAGE_SIZE && (
               <button
                 onClick={() => setVisible(RECEIVED_PAGE_SIZE)}
-                className="text-[10px] uppercase tracking-wider text-parchment/45 hover:text-parchment transition font-[var(--font-oswald)]"
+                className="text-[10px] uppercase tracking-wider text-parchment/60 hover:text-parchment transition font-[var(--font-oswald)]"
               >
                 Show less
               </button>
@@ -573,7 +573,7 @@ function WatchlistTickersCard({
       </form>
       {error && <p className="text-xs text-bear px-3 py-1">{error}</p>}
       {tickers.length === 0 ? (
-        <div className="px-4 py-6 text-sm text-parchment/45 text-center">
+        <div className="px-4 py-6 text-sm text-parchment/60 text-center">
           No tickers yet. Add one above.
         </div>
       ) : (
@@ -582,8 +582,8 @@ function WatchlistTickersCard({
             const q = quotes[t.toUpperCase()];
             const pct = q?.changePercent;
             const pctColor = pct == null
-              ? 'text-parchment/35'
-              : pct > 0 ? 'text-bull' : pct < 0 ? 'text-bear' : 'text-parchment/45';
+              ? 'text-parchment/50'
+              : pct > 0 ? 'text-bull' : pct < 0 ? 'text-bear' : 'text-parchment/60';
             return (
               <li key={t} className="flex items-center gap-3 px-3 py-2 hover:bg-raised transition group">
                 <Link
@@ -605,7 +605,7 @@ function WatchlistTickersCard({
                   onClick={() => onRemove(t)}
                   disabled={busy}
                   title="Remove from watchlist"
-                  className="text-parchment/30 hover:text-bear transition text-lg leading-none px-1 disabled:opacity-40"
+                  className="text-parchment/45 hover:text-bear transition text-lg leading-none px-1 disabled:opacity-40"
                   aria-label={`Remove ${t}`}
                 >
                   ×
@@ -678,7 +678,7 @@ function PositionsSnapshotCard({ juntoId }: { juntoId: string | null | undefined
   return (
     <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-[rgb(var(--t-brass) / 0.18)]">
-        <span className="text-[10px] uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)]">
+        <span className="text-[10px] uppercase tracking-wider text-parchment/55 font-[var(--font-oswald)]">
           Top {top.length}
         </span>
         <div className="flex rounded overflow-hidden border border-[rgb(var(--t-brass) / 0.28)]">
@@ -717,7 +717,7 @@ function PositionsSnapshotCard({ juntoId }: { juntoId: string | null | undefined
       ) : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[rgb(var(--t-brass) / 0.18)] text-[10px] uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)]">
+            <tr className="border-b border-[rgb(var(--t-brass) / 0.18)] text-[10px] uppercase tracking-wider text-parchment/55 font-[var(--font-oswald)]">
               <th className="py-2 px-4 text-left">Ticker</th>
               <th className="py-2 px-4 text-left">Stance</th>
               <th className="py-2 px-4 text-right">Sources</th>
@@ -781,9 +781,9 @@ function fmtUsdDash(n: number | null | undefined): string {
 function DashStat({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: string }) {
   return (
     <div>
-      <div className="text-parchment/45 uppercase tracking-wider text-[10px] font-[var(--font-oswald)] mb-1">{label}</div>
+      <div className="text-parchment/60 uppercase tracking-wider text-[10px] font-[var(--font-oswald)] mb-1">{label}</div>
       <div className="font-mono text-sm leading-tight" style={{ color: accent || 'rgb(var(--t-parchment))' }}>{value}</div>
-      {sub && <div className="text-[10px] text-parchment/40 font-mono mt-0.5">{sub}</div>}
+      {sub && <div className="text-[10px] text-parchment/55 font-mono mt-0.5">{sub}</div>}
     </div>
   );
 }
@@ -844,7 +844,7 @@ function TradingPortfolioCard() {
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-2 px-1">
-        <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/45 font-[var(--font-oswald)]">
+        <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/60 font-[var(--font-oswald)]">
           Trading Portfolio
         </h2>
         <Link href="/trading" className="text-[10px] uppercase tracking-wider text-brass hover:text-parchment transition font-[var(--font-oswald)]">
@@ -874,7 +874,7 @@ function TradingPortfolioCard() {
                   <span className="text-sm text-parchment truncate">{m.name}</span>
                   <span className={`px-1.5 py-px rounded text-[9px] font-mono ${m.mode === 'live' ? 'bg-bear/20 text-bear' : 'bg-bull/20 text-bull'}`}>{m.mode}</span>
                 </div>
-                <div className="text-[11px] text-parchment/40 mt-0.5">
+                <div className="text-[11px] text-parchment/55 mt-0.5">
                   {m.junto_name || 'no junto'} · {m.stats.open} open · {m.stats.closed} closed
                 </div>
               </div>
@@ -1266,7 +1266,7 @@ export default function DashboardPage() {
   if (status === 'loading') {
     return (
       <main className="min-h-screen bg-ink text-parchment flex items-center justify-center">
-        <div className="animate-pulse text-parchment/45">Loading...</div>
+        <div className="animate-pulse text-parchment/60">Loading...</div>
       </main>
     );
   }
@@ -1341,7 +1341,7 @@ export default function DashboardPage() {
 
         {/* ─── Today's Dispatch (focal point) ──────────── */}
         <div className="mb-8">
-          <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/45 font-[var(--font-oswald)] mb-2 px-1">
+          <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/60 font-[var(--font-oswald)] mb-2 px-1">
             Today&apos;s Dispatch
           </h2>
           <LatestDispatchCard />
@@ -1355,14 +1355,14 @@ export default function DashboardPage() {
           {/* Watchlist column */}
           <div>
             <div className="flex items-center justify-between mb-2 px-1">
-              <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/45 font-[var(--font-oswald)]">
+              <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/60 font-[var(--font-oswald)]">
                 Watchlist{featuredWatchlist?.name ? ` · ${featuredWatchlist.name}` : ''}
               </h2>
               <div className="flex items-center gap-2">
                 {featuredWatchlist && (
                   <Link
                     href={`/watchlists/${featuredWatchlist.id}`}
-                    className="text-[10px] uppercase tracking-wider text-parchment/45 hover:text-parchment transition font-[var(--font-oswald)]"
+                    className="text-[10px] uppercase tracking-wider text-parchment/60 hover:text-parchment transition font-[var(--font-oswald)]"
                   >
                     Edit
                   </Link>
@@ -1413,14 +1413,14 @@ export default function DashboardPage() {
           {/* Junto column */}
           <div>
             <div className="flex items-center justify-between mb-2 px-1">
-              <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/45 font-[var(--font-oswald)]">
+              <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/60 font-[var(--font-oswald)]">
                 Junto{featuredJunto?.name ? ` · ${featuredJunto.name}` : ''}
               </h2>
               <div className="flex items-center gap-2">
                 {featuredJunto && allJuntos.some((j) => j.id === featuredJunto.id) && (
                   <Link
                     href={`/junto/${featuredJunto.id}/edit`}
-                    className="text-[10px] uppercase tracking-wider text-parchment/45 hover:text-parchment transition font-[var(--font-oswald)]"
+                    className="text-[10px] uppercase tracking-wider text-parchment/60 hover:text-parchment transition font-[var(--font-oswald)]"
                   >
                     Edit
                   </Link>
@@ -1482,7 +1482,7 @@ export default function DashboardPage() {
                   );
                 })}
                 {featuredJunto.junto_sources.length > 16 && (
-                  <span className="text-[11px] text-parchment/40">+{featuredJunto.junto_sources.length - 16}</span>
+                  <span className="text-[11px] text-parchment/55">+{featuredJunto.junto_sources.length - 16}</span>
                 )}
               </div>
             )}
@@ -1493,7 +1493,7 @@ export default function DashboardPage() {
         {/* ─── Junto Chat ────────────────────────────────── */}
         {featuredJunto && (
           <div className="mb-8">
-            <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/45 font-[var(--font-oswald)] mb-2 px-1">
+            <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/60 font-[var(--font-oswald)] mb-2 px-1">
               Chat with {featuredJunto.name}
             </h2>
             <JuntoChat juntoId={featuredJunto.id} juntoName={featuredJunto.name} />
@@ -1502,7 +1502,7 @@ export default function DashboardPage() {
 
         {/* ─── Received dispatches feed ─────────────────── */}
         <div className="mb-8">
-          <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/45 font-[var(--font-oswald)] mb-2 px-1">
+          <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/60 font-[var(--font-oswald)] mb-2 px-1">
             Received Dispatches
           </h2>
           <ReceivedDispatchesFeed />
@@ -1554,7 +1554,7 @@ export default function DashboardPage() {
                         setJuntoNameDraft(featuredJunto.name);
                         setEditingJuntoName(true);
                       }}
-                      className="text-[10px] uppercase tracking-wider text-parchment/35 hover:text-brass transition"
+                      className="text-[10px] uppercase tracking-wider text-parchment/50 hover:text-brass transition"
                       title="Rename"
                     >
                       Rename
@@ -1588,7 +1588,7 @@ export default function DashboardPage() {
           {showJuntoPicker && (
             <div className="px-5 py-3 bg-ink border-b border-[rgb(var(--t-brass) / 0.18)] space-y-3">
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-parchment/40 mb-2 font-[var(--font-oswald)]">Your juntos</p>
+                <p className="text-[10px] uppercase tracking-wider text-parchment/55 mb-2 font-[var(--font-oswald)]">Your juntos</p>
                 <div className="flex flex-wrap gap-2">
                   {allJuntos.map(j => (
                     <button
@@ -1610,7 +1610,7 @@ export default function DashboardPage() {
               </div>
               {publicJuntos.length > 0 && (
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-parchment/40 mb-2 font-[var(--font-oswald)]">Public juntos</p>
+                  <p className="text-[10px] uppercase tracking-wider text-parchment/55 mb-2 font-[var(--font-oswald)]">Public juntos</p>
                   <div className="flex flex-wrap gap-2">
                     {publicJuntos.slice(0, 24).map(j => (
                       <button
@@ -1672,11 +1672,11 @@ export default function DashboardPage() {
                   );
                 })}
                 {featuredJunto.junto_sources.length > 12 && (
-                  <span className="text-xs text-parchment/40">+{featuredJunto.junto_sources.length - 12} more</span>
+                  <span className="text-xs text-parchment/55">+{featuredJunto.junto_sources.length - 12} more</span>
                 )}
               </div>
             ) : (
-              <div className="text-sm text-parchment/45">
+              <div className="text-sm text-parchment/60">
                 No accounts yet.{' '}
                 {featuredJunto && (
                   <Link href={`/junto/${featuredJunto.id}/edit`} className="text-brass hover:opacity-80">
@@ -1712,7 +1712,7 @@ export default function DashboardPage() {
 
               {synthesis && (
                 <div className="border-t border-[rgb(var(--t-brass) / 0.18)] pt-4">
-                  <div className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-parchment/35 font-[var(--font-mono)]">
+                  <div className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-parchment/50 font-[var(--font-mono)]">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-brass" />
                     Live synthesis
                   </div>
@@ -1775,7 +1775,7 @@ export default function DashboardPage() {
                         setWatchlistNameDraft(featuredWatchlist.name);
                         setEditingWatchlistName(true);
                       }}
-                      className="text-[10px] uppercase tracking-wider text-parchment/35 hover:text-brass transition"
+                      className="text-[10px] uppercase tracking-wider text-parchment/50 hover:text-brass transition"
                       title="Rename"
                     >
                       Rename
@@ -1806,7 +1806,7 @@ export default function DashboardPage() {
 
           {showWatchlistPicker && (
             <div className="px-5 py-3 bg-ink border-b border-[rgb(var(--t-brass) / 0.18)]">
-              <p className="text-[10px] uppercase tracking-wider text-parchment/40 mb-2 font-[var(--font-oswald)]">Your watchlists</p>
+              <p className="text-[10px] uppercase tracking-wider text-parchment/55 mb-2 font-[var(--font-oswald)]">Your watchlists</p>
               <div className="flex flex-wrap gap-2">
                 {allWatchlists.map((w) => (
                   <button
@@ -1869,7 +1869,7 @@ export default function DashboardPage() {
                     <button
                       onClick={() => removeWatchlistTicker(t)}
                       disabled={wlTickerBusy}
-                      className="text-parchment/40 hover:text-bear transition disabled:opacity-30"
+                      className="text-parchment/55 hover:text-bear transition disabled:opacity-30"
                       aria-label={`Remove ${t}`}
                     >
                       ×
@@ -1878,7 +1878,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-parchment/45">No tickers yet — add one above.</p>
+              <p className="text-sm text-parchment/60">No tickers yet — add one above.</p>
             )}
           </div>
         </section>
@@ -1902,7 +1902,7 @@ export default function DashboardPage() {
               className={`px-3 py-1.5 text-xs font-[var(--font-oswald)] uppercase tracking-wide transition border-b-2 -mb-px ${
                 subsTab === t
                   ? 'border-brass text-parchment'
-                  : 'border-transparent text-parchment/40 hover:text-parchment/70'
+                  : 'border-transparent text-parchment/55 hover:text-parchment/70'
               }`}
             >
               {t === 'subscriptions' ? `Subscriptions (${activeSubscriptions.length})` :
@@ -1915,7 +1915,7 @@ export default function DashboardPage() {
         {subsTab === 'juntos' && (
           <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-hidden">
             {allJuntos.length === 0 ? (
-              <p className="text-sm text-parchment/45 p-4">No juntos yet.</p>
+              <p className="text-sm text-parchment/60 p-4">No juntos yet.</p>
             ) : (
               <ul className="divide-y divide-[rgb(var(--t-brass) / 0.18)]">
                 {allJuntos.map((j) => (
@@ -1939,7 +1939,7 @@ export default function DashboardPage() {
         {subsTab === 'dispatches' && (
           <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-hidden">
             {ownedDispatches.length === 0 ? (
-              <p className="text-sm text-parchment/45 p-4">You don&apos;t own any dispatches yet.</p>
+              <p className="text-sm text-parchment/60 p-4">You don&apos;t own any dispatches yet.</p>
             ) : (
               <ul className="divide-y divide-[rgb(var(--t-brass) / 0.18)]">
                 {ownedDispatches.map((d) => (
@@ -1948,7 +1948,7 @@ export default function DashboardPage() {
                       <Link href={`/newsletter/${d.id}`} className="text-sm text-parchment hover:text-brass truncate block">
                         {d.name}
                       </Link>
-                      <p className="text-[10px] text-parchment/40 mt-0.5">
+                      <p className="text-[10px] text-parchment/55 mt-0.5">
                         {d.schedule_cadence}
                         {' · '}
                         {d.subscriber_count ?? 0} subscriber{(d.subscriber_count ?? 0) === 1 ? '' : 's'}
@@ -1975,7 +1975,7 @@ export default function DashboardPage() {
         {subsTab === 'subscriptions' && (
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">
+            <h2 className="text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)]">
               Active Subscriptions ({activeSubscriptions.length})
             </h2>
             <Link href="/explore" className="text-xs text-brass hover:underline">
@@ -1997,10 +1997,10 @@ export default function DashboardPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-surface border-b border-[rgb(var(--t-brass) / 0.28)]">
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)]">Dispatch</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Send times</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Days</th>
-                    <th className="px-4 py-2.5 text-right text-xs font-semibold text-parchment/45 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap"></th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)]">Dispatch</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Send times</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Days</th>
+                    <th className="px-4 py-2.5 text-right text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2013,7 +2013,7 @@ export default function DashboardPage() {
                               {sub.newsletter.name}
                             </Link>
                             {!sub.is_active && (
-                              <span className="text-xs px-1.5 py-0.5 rounded-sm bg-raised text-parchment/45">Paused</span>
+                              <span className="text-xs px-1.5 py-0.5 rounded-sm bg-raised text-parchment/60">Paused</span>
                             )}
                           </div>
                         </td>
@@ -2035,7 +2035,7 @@ export default function DashboardPage() {
                               onClick={() => handleToggleSubscription(sub.id, sub.is_active)}
                               className={`text-xs px-2.5 py-1 rounded-sm border transition ${
                                 sub.is_active
-                                  ? 'border-[rgb(var(--t-brass) / 0.18)] text-parchment/40 hover:text-bear hover:border-bear/30'
+                                  ? 'border-[rgb(var(--t-brass) / 0.18)] text-parchment/55 hover:text-bear hover:border-bear/30'
                                   : 'border-bull/30 text-bull'
                               }`}
                             >
@@ -2119,7 +2119,7 @@ export default function DashboardPage() {
           );
         })()}
 
-        <p className="text-xs text-parchment/35 text-center">
+        <p className="text-xs text-parchment/50 text-center">
           Looking for your dispatches or credit history? <Link href="/profile" className="text-brass hover:underline">Profile →</Link>
         </p>
       </div>
@@ -2158,12 +2158,12 @@ function EmptyState({ icon, title, subtitle, actionLabel, actionHref }: {
   return (
     <div className="text-center py-16 border border-dashed border-[rgb(var(--t-brass) / 0.28)] rounded">
       <div className="w-14 h-14 rounded bg-surface border border-[rgb(var(--t-brass) / 0.18)] flex items-center justify-center mx-auto mb-4">
-        <svg className="w-7 h-7 text-parchment/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-7 h-7 text-parchment/45" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={iconPaths[icon] || iconPaths.mail} />
         </svg>
       </div>
       <p className="text-parchment/60 font-medium mb-2">{title}</p>
-      <p className="text-parchment/45 text-sm mb-6">{subtitle}</p>
+      <p className="text-parchment/60 text-sm mb-6">{subtitle}</p>
       {actionLabel && actionHref && (
         <Link
           href={actionHref}

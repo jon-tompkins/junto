@@ -121,7 +121,7 @@ const STANCE_BADGE: Record<string, string> = {
   bullish: 'bg-bull/15 text-bull border border-bull/40',
   bearish: 'bg-bear/15 text-bear border border-bear/40',
   cautious: 'bg-amber-900/40 text-amber-400 border border-amber-700/40',
-  neutral: 'bg-raised text-parchment/45 border border-[rgb(var(--t-brass) / 0.18)]',
+  neutral: 'bg-raised text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)]',
 };
 
 const STANCE_LABELS: Record<string, string> = {
@@ -139,13 +139,13 @@ const OUTCOME_PILL: Record<string, string> = {
   win: 'bg-bull/15 text-bull border border-bull/40',
   loss: 'bg-bear/15 text-bear border border-bear/40',
   flat: 'bg-raised text-parchment/50 border border-[rgb(var(--t-brass) / 0.18)]',
-  unscored: 'bg-raised text-parchment/35 border border-[rgb(var(--t-brass) / 0.12)]',
+  unscored: 'bg-raised text-parchment/50 border border-[rgb(var(--t-brass) / 0.12)]',
 };
 
 function ClosedCallsTable({ calls }: { calls: ClosedCall[] }) {
   if (calls.length === 0) {
     return (
-      <p className="text-parchment/45 text-sm">
+      <p className="text-parchment/60 text-sm">
         No closed calls yet — a call is scored here once this source exits it.
       </p>
     );
@@ -154,7 +154,7 @@ function ClosedCallsTable({ calls }: { calls: ClosedCall[] }) {
     <div className="overflow-x-auto bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded">
       <table className="w-full text-sm min-w-[720px]">
         <thead>
-          <tr className="text-[10px] uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)] border-b border-[rgb(var(--t-brass) / 0.18)]">
+          <tr className="text-[10px] uppercase tracking-wider text-parchment/55 font-[var(--font-oswald)] border-b border-[rgb(var(--t-brass) / 0.18)]">
             <th className="text-left font-semibold px-4 py-3">Name</th>
             <th className="text-left font-semibold px-3 py-3">Outcome</th>
             <th className="text-right font-semibold px-3 py-3">Return</th>
@@ -186,7 +186,7 @@ function ClosedCallsTable({ calls }: { calls: ClosedCall[] }) {
                   {ret != null ? (
                     <span className={ret >= 0 ? 'text-bull' : 'text-bear'}>{ret >= 0 ? '+' : ''}{ret.toFixed(1)}%</span>
                   ) : (
-                    <span className="text-parchment/30">—</span>
+                    <span className="text-parchment/45">—</span>
                   )}
                 </td>
                 <td className="px-3 py-3 text-right font-mono text-parchment/60 whitespace-nowrap">
@@ -195,7 +195,7 @@ function ClosedCallsTable({ calls }: { calls: ClosedCall[] }) {
                 <td className="px-3 py-3 text-xs text-parchment/60 whitespace-nowrap">
                   {c.exit_date ? new Date(c.exit_date).toLocaleDateString() : '—'}
                 </td>
-                <td className="px-4 py-3 text-xs text-parchment/45 capitalize">{c.close_reason ?? '—'}</td>
+                <td className="px-4 py-3 text-xs text-parchment/60 capitalize">{c.close_reason ?? '—'}</td>
               </tr>
             );
           })}
@@ -327,7 +327,7 @@ export default function SourceProfilePage() {
       <TopNav />
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
-        <Link href="/sources" className="text-parchment/45 hover:text-parchment/80 text-sm transition mb-6 inline-block">
+        <Link href="/sources" className="text-parchment/60 hover:text-parchment/80 text-sm transition mb-6 inline-block">
           ← Sources
         </Link>
 
@@ -352,16 +352,16 @@ export default function SourceProfilePage() {
               href={`https://twitter.com/${displayHandle}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-parchment/45 hover:text-brass text-sm transition"
+              className="text-parchment/60 hover:text-brass text-sm transition"
             >
               @{displayHandle} ↗
             </a>
-            <p className="text-xs text-parchment/40 mt-1.5 font-[var(--font-oswald)] uppercase tracking-wider">
+            <p className="text-xs text-parchment/55 mt-1.5 font-[var(--font-oswald)] uppercase tracking-wider">
               Tracking since {new Date(profile.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
             </p>
             {creator && creator.siblings.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="text-[10px] uppercase tracking-wider text-parchment/35 font-[var(--font-oswald)]">
+                <span className="text-[10px] uppercase tracking-wider text-parchment/50 font-[var(--font-oswald)]">
                   Also publishes as {creator.name} on
                 </span>
                 {creator.siblings.map((s) => {
@@ -404,7 +404,7 @@ export default function SourceProfilePage() {
         {/* Summary */}
         {profile.summary && (
           <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5 mb-8">
-            <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider mb-2 font-[var(--font-oswald)]">Source Summary</h2>
+            <h2 className="text-xs font-semibold text-parchment/60 uppercase tracking-wider mb-2 font-[var(--font-oswald)]">Source Summary</h2>
             <p className="text-parchment/80 leading-relaxed">{profile.summary}</p>
           </div>
         )}
@@ -415,26 +415,26 @@ export default function SourceProfilePage() {
         {(perf.scored > 0 || (hitRate?.total ?? 0) > 0) && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-4">
-              <p className="text-[10px] uppercase tracking-wider text-parchment/45 mb-1 font-[var(--font-oswald)]">Calls Working</p>
+              <p className="text-[10px] uppercase tracking-wider text-parchment/60 mb-1 font-[var(--font-oswald)]">Calls Working</p>
               <p className="text-xl font-bold text-parchment">
                 {perf.scored > 0 ? `${Math.round((perf.working / perf.scored) * 100)}%` : '—'}
-                {perf.scored > 0 && <span className="text-xs font-normal text-parchment/45 ml-1.5">{perf.working}/{perf.scored}</span>}
+                {perf.scored > 0 && <span className="text-xs font-normal text-parchment/60 ml-1.5">{perf.working}/{perf.scored}</span>}
               </p>
-              <p className="text-[10px] text-parchment/30 mt-0.5">open calls now</p>
+              <p className="text-[10px] text-parchment/45 mt-0.5">open calls now</p>
             </div>
             <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-4">
-              <p className="text-[10px] uppercase tracking-wider text-parchment/45 mb-1 font-[var(--font-oswald)]">Avg Return</p>
+              <p className="text-[10px] uppercase tracking-wider text-parchment/60 mb-1 font-[var(--font-oswald)]">Avg Return</p>
               <p className={`text-xl font-bold ${perf.avgReturn >= 0 ? 'text-bull' : 'text-bear'}`}>
                 {perf.scored > 0 ? `${perf.avgReturn >= 0 ? '+' : ''}${perf.avgReturn.toFixed(1)}%` : '—'}
               </p>
-              <p className="text-[10px] text-parchment/30 mt-0.5">open calls now</p>
+              <p className="text-[10px] text-parchment/45 mt-0.5">open calls now</p>
             </div>
             <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-4">
-              <p className="text-[10px] uppercase tracking-wider text-parchment/45 mb-1 font-[var(--font-oswald)]">Targets Hit</p>
+              <p className="text-[10px] uppercase tracking-wider text-parchment/60 mb-1 font-[var(--font-oswald)]">Targets Hit</p>
               <p className="text-xl font-bold text-parchment">
                 {perf.targets > 0 ? `${perf.targetsHit}/${perf.targets}` : '—'}
               </p>
-              <p className="text-[10px] text-parchment/30 mt-0.5">open calls now</p>
+              <p className="text-[10px] text-parchment/45 mt-0.5">open calls now</p>
             </div>
             <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-4">
               <p className="text-[10px] uppercase tracking-wider text-brass/70 mb-1 font-[var(--font-oswald)]">Hit Rate</p>
@@ -442,13 +442,13 @@ export default function SourceProfilePage() {
                 {hitRate && hitRate.scored > 0 ? (
                   <>
                     {Math.round((hitRate.wins / hitRate.scored) * 100)}%
-                    <span className="text-xs font-normal text-parchment/45 ml-1.5">{hitRate.wins}/{hitRate.scored}</span>
+                    <span className="text-xs font-normal text-parchment/60 ml-1.5">{hitRate.wins}/{hitRate.scored}</span>
                   </>
                 ) : (
                   '—'
                 )}
               </p>
-              <p className="text-[10px] text-parchment/30 mt-0.5">
+              <p className="text-[10px] text-parchment/45 mt-0.5">
                 {hitRate && hitRate.total > 0 ? 'closed calls' : 'tracking from now'}
               </p>
             </div>
@@ -458,19 +458,19 @@ export default function SourceProfilePage() {
         {/* Tracked stances table */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4 gap-3">
-            <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider font-[var(--font-oswald)]">
+            <h2 className="text-xs font-semibold text-parchment/60 uppercase tracking-wider font-[var(--font-oswald)]">
               {callView === 'open' ? 'Tracked Calls' : 'Closed Calls'}
             </h2>
             <div className="inline-flex rounded overflow-hidden border border-[rgb(var(--t-brass) / 0.28)] text-[11px]">
               <button
                 onClick={() => setCallView('open')}
-                className={`px-3 py-1 font-medium transition ${callView === 'open' ? 'bg-[rgb(var(--t-brass) / 0.18)] text-brass' : 'text-parchment/45 hover:text-parchment/70'}`}
+                className={`px-3 py-1 font-medium transition ${callView === 'open' ? 'bg-[rgb(var(--t-brass) / 0.18)] text-brass' : 'text-parchment/60 hover:text-parchment/70'}`}
               >
                 Open ({positions.length})
               </button>
               <button
                 onClick={() => setCallView('closed')}
-                className={`px-3 py-1 font-medium transition border-l border-[rgb(var(--t-brass) / 0.28)] ${callView === 'closed' ? 'bg-[rgb(var(--t-brass) / 0.18)] text-brass' : 'text-parchment/45 hover:text-parchment/70'}`}
+                className={`px-3 py-1 font-medium transition border-l border-[rgb(var(--t-brass) / 0.28)] ${callView === 'closed' ? 'bg-[rgb(var(--t-brass) / 0.18)] text-brass' : 'text-parchment/60 hover:text-parchment/70'}`}
               >
                 Closed ({closedCalls.length})
               </button>
@@ -480,12 +480,12 @@ export default function SourceProfilePage() {
           {callView === 'closed' ? (
             <ClosedCallsTable calls={closedCalls} />
           ) : positions.length === 0 ? (
-            <p className="text-parchment/45 text-sm">No positions tracked yet — will populate on next content pull.</p>
+            <p className="text-parchment/60 text-sm">No positions tracked yet — will populate on next content pull.</p>
           ) : (
             <div className="overflow-x-auto bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded">
               <table className="w-full text-sm min-w-[760px]">
                 <thead>
-                  <tr className="text-[10px] uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)] border-b border-[rgb(var(--t-brass) / 0.18)]">
+                  <tr className="text-[10px] uppercase tracking-wider text-parchment/55 font-[var(--font-oswald)] border-b border-[rgb(var(--t-brass) / 0.18)]">
                     <th className="text-left font-semibold px-4 py-3">Name</th>
                     <th className="text-right font-semibold px-3 py-3">Price</th>
                     <th className="text-right font-semibold px-3 py-3">Entry</th>
@@ -519,7 +519,7 @@ export default function SourceProfilePage() {
                               {STANCE_LABELS[pos.stance]}
                             </span>
                           </Link>
-                          {pos.note && <p className="text-xs text-parchment/40 mt-1 line-clamp-1 max-w-[220px]" title={pos.note}>{pos.note}</p>}
+                          {pos.note && <p className="text-xs text-parchment/55 mt-1 line-clamp-1 max-w-[220px]" title={pos.note}>{pos.note}</p>}
                         </td>
                         <td className="px-3 py-3 text-right font-mono text-parchment/90">
                           {quote?.price != null ? `$${quote.price.toFixed(2)}` : '—'}
@@ -533,7 +533,7 @@ export default function SourceProfilePage() {
                               {ret >= 0 ? '+' : ''}{ret.toFixed(1)}%
                             </span>
                           ) : (
-                            <span className="text-parchment/30">—</span>
+                            <span className="text-parchment/45">—</span>
                           )}
                         </td>
                         <td className={`px-3 py-3 text-xs whitespace-nowrap ${statusCls}`}>{statusLabel}</td>
@@ -547,7 +547,7 @@ export default function SourceProfilePage() {
                                   <Link href={`/trading/${h.mandate_id}`} className="text-brass/90 hover:text-brass truncate max-w-[120px]" title={h.mandate_name}>
                                     {h.mandate_name}
                                   </Link>
-                                  <span className="text-parchment/30">{h.side}</span>
+                                  <span className="text-parchment/45">{h.side}</span>
                                   {h.unrealized_pl != null && (
                                     <span className={`font-mono ${h.unrealized_pl >= 0 ? 'text-bull' : 'text-bear'}`}>
                                       {h.unrealized_pl >= 0 ? '+' : ''}${h.unrealized_pl.toFixed(0)}
@@ -570,11 +570,11 @@ export default function SourceProfilePage() {
 
         {/* Juntos */}
         <div className="mb-8">
-          <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
+          <h2 className="text-xs font-semibold text-parchment/60 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
             Juntos
           </h2>
           {juntos.length === 0 ? (
-            <p className="text-parchment/45 text-sm">No juntos yet.</p>
+            <p className="text-parchment/60 text-sm">No juntos yet.</p>
           ) : (
             <div className="space-y-3">
               {juntos.map((j) => (
@@ -591,7 +591,7 @@ export default function SourceProfilePage() {
                       )}
                     </div>
                     {!j.is_public && (
-                      <span className="text-xs text-parchment/30 shrink-0">Private</span>
+                      <span className="text-xs text-parchment/45 shrink-0">Private</span>
                     )}
                   </div>
                 </Link>
@@ -602,11 +602,11 @@ export default function SourceProfilePage() {
 
         {/* Dispatches owned */}
         <div className="mb-8">
-          <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
+          <h2 className="text-xs font-semibold text-parchment/60 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
             Dispatches
           </h2>
           {dispatches.length === 0 ? (
-            <p className="text-parchment/45 text-sm">No public dispatches yet.</p>
+            <p className="text-parchment/60 text-sm">No public dispatches yet.</p>
           ) : (
             <div className="space-y-3">
               {dispatches.map((d) => (
@@ -623,8 +623,8 @@ export default function SourceProfilePage() {
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-xs text-parchment/45">{d.subscriber_count} subscriber{d.subscriber_count !== 1 ? 's' : ''}</p>
-                      <p className="text-xs text-parchment/30 capitalize">{d.schedule_cadence}</p>
+                      <p className="text-xs text-parchment/60">{d.subscriber_count} subscriber{d.subscriber_count !== 1 ? 's' : ''}</p>
+                      <p className="text-xs text-parchment/45 capitalize">{d.schedule_cadence}</p>
                     </div>
                   </div>
                 </Link>
@@ -635,11 +635,11 @@ export default function SourceProfilePage() {
 
         {/* Subscribed dispatches */}
         <div className="mb-8">
-          <h2 className="text-xs font-semibold text-parchment/45 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
+          <h2 className="text-xs font-semibold text-parchment/60 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">
             Subscribed To
           </h2>
           {subscribedDispatches.length === 0 ? (
-            <p className="text-parchment/45 text-sm">No active subscriptions.</p>
+            <p className="text-parchment/60 text-sm">No active subscriptions.</p>
           ) : (
             <div className="space-y-3">
               {subscribedDispatches.map((d) => (
@@ -656,8 +656,8 @@ export default function SourceProfilePage() {
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-xs text-parchment/45">{d.subscriber_count} subscriber{d.subscriber_count !== 1 ? 's' : ''}</p>
-                      <p className="text-xs text-parchment/30 capitalize">{d.schedule_cadence}</p>
+                      <p className="text-xs text-parchment/60">{d.subscriber_count} subscriber{d.subscriber_count !== 1 ? 's' : ''}</p>
+                      <p className="text-xs text-parchment/45 capitalize">{d.schedule_cadence}</p>
                     </div>
                   </div>
                 </Link>
@@ -666,7 +666,7 @@ export default function SourceProfilePage() {
           )}
         </div>
 
-        <p className="text-xs text-parchment/30">
+        <p className="text-xs text-parchment/45">
           Profile analyzed {new Date(profile.last_updated).toLocaleString()}. Positions inferred from public posts — not real holdings.
         </p>
       </div>

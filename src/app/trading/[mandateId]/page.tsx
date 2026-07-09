@@ -474,7 +474,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     return (
       <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
-        <div className="max-w-6xl mx-auto px-6 py-12 text-parchment/45">Loading…</div>
+        <div className="max-w-6xl mx-auto px-6 py-12 text-parchment/60">Loading…</div>
       </main>
     );
   }
@@ -505,7 +505,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        <Link href="/trading" className="text-xs text-parchment/45 hover:text-parchment">← All mandates</Link>
+        <Link href="/trading" className="text-xs text-parchment/60 hover:text-parchment">← All mandates</Link>
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-3 mb-6 sm:mb-8">
           <div className="min-w-0">
@@ -513,7 +513,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide break-words">{mandate.name}</h1>
               <span className={`px-2 py-0.5 text-xs rounded font-mono tracking-wider whitespace-nowrap ${mandate.mode === 'live' ? 'bg-bear/20 text-bear border border-bear/40' : 'bg-bull/20 text-bull border border-bull/40'}`}>{mandate.mode?.toUpperCase() || 'PAPER'}</span>
             </div>
-            <p className="text-sm text-parchment/45 mt-1">
+            <p className="text-sm text-parchment/60 mt-1">
               {mandate.junto_name || 'no junto'} · {mandate.mode} · {fmtUsd(mandate.capital_allotted_usd)} · {mandate.max_position_pct}% max position
             </p>
           </div>
@@ -559,10 +559,10 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
 
         <div className="bg-surface border border-brass/28 rounded p-4 sm:p-5 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <div className="text-[10px] uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)]">
+            <div className="text-[10px] uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)]">
               Live snapshot
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] text-parchment/45 font-mono">
+            <div className="flex items-center gap-1.5 text-[10px] text-parchment/60 font-mono">
               <span
                 className="inline-block w-1.5 h-1.5 rounded-full transition-all"
                 style={{
@@ -645,7 +645,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                       <div className="text-sm font-semibold text-brass/80 mb-0.5">
                         {awaitingFill.length} order{awaitingFill.length === 1 ? '' : 's'} submitted — confirming fill
                       </div>
-                      <p className="text-xs text-parchment/45 truncate">
+                      <p className="text-xs text-parchment/60 truncate">
                         {awaitingFill.map(t => `${t.ticker}`).join(', ')}
                       </p>
                     </div>
@@ -674,12 +674,12 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-brass/4"
           >
             <div className="flex items-center gap-3">
-              <span className="text-sm uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)]">Settings</span>
-              <span className="text-xs text-parchment/40 font-mono">
+              <span className="text-sm uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)]">Settings</span>
+              <span className="text-xs text-parchment/55 font-mono">
                 {mandate.mode} · {fmtUsd(mandate.capital_allotted_usd)} · {mandate.max_position_pct}% max · {junto?.sources?.length ?? 0} sources
               </span>
             </div>
-            <span className="text-parchment/45 text-xs">{settingsOpen ? '▾' : '▸'}</span>
+            <span className="text-parchment/60 text-xs">{settingsOpen ? '▾' : '▸'}</span>
           </button>
 
           {settingsOpen && (
@@ -687,7 +687,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               {/* Junto + tracked sources */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)]">Junto</h3>
+                  <h3 className="text-xs uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)]">Junto</h3>
                   {junto && (
                     <div className="flex gap-3 text-xs">
                       <Link href={`/junto/${junto.id}`} className="text-brass hover:underline">View</Link>
@@ -700,7 +700,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                 {junto ? (
                   <>
                     <div className="text-base font-bold text-parchment mb-1">{junto.name}</div>
-                    <div className="text-xs text-parchment/45 mb-2">
+                    <div className="text-xs text-parchment/60 mb-2">
                       {junto.is_public ? 'Public' : 'Private'}
                       {junto.is_owner ? ' · you own this' : ''}
                     </div>
@@ -708,7 +708,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                       <p className="text-xs text-parchment/60 line-clamp-3 mb-3">{junto.description}</p>
                     )}
                     <div className="mt-2">
-                      <div className="text-[10px] uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] mb-2">
+                      <div className="text-[10px] uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] mb-2">
                         Tracking · {junto.sources?.length ?? 0}
                       </div>
                       {junto.sources && junto.sources.length > 0 ? (
@@ -724,29 +724,29 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                                 <img src={s.avatar_url} alt="" className="w-3.5 h-3.5 rounded-full" />
                               )}
                               <span>{s.display_name || s.handle_or_url}</span>
-                              <span className="text-parchment/30">{s.type}</span>
+                              <span className="text-parchment/45">{s.type}</span>
                             </span>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-parchment/30">No sources attached to this junto.</p>
+                        <p className="text-xs text-parchment/45">No sources attached to this junto.</p>
                       )}
                     </div>
                   </>
                 ) : (
-                  <p className="text-sm text-parchment/30">No junto attached.</p>
+                  <p className="text-sm text-parchment/45">No junto attached.</p>
                 )}
               </div>
 
               {/* Account */}
               <div>
-                <h3 className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] mb-2">Account</h3>
+                <h3 className="text-xs uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] mb-2">Account</h3>
                 {broker ? (
                   <>
                     <div className="text-base font-bold text-parchment mb-1">
                       {broker.account_kind === 'managed' ? 'Managed (MyJunto)' : 'BYO Alpaca keys'}
                     </div>
-                    <div className="text-xs text-parchment/45 mb-2">{broker.broker} · {broker.mode}</div>
+                    <div className="text-xs text-parchment/60 mb-2">{broker.broker} · {broker.mode}</div>
                     <div className="text-xs text-parchment/60 font-mono break-all">
                       {broker.account_kind === 'managed'
                         ? (broker.alpaca_account_id ? `acct ${broker.alpaca_account_id}` : '(no account id)')
@@ -759,7 +759,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                     )}
                   </>
                 ) : (
-                  <p className="text-sm text-parchment/30">No broker info.</p>
+                  <p className="text-sm text-parchment/45">No broker info.</p>
                 )}
               </div>
 
@@ -782,12 +782,12 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               {/* Mandate config */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)]">Mandate</h3>
+                  <h3 className="text-xs uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)]">Mandate</h3>
                   {!editingSettings ? (
                     <button onClick={openSettingsEditor} className="text-xs text-brass hover:underline">Edit</button>
                   ) : (
                     <div className="flex gap-2">
-                      <button onClick={() => setEditingSettings(false)} className="text-xs text-parchment/45">Cancel</button>
+                      <button onClick={() => setEditingSettings(false)} className="text-xs text-parchment/60">Cancel</button>
                       <button onClick={saveSettings} disabled={savingSettings} className="text-xs text-brass">{savingSettings ? 'Saving…' : 'Save'}</button>
                     </div>
                   )}
@@ -822,10 +822,10 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                   </dl>
                 ) : (
                   <div className="space-y-3">
-                    <p className="text-[11px] text-parchment/30">
+                    <p className="text-[11px] text-parchment/45">
                       Broker (<span className="font-mono">{mandate.broker || 'alpaca'}</span>) and network (<span className="font-mono">{mandate.mode === 'live' ? 'mainnet/live' : 'testnet/paper'}</span>) are fixed at creation and can&apos;t be changed here.
                     </p>
-                    <p className="text-[11px] text-parchment/30">
+                    <p className="text-[11px] text-parchment/45">
                       To route cards to a Telegram group: add the bot to the group, then send{' '}
                       <code className="font-mono text-parchment/55">/bind {String(mandate.id).slice(0, 8)}</code> there and confirm the request that appears here.
                     </p>
@@ -888,8 +888,8 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               {/* Style */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)]">Style</h3>
-                  {savingStyle && <span className="text-[10px] text-parchment/30">Saving…</span>}
+                  <h3 className="text-xs uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)]">Style</h3>
+                  {savingStyle && <span className="text-[10px] text-parchment/45">Saving…</span>}
                 </div>
                 <select
                   value={mandate.style || ''}
@@ -901,7 +901,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                     <option key={s.key} value={s.key}>{s.name} — {s.tagline}</option>
                   ))}
                 </select>
-                <p className="text-[11px] text-parchment/30 mt-1.5">
+                <p className="text-[11px] text-parchment/45 mt-1.5">
                   Layered above the mandate: every proposal is shaped by style → mandate guidelines → learned memory. Hard mandate rules always override the style.
                 </p>
               </div>
@@ -909,12 +909,12 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               {/* Guidelines */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)]">Guidelines</h3>
+                  <h3 className="text-xs uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)]">Guidelines</h3>
                   {!editing ? (
                     <button onClick={() => setEditing(true)} className="text-xs text-brass hover:underline">Edit</button>
                   ) : (
                     <div className="flex gap-2">
-                      <button onClick={() => { setEditing(false); setDraftGuidelines(mandate.guidelines); }} className="text-xs text-parchment/45">Cancel</button>
+                      <button onClick={() => { setEditing(false); setDraftGuidelines(mandate.guidelines); }} className="text-xs text-parchment/60">Cancel</button>
                       <button onClick={saveGuidelines} disabled={saving} className="text-xs text-brass">{saving ? 'Saving…' : 'Save'}</button>
                     </div>
                   )}
@@ -944,13 +944,13 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left cursor-pointer hover:bg-brass/4"
           >
             <div className="flex items-center gap-3 min-w-0 flex-wrap">
-              <span className="text-sm uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)]">
+              <span className="text-sm uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)]">
                 Trading Thoughts
                 {mandate.use_learnings && (
                   <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded bg-bull/15 text-bull tracking-wide">REFERENCED</span>
                 )}
               </span>
-              <span className="text-xs text-parchment/40 font-mono">
+              <span className="text-xs text-parchment/55 font-mono">
                 {mandate.learnings_updated_at
                   ? `updated ${new Date(mandate.learnings_updated_at).toLocaleDateString()} ${new Date(mandate.learnings_updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
                   : 'not generated yet'}
@@ -976,13 +976,13 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               >
                 {regenLearnings ? 'Synthesizing…' : 'Regenerate'}
               </button>
-              <span className="text-parchment/45 text-xs">{learningsOpen ? '▾' : '▸'}</span>
+              <span className="text-parchment/60 text-xs">{learningsOpen ? '▾' : '▸'}</span>
             </div>
           </div>
 
           {learningsOpen && (
             <div className="px-5 pb-5 border-t border-brass/18 pt-5 space-y-4">
-              <p className="text-[11px] text-parchment/30">
+              <p className="text-[11px] text-parchment/45">
                 What the engine has learned from its own closed trades, post-mortems and your notes.
               </p>
               <label className="flex items-start gap-2.5 cursor-pointer select-none">
@@ -995,7 +995,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                 />
                 <span className="text-xs text-parchment/70 leading-snug">
                   Reference these thoughts when proposing trades.
-                  <span className="text-parchment/40"> {mandate.use_learnings ? 'On — proposals use the mandate + these learnings.' : 'Off — proposals use the mandate only.'}</span>
+                  <span className="text-parchment/55"> {mandate.use_learnings ? 'On — proposals use the mandate + these learnings.' : 'Off — proposals use the mandate only.'}</span>
                 </span>
               </label>
 
@@ -1004,7 +1004,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                   <ReactMarkdown>{mandate.learnings}</ReactMarkdown>
                 </div>
               ) : (
-                <p className="text-sm text-parchment/30">No trading thoughts yet — they build up as trades close. Hit Regenerate to synthesize from history so far.</p>
+                <p className="text-sm text-parchment/45">No trading thoughts yet — they build up as trades close. Hit Regenerate to synthesize from history so far.</p>
               )}
             </div>
           )}
@@ -1012,11 +1012,11 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
 
         {/* Trades */}
         <div className="bg-surface border border-brass/28 rounded p-5 mb-6">
-          <h2 className="text-sm uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] mb-3">
+          <h2 className="text-sm uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] mb-3">
             Open · {openRows.length}
           </h2>
           {openRows.length === 0 ? (
-            <p className="text-sm text-parchment/30">No open positions.</p>
+            <p className="text-sm text-parchment/45">No open positions.</p>
           ) : (
             <div className="overflow-x-auto -mx-5 px-5">
               <OpenPositionsTable rows={openRows} agreement={agreement} perfRefs={perfRefs} />
@@ -1025,11 +1025,11 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         </div>
 
         <div className="bg-surface border border-brass/28 rounded p-5 mb-6">
-          <h2 className="text-sm uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] mb-3">
+          <h2 className="text-sm uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] mb-3">
             Closed · {closedTrades.length}
           </h2>
           {closedTrades.length === 0 ? (
-            <p className="text-sm text-parchment/30">No closed trades.</p>
+            <p className="text-sm text-parchment/45">No closed trades.</p>
           ) : (
             <div className="overflow-x-auto -mx-5 px-5">
               <TradeTable trades={closedTrades} positions={positions} />
@@ -1039,13 +1039,13 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
 
         {/* Tick runs */}
         <div className="bg-surface border border-brass/28 rounded p-5 mb-6">
-          <h2 className="text-sm uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] mb-3">Recent ticks</h2>
+          <h2 className="text-sm uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] mb-3">Recent ticks</h2>
           {ticks.length === 0 ? (
-            <p className="text-sm text-parchment/30">No ticks yet.</p>
+            <p className="text-sm text-parchment/45">No ticks yet.</p>
           ) : (
             <div className="overflow-x-auto -mx-5 px-5">
             <table className="w-full text-sm min-w-[640px]">
-              <thead className="text-left text-xs uppercase text-parchment/30 border-b border-brass/28 font-[var(--font-oswald)]">
+              <thead className="text-left text-xs uppercase text-parchment/45 border-b border-brass/28 font-[var(--font-oswald)]">
                 <tr>
                   <th className="py-2 pr-4">When</th>
                   <th className="py-2 pr-4">Window</th>
@@ -1063,13 +1063,13 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                   const noteOrErr = errs || t.note || '';
                   return (
                     <tr key={t.id} className="border-b border-brass/18 last:border-0">
-                      <td className="py-2 pr-4 text-xs text-parchment/45 whitespace-nowrap">{new Date(t.created_at).toLocaleString()}</td>
+                      <td className="py-2 pr-4 text-xs text-parchment/60 whitespace-nowrap">{new Date(t.created_at).toLocaleString()}</td>
                       <td className="py-2 pr-4 text-xs text-parchment/70">{t.window}</td>
                       <td className="py-2 pr-4 text-right font-mono text-parchment/70">{t.tweets_reviewed}</td>
                       <td className="py-2 pr-4 text-right font-mono text-parchment/70">{t.signals_extracted}</td>
                       <td className="py-2 pr-4 text-right font-mono text-parchment/70">{t.decisions_made}</td>
                       <td className="py-2 pr-4 text-right font-mono text-parchment/70">{t.trades_proposed}</td>
-                      <td className="py-2 pr-4 text-right font-mono text-parchment/45 text-xs">{t.monitored_opened}/{t.monitored_closed}/{t.monitored_journaled}</td>
+                      <td className="py-2 pr-4 text-right font-mono text-parchment/60 text-xs">{t.monitored_opened}/{t.monitored_closed}/{t.monitored_journaled}</td>
                       <td className="py-2 text-xs" style={{ color: errs ? 'rgb(var(--t-bear))' : 'rgb(var(--t-parchment))' }}>{noteOrErr}</td>
                     </tr>
                   );
@@ -1082,13 +1082,13 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
 
         {/* Signals */}
         <div className="bg-surface border border-brass/28 rounded p-5">
-          <h2 className="text-sm uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] mb-3">Recent signals</h2>
+          <h2 className="text-sm uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] mb-3">Recent signals</h2>
           {signals.length === 0 ? (
-            <p className="text-sm text-parchment/30">No signals yet.</p>
+            <p className="text-sm text-parchment/45">No signals yet.</p>
           ) : (
             <div className="overflow-x-auto -mx-5 px-5">
             <table className="w-full text-sm min-w-[560px]">
-              <thead className="text-left text-xs uppercase text-parchment/30 border-b border-brass/28 font-[var(--font-oswald)]">
+              <thead className="text-left text-xs uppercase text-parchment/45 border-b border-brass/28 font-[var(--font-oswald)]">
                 <tr>
                   <th className="py-2 pr-4">When</th>
                   <th className="py-2 pr-4">Ticker</th>
@@ -1101,12 +1101,12 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               <tbody>
                 {signals.map(s => (
                   <tr key={s.id} className="border-b border-brass/18 last:border-0">
-                    <td className="py-2 pr-4 text-xs text-parchment/45 whitespace-nowrap">{new Date(s.created_at).toLocaleString()}</td>
+                    <td className="py-2 pr-4 text-xs text-parchment/60 whitespace-nowrap">{new Date(s.created_at).toLocaleString()}</td>
                     <td className="py-2 pr-4 font-mono text-parchment">{s.ticker}</td>
                     <td className="py-2 pr-4 text-parchment/60">{s.direction || '—'}</td>
                     <td className="py-2 pr-4 text-parchment/60">{s.conviction ?? '—'}</td>
                     <td className="py-2 pr-4 text-xs text-parchment/70">{s.decision}</td>
-                    <td className="py-2 text-xs text-parchment/45">{s.decision_reason || ''}</td>
+                    <td className="py-2 text-xs text-parchment/60">{s.decision_reason || ''}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1124,7 +1124,7 @@ const settingInputCls = 'w-full bg-ink border border-brass/28 rounded px-3 py-2 
 function SettingField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="text-[10px] uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] block mb-1">{label}</span>
+      <span className="text-[10px] uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] block mb-1">{label}</span>
       {children}
     </label>
   );
@@ -1133,7 +1133,7 @@ function SettingField({ label, children }: { label: string; children: React.Reac
 function SettingRow({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
   return (
     <div className={wide ? 'col-span-2 sm:col-span-3' : ''}>
-      <dt className="text-[10px] uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] mb-0.5">{label}</dt>
+      <dt className="text-[10px] uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] mb-0.5">{label}</dt>
       <dd className="font-mono text-sm text-parchment break-all">{value}</dd>
     </div>
   );
@@ -1152,13 +1152,13 @@ function SnapStat({
 }) {
   return (
     <div>
-      <div className="text-parchment/45 uppercase tracking-wider text-[10px] font-[var(--font-oswald)] mb-1">
+      <div className="text-parchment/60 uppercase tracking-wider text-[10px] font-[var(--font-oswald)] mb-1">
         {label}
       </div>
       <div className="font-mono text-base sm:text-lg leading-tight" style={{ color: accent || 'rgb(var(--t-parchment))' }}>
         {value}
       </div>
-      {sub && <div className="text-[10px] text-parchment/40 font-mono mt-0.5">{sub}</div>}
+      {sub && <div className="text-[10px] text-parchment/55 font-mono mt-0.5">{sub}</div>}
     </div>
   );
 }
@@ -1199,7 +1199,7 @@ function AgreeingSources({ side, sources }: { side: string; sources: AgreeingSou
           </span>
         ),
       )}
-      {extra > 0 && <span className="pl-2 text-[10px] text-parchment/40 font-mono">+{extra}</span>}
+      {extra > 0 && <span className="pl-2 text-[10px] text-parchment/55 font-mono">+{extra}</span>}
     </span>
   );
 }
@@ -1300,20 +1300,20 @@ function OpenPositionsTable({ rows, agreement, perfRefs }: { rows: OpenRow[]; ag
   return (
     <>
     <div className="flex items-center justify-end gap-1 mb-2">
-      <span className="text-[10px] uppercase tracking-wider text-parchment/30 mr-1">Return</span>
+      <span className="text-[10px] uppercase tracking-wider text-parchment/45 mr-1">Return</span>
       {(['24h', '1W', '1Y'] as PerfTf[]).map(t => (
         <button
           key={t}
           type="button"
           onClick={() => setTf(t)}
-          className={`text-[11px] px-2 py-0.5 rounded border transition ${tf === t ? 'border-brass text-brass bg-brass/10' : 'border-brass/20 text-parchment/45 hover:text-parchment/70'}`}
+          className={`text-[11px] px-2 py-0.5 rounded border transition ${tf === t ? 'border-brass text-brass bg-brass/10' : 'border-brass/20 text-parchment/60 hover:text-parchment/70'}`}
         >
           {t}
         </button>
       ))}
     </div>
     <table className="w-full text-sm min-w-[960px]">
-      <thead className="text-left text-xs uppercase text-parchment/30 border-b border-brass/28 font-[var(--font-oswald)]">
+      <thead className="text-left text-xs uppercase text-parchment/45 border-b border-brass/28 font-[var(--font-oswald)]">
         <tr>
           {cols.map(c => (
             <th key={c.key} className={`py-2 pr-4 ${c.align === 'right' ? 'text-right' : ''}`}>
@@ -1363,21 +1363,21 @@ function OpenPositionsTable({ rows, agreement, perfRefs }: { rows: OpenRow[]; ag
               <td className="py-2 pr-4 text-right font-mono text-parchment/70">{entry ? `$${Number(entry).toFixed(2)}` : '—'}</td>
               <td className="py-2 pr-4 text-right font-mono text-parchment">{last ? `$${Number(last).toFixed(2)}` : '—'}</td>
               <td className="py-2 pr-4 text-right font-mono" style={{ color: ret == null ? undefined : plColor(ret) }}>
-                {ret == null ? <span className="text-parchment/30">—</span> : `${ret >= 0 ? '+' : ''}${ret.toFixed(2)}%`}
+                {ret == null ? <span className="text-parchment/45">—</span> : `${ret >= 0 ? '+' : ''}${ret.toFixed(2)}%`}
               </td>
               <td className="py-2 pr-4 text-right font-mono text-parchment/70">{marketValue != null ? fmtUsd(marketValue) : '—'}</td>
               <td className="py-2 pr-4 text-right font-mono">
                 {stopWarn ? (
                   <span className="text-bear" title="No stop order live at broker">⚠ {stop ? `$${Number(stop).toFixed(2)}` : '—'}</span>
                 ) : (
-                  <span className="text-parchment/45">{stop ? `$${Number(stop).toFixed(2)}` : '—'}</span>
+                  <span className="text-parchment/60">{stop ? `$${Number(stop).toFixed(2)}` : '—'}</span>
                 )}
               </td>
               <td className="py-2 pr-4 text-right font-mono">
                 {targetWarn ? (
                   <span className="text-bear" title="No target order live at broker">⚠ {target ? `$${Number(target).toFixed(2)}` : '—'}</span>
                 ) : (
-                  <span className="text-parchment/45">{target ? `$${Number(target).toFixed(2)}` : '—'}</span>
+                  <span className="text-parchment/60">{target ? `$${Number(target).toFixed(2)}` : '—'}</span>
                 )}
               </td>
               <td className="py-2 pr-4 text-right font-mono" style={{ color: plColor(dayPl) }}>
@@ -1415,7 +1415,7 @@ function TradeTable({
 }) {
   return (
     <table className="w-full text-sm min-w-[720px]">
-      <thead className="text-left text-xs uppercase text-parchment/30 border-b border-brass/28 font-[var(--font-oswald)]">
+      <thead className="text-left text-xs uppercase text-parchment/45 border-b border-brass/28 font-[var(--font-oswald)]">
         <tr>
           <th className="py-2 pr-4">Ticker</th>
           <th className="py-2 pr-4">Side</th>
@@ -1450,7 +1450,7 @@ function TradeTable({
                 {showLive && t.status === 'open' && pos && !pos.has_stop ? (
                   <span className="text-bear" title="No stop order live at broker">⚠ {t.stop_price ? `$${t.stop_price.toFixed(2)}` : '—'}</span>
                 ) : (
-                  <span className="text-parchment/45">
+                  <span className="text-parchment/60">
                     {(pos?.live_stop ?? t.stop_price) ? `$${(pos?.live_stop ?? t.stop_price)!.toFixed(2)}` : '—'}
                   </span>
                 )}
@@ -1459,7 +1459,7 @@ function TradeTable({
                 {showLive && t.status === 'open' && pos && !pos.has_target ? (
                   <span className="text-bear" title="No target order live at broker">⚠ {t.target_price ? `$${t.target_price.toFixed(2)}` : '—'}</span>
                 ) : (
-                  <span className="text-parchment/45">
+                  <span className="text-parchment/60">
                     {(pos?.live_target ?? t.target_price) ? `$${(pos?.live_target ?? t.target_price)!.toFixed(2)}` : '—'}
                   </span>
                 )}

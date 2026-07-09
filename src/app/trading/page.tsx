@@ -212,7 +212,7 @@ export default function AdminTradingPage() {
     return (
       <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
-        <div className="max-w-6xl mx-auto px-6 py-12 text-parchment/45">Loading…</div>
+        <div className="max-w-6xl mx-auto px-6 py-12 text-parchment/60">Loading…</div>
       </main>
     );
   }
@@ -246,7 +246,7 @@ export default function AdminTradingPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 sm:mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">Admin · Trading</h1>
-            <p className="text-sm text-parchment/45 mt-1">{mandates.length} mandates</p>
+            <p className="text-sm text-parchment/60 mt-1">{mandates.length} mandates</p>
           </div>
           <div className="flex gap-2 flex-wrap">
             <Link
@@ -276,10 +276,10 @@ export default function AdminTradingPage() {
         {portfolio && portfolio.mandate_count > 0 && (
           <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-4 sm:p-5 mb-6">
             <div className="flex items-center justify-between mb-3">
-              <div className="text-[10px] uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)]">
+              <div className="text-[10px] uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)]">
                 Portfolio
               </div>
-              <div className="flex items-center gap-1.5 text-[10px] text-parchment/45 font-mono">
+              <div className="flex items-center gap-1.5 text-[10px] text-parchment/60 font-mono">
                 <span
                   className="inline-block w-1.5 h-1.5 rounded-full transition-all"
                   style={{
@@ -340,17 +340,17 @@ export default function AdminTradingPage() {
 
         {tickResult && (
           <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-4 mb-6">
-            <div className="text-xs uppercase tracking-wider text-parchment/45 mb-2 font-[var(--font-oswald)]">Tick result</div>
+            <div className="text-xs uppercase tracking-wider text-parchment/60 mb-2 font-[var(--font-oswald)]">Tick result</div>
             <pre className="text-xs text-parchment/70 overflow-x-auto whitespace-pre-wrap">{tickResult}</pre>
           </div>
         )}
 
         {showCreate && (
           <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6 mb-8 space-y-3">
-            <h2 className="text-sm uppercase tracking-wider text-parchment/45 mb-2 font-[var(--font-oswald)]">New mandate</h2>
+            <h2 className="text-sm uppercase tracking-wider text-parchment/60 mb-2 font-[var(--font-oswald)]">New mandate</h2>
 
             <div>
-              <span className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] block mb-2">Broker</span>
+              <span className="text-xs uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] block mb-2">Broker</span>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -383,7 +383,7 @@ export default function AdminTradingPage() {
 
             {form.broker === 'alpaca' && (
             <div>
-              <span className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] block mb-2">Brokerage account</span>
+              <span className="text-xs uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] block mb-2">Brokerage account</span>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -415,7 +415,7 @@ export default function AdminTradingPage() {
                 </button>
               </div>
               {!managedAccount && (
-                <p className="text-[11px] text-parchment/45 mt-2">
+                <p className="text-[11px] text-parchment/60 mt-2">
                   Don&apos;t have a managed account?{' '}
                   <Link href="/account/open" className="text-brass hover:underline">Open one →</Link>
                 </p>
@@ -426,7 +426,7 @@ export default function AdminTradingPage() {
             {form.broker === 'hyperliquid' && (
             <div className="space-y-3">
               <div>
-                <span className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] block mb-2">Network</span>
+                <span className="text-xs uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] block mb-2">Network</span>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -474,7 +474,7 @@ export default function AdminTradingPage() {
               <Field label="Agent key (private key — optional)">
                 <input type="password" value={form.hl_agent_secret} onChange={e => setForm({ ...form, hl_agent_secret: e.target.value })} className={inputCls} placeholder="0x… leave blank for suggestion-only" />
               </Field>
-              <p className="text-[11px] text-parchment/45 -mt-1">
+              <p className="text-[11px] text-parchment/60 -mt-1">
                 Agent/API wallet key that can trade but <span className="text-parchment/70">cannot withdraw</span>. Generate it at Hyperliquid → More → API → Authorize. Leave blank to run suggestion-only (signals to Telegram, no execution). Stored encrypted.
               </p>
               <Field label="Telegram chat ID for alerts (optional)">
@@ -531,7 +531,7 @@ export default function AdminTradingPage() {
                     <input type="password" value={form.alpaca_secret} onChange={e => setForm({ ...form, alpaca_secret: e.target.value })} className={inputCls} />
                   </Field>
                 </div>
-                <p className="text-[11px] text-parchment/45 mt-2">
+                <p className="text-[11px] text-parchment/60 mt-2">
                   For live (real-money) Alpaca accounts: go to Alpaca dashboard → Manage accounts → Generate key. Keys are optional — you can use paper trading or skip connecting for now.
                 </p>
               </div>
@@ -563,7 +563,7 @@ export default function AdminTradingPage() {
         )}
 
         {mandates.length === 0 ? (
-          <div className="text-center py-12 text-parchment/45 text-sm">No mandates yet. Create one to start.</div>
+          <div className="text-center py-12 text-parchment/60 text-sm">No mandates yet. Create one to start.</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {mandates.map(m => (
@@ -575,7 +575,7 @@ export default function AdminTradingPage() {
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <div className="text-lg font-bold text-parchment">{m.name}</div>
-                    <div className="text-xs text-parchment/45 mt-0.5 flex items-center gap-2">
+                    <div className="text-xs text-parchment/60 mt-0.5 flex items-center gap-2">
                       {m.junto_name || 'no junto'}
                       <span className={`px-1.5 py-px rounded text-[10px] font-mono ${m.mode === 'live' ? 'bg-bear/20 text-bear' : 'bg-bull/20 text-bull'}`}>{m.mode}</span>
                     </div>
@@ -584,7 +584,7 @@ export default function AdminTradingPage() {
                     <span className={`text-xs px-2 py-0.5 rounded font-[var(--font-oswald)] uppercase tracking-wide ${
                       m.status === 'active' ? 'bg-bull/20 text-bull' :
                       m.status === 'paused' ? 'bg-brass/20 text-brass' :
-                      'bg-parchment/10 text-parchment/40'
+                      'bg-parchment/10 text-parchment/55'
                     }`}>{m.status}</span>
                     {m.status !== 'archived' && (
                       <button
@@ -645,7 +645,7 @@ const inputCls = 'w-full bg-ink border border-[rgb(var(--t-brass) / 0.28)] round
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="text-xs uppercase tracking-wider text-parchment/45 font-[var(--font-oswald)] block mb-1">{label}</span>
+      <span className="text-xs uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] block mb-1">{label}</span>
       {children}
     </label>
   );
@@ -664,13 +664,13 @@ function SummaryStat({
 }) {
   return (
     <div>
-      <div className="text-parchment/45 uppercase tracking-wider text-[10px] font-[var(--font-oswald)] mb-1">
+      <div className="text-parchment/60 uppercase tracking-wider text-[10px] font-[var(--font-oswald)] mb-1">
         {label}
       </div>
       <div className="font-mono text-base sm:text-lg leading-tight" style={{ color: accent || 'rgb(var(--t-parchment))' }}>
         {value}
       </div>
-      {sub && <div className="text-[10px] text-parchment/40 font-mono mt-0.5">{sub}</div>}
+      {sub && <div className="text-[10px] text-parchment/55 font-mono mt-0.5">{sub}</div>}
     </div>
   );
 }
@@ -678,7 +678,7 @@ function SummaryStat({
 function Stat({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
     <div>
-      <div className="text-parchment/30 uppercase tracking-wider text-[10px] font-[var(--font-oswald)]">{label}</div>
+      <div className="text-parchment/45 uppercase tracking-wider text-[10px] font-[var(--font-oswald)]">{label}</div>
       <div className="font-mono text-sm" style={{ color: accent || 'rgb(var(--t-parchment))' }}>{value}</div>
     </div>
   );

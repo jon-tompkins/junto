@@ -57,7 +57,7 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
     <div className="overflow-x-auto border border-parchment/10 rounded-lg">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left text-[10px] uppercase tracking-wider text-parchment/40 border-b border-parchment/10">
+          <tr className="text-left text-[10px] uppercase tracking-wider text-parchment/55 border-b border-parchment/10">
             <th className="py-3 pl-4 pr-2 font-medium">#</th>
             <th className="py-3 px-2 font-medium">Analyst</th>
             {COLUMNS.map((c) => (
@@ -82,7 +82,7 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
                 key={r.source_id}
                 className="border-b border-parchment/5 last:border-0 hover:bg-parchment/[0.03]"
               >
-                <td className="py-3 pl-4 pr-2 text-parchment/40 tabular-nums">{i + 1}</td>
+                <td className="py-3 pl-4 pr-2 text-parchment/55 tabular-nums">{i + 1}</td>
                 <td className="py-3 px-2">
                   <Link
                     href={`/sources/${encodeURIComponent(r.handle)}`}
@@ -105,7 +105,7 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
                         @{r.handle}
                       </span>
                       {r.display_name ? (
-                        <div className="text-[11px] text-parchment/40 truncate">{r.display_name}</div>
+                        <div className="text-[11px] text-parchment/55 truncate">{r.display_name}</div>
                       ) : null}
                     </div>
                   </Link>
@@ -116,21 +116,21 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
                       {Math.round(r.wilson_score * 100)}
                     </span>
                   ) : (
-                    <span className="text-parchment/30">—</span>
+                    <span className="text-parchment/45">—</span>
                   )}
                 </td>
                 <td className="py-3 px-2 text-right tabular-nums font-semibold text-brass">
                   {isRated ? (
                     pct(r.hit_rate)
                   ) : (
-                    <span className="text-parchment/30 font-normal">unrated</span>
+                    <span className="text-parchment/45 font-normal">unrated</span>
                   )}
                 </td>
                 <td className="py-3 px-2 text-right tabular-nums text-parchment/70">
                   {r.scored > 0 ? (
                     <>
                       {r.scored}
-                      <span className="text-parchment/30 text-[11px]"> ({r.wins}–{r.losses})</span>
+                      <span className="text-parchment/45 text-[11px]"> ({r.wins}–{r.losses})</span>
                     </>
                   ) : (
                     '—'
@@ -144,7 +144,7 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
                 <td className="py-3 px-2 text-right tabular-nums hidden sm:table-cell text-parchment/70">
                   {r.avg_conviction == null ? '—' : r.avg_conviction.toFixed(1)}
                 </td>
-                <td className="py-3 pl-2 pr-4 text-right tabular-nums text-parchment/40">
+                <td className="py-3 pl-2 pr-4 text-right tabular-nums text-parchment/55">
                   {r.total_positions}
                 </td>
               </tr>

@@ -86,7 +86,7 @@ export default function HistoryPage() {
   if (status === 'loading' || loading) {
     return (
       <main className="min-h-screen bg-ink text-parchment flex items-center justify-center">
-        <div className="animate-pulse text-parchment/45">Loading...</div>
+        <div className="animate-pulse text-parchment/60">Loading...</div>
       </main>
     );
   }
@@ -102,7 +102,7 @@ export default function HistoryPage() {
         {runs.length === 0 ? (
           <div className="text-center py-16 border border-dashed border-[rgb(var(--t-brass) / 0.28)] rounded">
             <p className="text-parchment/60 font-medium mb-2">No issues yet</p>
-            <p className="text-parchment/45 text-sm">Issues will appear here once dispatches start generating.</p>
+            <p className="text-parchment/60 text-sm">Issues will appear here once dispatches start generating.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -123,7 +123,7 @@ export default function HistoryPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-parchment/30">
+                    <p className="text-xs text-parchment/45">
                       {new Date(run.generated_at).toLocaleDateString('en-US', {
                         weekday: 'short',
                         month: 'short',
@@ -135,7 +135,7 @@ export default function HistoryPage() {
                     </p>
                   </div>
                   <svg
-                    className={`w-5 h-5 text-parchment/45 transition-transform shrink-0 ml-4 ${expandedId === run.id ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-parchment/60 transition-transform shrink-0 ml-4 ${expandedId === run.id ? 'rotate-180' : ''}`}
                     fill="none" viewBox="0 0 24 24" stroke="currentColor"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

@@ -69,7 +69,7 @@ export default async function TickerCoveragePage({
               <Link href={`/newsletter/${r.newsletter_id}/${r.id}`} className="block hover:bg-surface rounded px-2 -mx-2 py-1">
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="text-sm text-parchment/90 line-clamp-1">{r.subject || r.newsletter_name}</span>
-                  <span className="text-[11px] font-mono text-parchment/40 whitespace-nowrap">
+                  <span className="text-[11px] font-mono text-parchment/55 whitespace-nowrap">
                     {r.generated_at ? new Date(r.generated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
                   </span>
                 </div>

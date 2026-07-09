@@ -67,7 +67,7 @@ export default async function LeaderboardPage() {
           <LeaderboardTable rows={rows} />
         )}
 
-        <p className="text-[11px] text-parchment/30 mt-4">
+        <p className="text-[11px] text-parchment/45 mt-4">
           Calls are inferred from public posts and scored on price move after the stance closed or
           flipped. &ldquo;Calls&rdquo; is scored closed calls (wins&ndash;losses); hit rate is wins
           &divide; (wins + losses); &ldquo;unrated&rdquo; sources are tracked but have no closed call

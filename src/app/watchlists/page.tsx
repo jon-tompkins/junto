@@ -56,7 +56,7 @@ export default function WatchlistsPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-ink text-parchment flex items-center justify-center">
-        <div className="animate-pulse text-parchment/45">Loading...</div>
+        <div className="animate-pulse text-parchment/60">Loading...</div>
       </main>
     );
   }
@@ -70,7 +70,7 @@ export default function WatchlistsPage() {
         </div>
 
         <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5 mb-8">
-          <p className="text-xs text-parchment/45 uppercase tracking-wider font-[var(--font-oswald)] mb-2">New watchlist</p>
+          <p className="text-xs text-parchment/60 uppercase tracking-wider font-[var(--font-oswald)] mb-2">New watchlist</p>
           <div className="flex gap-2">
             <input
               type="text"
@@ -91,7 +91,7 @@ export default function WatchlistsPage() {
         </div>
 
         {watchlists.length === 0 ? (
-          <p className="text-sm text-parchment/45 text-center py-12">No watchlists yet.</p>
+          <p className="text-sm text-parchment/60 text-center py-12">No watchlists yet.</p>
         ) : (
           <div className="space-y-3">
             {watchlists.map((wl) => (
@@ -102,7 +102,7 @@ export default function WatchlistsPage() {
               >
                 <div className="flex items-start justify-between mb-2">
                   <h2 className="text-lg font-semibold text-parchment">{wl.name}</h2>
-                  <span className="text-xs text-parchment/45 shrink-0 ml-3">{wl.tickers.length} tickers</span>
+                  <span className="text-xs text-parchment/60 shrink-0 ml-3">{wl.tickers.length} tickers</span>
                 </div>
                 {wl.description && (
                   <p className="text-sm text-parchment/60 mb-3">{wl.description}</p>
@@ -115,7 +115,7 @@ export default function WatchlistsPage() {
                       </span>
                     ))}
                     {wl.tickers.length > 20 && (
-                      <span className="text-[11px] text-parchment/45">+{wl.tickers.length - 20} more</span>
+                      <span className="text-[11px] text-parchment/60">+{wl.tickers.length - 20} more</span>
                     )}
                   </div>
                 )}
