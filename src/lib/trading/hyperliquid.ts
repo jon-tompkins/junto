@@ -486,14 +486,29 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
       const worst = b ? newLevel * (1 + MARKET_SLIPPAGE) : newLevel * (1 - MARKET_SLIPPAGE);
       const p = formatPrice(worst, meta.szDecimals);
       const s = formatSize(patch.qty ?? Number(o.sz), meta.szDecimals);
-      const resp = await signAndSend<{ data: { statuses: HlOrderStatus[] } }>({
+      const resp = await signAndSend<{ data?: { statuses?: HlOrderStatus[] } }>({
         type: 'modify',
         oid: Number(id),
         order: { a: meta.index, b, p, s, r: true, t: { trigger: { isMarket: true, triggerPx, tpsl } } },
       });
-      const status = resp.data.statuses?.[0];
+      const status = resp?.data?.statuses?.[0];
       if (status?.error) throw new Error(`Hyperliquid modify rejected: ${status.error}`);
-      const newOid = status?.resting?.oid ?? status?.filled?.oid ?? Number(id);
+      let newOid = status?.resting?.oid ?? status?.filled?.oid;
+      if (newOid == null) {
+        // HL `modify` on a trigger order does not always surface a
+        // statuses/oid in the response (it can return without data.statuses),
+        // yet the modify still lands at the exchange. Do NOT throw on a
+        // successful modify — re-read open orders and pick up the live oid for
+        // this coin+tpsl (mirrors the submitOcoExit re-read fallback above).
+        // Without this, a successful stop/target move was reported as a broker
+        // rejection, the amendment marked 'rejected', and the DB left stale.
+        try {
+          const live = (await rawOpenOrders()).filter((x) => x.coin === o.coin && x.isTrigger && x.tpsl === tpsl);
+          newOid = live[0]?.oid ?? Number(id);
+        } catch {
+          newOid = Number(id);
+        }
+      }
       return {
         id: String(newOid),
         symbol: o.coin,
