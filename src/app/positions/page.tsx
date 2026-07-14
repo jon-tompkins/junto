@@ -59,6 +59,14 @@ export default function PositionsPage() {
   const [heatmapWidth, setHeatmapWidth] = useState(1000);
   const heatmapHeight = 720;
 
+  // The heatmap is a fixed-size grid that can't reflow below ~640px — ticker
+  // labels overlap into an unreadable mess on phones. Default small screens to
+  // the Table view (users can still toggle back). Runs post-mount to avoid an
+  // SSR hydration mismatch.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 640) setView('table');
+  }, []);
+
   useEffect(() => {
     if (!heatmapRef.current) return;
     const el = heatmapRef.current;
