@@ -76,9 +76,13 @@ export async function GET(req: NextRequest) {
         if (held.has(s.ticker)) return false;
         return s.conviction >= 3;
       });
-      const openNotional = positions.reduce((sum: number, p: any) => sum + (Number(p.market_value) || 0), 0);
+      // Scope to this mandate's own slice of a (possibly shared) account, same
+      // as the real tick — so isBookFull + the positions the LLM sees aren't
+      // polluted by a sibling mandate's book.
+      const ownPositions = positions.filter((p: any) => held.has(String(p.symbol).toUpperCase()));
+      const openNotional = ownPositions.reduce((sum: number, p: any) => sum + (Number(p.market_value) || 0), 0);
       const isBookFull = openNotional >= accountEquity * 0.82;
-      const decisions = await decideTrades({ mandate: mandate as any, signals: signals as any, positions, accountEquity, isBookFull, ownHeldTickers });
+      const decisions = await decideTrades({ mandate: mandate as any, signals: signals as any, positions: ownPositions, accountEquity, isBookFull, ownHeldTickers });
       decideFunnel = {
         accountEquity,
         accountHeldSymbols: heldSymbols,

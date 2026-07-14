@@ -158,12 +158,22 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     return result;
   }
 
+  // On a SHARED broker account (two Alpaca mandates on one login), `positions`
+  // is the WHOLE account's book. Scope to THIS mandate's own slice (its
+  // open/submitted trades) so book-capacity, concentration, and the positions
+  // shown to the decide LLM reflect only what this mandate holds. Otherwise a
+  // small-allocation mandate (e.g. Turnaround, $1k) sees a sibling's
+  // multi-thousand book, reads isBookFull=true, and the LLM declines every
+  // signal believing it's maxed out. Reused as the decide held-filter below.
+  const ownTickers = await getMandateOpenTickers(mandate.id);
+  const ownPositions = positions.filter((p: any) => ownTickers.has(String(p.symbol).toUpperCase()));
+
   // Book capacity check (short-term "no free capital" feature)
-  const openNotional = positions.reduce((sum: number, p: any) => sum + (Number(p.market_value) || 0), 0);
+  const openNotional = ownPositions.reduce((sum: number, p: any) => sum + (Number(p.market_value) || 0), 0);
   const isBookFull = openNotional >= accountEquity * 0.82; // ~82%+ deployed = full book
 
   // Portfolio concentration metrics (Phase 1)
-  const sortedByValue = [...positions].sort((a: any, b: any) =>
+  const sortedByValue = [...ownPositions].sort((a: any, b: any) =>
     (Number(b.market_value) || 0) - (Number(a.market_value) || 0)
   );
   const top3Notional = sortedByValue.slice(0, 3).reduce((sum: number, p: any) => sum + (Number(p.market_value) || 0), 0);
@@ -221,8 +231,8 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
       // the whole (possibly shared) broker account — otherwise a sibling
       // mandate's or an untracked orphan position silently blocks every signal
       // for that ticker (root cause of the July-3 trade-suggestion collapse).
-      const ownHeldTickers = await getMandateOpenTickers(mandate.id);
-      decisions = await decideTrades({ mandate, signals, positions, accountEquity, isBookFull, ownHeldTickers });
+      // ownPositions/ownTickers are the mandate's own slice of a shared account.
+      decisions = await decideTrades({ mandate, signals, positions: ownPositions, accountEquity, isBookFull, ownHeldTickers: ownTickers });
       result.decisions = decisions.length;
     } catch (err: any) {
       result.errors.push(`decide: ${err.message}`);
@@ -235,7 +245,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
 
   // Portfolio adjustment suggestions (reductions + idleness)
   try {
-    const adjustments = await suggestPortfolioAdjustments(mandate, positions, accountEquity);
+    const adjustments = await suggestPortfolioAdjustments(mandate, ownPositions, accountEquity);
     result.adjustments = adjustments.length;
   } catch (err: any) {
     result.errors.push(`adjustments: ${err.message}`);
