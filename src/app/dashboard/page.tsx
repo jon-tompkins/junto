@@ -1993,8 +1993,8 @@ export default function DashboardPage() {
               actionHref="/explore"
             />
           ) : (
-            <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-hidden">
-              <table className="w-full">
+            <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-x-auto">
+              <table className="w-full min-w-[420px]">
                 <thead>
                   <tr className="bg-surface border-b border-[rgb(var(--t-brass) / 0.28)]">
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)]">Dispatch</th>
