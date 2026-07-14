@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/db/client';
 import { loadJuntoSnapshot, extractSignals } from '@/lib/trading/extract';
+import { isWebhookJunto, loadWebhookSignals } from '@/lib/trading/extract-webhooks';
+import { isWalletJunto, loadWalletSignals } from '@/lib/trading/extract-wallets';
 import { decideTrades } from '@/lib/trading/decide';
 import { alpacaForMandate } from '@/lib/trading/client';
 import { getMandateOpenTickers } from '@/lib/trading/db';
@@ -32,10 +34,20 @@ export async function GET(req: NextRequest) {
     // processed-tweet dedup the real tick uses (reproduces exactly what the tick
     // sees). Default (no param) → raw funnel on all fresh tweets.
     const useDedup = req.nextUrl.searchParams.get('dedup') === '1';
-    const snapshot = useDedup
-      ? await loadJuntoSnapshot(mandate.junto_id, mandateId)
-      : await loadJuntoSnapshot(mandate.junto_id);
-    const signals = await extractSignals(mandate, snapshot);
+    // Load signals via the SAME path the real tick uses for this junto type —
+    // webhook/wallet juntos don't come from tweets, so the tweet path shows 0.
+    let signals: any[];
+    let snapshot: any = { tweetCount: 0, contentBlock: '' };
+    if (await isWebhookJunto(mandate.junto_id)) {
+      signals = (await loadWebhookSignals(mandate)).signals;
+    } else if (await isWalletJunto(mandate.junto_id)) {
+      signals = (await loadWalletSignals(mandate)).signals;
+    } else {
+      snapshot = useDedup
+        ? await loadJuntoSnapshot(mandate.junto_id, mandateId)
+        : await loadJuntoSnapshot(mandate.junto_id);
+      signals = await extractSignals(mandate, snapshot);
+    }
 
     const byDirection: Record<string, number> = {};
     const byConviction: Record<string, number> = {};
@@ -82,7 +94,8 @@ export async function GET(req: NextRequest) {
       const ownPositions = positions.filter((p: any) => held.has(String(p.symbol).toUpperCase()));
       const openNotional = ownPositions.reduce((sum: number, p: any) => sum + (Number(p.market_value) || 0), 0);
       const isBookFull = openNotional >= accountEquity * 0.82;
-      const decisions = await decideTrades({ mandate: mandate as any, signals: signals as any, positions: ownPositions, accountEquity, isBookFull, ownHeldTickers });
+      let rawDecideText = '';
+      const decisions = await decideTrades({ mandate: mandate as any, signals: signals as any, positions: ownPositions, accountEquity, isBookFull, ownHeldTickers, onRaw: (t) => { rawDecideText = t; } });
       decideFunnel = {
         accountEquity,
         accountHeldSymbols: heldSymbols,
@@ -91,6 +104,7 @@ export async function GET(req: NextRequest) {
         candidatesToLLM: preFiltered.length,
         candidateTickers: preFiltered.map((s) => `${s.ticker}(${s.conviction})`),
         decisionsFromLLM: decisions.length,
+        decideLLMRaw: rawDecideText.slice(0, 1500),
         decisions: decisions.map((d: any) => ({ ticker: d.ticker, side: d.side, notional: d.notional_usd, conviction: d.conviction, urls: d.source_urls?.length || 0 })),
       };
     }

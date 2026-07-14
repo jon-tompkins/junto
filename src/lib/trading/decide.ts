@@ -12,6 +12,9 @@ export interface DecisionContext {
   positions: AlpacaPosition[];
   accountEquity: number;
   isBookFull?: boolean;
+  // Diagnostic only: receives the raw decision-LLM text before parsing. Used by
+  // tick-debug to surface WHY decide returned an empty list. No behaviour change.
+  onRaw?: (text: string) => void;
   // The tickers THIS mandate already holds (its own open/submitted trades).
   // On a shared broker account, `positions` is the whole account's book — using
   // it for the no-double-entry filter blocks a mandate from trading names that
@@ -120,6 +123,12 @@ Return JSON.`;
     output_tokens: outputTokens,
     metadata: { mandate_id: mandate.id, model: SONNET_MODEL },
   });
+
+  const rawText = res.content
+    .filter((b) => b.type === 'text')
+    .map((b: any) => b.text)
+    .join('');
+  ctx.onRaw?.(rawText);
 
   const text = res.content
     .filter((b) => b.type === 'text')
