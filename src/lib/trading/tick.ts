@@ -10,6 +10,7 @@ import {
   createPendingAmendment,
   getPendingAmendmentsForTrade,
   getMandateOpenTickers,
+  mandateHasAmendmentToday,
   markTweetsProcessed,
 } from './db';
 import { loadJuntoSnapshot, extractSignals } from './extract';
@@ -381,7 +382,13 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
         positions,
       });
 
-      if (window === 'midday') {
+      // The daily position review is meant to run ONCE/day. The HL cron fires
+      // the midday window every hour, which re-ran the review hourly and
+      // re-proposed the same stop move each time (duplicate amendment cards).
+      // Only run it if this mandate hasn't already had an amendment proposed
+      // today — after the first proposal (whether the user applies or skips it),
+      // no fresh review amendments stack on the same position that day.
+      if (window === 'midday' && !(await mandateHasAmendmentToday(openTrades.map((t) => t.id)))) {
         try {
           const reviewAmendments = await reviewPositions({ mandate, openTrades, positions });
           result.position_review_suggested = reviewAmendments.length;

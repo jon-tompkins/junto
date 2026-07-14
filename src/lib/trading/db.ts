@@ -322,6 +322,23 @@ export async function getPendingAmendmentsForTrade(tradeId: string): Promise<Ame
   return (data || []) as AmendmentRow[];
 }
 
+// True if any amendment (any status/kind) was already created today (UTC) for
+// one of the given trades. Gates the once-a-day position review so it doesn't
+// re-run — and re-propose the same stop move — every time the HL cron fires the
+// midday window hourly (duplicate amendment cards).
+export async function mandateHasAmendmentToday(tradeIds: string[]): Promise<boolean> {
+  if (tradeIds.length === 0) return false;
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const { data } = await getSupabase()
+    .from('trade_amendments')
+    .select('id')
+    .in('trade_id', tradeIds)
+    .gte('created_at', startOfDay.toISOString())
+    .limit(1);
+  return (data || []).length > 0;
+}
+
 export async function getProcessedTweetIds(
   mandateId: string,
   twitterIds: string[],
