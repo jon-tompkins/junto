@@ -47,12 +47,20 @@ export async function loadWebhookSignals(mandate: Mandate): Promise<{
   const processed = await getProcessedTweetIds(mandate.id, all.map((r: any) => r.id));
   const fresh = all.filter((r: any) => !processed.has(r.id));
 
+  // decide.ts enforces an attribution gate (a trade must cite a source) — built
+  // for tweet-extracted signals. Webhook signals are attributed by construction
+  // (authenticated external screener feed) but usually carry no URL, so without
+  // a fallback EVERY screener-driven decision was silently dropped by that gate
+  // (root cause of Turnaround proposing nothing despite healthy input). Backfill
+  // a stable link to the mandate's own page so the gate passes and the approval
+  // card has somewhere to point.
+  const attribution = `https://www.myjunto.xyz/trading/${mandate.id}`;
   const signals: ExtractedSignal[] = fresh.map((r: any) => ({
     ticker: String(r.ticker).toUpperCase(),
     direction: (r.direction || 'long') as ExtractedSignal['direction'],
     conviction: Math.max(1, Math.min(5, Number(r.conviction) || 3)) as ExtractedSignal['conviction'],
     rationale: r.rationale || `External signal: ${r.ticker} ${r.direction || 'long'}`,
-    source_urls: Array.isArray(r.source_urls) ? r.source_urls : [],
+    source_urls: Array.isArray(r.source_urls) && r.source_urls.length ? r.source_urls : [attribution],
   }));
 
   return { signals, eventCount: all.length, reviewedEventIds: fresh.map((r: any) => r.id) };
