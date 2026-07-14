@@ -1314,14 +1314,14 @@ export default function DashboardPage() {
         )}
 
         {/* Header */}
-        <div className="flex items-start justify-between mb-10">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-10">
           <div>
             <h1 className="text-3xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">Dashboard</h1>
             <p className="text-parchment/60">
               Welcome back{session?.user?.name ? `, ${session.user.name}` : ''}.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {creditBalance !== null && (
               <Link
                 href="/settings"
