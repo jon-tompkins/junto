@@ -3,6 +3,7 @@ import { getUserTelegramChatId } from '@/lib/telegram/link';
 import { sendMandateCard } from '@/lib/telegram/mandate-card';
 import { getMandateById, getTradeById, updateTrade, addJournalEntry, updateSignalForTrade, claimTradeForSubmit } from './db';
 import { alpacaForMandate } from './client';
+import { monitorMandate } from './monitor';
 import type { TradeDecision } from './types';
 
 export async function requestApproval(params: {
@@ -195,18 +196,25 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
     if (proposalPrice && proposalPrice > 0) {
       const livePrice = await alpaca.getLastTrade(trade.ticker).catch(() => null);
       if (livePrice && livePrice > 0) {
-        const drift = Math.abs(livePrice - proposalPrice) / proposalPrice;
-        if (drift > 0.01) {
+        // Only an ADVERSE move should block an entry the user explicitly
+        // approved: for a long, price UP means paying more; for a short, price
+        // DOWN. A favorable move never blocks. Threshold widened 1% -> 3% — 1%
+        // was only ~3¢ on a $3 stock, so normal spread was cancelling legit
+        // fills (e.g. GLOO blocked at 1.05%).
+        const adverse = trade.side === 'long'
+          ? (livePrice - proposalPrice) / proposalPrice
+          : (proposalPrice - livePrice) / proposalPrice;
+        if (adverse > 0.03) {
           await updateTrade(tradeId, { status: 'cancelled' });
           await addJournalEntry({
             tradeId,
             kind: 'entry',
-            content: `[blocked: price moved ${(drift * 100).toFixed(2)}% from proposal ($${proposalPrice.toFixed(2)} → $${livePrice.toFixed(2)}), >1% slippage limit]`,
+            content: `[blocked: price moved ${(adverse * 100).toFixed(2)}% against you from proposal ($${proposalPrice.toFixed(2)} → $${livePrice.toFixed(2)}), >3% slippage limit]`,
           });
           return {
             ok: false,
             slippageBlocked: true,
-            message: `⚠️ Blocked ${trade.ticker} — price moved ${(drift * 100).toFixed(2)}% (proposal $${proposalPrice.toFixed(2)} → now $${livePrice.toFixed(2)}). Re-propose if you still want in.`,
+            message: `⚠️ Blocked ${trade.ticker} — price moved ${(adverse * 100).toFixed(2)}% against you (proposal $${proposalPrice.toFixed(2)} → now $${livePrice.toFixed(2)}). Re-propose if you still want in.`,
           };
         }
       }
@@ -289,6 +297,26 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
       } catch (e: any) {
         await addJournalEntry({ tradeId, kind: 'daily', content: `[inline protection failed: ${String(e?.message).slice(0, 150)} — protect tick will retry]` });
       }
+    }
+
+    // Alpaca: confirm the fill inline. Market orders on liquid names fill in
+    // <1s, so poll briefly then run the monitor to promote submitted -> open and
+    // attach GTC OCO protection immediately — instead of leaving the trade
+    // looking stuck in 'submitted' until the */15 reconcile cron (the lag that
+    // made approved trades feel like they "never went through"). Best-effort:
+    // the scheduled reconcile stays as the backstop if the fill is slow.
+    if (mandate.broker !== 'hyperliquid') {
+      try {
+        for (let i = 0; i < 4; i++) {
+          await new Promise((r) => setTimeout(r, 1200));
+          const o = await alpaca.getOrder(order.id).catch(() => null);
+          if (o && (o.status === 'filled' || (o.filled_avg_price && Number(o.filled_avg_price) > 0))) break;
+        }
+        const mres = await monitorMandate(mandate);
+        if (mres.opened > 0) {
+          return { ok: true, message: `✅ Filled ${trade.ticker} — position open, stop+target attached.` };
+        }
+      } catch { /* scheduled reconcile is the backstop */ }
     }
 
     return { ok: true, message: `📤 Submitted ${trade.ticker} — awaiting fill confirmation.${protectedNote}` };
