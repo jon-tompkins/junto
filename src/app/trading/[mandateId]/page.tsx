@@ -157,6 +157,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const [signals, setSignals] = useState<Signal[]>([]);
   const [ticks, setTicks] = useState<TickRun[]>([]);
   const [loading, setLoading] = useState(true);
+  const [plPct, setPlPct] = useState(false); // header P/L stats: false = $, true = % of cost basis
   const [editing, setEditing] = useState(false);
   const [draftGuidelines, setDraftGuidelines] = useState('');
   const [saving, setSaving] = useState(false);
@@ -496,6 +497,17 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const totalUnrealized = Object.values(positions).reduce((sum, p) => sum + (p.unrealized_pl || 0), 0);
   const totalDayPl = openRows.reduce((sum, { pos, trade }) => sum + (dayPlFor(pos, trade?.entry_at) ?? 0), 0);
   const realizedTotal = closedTrades.reduce((sum, t) => sum + (Number(t.realized_pnl_usd) || 0), 0);
+  // Cost bases for the $/% P/L toggle. Open = qty×avg entry of live positions;
+  // closed = qty×entry of closed trades. Used only as the % denominator.
+  const openCostBasis = Object.values(positions).reduce((s, p) => s + Math.abs((p.qty || 0) * (p.avg_entry_price || 0)), 0);
+  const closedCostBasis = closedTrades.reduce((s, t) => s + Math.abs((Number(t.qty) || 0) * (Number(t.entry_price) || 0)), 0);
+  // Render a P/L stat as $ or as % of the given cost basis, honoring the header toggle.
+  const plStat = (usd: number, basis: number): string => {
+    if (!plPct) return fmtUsd(usd);
+    if (!basis) return '—';
+    const pct = (usd / basis) * 100;
+    return `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+  };
   const positionEquity = Object.values(positions).reduce((sum, p) => sum + ((p.qty || 0) * (p.current_price || 0)), 0);
   const cashPct = account.equity && account.equity > 0 && account.cash != null
     ? (account.cash / account.equity) * 100
@@ -559,8 +571,16 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
 
         <div className="bg-surface border border-brass/28 rounded p-4 sm:p-5 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <div className="text-[10px] uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)]">
-              Live snapshot
+            <div className="flex items-center gap-2">
+              <div className="text-[10px] uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)]">
+                Live snapshot
+              </div>
+              <button
+                type="button"
+                onClick={() => setPlPct(v => !v)}
+                title="Toggle P/L stats between dollars and percent of cost basis"
+                className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-brass/28 text-parchment/60 hover:text-parchment transition"
+              >{plPct ? '%' : '$'}</button>
             </div>
             <div className="flex items-center gap-1.5 text-[10px] text-parchment/60 font-mono">
               <span
@@ -593,17 +613,17 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             />
             <SnapStat
               label="Unrealized"
-              value={fmtUsd(totalUnrealized)}
+              value={plStat(totalUnrealized, openCostBasis)}
               accent={plColor(totalUnrealized)}
             />
             <SnapStat
               label="Realized"
-              value={fmtUsd(realizedTotal)}
+              value={plStat(realizedTotal, closedCostBasis)}
               accent={plColor(realizedTotal)}
             />
             <SnapStat
               label="Total P/L"
-              value={fmtUsd(totalUnrealized + realizedTotal)}
+              value={plStat(totalUnrealized + realizedTotal, openCostBasis + closedCostBasis)}
               accent={plColor(totalUnrealized + realizedTotal)}
             />
           </div>
@@ -1258,6 +1278,7 @@ function OpenPositionsTable({ rows, agreement, perfRefs }: { rows: OpenRow[]; ag
   const [sortKey, setSortKey] = useState<OpenSortKey | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [tf, setTf] = useState<PerfTf>('24h');
+  const [unrealPct, setUnrealPct] = useState(false); // Unrealized column: false = $, true = % of cost basis
 
   const clickSort = (k: OpenSortKey) => {
     if (sortKey === k) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
@@ -1300,7 +1321,18 @@ function OpenPositionsTable({ rows, agreement, perfRefs }: { rows: OpenRow[]; ag
   return (
     <>
     <div className="flex items-center justify-end gap-1 mb-2">
-      <span className="text-[10px] uppercase tracking-wider text-parchment/45 mr-1">Return</span>
+      <span className="text-[10px] uppercase tracking-wider text-parchment/45 mr-1">Unreal</span>
+      {(['$', '%'] as const).map(m => (
+        <button
+          key={m}
+          type="button"
+          onClick={() => setUnrealPct(m === '%')}
+          className={`text-[11px] px-2 py-0.5 rounded border transition ${(unrealPct ? '%' : '$') === m ? 'border-brass text-brass bg-brass/10' : 'border-brass/20 text-parchment/60 hover:text-parchment/70'}`}
+        >
+          {m}
+        </button>
+      ))}
+      <span className="text-[10px] uppercase tracking-wider text-parchment/45 mr-1 ml-3">Return</span>
       {(['24h', '1W', '1Y'] as PerfTf[]).map(t => (
         <button
           key={t}
@@ -1384,7 +1416,13 @@ function OpenPositionsTable({ rows, agreement, perfRefs }: { rows: OpenRow[]; ag
                 {fmtUsd(dayPl)}
               </td>
               <td className="py-2 pr-4 text-right font-mono" style={{ color: plColor(unrealized) }}>
-                {fmtUsd(unrealized)}
+                {(() => {
+                  if (!unrealPct) return fmtUsd(unrealized);
+                  const basis = qty != null && entry ? Math.abs(qty * Number(entry)) : null;
+                  if (!basis) return '—';
+                  const pct = (unrealized / basis) * 100;
+                  return `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+                })()}
               </td>
               <td className="py-2 pr-4 text-xs" style={{ color: statusBadge.color }}>{statusBadge.label}</td>
             </tr>
