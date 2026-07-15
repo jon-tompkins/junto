@@ -334,7 +334,7 @@ export default function SettingsPage() {
             </div>
             {isPro ? (
               <a
-                href="/pricing"
+                href="/api/v2/billing/portal"
                 className="text-xs text-parchment/50 hover:text-parchment/80 underline transition"
               >
                 Manage subscription →
