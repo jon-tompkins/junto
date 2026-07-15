@@ -143,14 +143,14 @@ export default function ThesesDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-0 mb-8" style={{ borderBottom: '1px solid rgb(var(--t-brass) / 0.28)' }}>
+        <div className="flex flex-nowrap gap-0 mb-8 overflow-x-auto" style={{ borderBottom: '1px solid rgb(var(--t-brass) / 0.28)' }}>
           {STATUS_TABS.map((t) => {
             const active = activeTab === t.key;
             return (
               <button
                 key={t.key}
                 onClick={() => setActiveTab(t.key)}
-                className="px-4 py-3 text-xs font-medium uppercase tracking-wider transition"
+                className="shrink-0 whitespace-nowrap px-4 py-3 text-xs font-medium uppercase tracking-wider transition"
                 style={{
                   fontFamily: 'var(--font-oswald), sans-serif',
                   color: active ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.45)',
@@ -184,8 +184,8 @@ export default function ThesesDashboard() {
             </Link>
           </div>
         ) : (
-          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-hidden">
-            <table className="w-full">
+          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-x-auto">
+            <table className="w-full min-w-[560px]">
               <thead>
                 <tr className="bg-surface border-b border-[rgb(var(--t-brass) / 0.28)]">
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)]">Title</th>
