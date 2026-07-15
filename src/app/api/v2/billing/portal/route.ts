@@ -36,7 +36,9 @@ export async function GET(req: NextRequest) {
 
     const user = await resolveUser(session);
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    if (!user.stripe_customer_id) return NextResponse.json({ error: 'No active subscription' }, { status: 400 });
+    // Comped/manual plans (e.g. granted Operator) have no Stripe customer — there's
+    // no portal to open. Fall back to pricing instead of dead-ending on a 400.
+    if (!user.stripe_customer_id) return NextResponse.redirect(`${req.nextUrl.origin}/pricing`);
 
     const stripe = getStripe();
     const portalSession = await stripe.billingPortal.sessions.create({
