@@ -1413,6 +1413,8 @@ function TradeTable({
   }>;
   showLive?: boolean;
 }) {
+  // PnL column can be shown as absolute USD or as % of cost basis. Click the header to toggle.
+  const [pnlMode, setPnlMode] = useState<'usd' | 'pct'>('usd');
   return (
     <table className="w-full text-sm min-w-[720px]">
       <thead className="text-left text-xs uppercase text-parchment/45 border-b border-brass/28 font-[var(--font-oswald)]">
@@ -1421,18 +1423,30 @@ function TradeTable({
           <th className="py-2 pr-4">Side</th>
           <th className="py-2 pr-4 text-right">Qty</th>
           <th className="py-2 pr-4 text-right">Entry</th>
+          <th className="py-2 pr-4 text-right" title="Cost basis at entry (qty × entry price)">Mkt Value</th>
           {showLive && <th className="py-2 pr-4 text-right">Last</th>}
           <th className="py-2 pr-4 text-right">Stop</th>
           <th className="py-2 pr-4 text-right">Target</th>
           <th className="py-2 pr-4 text-right">Exit</th>
           {showLive && <th className="py-2 pr-4 text-right">Unrealized</th>}
-          <th className="py-2 pr-4 text-right">PnL</th>
+          <th className="py-2 pr-4 text-right">
+            <button
+              type="button"
+              onClick={() => setPnlMode(m => (m === 'usd' ? 'pct' : 'usd'))}
+              className="uppercase hover:text-parchment/80 transition cursor-pointer"
+              title="Toggle between dollar and percent P/L"
+            >
+              PnL <span className="text-parchment/35">({pnlMode === 'usd' ? '$' : '%'})</span>
+            </button>
+          </th>
           <th className="py-2 pr-4">Status</th>
         </tr>
       </thead>
       <tbody>
         {trades.map(t => {
           const pos = positions[t.ticker?.toUpperCase()];
+          const costBasis = t.entry_price != null ? Math.abs(t.qty * t.entry_price) : null;
+          const pnlPct = t.realized_pnl_usd != null && costBasis ? (t.realized_pnl_usd / costBasis) * 100 : null;
           return (
             <tr key={t.id} className="border-b border-brass/18 last:border-0">
               <td className="py-2 pr-4">
@@ -1441,6 +1455,7 @@ function TradeTable({
               <td className="py-2 pr-4 text-parchment/60">{t.side}</td>
               <td className="py-2 pr-4 text-right font-mono text-parchment/70">{t.qty}</td>
               <td className="py-2 pr-4 text-right font-mono text-parchment/70">{t.entry_price ? `$${t.entry_price.toFixed(2)}` : '—'}</td>
+              <td className="py-2 pr-4 text-right font-mono text-parchment/70">{costBasis != null ? fmtUsd(costBasis) : '—'}</td>
               {showLive && (
                 <td className="py-2 pr-4 text-right font-mono text-parchment">
                   {pos ? `$${pos.current_price.toFixed(2)}` : '—'}
@@ -1474,7 +1489,9 @@ function TradeTable({
                 </td>
               )}
               <td className="py-2 pr-4 text-right font-mono" style={{ color: plColor(t.realized_pnl_usd) }}>
-                {fmtUsd(t.realized_pnl_usd)}
+                {pnlMode === 'pct'
+                  ? (pnlPct != null ? `${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%` : '—')
+                  : fmtUsd(t.realized_pnl_usd)}
               </td>
               <td className="py-2 pr-4 text-xs text-parchment/60">{t.status}</td>
             </tr>
