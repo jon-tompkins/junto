@@ -54,6 +54,7 @@ export default function PositionsPage() {
   const [includeStale, setIncludeStale] = useState(false);
   const [showClosed, setShowClosed] = useState(false);
   const [search, setSearch] = useState('');
+  const [tableLimit, setTableLimit] = useState(50);
 
   const heatmapRef = useRef<HTMLDivElement>(null);
   const [heatmapWidth, setHeatmapWidth] = useState(1000);
@@ -128,6 +129,11 @@ export default function PositionsPage() {
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
   }, [juntoId]);
+
+  // Reset the table pagination window when the result set changes.
+  useEffect(() => {
+    setTableLimit(50);
+  }, [filter, categories, includeStale, search, juntoId, sortCol, sortDir]);
 
   function handleSort(col: SortCol) {
     if (sortCol === col) {
@@ -475,7 +481,7 @@ export default function PositionsPage() {
                 </tr>
               </thead>
               <tbody>
-                {tableItems.map((item) => {
+                {tableItems.slice(0, tableLimit).map((item) => {
                   const bg = STANCE_BG[item.stance] ?? '#4b5563';
                   const shownCount = effectiveCount(item);
                   const visibleSources = includeStale ? item.sources : item.sources.filter((s) => !s.is_stale);
@@ -574,6 +580,19 @@ export default function PositionsPage() {
                 })}
               </tbody>
             </table>
+            {tableItems.length > tableLimit && (
+              <div className="flex items-center justify-center gap-3 px-5 py-4 border-t border-[rgb(var(--t-brass) / 0.1)]">
+                <span className="text-xs text-parchment/45 tabular-nums">
+                  Showing {tableLimit} of {tableItems.length}
+                </span>
+                <button
+                  onClick={() => setTableLimit((n) => n + 100)}
+                  className="px-3 py-1.5 rounded text-xs uppercase tracking-wider text-brass border border-[rgb(var(--t-brass) / 0.3)] hover:bg-[rgb(var(--t-brass) / 0.08)] transition font-[var(--font-oswald)]"
+                >
+                  Load more
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
