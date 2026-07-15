@@ -62,3 +62,17 @@ Sources are the highest-leverage lever here — the scope filter only works if t
 2. Create 2 newsletters_v2 rows (public), attach source rosters, set secondary_prompt scope, pin watchlists.
 3. Ship Path B watch_terms + uprank + entity tagging.
 4. Run daily for a week, prune sources, tune scope. Add entity discovery pages.
+
+---
+
+## BUILT — Crypto VC Radar (live, Jul 15 2026)
+Reframed as a **fundraising radar for founders** (not a trader brief): which funds are active, what's getting funded, live partner theses, fresh dry powder. Forward-looking partner intent > closed rounds.
+
+- newsletter_id: `662e93de-7cf6-4250-b910-e4506f12fb73` (public, daily, mon–fri morning)
+- First run: `/newsletter/662e93de-7cf6-4250-b910-e4506f12fb73/d34d27ca-f9e7-4df1-acfb-5c0cc767c33a`
+- Config: custom founder-facing system `prompt` + `secondary_prompt` scope (IN funding/funds/theses, OUT price/TA/macro) + `keywords[]` (a16z, Paradigm, Series A, dry powder, …).
+- Sources: 8 content-rich seed (cburniske, tier10k, lookonchain, pmarca, santiagoaufund, balajis, raoulgmi, cz_binance) + 10 marquee deal-flow added as `is_tracked` (a16zcrypto, paradigm, cdixon, cryptorank_io, DefiLlama, alliancedao, qwqiao, MessariCrypto, jmonegro, arjunblj) — these had no content in the 48h window yet, so they sharpen future runs as the pull pipeline catches them.
+
+### Two known gaps to close (both flagged to Jon)
+1. **Output format is hardcoded**, not template-driven. `generator-v2.ts` (~line 263) appends a "mandatory — no deviations" trader format (Signal / What's Moving / Crosscurrents / Tradecraft / Desk Notes). A founder-native format (Thesis Watch / Who's Deploying / What's Getting Funded / Notable Rounds / New Dry Powder) needs a small change: drive the OUTPUT FORMAT block from `prompt_template_id`/newsletter instead of the constant. The current format tolerates "theme" (not just $TICKER) so it's serviceable meanwhile.
+2. **Run #1 was investor-thesis flavored, not deal-flow**, because only the macro/investor seed sources had fresh content. Fix = let the tracked deal-flow sources accumulate a pull cycle (or trigger a content pull for them), then regenerate.
