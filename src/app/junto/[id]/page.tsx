@@ -5,11 +5,16 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 import { PositionsHeatmap, HeatmapPosition } from '@/components/positions-heatmap';
+import { PortfolioView, PortfolioPosition } from '@/components/portfolio-view';
 import { JuntoChat } from '@/components/junto-chat';
 
 interface PositionEntry {
   stance: 'bullish' | 'bearish' | 'neutral' | 'cautious';
   since: string;
+  last_mentioned?: string;
+  conviction?: number;
+  asset_class?: 'equity' | 'crypto' | 'sector';
+  entry_price?: number;
   note?: string;
   target_price?: number;
 }
@@ -128,42 +133,52 @@ interface Dispatch {
   subscriber_count: number;
 }
 
-interface PortfolioRow {
-  ticker: string;
-  total: number;
-  dominant: string;
-  pct: number;
-  isMixed: boolean;
-}
-
-function buildPortfolioRows(items: HeatmapPosition[]): PortfolioRow[] {
-  const map = new Map<string, Record<string, number>>();
-  for (const item of items) {
-    const existing = map.get(item.ticker) || {};
-    existing[item.stance] = (existing[item.stance] ?? 0) + item.count;
-    map.set(item.ticker, existing);
+// Build a junto-level consensus book from the raw per-source positions: one row
+// per ticker with the dominant stance, average conviction, majority asset class,
+// earliest entry (→ held-days), and avg entry price (→ return vs live quote).
+// Feeds the shared PortfolioView so the junto gets the same filters + columns as
+// the source page.
+function buildConsensus(
+  sources: JuntoSourceWithProfile[],
+  quotes: Record<string, { price?: number | null }>,
+): PortfolioPosition[] {
+  const map = new Map<string, {
+    stances: Record<string, number>;
+    convs: number[];
+    classes: Record<string, number>;
+    sinces: string[];
+    entries: number[];
+  }>();
+  for (const js of sources) {
+    const positions = js.source?.profile?.positions || {};
+    for (const [ticker, pos] of Object.entries(positions)) {
+      const e = map.get(ticker) || { stances: {}, convs: [], classes: {}, sinces: [], entries: [] };
+      e.stances[pos.stance] = (e.stances[pos.stance] ?? 0) + 1;
+      if (typeof pos.conviction === 'number') e.convs.push(pos.conviction);
+      if (pos.asset_class) e.classes[pos.asset_class] = (e.classes[pos.asset_class] ?? 0) + 1;
+      if (pos.since) e.sinces.push(pos.since);
+      if (typeof pos.entry_price === 'number') e.entries.push(pos.entry_price);
+      map.set(ticker, e);
+    }
   }
-
-  const grandTotal = items.reduce((sum, i) => sum + i.count, 0);
-
-  const rows: PortfolioRow[] = Array.from(map.entries()).map(([ticker, stances]) => {
-    const total = Object.values(stances).reduce((s, n) => s + n, 0);
-    const dominant = Object.entries(stances).sort(([, a], [, b]) => b - a)[0]?.[0] ?? 'neutral';
-    const topCount = stances[dominant] ?? 0;
-    const isMixed = total > 0 && topCount / total < 0.6;
-    return {
-      ticker,
-      total,
-      dominant,
-      pct: grandTotal > 0 ? (total / grandTotal) * 100 : 0,
-      isMixed,
-    };
-  });
-
-  return rows.sort((a, b) => b.total - a.total);
+  const mode = (r: Record<string, number>) => Object.entries(r).sort(([, a], [, b]) => b - a)[0]?.[0];
+  const rows: PortfolioPosition[] = [];
+  for (const [ticker, e] of map.entries()) {
+    const stance = mode(e.stances) ?? 'neutral';
+    const conviction = e.convs.length ? Math.round(e.convs.reduce((s, n) => s + n, 0) / e.convs.length) : undefined;
+    const asset_class = mode(e.classes) as PortfolioPosition['asset_class'];
+    const earliest = e.sinces.length ? e.sinces.reduce((a, b) => (a < b ? a : b)) : null;
+    const heldDays = earliest ? Math.floor((Date.now() - new Date(earliest).getTime()) / 86400000) : undefined;
+    const avgEntry = e.entries.length ? e.entries.reduce((s, n) => s + n, 0) / e.entries.length : null;
+    const price = quotes[ticker]?.price;
+    const sign = stance === 'bearish' ? -1 : 1;
+    const returnPct = price != null && avgEntry ? ((price - avgEntry) / avgEntry) * 100 * sign : null;
+    rows.push({ ticker, stance, conviction, asset_class, heldDays, returnPct });
+  }
+  return rows;
 }
 
-function PositionsSection({ items }: { items: HeatmapPosition[] }) {
+function PositionsSection({ items, consensus }: { items: HeatmapPosition[]; consensus: PortfolioPosition[] }) {
   const [view, setView] = useState<'heatmap' | 'list' | 'portfolio'>('heatmap');
 
   const TAB_LABELS: Record<'heatmap' | 'list' | 'portfolio', string> = {
@@ -171,8 +186,6 @@ function PositionsSection({ items }: { items: HeatmapPosition[] }) {
     list: '≡ List',
     portfolio: '⊙ Portfolio',
   };
-
-  const portfolioRows = view === 'portfolio' ? buildPortfolioRows(items) : [];
 
   return (
     <section className="mb-10">
@@ -235,58 +248,7 @@ function PositionsSection({ items }: { items: HeatmapPosition[] }) {
           </table>
         </div>
       ) : (
-        <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-hidden">
-          {portfolioRows.map((row) => {
-            const bg = STANCE_BG[row.dominant] ?? '#4b5563';
-            return (
-              <div
-                key={row.ticker}
-                className="flex items-center gap-4 px-4 py-3 border-b border-[rgb(var(--t-brass) / 0.1)] last:border-0"
-              >
-                {/* Ticker */}
-                <Link
-                  href={`/positions/${encodeURIComponent(row.ticker)}`}
-                  className="font-mono font-bold text-sm hover:text-brass transition w-20 shrink-0"
-                >
-                  {row.ticker}
-                </Link>
-
-                {/* Dominant stance badge */}
-                <div className="w-24 shrink-0">
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-sm font-semibold uppercase tracking-wide ${STANCE_BADGE[row.dominant] ?? ''}`}
-                  >
-                    {row.isMixed ? 'Mixed' : (STANCE_LABEL[row.dominant] ?? row.dominant)}
-                  </span>
-                </div>
-
-                {/* Bar track */}
-                <div className="flex-1 min-w-0">
-                  <div className="h-2 rounded-full bg-raised overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${row.pct}%`,
-                        background: row.isMixed ? 'rgb(var(--t-brass))' : bg,
-                        opacity: 0.75,
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Percentage */}
-                <span className="text-xs text-parchment/60 w-12 text-right shrink-0">
-                  {row.pct.toFixed(1)}%
-                </span>
-
-                {/* Source count */}
-                <span className="text-xs text-parchment/45 w-16 text-right shrink-0">
-                  {row.total} {row.total === 1 ? 'source' : 'sources'}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+        <PortfolioView positions={consensus} />
       )}
     </section>
   );
@@ -298,6 +260,7 @@ export default function JuntoViewPage() {
   const [junto, setJunto] = useState<JuntoData | null>(null);
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
   const [positions, setPositions] = useState<HeatmapPosition[]>([]);
+  const [quotes, setQuotes] = useState<Record<string, { price?: number | null }>>({});
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
@@ -319,6 +282,28 @@ export default function JuntoViewPage() {
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [id]);
+
+  // Fetch live quotes for the junto's consensus tickers so the portfolio view can
+  // show return-since-entry. Best-effort; missing quotes just render as "—".
+  useEffect(() => {
+    const tickers = new Set<string>();
+    for (const js of junto?.junto_sources || []) {
+      for (const t of Object.keys(js.source?.profile?.positions || {})) tickers.add(t);
+    }
+    if (tickers.size === 0) return;
+    let cancelled = false;
+    Promise.all(
+      [...tickers].map((t) =>
+        fetch(`/api/quote?symbol=${encodeURIComponent(t)}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => [t, { price: d?.price ?? null }] as const)
+          .catch(() => [t, { price: null }] as const),
+      ),
+    ).then((pairs) => {
+      if (!cancelled) setQuotes(Object.fromEntries(pairs));
+    });
+    return () => { cancelled = true; };
+  }, [junto]);
 
   if (loading) {
     return (
@@ -359,6 +344,7 @@ export default function JuntoViewPage() {
         fresh_count: t.count,
       }));
   const isOwner = junto.is_owner === true;
+  const consensus = buildConsensus(sources, quotes);
 
   async function handleRemoveSource(sourceId: string) {
     setRemovingIds((prev) => new Set(prev).add(sourceId));
@@ -528,7 +514,7 @@ export default function JuntoViewPage() {
         )}
 
         {/* Stance Heatmap */}
-        <PositionsSection items={positionItems} />
+        <PositionsSection items={positionItems} consensus={consensus} />
       </div>
     </main>
   );
