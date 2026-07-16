@@ -455,7 +455,8 @@ export default function PositionsPage() {
         ) : (
           // ─── Table ─────────────────────────────────────────────────
           <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-[rgb(var(--t-brass) / 0.28)]">
                   {([
@@ -580,6 +581,7 @@ export default function PositionsPage() {
                 })}
               </tbody>
             </table>
+            </div>
             {tableItems.length > tableLimit && (
               <div className="flex items-center justify-center gap-3 px-5 py-4 border-t border-[rgb(var(--t-brass) / 0.1)]">
                 <span className="text-xs text-parchment/45 tabular-nums">
