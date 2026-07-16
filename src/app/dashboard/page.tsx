@@ -1993,124 +1993,235 @@ export default function DashboardPage() {
               actionHref="/explore"
             />
           ) : (
-            <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-x-auto">
-              <table className="w-full min-w-[420px]">
-                <thead>
-                  <tr className="bg-surface border-b border-[rgb(var(--t-brass) / 0.28)]">
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)]">Dispatch</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Send times</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Days</th>
-                    <th className="px-4 py-2.5 text-right text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activeSubscriptions.map((sub) => (
-                    <React.Fragment key={sub.id}>
-                      <tr className={`border-b border-[rgb(var(--t-brass) / 0.18)] hover:bg-surface transition-colors ${sub.is_active ? '' : 'opacity-60'}`}>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <Link href={`/newsletter/${sub.newsletter.id}`} className="text-sm font-medium hover:text-brass transition">
-                              {sub.newsletter.name}
-                            </Link>
-                            {!sub.is_active && (
-                              <span className="text-xs px-1.5 py-0.5 rounded-sm bg-raised text-parchment/60">Paused</span>
-                            )}
+            <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-hidden">
+              <div className="sm:hidden divide-y divide-[rgb(var(--t-brass) / 0.18)]">
+                {activeSubscriptions.map((sub) => (
+                  <div key={sub.id} className={`bg-surface px-4 py-3 ${sub.is_active ? '' : 'opacity-60'}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Link href={`/newsletter/${sub.newsletter.id}`} className="text-sm font-medium hover:text-brass transition">
+                            {sub.newsletter.name}
+                          </Link>
+                          {!sub.is_active && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-raised text-parchment/60">Paused</span>
+                          )}
+                        </div>
+                        <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-parchment/55">
+                          <div>
+                            <div className="text-[10px] uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)]">Send times</div>
+                            <div className="mt-1">{(sub.receive_windows || sub.send_windows || ['morning']).map(w => LOCAL_WINDOW_LABELS[w] || w).join(', ')}</div>
                           </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-xs text-parchment/55">
-                          {(sub.receive_windows || sub.send_windows || ['morning']).map(w => LOCAL_WINDOW_LABELS[w] || w).join(', ')}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-xs text-parchment/55">
-                          {(sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']).map(d => DAY_LABELS[d] || d).join(', ')}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-right">
-                          <div className="flex items-center gap-2 justify-end">
-                            <button
-                              onClick={() => editingSubId === sub.id ? setEditingSubId(null) : startEditSub(sub)}
-                              className="text-xs px-2.5 py-1 rounded-sm bg-surface hover:bg-raised text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)] transition"
-                            >
-                              {editingSubId === sub.id ? 'Cancel' : 'Edit'}
-                            </button>
-                            <button
-                              onClick={() => handleToggleSubscription(sub.id, sub.is_active)}
-                              className={`text-xs px-2.5 py-1 rounded-sm border transition ${
-                                sub.is_active
-                                  ? 'border-[rgb(var(--t-brass) / 0.18)] text-parchment/55 hover:text-bear hover:border-bear/30'
-                                  : 'border-bull/30 text-bull'
-                              }`}
-                            >
-                              {sub.is_active ? 'Pause' : 'Resume'}
-                            </button>
+                          <div>
+                            <div className="text-[10px] uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)]">Days</div>
+                            <div className="mt-1">{(sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']).map(d => DAY_LABELS[d] || d).join(', ')}</div>
                           </div>
-                        </td>
-                      </tr>
+                        </div>
+                      </div>
+                    </div>
 
-                      {editingSubId === sub.id && (
-                        <tr className="border-b border-[rgb(var(--t-brass) / 0.18)] bg-ink">
-                          <td colSpan={4} className="px-4 py-4">
-                            <div className="space-y-4">
-                              <div>
-                                <label className="text-xs text-parchment/50 font-medium block mb-2">Send times (your local timezone)</label>
-                                <div className="flex gap-2 flex-wrap">
-                                  {WINDOW_OPTIONS.map((w) => (
-                                    <button
-                                      key={w.key}
-                                      onClick={() => toggleWindow(w.key)}
-                                      className={`px-3 py-1.5 rounded-sm text-xs font-medium transition ${
-                                        editWindows.includes(w.key)
-                                          ? 'bg-brass text-ink'
-                                          : 'bg-surface text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)] hover:bg-raised'
-                                      }`}
-                                    >
-                                      {LOCAL_WINDOW_LABELS[w.key]}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                              <div>
-                                <label className="text-xs text-parchment/50 font-medium block mb-2">Days</label>
-                                <div className="flex gap-1.5">
-                                  {DAY_OPTIONS.map((d) => (
-                                    <button
-                                      key={d.key}
-                                      onClick={() => toggleDay(d.key)}
-                                      className={`w-8 h-8 rounded-sm text-xs font-medium transition ${
-                                        editDays.includes(d.key)
-                                          ? 'bg-brass text-ink'
-                                          : 'bg-surface text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)] hover:bg-raised'
-                                      }`}
-                                      title={DAY_LABELS[d.key]}
-                                    >
-                                      {d.label}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                              <div>
-                                <label className="text-xs text-parchment/50 font-medium block mb-2">Delivery email</label>
-                                <input
-                                  type="email"
-                                  value={editEmail}
-                                  onChange={(e) => setEditEmail(e.target.value)}
-                                  placeholder={accountEmail || 'you@example.com'}
-                                  className="w-full sm:w-72 bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-1.5 text-sm text-parchment placeholder-parchment/30 focus:outline-none focus:border-brass"
-                                />
-                              </div>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => editingSubId === sub.id ? setEditingSubId(null) : startEditSub(sub)}
+                        className="flex-1 text-xs px-2.5 py-1.5 rounded-sm bg-ink hover:bg-raised text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)] transition"
+                      >
+                        {editingSubId === sub.id ? 'Cancel' : 'Edit'}
+                      </button>
+                      <button
+                        onClick={() => handleToggleSubscription(sub.id, sub.is_active)}
+                        className={`flex-1 text-xs px-2.5 py-1.5 rounded-sm border transition ${
+                          sub.is_active
+                            ? 'border-[rgb(var(--t-brass) / 0.18)] text-parchment/55 hover:text-bear hover:border-bear/30'
+                            : 'border-bull/30 text-bull'
+                        }`}
+                      >
+                        {sub.is_active ? 'Pause' : 'Resume'}
+                      </button>
+                    </div>
+
+                    {editingSubId === sub.id && (
+                      <div className="mt-4 border-t border-[rgb(var(--t-brass) / 0.18)] pt-4">
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-xs text-parchment/50 font-medium block mb-2">Send times (your local timezone)</label>
+                            <div className="flex gap-2 flex-wrap">
+                              {WINDOW_OPTIONS.map((w) => (
+                                <button
+                                  key={w.key}
+                                  onClick={() => toggleWindow(w.key)}
+                                  className={`px-3 py-1.5 rounded-sm text-xs font-medium transition ${
+                                    editWindows.includes(w.key)
+                                      ? 'bg-brass text-ink'
+                                      : 'bg-ink text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)] hover:bg-raised'
+                                  }`}
+                                >
+                                  {LOCAL_WINDOW_LABELS[w.key]}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs text-parchment/50 font-medium block mb-2">Days</label>
+                            <div className="flex gap-1.5 flex-wrap">
+                              {DAY_OPTIONS.map((d) => (
+                                <button
+                                  key={d.key}
+                                  onClick={() => toggleDay(d.key)}
+                                  className={`w-8 h-8 rounded-sm text-xs font-medium transition ${
+                                    editDays.includes(d.key)
+                                      ? 'bg-brass text-ink'
+                                      : 'bg-ink text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)] hover:bg-raised'
+                                  }`}
+                                  title={DAY_LABELS[d.key]}
+                                >
+                                  {d.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs text-parchment/50 font-medium block mb-2">Delivery email</label>
+                            <input
+                              type="email"
+                              value={editEmail}
+                              onChange={(e) => setEditEmail(e.target.value)}
+                              placeholder={accountEmail || 'you@example.com'}
+                              className="w-full bg-ink border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-1.5 text-sm text-parchment placeholder-parchment/30 focus:outline-none focus:border-brass"
+                            />
+                          </div>
+                          <button
+                            onClick={() => handleUpdateSubscription(sub.id)}
+                            disabled={saving || editWindows.length === 0 || editDays.length === 0}
+                            className="w-full px-4 py-1.5 bg-brass hover:bg-brass/80 text-ink text-xs font-medium rounded transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
+                          >
+                            {saving ? 'Saving...' : 'Save Changes'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full min-w-[420px]">
+                  <thead>
+                    <tr className="bg-surface border-b border-[rgb(var(--t-brass) / 0.28)]">
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)]">Dispatch</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Send times</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap">Days</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] whitespace-nowrap"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeSubscriptions.map((sub) => (
+                      <React.Fragment key={sub.id}>
+                        <tr className={`border-b border-[rgb(var(--t-brass) / 0.18)] hover:bg-surface transition-colors ${sub.is_active ? '' : 'opacity-60'}`}>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <Link href={`/newsletter/${sub.newsletter.id}`} className="text-sm font-medium hover:text-brass transition">
+                                {sub.newsletter.name}
+                              </Link>
+                              {!sub.is_active && (
+                                <span className="text-xs px-1.5 py-0.5 rounded-sm bg-raised text-parchment/60">Paused</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-xs text-parchment/55">
+                            {(sub.receive_windows || sub.send_windows || ['morning']).map(w => LOCAL_WINDOW_LABELS[w] || w).join(', ')}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-xs text-parchment/55">
+                            {(sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']).map(d => DAY_LABELS[d] || d).join(', ')}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-right">
+                            <div className="flex items-center gap-2 justify-end">
                               <button
-                                onClick={() => handleUpdateSubscription(sub.id)}
-                                disabled={saving || editWindows.length === 0 || editDays.length === 0}
-                                className="px-4 py-1.5 bg-brass hover:bg-brass/80 text-ink text-xs font-medium rounded transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
+                                onClick={() => editingSubId === sub.id ? setEditingSubId(null) : startEditSub(sub)}
+                                className="text-xs px-2.5 py-1 rounded-sm bg-surface hover:bg-raised text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)] transition"
                               >
-                                {saving ? 'Saving...' : 'Save Changes'}
+                                {editingSubId === sub.id ? 'Cancel' : 'Edit'}
+                              </button>
+                              <button
+                                onClick={() => handleToggleSubscription(sub.id, sub.is_active)}
+                                className={`text-xs px-2.5 py-1 rounded-sm border transition ${
+                                  sub.is_active
+                                    ? 'border-[rgb(var(--t-brass) / 0.18)] text-parchment/55 hover:text-bear hover:border-bear/30'
+                                    : 'border-bull/30 text-bull'
+                                }`}
+                              >
+                                {sub.is_active ? 'Pause' : 'Resume'}
                               </button>
                             </div>
                           </td>
                         </tr>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
+
+                        {editingSubId === sub.id && (
+                          <tr className="border-b border-[rgb(var(--t-brass) / 0.18)] bg-ink">
+                            <td colSpan={4} className="px-4 py-4">
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="text-xs text-parchment/50 font-medium block mb-2">Send times (your local timezone)</label>
+                                  <div className="flex gap-2 flex-wrap">
+                                    {WINDOW_OPTIONS.map((w) => (
+                                      <button
+                                        key={w.key}
+                                        onClick={() => toggleWindow(w.key)}
+                                        className={`px-3 py-1.5 rounded-sm text-xs font-medium transition ${
+                                          editWindows.includes(w.key)
+                                            ? 'bg-brass text-ink'
+                                            : 'bg-surface text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)] hover:bg-raised'
+                                        }`}
+                                      >
+                                        {LOCAL_WINDOW_LABELS[w.key]}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="text-xs text-parchment/50 font-medium block mb-2">Days</label>
+                                  <div className="flex gap-1.5">
+                                    {DAY_OPTIONS.map((d) => (
+                                      <button
+                                        key={d.key}
+                                        onClick={() => toggleDay(d.key)}
+                                        className={`w-8 h-8 rounded-sm text-xs font-medium transition ${
+                                          editDays.includes(d.key)
+                                            ? 'bg-brass text-ink'
+                                            : 'bg-surface text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)] hover:bg-raised'
+                                        }`}
+                                        title={DAY_LABELS[d.key]}
+                                      >
+                                        {d.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="text-xs text-parchment/50 font-medium block mb-2">Delivery email</label>
+                                  <input
+                                    type="email"
+                                    value={editEmail}
+                                    onChange={(e) => setEditEmail(e.target.value)}
+                                    placeholder={accountEmail || 'you@example.com'}
+                                    className="w-full sm:w-72 bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-1.5 text-sm text-parchment placeholder-parchment/30 focus:outline-none focus:border-brass"
+                                  />
+                                </div>
+                                <button
+                                  onClick={() => handleUpdateSubscription(sub.id)}
+                                  disabled={saving || editWindows.length === 0 || editDays.length === 0}
+                                  className="px-4 py-1.5 bg-brass hover:bg-brass/80 text-ink text-xs font-medium rounded transition disabled:opacity-50 font-[var(--font-oswald)] uppercase tracking-wide"
+                                >
+                                  {saving ? 'Saving...' : 'Save Changes'}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </section>
