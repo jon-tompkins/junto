@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { TopNav } from '@/components/top-nav';
 
 interface PositionEntry {
@@ -53,7 +54,15 @@ const STANCE_ICONS: Record<string, string> = {
   neutral: '–',
 };
 
-function AnalystRow({ p }: { p: SourceProfile }) {
+function AnalystRow({
+  p,
+  isStarred,
+  onToggleStar,
+}: {
+  p: SourceProfile;
+  isStarred: boolean;
+  onToggleStar: (sourceId: string) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const handle = p.source.handle_or_url;
   const positionEntries = Object.entries(p.positions);
@@ -131,12 +140,28 @@ function AnalystRow({ p }: { p: SourceProfile }) {
             <span className="text-parchment/20">{expanded ? '▲' : '▼'}</span>
           </div>
         </td>
+
+        {/* Star */}
+        <td className="px-3 py-3 text-center w-10">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleStar(p.source_id);
+            }}
+            title={isStarred ? 'Remove from your junto' : 'Add to your junto'}
+            className="text-lg leading-none transition hover:scale-110"
+          >
+            <span className={isStarred ? 'text-brass' : 'text-parchment/30 hover:text-parchment/60'}>
+              {isStarred ? '★' : '☆'}
+            </span>
+          </button>
+        </td>
       </tr>
 
       {/* Expanded row */}
       {expanded && (
         <tr className="border-b border-[rgb(var(--t-brass) / 0.18)] bg-ink">
-          <td colSpan={4} className="px-4 py-4">
+          <td colSpan={5} className="px-4 py-4">
             <div className="pl-11 space-y-4">
               {p.summary && (
                 <p className="text-sm text-parchment/80 leading-relaxed max-w-2xl">{p.summary}</p>
@@ -189,6 +214,7 @@ function AnalystRow({ p }: { p: SourceProfile }) {
 }
 
 export default function SourcesPage() {
+  const { data: session } = useSession();
   const [profiles, setProfiles] = useState<SourceProfile[]>([]);
   const [juntos, setJuntos] = useState<JuntoOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -196,6 +222,7 @@ export default function SourcesPage() {
   const [tickerFilter, setTickerFilter] = useState('');
   const [stanceFilter, setStanceFilter] = useState<string | null>(null);
   const [juntoFilter, setJuntoFilter] = useState<Set<string>>(new Set());
+  const [primaryJuntoSourceIds, setPrimaryJuntoSourceIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     Promise.all([
@@ -211,6 +238,43 @@ export default function SourcesPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch('/api/v2/junto-source-star')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data.source_ids)) {
+          setPrimaryJuntoSourceIds(new Set(data.source_ids as string[]));
+        }
+      })
+      .catch(() => {});
+  }, [session]);
+
+  async function handleToggleStar(sourceId: string) {
+    const wasStarred = primaryJuntoSourceIds.has(sourceId);
+    // Optimistic update
+    setPrimaryJuntoSourceIds((prev) => {
+      const next = new Set(prev);
+      wasStarred ? next.delete(sourceId) : next.add(sourceId);
+      return next;
+    });
+    try {
+      const res = await fetch('/api/v2/junto-source-star', {
+        method: wasStarred ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source_id: sourceId }),
+      });
+      if (!res.ok) throw new Error('Request failed');
+    } catch {
+      // Revert on failure
+      setPrimaryJuntoSourceIds((prev) => {
+        const next = new Set(prev);
+        wasStarred ? next.add(sourceId) : next.delete(sourceId);
+        return next;
+      });
+    }
+  }
 
   const juntoSourceIds = juntoFilter.size === 0
     ? null

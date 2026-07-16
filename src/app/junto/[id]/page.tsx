@@ -128,8 +128,51 @@ interface Dispatch {
   subscriber_count: number;
 }
 
+interface PortfolioRow {
+  ticker: string;
+  total: number;
+  dominant: string;
+  pct: number;
+  isMixed: boolean;
+}
+
+function buildPortfolioRows(items: HeatmapPosition[]): PortfolioRow[] {
+  const map = new Map<string, Record<string, number>>();
+  for (const item of items) {
+    const existing = map.get(item.ticker) || {};
+    existing[item.stance] = (existing[item.stance] ?? 0) + item.count;
+    map.set(item.ticker, existing);
+  }
+
+  const grandTotal = items.reduce((sum, i) => sum + i.count, 0);
+
+  const rows: PortfolioRow[] = Array.from(map.entries()).map(([ticker, stances]) => {
+    const total = Object.values(stances).reduce((s, n) => s + n, 0);
+    const dominant = Object.entries(stances).sort(([, a], [, b]) => b - a)[0]?.[0] ?? 'neutral';
+    const topCount = stances[dominant] ?? 0;
+    const isMixed = total > 0 && topCount / total < 0.6;
+    return {
+      ticker,
+      total,
+      dominant,
+      pct: grandTotal > 0 ? (total / grandTotal) * 100 : 0,
+      isMixed,
+    };
+  });
+
+  return rows.sort((a, b) => b.total - a.total);
+}
+
 function PositionsSection({ items }: { items: HeatmapPosition[] }) {
-  const [view, setView] = useState<'heatmap' | 'list'>('heatmap');
+  const [view, setView] = useState<'heatmap' | 'list' | 'portfolio'>('heatmap');
+
+  const TAB_LABELS: Record<'heatmap' | 'list' | 'portfolio', string> = {
+    heatmap: '⊞ Heatmap',
+    list: '≡ List',
+    portfolio: '⊙ Portfolio',
+  };
+
+  const portfolioRows = view === 'portfolio' ? buildPortfolioRows(items) : [];
 
   return (
     <section className="mb-10">
@@ -138,7 +181,7 @@ function PositionsSection({ items }: { items: HeatmapPosition[] }) {
           Positions
         </h2>
         <div className="flex rounded overflow-hidden border border-[rgb(var(--t-brass) / 0.28)]">
-          {(['heatmap', 'list'] as const).map(v => (
+          {(['heatmap', 'list', 'portfolio'] as const).map(v => (
             <button
               key={v}
               onClick={() => setView(v)}
@@ -149,7 +192,7 @@ function PositionsSection({ items }: { items: HeatmapPosition[] }) {
                 fontFamily: 'var(--font-oswald)',
               }}
             >
-              {v === 'heatmap' ? '⊞ Heatmap' : '≡ List'}
+              {TAB_LABELS[v]}
             </button>
           ))}
         </div>
@@ -159,7 +202,7 @@ function PositionsSection({ items }: { items: HeatmapPosition[] }) {
         <p className="text-parchment/60 text-sm">No tracked stances across this junto yet.</p>
       ) : view === 'heatmap' ? (
         <PositionsHeatmap items={items} height={420} />
-      ) : (
+      ) : view === 'list' ? (
         <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-hidden">
           <table className="w-full text-sm">
             <thead>
@@ -191,6 +234,59 @@ function PositionsSection({ items }: { items: HeatmapPosition[] }) {
             </tbody>
           </table>
         </div>
+      ) : (
+        <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-hidden">
+          {portfolioRows.map((row) => {
+            const bg = STANCE_BG[row.dominant] ?? '#4b5563';
+            return (
+              <div
+                key={row.ticker}
+                className="flex items-center gap-4 px-4 py-3 border-b border-[rgb(var(--t-brass) / 0.1)] last:border-0"
+              >
+                {/* Ticker */}
+                <Link
+                  href={`/positions/${encodeURIComponent(row.ticker)}`}
+                  className="font-mono font-bold text-sm hover:text-brass transition w-20 shrink-0"
+                >
+                  {row.ticker}
+                </Link>
+
+                {/* Dominant stance badge */}
+                <div className="w-24 shrink-0">
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-sm font-semibold uppercase tracking-wide ${STANCE_BADGE[row.dominant] ?? ''}`}
+                  >
+                    {row.isMixed ? 'Mixed' : (STANCE_LABEL[row.dominant] ?? row.dominant)}
+                  </span>
+                </div>
+
+                {/* Bar track */}
+                <div className="flex-1 min-w-0">
+                  <div className="h-2 rounded-full bg-raised overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${row.pct}%`,
+                        background: row.isMixed ? 'rgb(var(--t-brass))' : bg,
+                        opacity: 0.75,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Percentage */}
+                <span className="text-xs text-parchment/60 w-12 text-right shrink-0">
+                  {row.pct.toFixed(1)}%
+                </span>
+
+                {/* Source count */}
+                <span className="text-xs text-parchment/45 w-16 text-right shrink-0">
+                  {row.total} {row.total === 1 ? 'source' : 'sources'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       )}
     </section>
   );
@@ -204,6 +300,7 @@ export default function JuntoViewPage() {
   const [positions, setPositions] = useState<HeatmapPosition[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     Promise.all([
@@ -263,6 +360,33 @@ export default function JuntoViewPage() {
       }));
   const isOwner = junto.is_owner === true;
 
+  async function handleRemoveSource(sourceId: string) {
+    setRemovingIds((prev) => new Set(prev).add(sourceId));
+    try {
+      const res = await fetch(`/api/juntos/${id}/sources`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source_id: sourceId }),
+      });
+      if (res.ok) {
+        setJunto((prev) =>
+          prev
+            ? {
+                ...prev,
+                junto_sources: prev.junto_sources.filter((js) => js.source_id !== sourceId),
+              }
+            : prev,
+        );
+      }
+    } finally {
+      setRemovingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(sourceId);
+        return next;
+      });
+    }
+  }
+
   return (
     <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
@@ -319,41 +443,57 @@ export default function JuntoViewPage() {
               {sources.map((js) => {
                 const s = js.source;
                 if (!s) return null;
-                const positions = s.profile?.positions || {};
-                const topStances = Object.entries(positions)
+                const positionsList = s.profile?.positions || {};
+                const topStances = Object.entries(positionsList)
                   .sort(([, a], [, b]) => new Date(a.since).getTime() - new Date(b.since).getTime())
                   .slice(0, 3);
+                const isRemoving = removingIds.has(js.source_id);
                 return (
-                  <Link
-                    key={js.id}
-                    href={`/sources/${s.handle_or_url}`}
-                    className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] hover:border-[rgb(var(--t-brass) / 0.5)] rounded p-4 transition group"
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      {s.avatar_url ? (
-                        <img src={s.avatar_url} alt={s.handle_or_url} className="w-10 h-10 rounded bg-raised object-cover" />
-                      ) : (
-                        <div className="w-10 h-10 rounded bg-raised flex items-center justify-center text-sm font-bold text-parchment/80">
-                          {s.handle_or_url[0]?.toUpperCase()}
+                  <div key={js.id} className="relative group">
+                    <Link
+                      href={`/sources/${s.handle_or_url}`}
+                      className={`block bg-surface border border-[rgb(var(--t-brass) / 0.28)] hover:border-[rgb(var(--t-brass) / 0.5)] rounded p-4 transition ${isRemoving ? 'opacity-50 pointer-events-none' : ''}`}
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        {s.avatar_url ? (
+                          <img src={s.avatar_url} alt={s.handle_or_url} className="w-10 h-10 rounded bg-raised object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 rounded bg-raised flex items-center justify-center text-sm font-bold text-parchment/80">
+                            {s.handle_or_url[0]?.toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold truncate group-hover:text-brass transition">@{s.handle_or_url}</div>
+                          {s.display_name && <div className="text-xs text-parchment/60 truncate">{s.display_name}</div>}
                         </div>
+                      </div>
+                      {topStances.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {topStances.map(([ticker, p]) => (
+                            <span key={ticker} className={`text-xs px-2 py-0.5 rounded-sm font-medium ${STANCE_BADGE[p.stance]}`}>
+                              {ticker}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-parchment/45">No tracked stances yet</p>
                       )}
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold truncate group-hover:text-brass transition">@{s.handle_or_url}</div>
-                        {s.display_name && <div className="text-xs text-parchment/60 truncate">{s.display_name}</div>}
-                      </div>
-                    </div>
-                    {topStances.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5">
-                        {topStances.map(([ticker, p]) => (
-                          <span key={ticker} className={`text-xs px-2 py-0.5 rounded-sm font-medium ${STANCE_BADGE[p.stance]}`}>
-                            {ticker}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-parchment/45">No tracked stances yet</p>
+                    </Link>
+                    {isOwner && (
+                      <button
+                        onClick={() => handleRemoveSource(js.source_id)}
+                        disabled={isRemoving}
+                        title="Remove from junto"
+                        className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded text-parchment/40 hover:text-bear hover:bg-bear/15 opacity-0 group-hover:opacity-100 transition disabled:cursor-not-allowed text-sm leading-none"
+                      >
+                        {isRemoving ? (
+                          <span className="text-[10px] animate-pulse">…</span>
+                        ) : (
+                          '×'
+                        )}
+                      </button>
                     )}
-                  </Link>
+                  </div>
                 );
               })}
             </div>
