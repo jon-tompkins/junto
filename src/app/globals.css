@@ -36,6 +36,7 @@
   --t-oxblood:   114 47 55;
   --t-bull:      62 207 106;
   --t-bear:      232 69 60;
+  --t-warn:      214 158 46;   /* amber — warnings/disclaimers */
 
   --border-main:  rgb(var(--t-brass) / 0.28);
   --border-inner: rgb(var(--t-brass) / 0.18);
@@ -52,6 +53,7 @@
   --t-parchment: 42 33 24;     /* primary text — warm near-black */
   --t-bull:      31 157 77;
   --t-bear:      192 57 43;
+  --t-warn:      140 94 18;     /* darker amber — legible on light ground */
 }
 
 body {
