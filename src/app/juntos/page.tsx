@@ -115,7 +115,7 @@ function JuntoModal({ junto, onClose }: { junto: JuntoCard; onClose: () => void 
       <div
         className="w-full sm:max-w-md flex flex-col"
         style={{
-          background: '#0d0b09',
+          background: 'rgb(var(--t-surface))',
           border: '1px solid rgb(var(--t-brass) / 0.28)',
           borderBottom: 'none',
           borderRadius: '4px 4px 0 0',

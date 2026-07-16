@@ -490,7 +490,7 @@ function CreatePageInner() {
                       onChange={e => setJuntoFilter(e.target.value)}
                       placeholder="Filter by profile — type a handle or name"
                       className="w-full px-3 py-2 text-xs focus:outline-none transition"
-                      style={{ background: '#0d0b09', border: '1px solid rgb(var(--t-brass) / 0.2)', color: 'rgb(var(--t-parchment))' }}
+                      style={{ background: 'rgb(var(--t-surface))', border: '1px solid rgb(var(--t-brass) / 0.2)', color: 'rgb(var(--t-parchment))' }}
                     />
                   </div>
 
@@ -859,7 +859,7 @@ function CreatePageInner() {
             const t = promptTemplates.find(t => t.id === promptTemplateId);
             if (!t) return null;
             return (
-              <div className="px-4 py-3 text-xs" style={{ background: '#0d0b09', border: '1px solid rgb(var(--t-brass) / 0.18)', color: 'rgb(var(--t-parchment) / 0.6)' }}>
+              <div className="px-4 py-3 text-xs" style={{ background: 'rgb(var(--t-surface))', border: '1px solid rgb(var(--t-brass) / 0.18)', color: 'rgb(var(--t-parchment) / 0.6)' }}>
                 {t.description || 'Using the default prompt for this style.'}
               </div>
             );
