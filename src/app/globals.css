@@ -138,26 +138,20 @@ h1, h2, h3, h4 {
   font-family: var(--font-mono), monospace;
 }
 .research-content .brief-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
+  display: inline;
   margin-right: 0.35rem;
-  padding: 0.1rem 0.45rem;
-  border-radius: 999px;
-  border: 1px solid rgb(var(--t-brass) / 0.24);
-  background: rgb(var(--t-brass) / 0.07);
   color: rgb(var(--t-parchment));
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  vertical-align: middle;
+  vertical-align: baseline;
 }
-.research-content .brief-chip-Bullish { color: rgb(var(--t-bull)); border-color: rgb(var(--t-bull) / 0.35); background: rgb(var(--t-bull) / 0.08); }
+.research-content .brief-chip-Bullish { color: rgb(var(--t-bull)); }
 .research-content .brief-chip-Bearish,
-.research-content .brief-chip-Risk { color: rgb(var(--t-bear)); border-color: rgb(var(--t-bear) / 0.35); background: rgb(var(--t-bear) / 0.08); }
+.research-content .brief-chip-Risk { color: rgb(var(--t-bear)); }
 .research-content .brief-chip-Neutral,
-.research-content .brief-chip-Watch { color: rgb(var(--t-brasslit)); border-color: rgb(var(--t-brass) / 0.35); background: rgb(var(--t-brass) / 0.08); }
+.research-content .brief-chip-Watch { color: rgb(var(--t-brasslit)); }
 .research-content .brief-chip-Key takeaway { color: rgb(var(--t-parchment)); }
 .research-content .brief-callout {
   margin: 1.1rem 0;

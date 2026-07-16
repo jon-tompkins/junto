@@ -16,6 +16,7 @@ interface PositionEntry {
   note?: string;
   target_price?: number;
   entry_price?: number;
+  asset_class?: 'equity' | 'crypto' | 'sector';
 }
 
 interface MandateHolding {
@@ -512,6 +513,7 @@ export default function SourceProfilePage() {
                 ticker,
                 stance: pos.stance,
                 conviction: pos.conviction,
+                asset_class: pos.asset_class,
                 note: pos.note,
               }))}
             />
