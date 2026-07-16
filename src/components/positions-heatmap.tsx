@@ -2,7 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { squarifiedTreemap, STANCE_BG, STANCE_LABEL, hexToRgb } from '@/lib/positions/treemap';
+import { squarifiedTreemap, STANCE_LABEL } from '@/lib/positions/treemap';
+
+// Stance → flipping theme token, so tiles stay legible in both light and dark
+// mode (the old fixed hex STANCE_BG was tuned for dark and washed out on light).
+const STANCE_TOKEN: Record<string, string> = {
+  bullish: '--t-bull',
+  bearish: '--t-bear',
+  cautious: '--t-warn',
+  neutral: '--t-neutral',
+};
 
 export interface HeatmapPosition {
   ticker: string;
@@ -73,9 +82,11 @@ export function PositionsHeatmap({
     >
       {layout.map(({ x, y, w, h, data: item }) => {
         const shownCount = effectiveCount(item);
-        const bg = STANCE_BG[item.stance] ?? '#4b5563';
+        const token = STANCE_TOKEN[item.stance] ?? '--t-neutral';
+        const stanceColor = `rgb(var(${token}))`;
         const ratio = shownCount / maxCount;
-        const alpha = 0.18 + ratio * 0.45;
+        // Higher floor + range so low-count tiles still read on a light ground.
+        const alpha = 0.28 + ratio * 0.5;
         const tileArea = w * h;
         const showLabel = w >= 40 && h >= 28;
         const showStance = w >= 70 && h >= 60;
@@ -94,14 +105,14 @@ export function PositionsHeatmap({
               top: `${y}px`,
               width: `${w}px`,
               height: `${h}px`,
-              background: `rgba(${hexToRgb(bg)}, ${alpha})`,
+              background: `rgb(var(${token}) / ${alpha})`,
               boxShadow: 'inset 0 0 0 1px rgb(var(--t-ink) / 0.6)',
             }}
             title={`${item.ticker} · ${STANCE_LABEL[item.stance] ?? item.stance} · ${shownCount} source${shownCount !== 1 ? 's' : ''}`}
           >
             <span
               className="absolute inset-0 opacity-0 group-hover:opacity-100 transition pointer-events-none"
-              style={{ boxShadow: `inset 0 0 0 2px ${bg}` }}
+              style={{ boxShadow: `inset 0 0 0 2px ${stanceColor}` }}
             />
             {showLabel && (
               <span
@@ -114,7 +125,7 @@ export function PositionsHeatmap({
             {showStance && (
               <span
                 className="font-medium uppercase tracking-wider leading-none mt-1"
-                style={{ fontSize: `${Math.max(8, Math.floor(fontSize * 0.4))}px`, color: bg }}
+                style={{ fontSize: `${Math.max(8, Math.floor(fontSize * 0.4))}px`, color: stanceColor }}
               >
                 {STANCE_LABEL[item.stance] ?? item.stance} · {shownCount}
               </span>

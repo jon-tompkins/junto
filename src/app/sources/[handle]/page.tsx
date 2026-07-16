@@ -509,13 +509,23 @@ export default function SourceProfilePage() {
             <ClosedCallsTable calls={closedCalls} />
           ) : callView === 'portfolio' ? (
             <PortfolioView
-              positions={positions.map(([ticker, pos]) => ({
-                ticker,
-                stance: pos.stance,
-                conviction: pos.conviction,
-                asset_class: pos.asset_class,
-                note: pos.note,
-              }))}
+              positions={positions.map(([ticker, pos]) => {
+                const quote = quotes[ticker];
+                const stanceSign = pos.stance === 'bearish' ? -1 : 1;
+                const returnPct =
+                  quote?.price != null && pos.entry_price
+                    ? ((quote.price - pos.entry_price) / pos.entry_price) * 100 * stanceSign
+                    : null;
+                return {
+                  ticker,
+                  stance: pos.stance,
+                  conviction: pos.conviction,
+                  asset_class: pos.asset_class,
+                  note: pos.note,
+                  heldDays: daysHeld(pos.since),
+                  returnPct,
+                };
+              })}
             />
           ) : positions.length === 0 ? (
             <p className="text-parchment/60 text-sm">No positions tracked yet — will populate on next content pull.</p>

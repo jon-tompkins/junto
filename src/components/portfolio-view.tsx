@@ -14,6 +14,8 @@ export interface PortfolioPosition {
   stance: 'bullish' | 'bearish' | 'neutral' | 'cautious' | string;
   conviction?: number; // 1–5
   asset_class?: 'equity' | 'crypto' | 'sector' | string;
+  heldDays?: number;        // days since the view was first taken
+  returnPct?: number | null; // stance-adjusted return since entry (null if no quote)
   note?: string;
 }
 
@@ -30,7 +32,7 @@ const STANCE_TEXT: Record<string, string> = {
   neutral: 'text-parchment/60',
 };
 
-type AssetFilter = 'all' | 'equity' | 'crypto';
+type AssetFilter = 'all' | 'equity' | 'crypto' | 'sector';
 
 // Conviction is the confidence weight. Missing conviction → neutral-ish 2.5 so a
 // position still shows up without dominating. Floored so a real position never
@@ -79,9 +81,9 @@ export function PortfolioView({
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4 pb-4 border-b border-[rgb(var(--t-brass) / 0.18)]">
         <div className="flex items-center gap-1">
           <span className="text-[10px] uppercase tracking-wider text-parchment/45 mr-1">Asset</span>
-          {(['all', 'equity', 'crypto'] as AssetFilter[]).map((a) => (
+          {(['all', 'equity', 'crypto', 'sector'] as AssetFilter[]).map((a) => (
             <button key={a} type="button" onClick={() => setAsset(a)} className={`${pillBase} ${asset === a ? on : off}`}>
-              {a === 'all' ? 'Both' : a === 'equity' ? 'Equities' : 'Crypto'}
+              {a === 'all' ? 'All' : a === 'equity' ? 'Equities' : a === 'crypto' ? 'Crypto' : 'Themes'}
             </button>
           ))}
         </div>
@@ -148,7 +150,20 @@ export function PortfolioView({
                   <div className="flex-1 h-5 bg-raised rounded-sm overflow-hidden" title={r.note || undefined}>
                     <div className={`h-full ${bar} transition-all`} style={{ width: `${Math.max(r.pct, 1.5)}%` }} />
                   </div>
-                  <div className="w-20 shrink-0 text-right font-mono text-xs text-parchment/80">
+                  {/* held duration + return since entry */}
+                  <div className="w-16 shrink-0 text-right font-mono text-[11px] leading-tight">
+                    {typeof r.returnPct === 'number' ? (
+                      <span className={r.returnPct >= 0 ? 'text-bull' : 'text-bear'}>
+                        {r.returnPct >= 0 ? '+' : ''}{r.returnPct.toFixed(1)}%
+                      </span>
+                    ) : (
+                      <span className="text-parchment/30">—</span>
+                    )}
+                    {typeof r.heldDays === 'number' && (
+                      <div className="text-parchment/40">{r.heldDays}d</div>
+                    )}
+                  </div>
+                  <div className="w-16 shrink-0 text-right font-mono text-xs text-parchment/80">
                     {r.pct.toFixed(1)}%
                     {typeof r.conviction === 'number' && r.conviction > 0 && (
                       <span className="text-parchment/40"> · c{r.conviction}</span>

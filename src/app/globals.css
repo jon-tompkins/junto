@@ -37,6 +37,7 @@
   --t-bull:      62 207 106;
   --t-bear:      232 69 60;
   --t-warn:      214 158 46;   /* amber — warnings/disclaimers */
+  --t-neutral:   120 132 148;  /* slate — neutral/no-stance heatmap tiles */
 
   --border-main:  rgb(var(--t-brass) / 0.28);
   --border-inner: rgb(var(--t-brass) / 0.18);
@@ -54,6 +55,7 @@
   --t-bull:      31 157 77;
   --t-bear:      192 57 43;
   --t-warn:      140 94 18;     /* darker amber — legible on light ground */
+  --t-neutral:   90 104 122;    /* darker slate — legible on light ground */
 }
 
 body {
