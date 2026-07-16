@@ -437,7 +437,12 @@ export default function SourcesPage() {
               </thead>
               <tbody>
                 {filtered.map((p) => (
-                  <AnalystRow key={p.id} p={p} />
+                  <AnalystRow
+                    key={p.id}
+                    p={p}
+                    isStarred={primaryJuntoSourceIds.has(p.source_id)}
+                    onToggleStar={handleToggleStar}
+                  />
                 ))}
               </tbody>
             </table>

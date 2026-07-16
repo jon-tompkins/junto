@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
 import { SourceChat } from '@/components/source-chat';
+import { StarSourceButton } from '@/components/star-source-button';
+import { PortfolioView } from '@/components/portfolio-view';
 
 interface PositionEntry {
   stance: 'bullish' | 'bearish' | 'neutral' | 'cautious';
@@ -94,6 +96,7 @@ function siblingHref(s: CreatorSibling): string {
 
 interface SourceProfile {
   id: string;
+  source_id: string;
   summary: string | null;
   positions: Record<string, PositionEntry>;
   last_updated: string;
@@ -219,7 +222,8 @@ export default function SourceProfilePage() {
   const [hitRate, setHitRate] = useState<HitRate | null>(null);
   const [creator, setCreator] = useState<CreatorInfo | null>(null);
   const [closedCalls, setClosedCalls] = useState<ClosedCall[]>([]);
-  const [callView, setCallView] = useState<'open' | 'closed'>('open');
+  const [callView, setCallView] = useState<'open' | 'portfolio' | 'closed'>('open');
+  const [starred, setStarred] = useState(false);
 
   useEffect(() => {
     fetch('/api/me/holdings')
@@ -227,6 +231,16 @@ export default function SourceProfilePage() {
       .then((d) => { if (d?.holdings) setHoldings(d.holdings); })
       .catch(() => {});
   }, []);
+
+  // Is this source starred (in the user's featured junto)?
+  useEffect(() => {
+    const sid = profile?.source_id;
+    if (!sid) return;
+    fetch(`/api/v2/junto-source-star?source_id=${sid}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d && typeof d.starred === 'boolean') setStarred(d.starred); })
+      .catch(() => {});
+  }, [profile?.source_id]);
 
   useEffect(() => {
     fetch(`/api/sources/${handle}`)
@@ -345,9 +359,16 @@ export default function SourceProfilePage() {
             </div>
           )}
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold mb-1 font-[var(--font-oswald)] uppercase tracking-wide">
-              {profile.source.display_name || `@${displayHandle}`}
-            </h1>
+            <div className="flex items-center gap-2.5 mb-1">
+              <h1 className="text-2xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">
+                {profile.source.display_name || `@${displayHandle}`}
+              </h1>
+              <StarSourceButton
+                sourceId={profile.source_id}
+                starred={starred}
+                onChange={(_id, s) => setStarred(s)}
+              />
+            </div>
             <a
               href={`https://twitter.com/${displayHandle}`}
               target="_blank"
@@ -459,7 +480,7 @@ export default function SourceProfilePage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4 gap-3">
             <h2 className="text-xs font-semibold text-parchment/60 uppercase tracking-wider font-[var(--font-oswald)]">
-              {callView === 'open' ? 'Tracked Calls' : 'Closed Calls'}
+              {callView === 'open' ? 'Tracked Calls' : callView === 'portfolio' ? 'Portfolio' : 'Closed Calls'}
             </h2>
             <div className="inline-flex rounded overflow-hidden border border-[rgb(var(--t-brass) / 0.28)] text-[11px]">
               <button
@@ -467,6 +488,12 @@ export default function SourceProfilePage() {
                 className={`px-3 py-1 font-medium transition ${callView === 'open' ? 'bg-[rgb(var(--t-brass) / 0.18)] text-brass' : 'text-parchment/60 hover:text-parchment/70'}`}
               >
                 Open ({positions.length})
+              </button>
+              <button
+                onClick={() => setCallView('portfolio')}
+                className={`px-3 py-1 font-medium transition border-l border-[rgb(var(--t-brass) / 0.28)] ${callView === 'portfolio' ? 'bg-[rgb(var(--t-brass) / 0.18)] text-brass' : 'text-parchment/60 hover:text-parchment/70'}`}
+              >
+                Portfolio
               </button>
               <button
                 onClick={() => setCallView('closed')}
@@ -479,6 +506,15 @@ export default function SourceProfilePage() {
 
           {callView === 'closed' ? (
             <ClosedCallsTable calls={closedCalls} />
+          ) : callView === 'portfolio' ? (
+            <PortfolioView
+              positions={positions.map(([ticker, pos]) => ({
+                ticker,
+                stance: pos.stance,
+                conviction: pos.conviction,
+                note: pos.note,
+              }))}
+            />
           ) : positions.length === 0 ? (
             <p className="text-parchment/60 text-sm">No positions tracked yet — will populate on next content pull.</p>
           ) : (
