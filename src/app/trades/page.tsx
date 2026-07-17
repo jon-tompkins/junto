@@ -70,7 +70,12 @@ export default function TradesPage() {
   useEffect(() => {
     if (trades.length === 0) return;
     const symbols = Array.from(
-      new Set(trades.filter((t) => t.status !== 'closed' && t.entry_price != null).map((t) => t.ticker)),
+      new Set(
+        trades
+          // Only marketable names — themes/sectors ("AI", "biotech") have no quote.
+          .filter((t) => t.status !== 'closed' && t.entry_price != null && t.asset_class !== 'sector' && t.asset_class !== 'theme')
+          .map((t) => t.ticker),
+      ),
     );
     if (symbols.length === 0) return;
     setPricing(true);
@@ -103,7 +108,8 @@ export default function TradesPage() {
       if (t.status === 'closed' && !includeClosed) return false;
       if (t.status === 'stale' && !includeStale) return false;
       if (juntoId && !t.junto_ids.includes(juntoId)) return false;
-      if (asset !== 'all' && t.asset_class !== asset) return false;
+      if (asset === 'sector' && t.asset_class !== 'sector' && t.asset_class !== 'theme') return false;
+      if (asset !== 'all' && asset !== 'sector' && t.asset_class !== asset) return false;
       if (minConv > 0 && !(t.conviction != null && t.conviction >= minConv)) return false;
       return true;
     });
@@ -221,7 +227,7 @@ export default function TradesPage() {
                         </td>
                         <td className="py-2 px-3">
                           <Link href={`/positions/${encodeURIComponent(t.ticker)}`} className="font-mono font-bold hover:text-brass transition">{t.ticker}</Link>
-                          <span className="ml-1.5 text-[9px] uppercase text-parchment/35">{t.asset_class === 'crypto' ? 'C' : t.asset_class === 'sector' ? 'T' : 'E'}</span>
+                          <span className="ml-1.5 text-[9px] uppercase text-parchment/35">{t.asset_class === 'crypto' ? 'C' : (t.asset_class === 'sector' || t.asset_class === 'theme') ? 'T' : 'E'}</span>
                         </td>
                         <td className={`py-2 px-3 text-xs font-semibold uppercase tracking-wide ${STANCE_TEXT[t.stance] ?? STANCE_TEXT.neutral}`}>{STANCE_LABEL[t.stance] ?? t.stance}</td>
                         <td className="py-2 px-3 text-right font-mono text-parchment/60">{t.entry_price != null ? `$${t.entry_price.toFixed(2)}` : '—'}</td>

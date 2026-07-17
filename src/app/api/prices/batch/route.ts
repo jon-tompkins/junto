@@ -9,11 +9,15 @@ export const maxDuration = 60;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map<string, { price: number | null; at: number }>();
 
+const withTimeout = <T>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
+  Promise.race([p, new Promise<T>((res) => setTimeout(() => res(fallback), ms))]);
+
 async function priceFor(ticker: string): Promise<number | null> {
   const key = ticker.toUpperCase();
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.price;
-  const price = await fetchCurrentPrice(key).catch(() => null);
+  // Cap each fetch so one slow ticker can't stall the whole batch near the limit.
+  const price = await withTimeout(fetchCurrentPrice(key).catch(() => null), 4000, null);
   cache.set(key, { price, at: Date.now() });
   return price;
 }
@@ -41,7 +45,7 @@ export async function POST(req: NextRequest) {
     const uniq = Array.from(new Set(symbols.map((s) => String(s).toUpperCase().trim()).filter(Boolean))).slice(0, 600);
     if (uniq.length === 0) return NextResponse.json({ prices: {} });
 
-    const results = await mapLimit(uniq, 8, priceFor);
+    const results = await mapLimit(uniq, 16, priceFor);
     const prices: Record<string, number | null> = {};
     uniq.forEach((t, idx) => { prices[t] = results[idx]; });
     return NextResponse.json({ prices });
