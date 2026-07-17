@@ -52,6 +52,8 @@ export default function TradesPage() {
   const [minConv, setMinConv] = useState(0);
   const [includeClosed, setIncludeClosed] = useState(false);
   const [includeStale, setIncludeStale] = useState(false);
+  const [direction, setDirection] = useState<'all' | 'long' | 'short'>('all');
+  const [heldMax, setHeldMax] = useState(0); // max held-days; 0 = any
   const [sortKey, setSortKey] = useState<SortKey>('return');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -105,8 +107,12 @@ export default function TradesPage() {
 
   const filtered = useMemo(() => {
     const rows = withReturn.filter((t) => {
+      if (t.stance === 'neutral') return false; // neutral isn't a trade
       if (t.status === 'closed' && !includeClosed) return false;
       if (t.status === 'stale' && !includeStale) return false;
+      if (direction === 'long' && t.stance !== 'bullish') return false;
+      if (direction === 'short' && t.stance !== 'bearish') return false;
+      if (heldMax > 0 && !(t.days != null && t.days <= heldMax)) return false;
       if (juntoId && !t.junto_ids.includes(juntoId)) return false;
       if (asset === 'sector' && t.asset_class !== 'sector' && t.asset_class !== 'theme') return false;
       if (asset !== 'all' && asset !== 'sector' && t.asset_class !== asset) return false;
@@ -130,7 +136,7 @@ export default function TradesPage() {
       const cmp = typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv));
       return sortDir === 'asc' ? cmp : -cmp;
     });
-  }, [withReturn, includeClosed, includeStale, juntoId, asset, minConv, sortKey, sortDir]);
+  }, [withReturn, includeClosed, includeStale, direction, heldMax, juntoId, asset, minConv, sortKey, sortDir]);
 
   const clickSort = (k: SortKey) => {
     if (sortKey === k) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -163,6 +169,14 @@ export default function TradesPage() {
             </select>
           </label>
           <div className="flex items-center gap-1">
+            <span className="text-[10px] uppercase tracking-wider text-parchment/45 mr-1">Dir</span>
+            {(['all', 'long', 'short'] as const).map((d) => (
+              <button key={d} onClick={() => setDirection(d)} className={`${pill} ${direction === d ? on : off}`}>
+                {d === 'all' ? 'All' : d === 'long' ? 'Long' : 'Short'}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1">
             <span className="text-[10px] uppercase tracking-wider text-parchment/45 mr-1">Type</span>
             {(['all', 'equity', 'crypto', 'sector'] as AssetFilter[]).map((a) => (
               <button key={a} onClick={() => setAsset(a)} className={`${pill} ${asset === a ? on : off}`}>
@@ -170,6 +184,16 @@ export default function TradesPage() {
               </button>
             ))}
           </div>
+          <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-parchment/45">
+            Held
+            <select value={heldMax} onChange={(e) => setHeldMax(Number(e.target.value))} className="bg-raised border border-brass/20 rounded px-1.5 py-0.5 text-[11px] text-parchment focus:outline-none focus:border-brass">
+              <option value={0}>Any</option>
+              <option value={7}>≤7d</option>
+              <option value={30}>≤30d</option>
+              <option value={90}>≤90d</option>
+              <option value={365}>≤1y</option>
+            </select>
+          </label>
           <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-parchment/45">
             Min conv
             <select value={minConv} onChange={(e) => setMinConv(Number(e.target.value))} className="bg-raised border border-brass/20 rounded px-1.5 py-0.5 text-[11px] text-parchment focus:outline-none focus:border-brass">
@@ -197,18 +221,18 @@ export default function TradesPage() {
               {pricing && <span className="animate-pulse">pricing…</span>}
             </div>
             <div className="overflow-x-auto bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded">
-              <table className="w-full text-sm min-w-[760px]">
+              <table className="w-full text-sm min-w-[720px] table-fixed">
                 <thead className="text-left text-xs uppercase text-parchment/45 border-b border-brass/28 font-[var(--font-oswald)]">
                   <tr>
                     <th className="py-2.5 px-4"><button onClick={() => clickSort('source')}>Source<Arrow k="source" /></button></th>
-                    <th className="py-2.5 px-3"><button onClick={() => clickSort('ticker')}>Ticker<Arrow k="ticker" /></button></th>
-                    <th className="py-2.5 px-3">Stance</th>
-                    <th className="py-2.5 px-3 text-right">Entry</th>
-                    <th className="py-2.5 px-3 text-right">Now</th>
-                    <th className="py-2.5 px-3 text-right"><button onClick={() => clickSort('return')}>Return<Arrow k="return" /></button></th>
-                    <th className="py-2.5 px-3 text-right"><button onClick={() => clickSort('conviction')}>Conv<Arrow k="conviction" /></button></th>
-                    <th className="py-2.5 px-3 text-right"><button onClick={() => clickSort('days')}>Age<Arrow k="days" /></button></th>
-                    <th className="py-2.5 px-3">Status</th>
+                    <th className="py-2.5 px-3 w-24"><button onClick={() => clickSort('ticker')}>Ticker<Arrow k="ticker" /></button></th>
+                    <th className="py-2.5 px-3 w-20">Stance</th>
+                    <th className="py-2.5 px-3 text-right w-24">Entry</th>
+                    <th className="py-2.5 px-3 text-right w-24">Now</th>
+                    <th className="py-2.5 px-3 text-right w-24"><button onClick={() => clickSort('return')}>Return<Arrow k="return" /></button></th>
+                    <th className="py-2.5 px-3 text-right w-16"><button onClick={() => clickSort('conviction')}>Conv<Arrow k="conviction" /></button></th>
+                    <th className="py-2.5 px-3 text-right w-20"><button onClick={() => clickSort('days')}>Held<Arrow k="days" /></button></th>
+                    <th className="py-2.5 px-3 w-20">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -218,11 +242,14 @@ export default function TradesPage() {
                     return (
                       <tr key={t.id} className="border-b border-[rgb(var(--t-brass) / 0.1)] last:border-0 hover:bg-raised/40 transition">
                         <td className="py-2 px-4">
-                          <Link href={`/sources/${t.handle}`} className="inline-flex items-center gap-2 group min-w-0">
+                          <Link href={`/sources/${t.handle}`} className="flex items-center gap-2 group min-w-0">
                             {t.avatar_url
                               ? <img src={t.avatar_url} alt={t.handle} className="w-6 h-6 rounded bg-raised object-cover shrink-0" />
                               : <div className="w-6 h-6 rounded bg-raised flex items-center justify-center text-[10px] text-parchment/60 shrink-0">{t.handle[0]?.toUpperCase()}</div>}
-                            <span className="truncate max-w-[140px] text-parchment/80 group-hover:text-brass transition">@{t.handle}</span>
+                            <span className="min-w-0">
+                              <span className="block truncate text-parchment/80 group-hover:text-brass transition">@{t.handle}</span>
+                              {t.display_name && <span className="block truncate text-[11px] text-parchment/40">{t.display_name}</span>}
+                            </span>
                           </Link>
                         </td>
                         <td className="py-2 px-3">
