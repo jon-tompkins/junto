@@ -1,6 +1,12 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+// Read the app theme (set as data-theme on <html>) so the embedded widget matches.
+function readTheme(): 'light' | 'dark' {
+  if (typeof document === 'undefined') return 'dark';
+  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+}
 
 // Known crypto tickers → map to TradingView COINBASE symbols
 const CRYPTO_TICKERS = new Set([
@@ -22,6 +28,15 @@ export function isCryptoTicker(ticker: string): boolean {
 export function TradingViewChart({ ticker, className = '' }: { ticker: string; className?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const symbol = getTVSymbol(ticker);
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+  // Track the app theme and re-render the widget when it flips.
+  useEffect(() => {
+    setTheme(readTheme());
+    const obs = new MutationObserver(() => setTheme(readTheme()));
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -42,7 +57,7 @@ export function TradingViewChart({ ticker, className = '' }: { ticker: string; c
       width: '100%',
       height: 260,
       locale: 'en',
-      colorTheme: 'dark',
+      colorTheme: theme,
       autosize: true,
       showVolume: false,
       showMA: false,
@@ -61,7 +76,7 @@ export function TradingViewChart({ ticker, className = '' }: { ticker: string; c
       dateRanges: ['1d|1', '1m|30', '3m|60', '12m|1D', '60m|1W', 'all|1M'],
     });
     container.appendChild(script);
-  }, [symbol]);
+  }, [symbol, theme]);
 
   const tvUrl = `https://www.tradingview.com/chart/g53lUOaf/?symbol=${encodeURIComponent(symbol)}`;
 
