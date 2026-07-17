@@ -52,7 +52,7 @@ export function TopNav() {
   const isActive = (path: string) =>
     pathname === path || pathname?.startsWith(path + '/');
 
-  const isDetailActive = isActive('/juntos') || isActive('/sources') || isActive('/leaderboard') || isActive('/positions');
+  const isDetailActive = isActive('/juntos') || isActive('/sources') || isActive('/leaderboard') || isActive('/positions') || isActive('/trades');
 
   return (
     <nav className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
@@ -106,6 +106,7 @@ export function TopNav() {
                 { href: '/sources', label: 'Sources' },
                 { href: '/leaderboard', label: 'Leaderboard' },
                 { href: '/positions', label: 'Positions' },
+                { href: '/trades', label: 'Best Trades' },
               ].map(({ href, label }) => (
                 <Link
                   key={href}
