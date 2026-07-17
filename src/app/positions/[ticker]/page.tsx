@@ -906,10 +906,10 @@ export default function PositionPage() {
             ) : (
               <>
                 {/* Inferred-positions disclaimer */}
-                <div className="bg-amber-900/15 border border-amber-700/40 rounded p-4 mb-4 flex gap-3">
-                  <span className="text-amber-400 text-lg leading-none mt-0.5">⚠</span>
-                  <p className="text-sm text-amber-200/80 leading-relaxed">
-                    <span className="font-semibold text-amber-300">Inferred, not real positions.</span>{' '}
+                <div className="bg-[rgb(var(--t-warn) / 0.10)] border border-[rgb(var(--t-warn) / 0.40)] rounded p-4 mb-4 flex gap-3">
+                  <span className="text-[rgb(var(--t-warn))] text-lg leading-none mt-0.5">⚠</span>
+                  <p className="text-sm text-parchment/80 leading-relaxed">
+                    <span className="font-semibold text-[rgb(var(--t-warn))]">Inferred, not real positions.</span>{' '}
                     Each stance below is read from the source&apos;s public posts — not from any brokerage or disclosed holding. Entries are rough estimates.
                     Commentary tracking, not financial advice.
                   </p>
