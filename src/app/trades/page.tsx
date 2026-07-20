@@ -233,6 +233,7 @@ export default function TradesPage() {
                     <th className="py-2.5 px-3 text-right w-16"><button onClick={() => clickSort('conviction')}>Conv<Arrow k="conviction" /></button></th>
                     <th className="py-2.5 px-3 text-right w-20"><button onClick={() => clickSort('days')}>Held<Arrow k="days" /></button></th>
                     <th className="py-2.5 px-3 w-20">Status</th>
+                    <th className="py-2.5 px-3 w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -270,6 +271,9 @@ export default function TradesPage() {
                           <span className={t.status === 'closed' ? 'text-parchment/45' : t.status === 'stale' ? 'text-[rgb(var(--t-warn))]' : 'text-bull'}>
                             {t.status}
                           </span>
+                        </td>
+                        <td className="py-2 px-3 text-right">
+                          <Link href={`/trades/${t.source_id}/${encodeURIComponent(t.ticker)}`} className="text-parchment/35 hover:text-brass transition" title="Trade detail">→</Link>
                         </td>
                       </tr>
                     );
