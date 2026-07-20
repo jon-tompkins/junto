@@ -17,15 +17,15 @@ const { chromium } = require('playwright');
     secure: true,
   }]);
   const page = await ctx.newPage();
-  const pages = [
-    ['dashboard', 'https://www.myjunto.xyz/dashboard'],
-    ['positions', 'https://www.myjunto.xyz/positions'],
-  ];
+  const tag = process.env.SHOT_TAG || '';
+  const paths = (process.env.SHOT_PATHS || '/dashboard,/positions').split(',');
+  const pages = paths.map((p) => [p.replace(/\//g, '_').replace(/^_/, '') || 'root', 'https://www.myjunto.xyz' + p]);
   for (const [name, url] of pages) {
     try {
       await page.goto(url, { waitUntil: 'networkidle', timeout: 45000 });
       await page.waitForTimeout(2500);
-      const out = `/home/ubuntu/.openclaw/workspace/.openclaw-cli-images/steward-mobile-${name}.png`;
+      const suffix = tag ? `-${tag}` : '';
+      const out = `/home/ubuntu/.openclaw/workspace/.openclaw-cli-images/steward-mobile-${name}${suffix}.png`;
       await page.screenshot({ path: out, fullPage: true });
       // detect horizontal overflow
       const overflow = await page.evaluate(() => ({
