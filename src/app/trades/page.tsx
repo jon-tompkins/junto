@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
 
 interface Trade {
@@ -40,6 +41,7 @@ const STANCE_LABEL: Record<string, string> = {
 };
 
 export default function TradesPage() {
+  const router = useRouter();
   const [trades, setTrades] = useState<Trade[]>([]);
   const [juntos, setJuntos] = useState<{ id: string; name: string }[]>([]);
   const [prices, setPrices] = useState<Record<string, number | null>>({});
@@ -233,7 +235,6 @@ export default function TradesPage() {
                     <th className="py-2.5 px-3 text-right w-16"><button onClick={() => clickSort('conviction')}>Conv<Arrow k="conviction" /></button></th>
                     <th className="py-2.5 px-3 text-right w-20"><button onClick={() => clickSort('days')}>Held<Arrow k="days" /></button></th>
                     <th className="py-2.5 px-3 w-20">Status</th>
-                    <th className="py-2.5 px-3 w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -241,9 +242,13 @@ export default function TradesPage() {
                     const ret = (t as any).ret as number | null;
                     const current = (t as any).current as number | null | undefined;
                     return (
-                      <tr key={t.id} className="border-b border-[rgb(var(--t-brass) / 0.1)] last:border-0 hover:bg-raised/40 transition">
+                      <tr
+                        key={t.id}
+                        onClick={() => router.push(`/trades/${t.source_id}/${encodeURIComponent(t.ticker)}`)}
+                        className="border-b border-[rgb(var(--t-brass) / 0.1)] last:border-0 hover:bg-raised/40 transition cursor-pointer"
+                      >
                         <td className="py-2 px-4">
-                          <Link href={`/sources/${t.handle}`} className="flex items-center gap-2 group min-w-0">
+                          <Link href={`/sources/${t.handle}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-2 group min-w-0 w-fit">
                             {t.avatar_url
                               ? <img src={t.avatar_url} alt={t.handle} className="w-6 h-6 rounded bg-raised object-cover shrink-0" />
                               : <div className="w-6 h-6 rounded bg-raised flex items-center justify-center text-[10px] text-parchment/60 shrink-0">{t.handle[0]?.toUpperCase()}</div>}
@@ -254,7 +259,7 @@ export default function TradesPage() {
                           </Link>
                         </td>
                         <td className="py-2 px-3">
-                          <Link href={`/positions/${encodeURIComponent(t.ticker)}`} className="font-mono font-bold hover:text-brass transition">{t.ticker}</Link>
+                          <Link href={`/positions/${encodeURIComponent(t.ticker)}`} onClick={(e) => e.stopPropagation()} className="font-mono font-bold hover:text-brass transition">{t.ticker}</Link>
                           <span className="ml-1.5 text-[9px] uppercase text-parchment/35">{t.asset_class === 'crypto' ? 'C' : (t.asset_class === 'sector' || t.asset_class === 'theme') ? 'T' : 'E'}</span>
                         </td>
                         <td className={`py-2 px-3 text-xs font-semibold uppercase tracking-wide ${STANCE_TEXT[t.stance] ?? STANCE_TEXT.neutral}`}>{STANCE_LABEL[t.stance] ?? t.stance}</td>
@@ -271,9 +276,6 @@ export default function TradesPage() {
                           <span className={t.status === 'closed' ? 'text-parchment/45' : t.status === 'stale' ? 'text-[rgb(var(--t-warn))]' : 'text-bull'}>
                             {t.status}
                           </span>
-                        </td>
-                        <td className="py-2 px-3 text-right">
-                          <Link href={`/trades/${t.source_id}/${encodeURIComponent(t.ticker)}`} className="text-parchment/35 hover:text-brass transition" title="Trade detail">→</Link>
                         </td>
                       </tr>
                     );
