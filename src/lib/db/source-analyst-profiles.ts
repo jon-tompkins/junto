@@ -9,7 +9,9 @@ export interface PositionEntry {
   conviction_mentions?: number; // the `mentions` value when conviction was last judged; conviction is only re-judged after CONVICTION_RECHECK_MENTIONS new mentions (or on a flip)
   note?: string;
   target_price?: number;
-  entry_price?: number;
+  entry_price?: number;         // price at entry — first tradable price at/after the opening call (fetchPriceAtOrAfter), not a live quote
+  entry_at?: string;            // ISO timestamp of the opening-call post the entry was priced off (the signal instant)
+  entry_tweet_id?: string;      // twitter_id of that opening-call post, when known (set by backfill; forward path may leave null)
   aliases?: string[];      // common/full names (e.g. ["BlackBerry"] for BB) — used to
                            // detect raw-text mentions (incl. retweets) for staleness
   asset_class?: 'equity' | 'crypto' | 'sector'; // equity/crypto = tradeable single
@@ -282,6 +284,8 @@ async function syncSourcePositions(
         conviction_mentions: p.conviction_mentions ?? null,
         note: p.note ?? null,
         entry_price: p.entry_price ?? null,
+        entry_at: p.entry_at ?? null,
+        entry_tweet_id: p.entry_tweet_id ?? null,
         target_price: p.target_price ?? null,
         aliases: p.aliases ?? null,
         asset_class: p.asset_class ?? null,

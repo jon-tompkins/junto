@@ -1,6 +1,6 @@
 import { getAnthropic, HAIKU_MODEL } from './client';
 import { getSourceProfile, upsertSourceProfile, recordCallOutcomes, SourceAnalystProfile, PositionEntry, CallOutcome } from '../db/source-analyst-profiles';
-import { fetchCurrentPrice } from '../prices';
+import { fetchCurrentPrice, fetchPriceAtOrAfter } from '../prices';
 import { recordCost, anthropicHaikuCostCents } from '../costs';
 
 interface TweetInput {
@@ -41,6 +41,29 @@ function latestRawMention(tweets: TweetInput[], ticker: string, aliases?: string
     }
   }
   return latest ? new Date(latest).toISOString().split('T')[0] : null;
+}
+
+// EARLIEST raw-text mention of an asset in this batch, as a full ISO timestamp
+// (not just a day). Used to anchor a NEW position's entry: the first post in the
+// window that references the asset is the best available proxy for the opening
+// call, and its exact instant is what we price the entry off (first tradable
+// price at/after it). Returns null if the asset isn't mentioned in the batch.
+function earliestRawMention(tweets: TweetInput[], ticker: string, aliases?: string[]): string | null {
+  const sym = ticker.toUpperCase();
+  const cashtag = new RegExp(`\\$${escapeRe(sym)}\\b`, 'i');
+  const bare = sym.length >= 4 && /^[A-Z.]+$/.test(sym) ? new RegExp(`\\b${escapeRe(sym)}\\b`) : null;
+  const aliasRes = (aliases || [])
+    .filter((a) => typeof a === 'string' && a.trim().length >= 4)
+    .map((a) => new RegExp(`\\b${escapeRe(a.trim())}\\b`, 'i'));
+  let earliest = Infinity;
+  for (const t of tweets) {
+    const c = t.content || '';
+    if (cashtag.test(c) || (bare && bare.test(c)) || aliasRes.some((r) => r.test(c))) {
+      const ts = new Date(t.posted_at).getTime();
+      if (!Number.isNaN(ts) && ts < earliest) earliest = ts;
+    }
+  }
+  return Number.isFinite(earliest) ? new Date(earliest).toISOString() : null;
 }
 
 // Count raw-text mentions (cashtag / bare symbol / alias) of an asset in tweets
@@ -307,12 +330,30 @@ Output schema — include ONLY positions discussed in the new tweets. Do NOT inc
         conviction_mentions = prev.conviction_mentions ?? 0;
       }
 
-      // A flip is a new call — reset entry to today's price (matching the reset
-      // `since`) so its return is measured from the flip, not the old stance.
+      // A flip is a new call — reset entry (matching the reset `since`) so its
+      // return is measured from the flip, not the old stance. Entry is priced off
+      // the OPENING CALL: the earliest post in this batch that mentions the asset,
+      // using the first tradable price at/after that instant (next-session open /
+      // first daily bar). This replaces the old "live quote at synthesis time",
+      // which was wrong for after-hours calls and undated. Carry a prior entry
+      // (price + anchor) unchanged when the stance holds.
       let entry_price = (prev && !stanceFlipped) ? (prev.entry_price ?? null) : null;
+      let entry_at = (prev && !stanceFlipped) ? (prev.entry_at ?? null) : null;
+      const entry_tweet_id = (prev && !stanceFlipped) ? (prev.entry_tweet_id ?? null) : null;
       if (entry_price == null) {
-        const price = await fetchCurrentPrice(ticker);
-        if (price != null) entry_price = price;
+        const signalTs = earliestRawMention(rawScanTweets, ticker, aliases);
+        if (signalTs) {
+          const priced = await fetchPriceAtOrAfter(ticker, signalTs);
+          if (priced != null) {
+            entry_price = priced;
+            entry_at = signalTs;
+          }
+        }
+        // Fallback: no dated signal or Yahoo had no bar → live quote, no anchor.
+        if (entry_price == null) {
+          const price = await fetchCurrentPrice(ticker);
+          if (price != null) entry_price = price;
+        }
       }
 
       enriched[ticker] = {
@@ -324,6 +365,8 @@ Output schema — include ONLY positions discussed in the new tweets. Do NOT inc
         ...(mentions > 0 ? { mentions } : {}),
         ...(pos.note ? { note: pos.note } : {}),
         ...(entry_price != null ? { entry_price } : {}),
+        ...(entry_at != null ? { entry_at } : {}),
+        ...(entry_tweet_id != null ? { entry_tweet_id } : {}),
         ...(prev?.target_price != null ? { target_price: prev.target_price } : {}),
         ...(aliases.length ? { aliases } : {}),
         ...((pos.asset_class || prev?.asset_class) ? { asset_class: pos.asset_class || prev?.asset_class } : {}),

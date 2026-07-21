@@ -87,6 +87,14 @@ export async function GET(
       mentions: typeof pos?.mentions === 'number' ? pos.mentions : null,
       asset_class: pos?.asset_class || classifyTicker(ticker),
       entry_price: typeof pos?.entry_price === 'number' ? pos.entry_price : null,
+      entry_at: typeof pos?.entry_at === 'string' ? pos.entry_at : null,
+      // Additive: the opening-call anchor (price + when + which post). Kept as a
+      // nested object so existing consumers of entry_price/entry_at are untouched.
+      entry: {
+        price: typeof pos?.entry_price === 'number' ? pos.entry_price : null,
+        at: typeof pos?.entry_at === 'string' ? pos.entry_at : null,
+        tweet_id: typeof pos?.entry_tweet_id === 'string' ? pos.entry_tweet_id : null,
+      },
       target_price: typeof pos?.target_price === 'number' ? pos.target_price : null,
       since: pos?.since ?? null,
       last_mentioned: pos?.last_mentioned ?? null,
@@ -109,6 +117,7 @@ export async function GET(
 
     // Triggering content — the source's own posts that mention this ticker.
     // Pull a generous recent window, then filter to actual mentions.
+    const entryTweetId: string | null = typeof pos?.entry_tweet_id === 'string' ? pos.entry_tweet_id : null;
     let triggers: Array<{
       twitter_id: string;
       content: string;
@@ -117,6 +126,7 @@ export async function GET(
       retweets: number;
       replies: number;
       url: string;
+      is_entry: boolean;
     }> = [];
     if (src.type !== 'youtube') {
       const { data: tweets } = await supabase
@@ -138,6 +148,7 @@ export async function GET(
           retweets: t.retweets ?? 0,
           replies: t.replies ?? 0,
           url: `https://twitter.com/${handle}/status/${t.twitter_id}`,
+          is_entry: entryTweetId != null && String(t.twitter_id) === entryTweetId,
         }));
     }
 
