@@ -42,3 +42,7 @@ next-env.d.ts
 .env*.local
 supabase/.temp/
 .claude/
+
+# transient entry-price backfill work files (batches + picks)
+scripts/backfill-work/
+scripts/.backfill-entry-prices.checkpoint.json
