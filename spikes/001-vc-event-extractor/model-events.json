@@ -1,0 +1,32 @@
+[
+  {
+    "entity": "Network School",
+    "event_type": "stance",
+    "company": null,
+    "counterparty": "Republic of Kazakhstan",
+    "amount": null,
+    "stage": null,
+    "people": ["Balaji Srinivasan"],
+    "summary": "Network School signed an MOU with Kazakhstan to open a new campus with expedited visas and active talent recruitment.",
+    "evidence": "a memorandum of understanding has been signed between the Republic of Kazakhstan and Network School. Our new campus will become a haven for global techno-optimism",
+    "source_urls": ["https://x.com/balajis/status/2079602220878712972"],
+    "source_handles": ["balajis"],
+    "posted_at": "2026-07-21T16:19",
+    "confidence": 4
+  },
+  {
+    "entity": "Network School",
+    "event_type": "stance",
+    "company": null,
+    "counterparty": "Malaysia",
+    "amount": "500M+ MYR",
+    "stage": null,
+    "people": ["Balaji Srinivasan", "Amjad Masad"],
+    "summary": "Network School put a planned 500M+ MYR Malaysia expansion on hold and signalled it will reallocate capital to other countries absent assurances.",
+    "evidence": "all further investment we were planning to make in Malaysia is on hold ... we will of course ... reallocate our capital to other countries instead",
+    "source_urls": ["https://x.com/balajis/status/2077723442166784206"],
+    "source_handles": ["balajis"],
+    "posted_at": "2026-07-16T11:54",
+    "confidence": 4
+  }
+]
