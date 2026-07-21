@@ -1,6 +1,9 @@
 import { getSupabase } from '@/lib/db/client';
 
-const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.myjunto.xyz';
+const APP_BASE_URL =
+  process.env.APP_BASE_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  'https://www.myjunto.xyz';
 const MAX_TWEET_LEN = 270;
 
 /**
@@ -46,6 +49,62 @@ interface QueuedRun {
   generated_at: string;
 }
 
+function buildQueueRow(run: QueuedRun) {
+  const summary = extractSummary(run.content) || run.subject || 'New dispatch';
+  const permalink = `${APP_BASE_URL}/newsletter/${run.newsletter_id}/${run.id}`;
+  const tweet_text = composeTweet(summary, run.tickers, permalink);
+
+  return {
+    newsletter_run_id: run.id,
+    newsletter_id: run.newsletter_id,
+    tweet_text,
+    tickers: run.tickers,
+    permalink,
+    status: 'pending',
+  };
+}
+
+export async function queueDispatchTweetForRun(run: QueuedRun): Promise<boolean> {
+  const supabase = getSupabase();
+  const row = buildQueueRow(run);
+  const { error } = await supabase
+    .from('pending_dispatch_tweets')
+    .insert(row);
+
+  if (error) {
+    if (error.code === '23505') return false;
+    throw error;
+  }
+
+  return true;
+}
+
+export async function queueDispatchTweetForRunId(runId: string): Promise<boolean> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('newsletter_runs')
+    .select('id, newsletter_id, content, subject, tickers, generated_at, status, newsletters_v2!inner(is_public)')
+    .eq('id', runId)
+    .in('status', ['delivered', 'partial_delivered'])
+    .eq('newsletters_v2.is_public', true)
+    .not('content', 'is', null)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return false;
+
+  const run: QueuedRun = {
+    id: data.id,
+    newsletter_id: data.newsletter_id,
+    content: data.content,
+    subject: data.subject,
+    tickers: (data.tickers as string[] | null) ?? [],
+    generated_at: data.generated_at,
+  };
+
+  return queueDispatchTweetForRun(run);
+}
+
 /**
  * Find newly-delivered PUBLIC newsletter_runs that don't yet have a
  * pending_dispatch_tweets row, compose a tweet for each, and insert them
@@ -59,8 +118,9 @@ export async function queueDispatchTweets(lookbackHours = 25): Promise<number> {
   const { data: runs, error: runErr } = await supabase
     .from('newsletter_runs')
     .select('id, newsletter_id, content, subject, tickers, generated_at, newsletters_v2!inner(is_public)')
-    .eq('status', 'delivered')
+    .in('status', ['delivered', 'partial_delivered'])
     .eq('newsletters_v2.is_public', true)
+    .not('content', 'is', null)
     .gte('generated_at', since)
     .order('generated_at', { ascending: false });
 
@@ -88,19 +148,7 @@ export async function queueDispatchTweets(lookbackHours = 25): Promise<number> {
 
   if (fresh.length === 0) return 0;
 
-  const rows = fresh.map((run) => {
-    const summary = extractSummary(run.content) || run.subject || 'New dispatch';
-    const permalink = `${APP_BASE_URL}/newsletter/${run.newsletter_id}/${run.id}`;
-    const tweet_text = composeTweet(summary, run.tickers, permalink);
-    return {
-      newsletter_run_id: run.id,
-      newsletter_id: run.newsletter_id,
-      tweet_text,
-      tickers: run.tickers,
-      permalink,
-      status: 'pending',
-    };
-  });
+  const rows = fresh.map((run) => buildQueueRow(run));
 
   const { error: insertErr } = await supabase
     .from('pending_dispatch_tweets')

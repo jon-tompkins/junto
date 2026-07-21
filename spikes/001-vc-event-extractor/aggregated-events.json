@@ -1,0 +1,63 @@
+[
+  {
+    "entity": "cryptorank_io",
+    "event_type": "exit",
+    "company": null,
+    "counterparty": null,
+    "amount": null,
+    "stage": null,
+    "people": [],
+    "summary": "cryptorank_io referenced an exit / liquidity event.",
+    "source_urls": [
+      "https://x.com/cryptorank_io/status/2078494562222547282",
+      "https://x.com/cryptorank_io/status/2079545233096712515"
+    ],
+    "source_handles": [
+      "cryptorank_io"
+    ],
+    "posted_at": "2026-07-18T14:58:14+00:00",
+    "evidence": "Blockchain Tokens Have Lost Up to 99.8% of Their Price Since TGE\n\nThe price of blockchain tokens that held their TGEs since January 2024 has declined across the",
+    "confidence": 3,
+    "source_count": 1
+  },
+  {
+    "entity": "a16zcrypto",
+    "event_type": "stance",
+    "company": null,
+    "counterparty": null,
+    "amount": null,
+    "stage": null,
+    "people": [],
+    "summary": "a16zcrypto expressed a concrete deployment thesis around hiring me.",
+    "source_urls": [
+      "https://x.com/a16zcrypto/status/2077451069324743034"
+    ],
+    "source_handles": [
+      "a16zcrypto"
+    ],
+    "posted_at": "2026-07-15T17:51:46+00:00",
+    "evidence": "\"If we can't make contracts, then I can't send you 5,000 bushels of wheat with 60 days payable on delivery. But if we can promiscuously make contracts, then you",
+    "confidence": 3,
+    "source_count": 1
+  },
+  {
+    "entity": "DefiLlama",
+    "event_type": "stance",
+    "company": null,
+    "counterparty": null,
+    "amount": null,
+    "stage": null,
+    "people": [],
+    "summary": "DefiLlama expressed a concrete deployment thesis around more than just price, our tokens dashboard has you covered.",
+    "source_urls": [
+      "https://x.com/DefiLlama/status/2078207594108194936"
+    ],
+    "source_handles": [
+      "DefiLlama"
+    ],
+    "posted_at": "2026-07-17T19:57:56+00:00",
+    "evidence": "If you're looking for more than just price, our tokens dashboard has you covered.\n\nRevenue, token rights, unlocks, yields, risks, markets, and valuations brough",
+    "confidence": 3,
+    "source_count": 1
+  }
+]

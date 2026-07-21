@@ -274,6 +274,12 @@ export default function AdminDashboard() {
                 Creators →
               </Link>
               <Link
+                href="/admin/distribution"
+                className="px-3 py-1.5 rounded border border-[rgb(var(--t-brass) / 0.28)] text-parchment/80 hover:text-brass hover:border-brass transition"
+              >
+                Distribution →
+              </Link>
+              <Link
                 href="/onboarding"
                 className="px-3 py-1.5 rounded border border-[rgb(var(--t-brass) / 0.28)] text-parchment/80 hover:text-brass hover:border-brass transition"
               >

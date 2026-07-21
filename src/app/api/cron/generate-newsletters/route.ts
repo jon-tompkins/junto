@@ -17,6 +17,7 @@ import { getWatchlistTickers } from '@/lib/db/watchlists';
 import { generateDispatchAudio } from '@/lib/audio/generate';
 import { setDispatchAudio } from '@/lib/db/personal-dispatches';
 import { postDispatchToDiscord } from '@/lib/discord/post';
+import { queueDispatchTweetForRunId } from '@/lib/dispatch-x-crosspost';
 
 export const maxDuration = 300; // 5 minutes
 
@@ -384,6 +385,17 @@ export async function GET(req: NextRequest) {
           finalStatus,
           deliveryErrors.length > 0 ? deliveryErrors.join('; ') : undefined,
         );
+
+        if ((newsletter as any).is_public && (finalStatus === 'delivered' || finalStatus === 'partial_delivered')) {
+          try {
+            const queued = await queueDispatchTweetForRunId(run.id);
+            if (queued) {
+              console.log(`[generate] ${newsletter.name}: queued X cross-post draft for run ${run.id}`);
+            }
+          } catch (queueErr) {
+            console.error(`[generate] ${newsletter.name}: failed to queue X cross-post draft`, queueErr);
+          }
+        }
 
         results[newsletter.name] = deliveryErrors.length > 0
           ? { status: finalStatus, subscribers: delivered, error: deliveryErrors.join('; ') }

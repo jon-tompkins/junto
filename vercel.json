@@ -17,6 +17,10 @@
       "schedule": "0,5,10 1,2,7,8,13,14,19,20 * * *"
     },
     {
+      "path": "/api/cron/dispatch-x-crosspost",
+      "schedule": "15,45 * * * *"
+    },
+    {
       "path": "/api/cron/ticker-reports",
       "schedule": "30 13 * * *"
     },
