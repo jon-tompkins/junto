@@ -5,6 +5,12 @@ const APP_BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
   'https://www.myjunto.xyz';
 const MAX_TWEET_LEN = 270;
+const DISPATCH_TWEET_NEWSLETTER_IDS = [
+  '231f1b52-7b26-4401-b8ee-85421062a72d', // CC Research
+  '01f445f0-243c-4bcf-8178-02629ebc7a5c', // VC Activity
+  '662e93de-7cf6-4250-b910-e4506f12fb73', // Crypto VC Radar
+  '72bdd132-3a78-4d80-bf7c-3b7b00c3750d', // Biotech + AI Investors
+];
 
 /**
  * Extract a short summary from newsletter markdown/HTML content.
@@ -49,6 +55,10 @@ interface QueuedRun {
   generated_at: string;
 }
 
+interface PendingDispatchTweetRef {
+  newsletter_run_id: string;
+}
+
 function buildQueueRow(run: QueuedRun) {
   const summary = extractSummary(run.content) || run.subject || 'New dispatch';
   const permalink = `${APP_BASE_URL}/newsletter/${run.newsletter_id}/${run.id}`;
@@ -85,6 +95,7 @@ export async function queueDispatchTweetForRunId(runId: string): Promise<boolean
     .from('newsletter_runs')
     .select('id, newsletter_id, content, subject, tickers, generated_at, status, newsletters_v2!inner(is_public)')
     .eq('id', runId)
+    .in('newsletter_id', DISPATCH_TWEET_NEWSLETTER_IDS)
     .in('status', ['delivered', 'partial_delivered'])
     .eq('newsletters_v2.is_public', true)
     .not('content', 'is', null)
@@ -118,6 +129,7 @@ export async function queueDispatchTweets(lookbackHours = 25): Promise<number> {
   const { data: runs, error: runErr } = await supabase
     .from('newsletter_runs')
     .select('id, newsletter_id, content, subject, tickers, generated_at, newsletters_v2!inner(is_public)')
+    .in('newsletter_id', DISPATCH_TWEET_NEWSLETTER_IDS)
     .in('status', ['delivered', 'partial_delivered'])
     .eq('newsletters_v2.is_public', true)
     .not('content', 'is', null)
@@ -128,14 +140,16 @@ export async function queueDispatchTweets(lookbackHours = 25): Promise<number> {
   if (!runs || runs.length === 0) return 0;
 
   // Find which run IDs already have a pending_dispatch_tweets row.
-  const runIds = runs.map((r: any) => r.id);
+  const queuedRuns = runs as QueuedRun[];
+  const runIds = queuedRuns.map((r) => r.id);
   const { data: existing } = await supabase
     .from('pending_dispatch_tweets')
     .select('newsletter_run_id')
     .in('newsletter_run_id', runIds);
-  const seen = new Set((existing ?? []).map((r: any) => r.newsletter_run_id));
+  const existingRows = (existing ?? []) as PendingDispatchTweetRef[];
+  const seen = new Set(existingRows.map((r) => r.newsletter_run_id));
 
-  const fresh: QueuedRun[] = (runs as any[])
+  const fresh: QueuedRun[] = queuedRuns
     .filter((r) => !seen.has(r.id))
     .map((r) => ({
       id: r.id,
