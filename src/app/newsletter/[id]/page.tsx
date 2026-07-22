@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -60,6 +61,29 @@ interface Run {
   subject: string | null;
   content: string;
   generated_at: string;
+}
+
+function SettingsRow({
+  label,
+  children,
+  last = false,
+}: {
+  label: string;
+  children: ReactNode;
+  last?: boolean;
+}) {
+  return (
+    <div
+      className={`grid gap-2 sm:grid-cols-[11rem,minmax(0,1fr)] sm:gap-0 ${
+        last ? '' : 'border-b border-[rgb(var(--t-brass) / 0.18)]'
+      }`}
+    >
+      <div className="bg-surface px-4 py-2 text-[10px] font-semibold uppercase tracking-wide text-parchment/60 font-[var(--font-oswald)] sm:px-4 sm:py-3 sm:text-xs">
+        {label}
+      </div>
+      <div className="bg-ink px-4 py-3 text-sm text-parchment break-words">{children}</div>
+    </div>
+  );
 }
 
 function ShareButton({ url, title }: { url: string; title: string }) {
@@ -431,78 +455,62 @@ export default function NewsletterDetailPage() {
 
               {/* Configuration table (now inside Settings) */}
               <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-hidden">
-          <table className="w-full">
-            <tbody>
-              <tr className="border-b border-[rgb(var(--t-brass) / 0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] bg-surface w-48">Prompt</th>
-                <td className="px-4 py-3 text-sm bg-ink">
+                <SettingsRow label="Prompt">
                   {newsletter.prompt_template ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-parchment font-medium">{newsletter.prompt_template.name}</span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium text-parchment">{newsletter.prompt_template.name}</span>
                       {newsletter.prompt_template.category && (
-                        <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-raised text-parchment/55">
+                        <span className="rounded-sm bg-raised px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-parchment/55">
                           {newsletter.prompt_template.category}
                         </span>
                       )}
                     </div>
                   ) : (
-                    <span className="text-parchment/70 font-mono text-xs whitespace-pre-wrap line-clamp-3">
+                    <span className="font-mono text-xs whitespace-pre-wrap text-parchment/70">
                       {newsletter.prompt || '—'}
                     </span>
                   )}
-                </td>
-              </tr>
-              <tr className="border-b border-[rgb(var(--t-brass) / 0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Cadence</th>
-                <td className="px-4 py-3 text-sm text-parchment bg-ink">
+                </SettingsRow>
+                <SettingsRow label="Cadence">
                   {CADENCE_LABELS[newsletter.schedule_cadence] || newsletter.schedule_cadence}
-                </td>
-              </tr>
-              <tr className="border-b border-[rgb(var(--t-brass) / 0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Send windows</th>
-                <td className="px-4 py-3 text-sm bg-ink">
+                </SettingsRow>
+                <SettingsRow label="Send windows">
                   <div className="flex flex-wrap gap-1.5">
                     {(newsletter.default_send_windows && newsletter.default_send_windows.length > 0
                       ? newsletter.default_send_windows
                       : ['morning']
                     ).map((w) => (
-                      <span key={w} className="text-xs px-2 py-0.5 rounded-sm bg-raised text-parchment/80 border border-[rgb(var(--t-brass) / 0.18)]">
+                      <span key={w} className="rounded-sm border border-[rgb(var(--t-brass) / 0.18)] bg-raised px-2 py-0.5 text-xs text-parchment/80">
                         {WINDOW_LABELS[w] || w}
                       </span>
                     ))}
                   </div>
-                </td>
-              </tr>
-              <tr className="border-b border-[rgb(var(--t-brass) / 0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Send days</th>
-                <td className="px-4 py-3 text-sm bg-ink">
+                </SettingsRow>
+                <SettingsRow label="Send days">
                   <div className="flex flex-wrap gap-1">
                     {(newsletter.send_days && newsletter.send_days.length > 0
                       ? newsletter.send_days
                       : ['mon', 'tue', 'wed', 'thu', 'fri']
                     ).map((d) => (
-                      <span key={d} className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-raised text-parchment/80 border border-[rgb(var(--t-brass) / 0.18)]">
+                      <span key={d} className="rounded-sm border border-[rgb(var(--t-brass) / 0.18)] bg-raised px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-parchment/80">
                         {DAY_LABELS[d] || d}
                       </span>
                     ))}
                   </div>
-                </td>
-              </tr>
-              <tr className="border-b border-[rgb(var(--t-brass) / 0.18)]">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Watchlist</th>
-                <td className="px-4 py-3 text-sm bg-ink">
+                </SettingsRow>
+                <SettingsRow label="Watchlist">
                   {newsletter.tickers && newsletter.tickers.length > 0 ? (
                     <div className="flex flex-wrap items-center gap-1.5">
                       {newsletter.watchlist && (
                         <Link
                           href={`/watchlists/${newsletter.watchlist.id}`}
-                          className="text-xs text-brass hover:text-brass/80 font-medium mr-1"
+                          className="mr-1 text-xs font-medium text-brass hover:text-brass/80"
                         >
                           {newsletter.watchlist.name} →
                         </Link>
                       )}
                       {newsletter.tickers.map((t) => (
-                        <span key={t} className="text-[11px] font-mono px-1.5 py-0.5 rounded-sm bg-raised text-parchment/80 border border-[rgb(var(--t-brass) / 0.18)]">
+                        <span key={t} className="rounded-sm border border-[rgb(var(--t-brass) / 0.18)] bg-raised px-1.5 py-0.5 text-[11px] font-mono text-parchment/80">
                           {t}
                         </span>
                       ))}
@@ -510,20 +518,14 @@ export default function NewsletterDetailPage() {
                   ) : (
                     <span className="text-parchment/55">No watchlist</span>
                   )}
-                </td>
-              </tr>
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-parchment/60 uppercase tracking-wide font-[var(--font-oswald)] bg-surface">Voice memo</th>
-                <td className="px-4 py-3 text-sm bg-ink">
+                </SettingsRow>
+                <SettingsRow label="Voice memo" last>
                   {newsletter.audio_enabled ? (
-                    <span className="text-parchment/80">🎧 Enabled · subscribers can opt in for +2 credits</span>
+                    <span className="text-parchment/80">Enabled · subscribers can opt in for +2 credits</span>
                   ) : (
                     <span className="text-parchment/55">Not enabled</span>
                   )}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </SettingsRow>
               </div>
             </div>
           )}
@@ -642,7 +644,7 @@ export default function NewsletterDetailPage() {
                 >
                   {feedUrlCopied ? 'Copied!' : 'Copy feed URL'}
                 </button>
-                <p className="text-xs text-parchment/60">You'll also receive the audio in Telegram. The feed combines audio from all your subscribed dispatches.</p>
+                <p className="text-xs text-parchment/60">You&apos;ll also receive the audio in Telegram. The feed combines audio from all your subscribed dispatches.</p>
                 <button
                   onClick={() => { setShowSubscribeModal(false); setFeedUrl(null); }}
                   className="w-full px-4 py-2.5 bg-brass hover:bg-brass/80 text-ink rounded text-sm font-medium transition font-[var(--font-oswald)] uppercase tracking-wide"
