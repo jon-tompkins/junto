@@ -19,6 +19,16 @@
  *   npx tsx scripts/backfill-entry-prices.ts --limit 10      # dry-run, 10 rows
  *   npx tsx scripts/backfill-entry-prices.ts --limit 50 --apply   # write 50 rows
  *   npx tsx scripts/backfill-entry-prices.ts --reset         # clear the cursor
+ *
+ * Target specific sources (all their unanchored positions; ignores the cursor):
+ *   npx tsx scripts/backfill-entry-prices.ts --source @alphatrends,@ripster47
+ *
+ * Keyless two-phase path (no ANTHROPIC_API_KEY; classify via an external OAuth
+ * Claude instead of the inline Haiku call):
+ *   1) dump candidate posts:  --source @alphatrends --dump /tmp/cand.json
+ *   2) (classify each position, write {"<source_id>|<ticker>": index|"none"})
+ *   3) dry-run pricing:       --source @alphatrends --picks /tmp/picks.json
+ *   4) write:                 --source @alphatrends --picks /tmp/picks.json --apply
  */
 import { config as loadEnv } from 'dotenv';
 loadEnv({ path: '.env.local' });
@@ -39,6 +49,23 @@ const RESET = argv.includes('--reset');
 const limitArg = argv[argv.indexOf('--limit') + 1];
 const LIMIT = argv.includes('--limit') && limitArg ? Math.max(1, parseInt(limitArg, 10)) : 25;
 const DELAY_MS = 350; // gentle pacing between positions (Yahoo + Anthropic)
+
+function argVal(name: string): string | undefined {
+  const i = argv.indexOf(name);
+  return i >= 0 ? argv[i + 1] : undefined;
+}
+// Restrict to specific sources (comma-separated @handles or raw source ids). When
+// unset the run covers all sources, cursor-paged by --limit as before.
+const SOURCES = (argVal('--source') || '')
+  .split(',')
+  .map((s) => s.trim().replace(/^@/, ''))
+  .filter(Boolean);
+// Keyless two-phase path for boxes without ANTHROPIC_API_KEY (Claude via OAuth):
+//   --dump <file>   phase 1: write candidate opening-call posts per position, no LLM
+//   --picks <file>  phase 2: read {"<source_id>|<ticker>": index|"none"} and price those
+// When neither is set the script uses the inline Haiku classifier (needs a key).
+const DUMP = argVal('--dump');
+const PICKS = argVal('--picks');
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -77,7 +104,11 @@ async function main() {
     (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.JUNTO_SUPABASE_SERVICE_KEY)!,
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+  // Only needed for the inline classifier path. In --dump/--picks mode we route the
+  // opening-call judgment through an external OAuth Claude instead, so a missing key
+  // here is fine.
+  const anthropic =
+    DUMP || PICKS ? null : new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
   if (RESET) {
     try { fs.unlinkSync(CHECKPOINT); } catch { /* already gone */ }
@@ -85,25 +116,48 @@ async function main() {
     return;
   }
 
-  const cursor = readCursor();
+  // Resolve --source @handles/ids → source_id set (skips the cursor when set, since
+  // a hand-picked source run is self-limiting).
+  let sourceIdFilter: string[] | null = null;
+  if (SOURCES.length) {
+    const { data: sres } = await supabase
+      .from('sources')
+      .select('id, handle_or_url')
+      .in('handle_or_url', SOURCES);
+    const ids = new Set((sres || []).map((s: any) => s.id));
+    for (const s of SOURCES) if (/^[0-9a-f-]{36}$/i.test(s)) ids.add(s); // raw ids too
+    sourceIdFilter = Array.from(ids);
+    console.log(`source filter: ${SOURCES.join(', ')} → ${sourceIdFilter.length} id(s)`);
+    if (sourceIdFilter.length === 0) {
+      console.log('No matching sources. Check the handles.');
+      return;
+    }
+  }
+
+  const cursor = SOURCES.length ? null : readCursor();
   console.log(
-    `[backfill-entry-prices] mode=${APPLY ? 'APPLY' : 'DRY-RUN'} limit=${LIMIT} ` +
+    `[backfill-entry-prices] mode=${APPLY ? 'APPLY' : 'DRY-RUN'}${DUMP ? ' phase=dump' : PICKS ? ' phase=picks' : ''} ` +
+      `limit=${SOURCES.length ? 'all-for-source' : LIMIT} ` +
       `cursor=${cursor ? `${cursor.source_id}|${cursor.ticker}` : 'start'}`,
   );
 
   // Candidates = positions not yet anchored to a signal (entry_at still null).
   // Ordered deterministically so the cursor gives stable resume across runs.
-  const { data: rows, error } = await supabase
+  let q = supabase
     .from('source_positions')
     .select('source_id, ticker, stance, aliases, entry_price')
     .is('entry_at', null)
     .order('source_id', { ascending: true })
     .order('ticker', { ascending: true });
+  if (sourceIdFilter) q = q.in('source_id', sourceIdFilter);
+  const { data: rows, error } = await q;
   if (error) throw error;
 
   const pending = (rows || []).filter((r) => afterCursor(r, cursor));
   const remainingBefore = pending.length;
-  const chunk = pending.slice(0, LIMIT);
+  // A --source run processes every unanchored position for those sources; otherwise
+  // page by --limit off the cursor.
+  const chunk = SOURCES.length ? pending : pending.slice(0, LIMIT);
   if (chunk.length === 0) {
     console.log('Nothing left to backfill. ✅ (clear cursor with --reset to re-run)');
     return;
@@ -116,6 +170,13 @@ async function main() {
     .select('id, handle_or_url, type')
     .in('id', sourceIds);
   const srcById = new Map((srcRows || []).map((s: any) => [s.id, s]));
+
+  // Phase-2 picks map: { "<source_id>|<ticker>": <candidate index> | "none" }.
+  const picksMap: Record<string, number | 'none'> | null = PICKS
+    ? JSON.parse(fs.readFileSync(PICKS, 'utf8'))
+    : null;
+  // Phase-1 dump accumulator.
+  const dumpOut: any[] = [];
 
   let processed = 0;
   let updated = 0;
@@ -159,14 +220,42 @@ async function main() {
       continue;
     }
 
-    // Ask Haiku which post is the true opening call. One cheap call per position.
-    const numbered = mentions
-      .map((t: any, i: number) => `[${i}] ${t.posted_at} — ${String(t.content).replace(/\s+/g, ' ').slice(0, 220)}`)
-      .join('\n');
     const stance = row.stance || 'directional';
+
+    // Phase 1 (--dump): record the candidate posts for external OAuth classification
+    // and move on — no LLM call, no write. I read this file, pick the opening index
+    // per position, and feed it back via --picks.
+    if (DUMP) {
+      dumpOut.push({
+        source_id,
+        ticker,
+        stance,
+        handle: src?.handle_or_url || null,
+        entry_price_old: row.entry_price ?? null,
+        candidates: mentions.map((t: any, i: number) => ({
+          i,
+          twitter_id: String(t.twitter_id),
+          posted_at: t.posted_at,
+          content: String(t.content).replace(/\s+/g, ' ').slice(0, 280),
+        })),
+      });
+      continue;
+    }
+
     let openingIdx: number | null = null;
-    try {
-      const resp = await anthropic.messages.create({
+
+    // Phase 2 (--picks): use the externally-chosen opening index for this position.
+    if (picksMap) {
+      const pick = picksMap[`${source_id}|${ticker}`];
+      openingIdx =
+        typeof pick === 'number' && pick >= 0 && pick < mentions.length ? pick : null;
+    } else {
+      // Ask Haiku which post is the true opening call. One cheap call per position.
+      const numbered = mentions
+        .map((t: any, i: number) => `[${i}] ${t.posted_at} — ${String(t.content).replace(/\s+/g, ' ').slice(0, 220)}`)
+        .join('\n');
+      try {
+        const resp = await anthropic!.messages.create({
         model: HAIKU_MODEL,
         max_tokens: 64,
         messages: [
@@ -187,12 +276,13 @@ async function main() {
         const idx = parseInt(m[0], 10);
         if (idx >= 0 && idx < mentions.length) openingIdx = idx;
       }
-    } catch (err) {
-      console.log(`  · ${label}: Haiku classify failed (${(err as Error).message}) — skip`);
-      skipped++;
-      writeCursor(lastDone);
-      await sleep(DELAY_MS);
-      continue;
+      } catch (err) {
+        console.log(`  · ${label}: Haiku classify failed (${(err as Error).message}) — skip`);
+        skipped++;
+        writeCursor(lastDone);
+        await sleep(DELAY_MS);
+        continue;
+      }
     }
 
     if (openingIdx == null) {
@@ -258,6 +348,16 @@ async function main() {
 
     writeCursor(lastDone);
     await sleep(DELAY_MS);
+  }
+
+  // Phase 1: emit the candidate file and stop — nothing is priced or written.
+  if (DUMP) {
+    fs.writeFileSync(DUMP, JSON.stringify(dumpOut, null, 2));
+    console.log(
+      `\n[dump done] wrote ${dumpOut.length} position(s) with candidates → ${DUMP}\n` +
+        `Classify each, then re-run with --picks <file> to dry-run pricing.`,
+    );
+    return;
   }
 
   const remainingAfter = remainingBefore - processed;
