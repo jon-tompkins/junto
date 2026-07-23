@@ -9,7 +9,7 @@ export default async function TradingLayout({ children }: { children: React.Reac
   return (
     <>
       {children}
-      <footer className="max-w-6xl mx-auto px-4 sm:px-6 pb-10 pt-2 text-[11px] text-parchment/50 font-[var(--font-oswald)] uppercase tracking-wide flex items-center gap-2">
+      <footer className="max-w-6xl mx-auto px-4 sm:px-6 pb-10 pt-2 text-[11px] text-parchment/50 font-[var(--font-oswald)] uppercase tracking-wide flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
         <span>Powered by</span>
         <a
           href="https://alpaca.markets"
@@ -19,7 +19,7 @@ export default async function TradingLayout({ children }: { children: React.Reac
         >
           Alpaca
         </a>
-        <span>· orders, positions, and protective brackets execute in your own Alpaca account.</span>
+        <span className="leading-relaxed sm:leading-none">orders, positions, and protective brackets execute in your own Alpaca account.</span>
       </footer>
     </>
   );

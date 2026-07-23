@@ -201,8 +201,9 @@ export default function AdminTradingPage() {
       setTickResult(JSON.stringify(data.results || data, null, 2));
       // Refresh mandate stats after a manual tick so new proposals/opens show.
       fetch('/api/admin/trading/mandates').then(r => r.ok ? r.json() : null).then(d => { if (d?.mandates) setMandates(d.mandates); }).catch(() => {});
-    } catch (e: any) {
-      setTickResult(`Error: ${e.message}`);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      setTickResult(`Error: ${message}`);
     } finally {
       if (mandateId) setTickingId(null); else setTicking(false);
     }
@@ -248,17 +249,17 @@ export default function AdminTradingPage() {
             <h1 className="text-2xl sm:text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">Admin · Trading</h1>
             <p className="text-sm text-parchment/60 mt-1">{mandates.length} mandates</p>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Link
               href="/trading/portfolio"
-              className="px-3 py-1.5 rounded text-sm bg-surface border border-[rgb(var(--t-brass) / 0.28)] text-parchment/60 hover:text-parchment transition"
+              className="w-full rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface px-3 py-2 text-center text-sm text-parchment/60 transition hover:text-parchment sm:w-auto sm:py-1.5"
             >
               📊 Portfolio tool
             </Link>
             <button
               onClick={() => runTick('midday')}
               disabled={ticking}
-              className="px-3 py-1.5 rounded text-sm bg-surface border border-[rgb(var(--t-brass) / 0.28)] text-parchment/60 hover:text-parchment transition disabled:opacity-50"
+              className="w-full rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface px-3 py-2 text-sm text-parchment/60 transition hover:text-parchment disabled:opacity-50 sm:w-auto sm:py-1.5"
             >
               {ticking ? 'Ticking…' : 'Run tick for all'}
             </button>
@@ -266,7 +267,7 @@ export default function AdminTradingPage() {
               onClick={() => setShowCreate(s => !s)}
               disabled={telegramLinked === false}
               title={telegramLinked === false ? 'Link Telegram first' : undefined}
-              className="px-3 py-1.5 rounded text-sm bg-brass text-ink font-semibold hover:bg-brass/80 transition disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-full rounded bg-brass px-3 py-2 text-sm font-semibold text-ink transition hover:bg-brass/80 disabled:cursor-not-allowed disabled:opacity-30 sm:w-auto sm:py-1.5"
             >
               {showCreate ? 'Cancel' : '+ New mandate'}
             </button>
@@ -329,7 +330,7 @@ export default function AdminTradingPage() {
             <div>
               <div className="text-sm font-semibold text-bear mb-1">Telegram not linked</div>
               <p className="text-xs text-parchment/60">
-                Trade approvals are sent to your Telegram DM. Link your account first — without it, proposed trades can't be approved and won't reach Alpaca.
+                Trade approvals are sent to your Telegram DM. Link your account first — without it, proposed trades can&apos;t be approved and won&apos;t reach Alpaca.
               </p>
             </div>
             <Link href="/settings" className="self-start sm:self-auto px-3 py-1.5 rounded text-xs bg-brass text-ink font-semibold whitespace-nowrap">
