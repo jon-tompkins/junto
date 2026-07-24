@@ -59,8 +59,12 @@ const DAY_LABELS: Record<string, string> = {
 interface Run {
   id: string;
   subject: string | null;
-  content: string;
+  content: string | null;
   generated_at: string;
+}
+
+function hasRenderableContent(run: Run): boolean {
+  return typeof run.content === 'string' && run.content.trim().length > 0;
 }
 
 function SettingsRow({
@@ -178,9 +182,10 @@ export default function NewsletterDetailPage() {
         if (runsRes.ok) {
           const data = await runsRes.json();
           const runs = data.runs || [];
-          if (runs.length > 0) {
-            setLatestRun(runs[0]);
-            setOlderRuns(runs.slice(1));
+          const contentfulRuns = runs.filter(hasRenderableContent);
+          if (contentfulRuns.length > 0) {
+            setLatestRun(contentfulRuns[0]);
+            setOlderRuns(contentfulRuns.slice(1));
           }
         }
       } catch {}
@@ -554,7 +559,7 @@ export default function NewsletterDetailPage() {
             <div className="bg-surface border border-[rgb(var(--t-brass) / 0.18)] rounded p-6 sm:p-8">
               <div
                 className="research-content prose prose-invert max-w-none text-parchment/80 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: markdownToHtml(latestRun.content) }}
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(latestRun.content || '') }}
               />
             </div>
           </div>
@@ -608,7 +613,7 @@ export default function NewsletterDetailPage() {
                       <div className="border-t border-[rgb(var(--t-brass) / 0.18)] p-6">
                         <div
                           className="research-content prose prose-invert prose-sm max-w-none text-parchment/80 leading-relaxed"
-                          dangerouslySetInnerHTML={{ __html: markdownToHtml(run.content) }}
+                          dangerouslySetInnerHTML={{ __html: markdownToHtml(run.content || '') }}
                         />
                       </div>
                     )}
