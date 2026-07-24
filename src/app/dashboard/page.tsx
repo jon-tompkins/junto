@@ -1500,14 +1500,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ─── Received dispatches feed ─────────────────── */}
-        <div className="mb-8">
-          <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/60 font-[var(--font-oswald)] mb-2 px-1">
-            Received Dispatches
-          </h2>
-          <ReceivedDispatchesFeed />
-        </div>
-
         {/* ─── Legacy primary-junto detail panel (hidden) ── */}
         <div className="hidden">
         <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-hidden">
@@ -2229,6 +2221,14 @@ export default function DashboardPage() {
         </Section>
           );
         })()}
+
+        {/* ─── Received dispatches feed ─────────────────── */}
+        <div className="mb-8">
+          <h2 className="text-[10px] uppercase tracking-[0.18em] text-parchment/60 font-[var(--font-oswald)] mb-2 px-1">
+            Received Dispatches
+          </h2>
+          <ReceivedDispatchesFeed />
+        </div>
 
         <p className="text-xs text-parchment/50 text-center">
           Looking for your dispatches or credit history? <Link href="/profile" className="text-brass hover:underline">Profile →</Link>
