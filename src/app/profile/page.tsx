@@ -27,6 +27,16 @@ interface Account {
   isPro: boolean;
 }
 
+function formatTxDate(value: string) {
+  return new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: '2-digit',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
 export default function ProfilePage() {
   const { data: session, status } = useSession();
 
@@ -117,7 +127,7 @@ export default function ProfilePage() {
           </div>
           {created.length === 0 ? (
             <p className="text-sm text-parchment/60 border border-dashed border-[rgb(var(--t-brass) / 0.28)] rounded p-6 text-center">
-              You haven't created any dispatches yet.
+              You haven&apos;t created any dispatches yet.
             </p>
           ) : (
             <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-hidden">
@@ -178,41 +188,60 @@ export default function ProfilePage() {
               No credit activity yet.
             </p>
           ) : (
-            <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-surface text-[10px] uppercase tracking-[0.12em] text-parchment/60 border-b border-[rgb(var(--t-brass) / 0.18)]">
-                    <th className="text-left px-5 py-2 font-normal">Date</th>
-                    <th className="text-left px-5 py-2 font-normal">Type</th>
-                    <th className="text-left px-5 py-2 font-normal">Description</th>
-                    <th className="text-right px-5 py-2 font-normal">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map((tx) => {
-                    const pos = tx.amount >= 0;
-                    const typeLabel = tx.type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-                    return (
-                      <tr key={tx.id} className="border-b border-[rgb(var(--t-brass) / 0.08)] hover:bg-raised">
-                        <td className="px-5 py-2.5 text-parchment/70 text-xs whitespace-nowrap">
-                          {new Date(tx.created_at).toLocaleString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: '2-digit',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                          })}
-                        </td>
-                        <td className="px-5 py-2.5 text-parchment/70 text-xs whitespace-nowrap">{typeLabel}</td>
-                        <td className="px-5 py-2.5 text-parchment/85 text-xs">{tx.description || '—'}</td>
-                        <td className={`px-5 py-2.5 text-right font-mono whitespace-nowrap ${pos ? 'text-bull' : 'text-bear'}`}>
+            <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-hidden">
+              <div className="md:hidden divide-y divide-[rgb(var(--t-brass) / 0.12)]">
+                {history.map((tx) => {
+                  const pos = tx.amount >= 0;
+                  const typeLabel = tx.type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                  return (
+                    <article key={tx.id} className="px-4 py-3 bg-surface/35">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[10px] uppercase tracking-[0.12em] text-parchment/55">{typeLabel}</p>
+                          <p className="mt-1 text-xs text-parchment/65">{formatTxDate(tx.created_at)}</p>
+                        </div>
+                        <p className={`shrink-0 font-mono text-sm ${pos ? 'text-bull' : 'text-bear'}`}>
                           {pos ? '+' : ''}{tx.amount.toLocaleString()}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </p>
+                      </div>
+                      <p className="mt-3 text-sm leading-snug text-parchment/85">
+                        {tx.description || '—'}
+                      </p>
+                    </article>
+                  );
+                })}
+              </div>
+
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full min-w-[720px] text-sm">
+                  <thead>
+                    <tr className="bg-surface text-[10px] uppercase tracking-[0.12em] text-parchment/60 border-b border-[rgb(var(--t-brass) / 0.18)]">
+                      <th className="text-left px-5 py-2 font-normal">Date</th>
+                      <th className="text-left px-5 py-2 font-normal">Type</th>
+                      <th className="text-left px-5 py-2 font-normal">Description</th>
+                      <th className="text-right px-5 py-2 font-normal">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((tx) => {
+                      const pos = tx.amount >= 0;
+                      const typeLabel = tx.type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                      return (
+                        <tr key={tx.id} className="border-b border-[rgb(var(--t-brass) / 0.08)] hover:bg-raised">
+                          <td className="px-5 py-2.5 text-parchment/70 text-xs whitespace-nowrap">
+                            {formatTxDate(tx.created_at)}
+                          </td>
+                          <td className="px-5 py-2.5 text-parchment/70 text-xs whitespace-nowrap">{typeLabel}</td>
+                          <td className="px-5 py-2.5 text-parchment/85 text-xs">{tx.description || '—'}</td>
+                          <td className={`px-5 py-2.5 text-right font-mono whitespace-nowrap ${pos ? 'text-bull' : 'text-bear'}`}>
+                            {pos ? '+' : ''}{tx.amount.toLocaleString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </section>
