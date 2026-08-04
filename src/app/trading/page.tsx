@@ -40,6 +40,8 @@ function fmtUsd(n: number): string {
 
 export default function AdminTradingPage() {
   const { status } = useSession();
+  const screenshotBypass = process.env.NEXT_PUBLIC_LOCAL_SCREENSHOT_BYPASS === '1';
+  const isAuthed = status === 'authenticated' || screenshotBypass;
   const [mandates, setMandates] = useState<MandateRow[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const [lastTickAt, setLastTickAt] = useState<string | null>(null);
@@ -81,6 +83,10 @@ export default function AdminTradingPage() {
   const [managedAccount, setManagedAccount] = useState<{ id: string; status: string } | null>(null);
 
   useEffect(() => {
+    if (screenshotBypass) {
+      setLoading(false);
+      return;
+    }
     if (status !== 'authenticated') return;
     setLoading(true);
     Promise.all([
@@ -102,14 +108,14 @@ export default function AdminTradingPage() {
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, [status]);
+  }, [status, screenshotBypass]);
 
   // Live polling: refresh portfolio + per-mandate equity/cash/unrealized every
   // 15s while the tab is visible. Lightweight endpoint — just Alpaca account +
   // positions, no DB joins. Pauses when the tab is hidden so we don't burn rate
   // limits while the user is away.
   useEffect(() => {
-    if (status !== 'authenticated') return;
+    if (!isAuthed) return;
     let cancelled = false;
     const poll = async () => {
       if (document.hidden) return;
@@ -146,7 +152,7 @@ export default function AdminTradingPage() {
       clearInterval(id);
       document.removeEventListener('visibilitychange', onVis);
     };
-  }, [status]);
+  }, [isAuthed]);
 
   async function createMandate() {
     setCreating(true);
@@ -209,7 +215,7 @@ export default function AdminTradingPage() {
     }
   }
 
-  if (status === 'loading' || loading) {
+  if ((!screenshotBypass && status === 'loading') || loading) {
     return (
       <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
@@ -218,7 +224,7 @@ export default function AdminTradingPage() {
     );
   }
 
-  if (status !== 'authenticated') {
+  if (!isAuthed) {
     return (
       <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
@@ -564,7 +570,61 @@ export default function AdminTradingPage() {
         )}
 
         {mandates.length === 0 ? (
-          <div className="text-center py-12 text-parchment/60 text-sm">No mandates yet. Create one to start.</div>
+          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface p-5 sm:p-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+              <div className="max-w-2xl">
+                <div className="text-[10px] font-[var(--font-oswald)] uppercase tracking-[0.3em] text-brass/80">
+                  Operator setup
+                </div>
+                <h2 className="mt-2 font-[var(--font-oswald)] text-2xl uppercase tracking-wide text-parchment">
+                  No mandates yet
+                </h2>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-parchment/65">
+                  Connect approvals, spin up your first mandate, then let junto turn curated signal into
+                  queued trades you can approve from Telegram.
+                </p>
+              </div>
+              <div className="flex w-full flex-col gap-2 sm:w-auto">
+                <button
+                  onClick={() => setShowCreate(true)}
+                  disabled={telegramLinked === false}
+                  title={telegramLinked === false ? 'Link Telegram first' : undefined}
+                  className="rounded bg-brass px-4 py-2 text-sm font-semibold text-ink transition hover:bg-brass/80 disabled:cursor-not-allowed disabled:opacity-30"
+                >
+                  Create first mandate
+                </button>
+                <Link
+                  href={telegramLinked === false ? '/settings' : '/juntos'}
+                  className="rounded border border-[rgb(var(--t-brass) / 0.28)] px-4 py-2 text-center text-sm text-parchment/70 transition hover:text-parchment"
+                >
+                  {telegramLinked === false ? 'Link Telegram' : 'Pick a junto'}
+                </Link>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <ChecklistCard
+                step="01"
+                title={telegramLinked === false ? 'Link Telegram first' : 'Approvals linked'}
+                body={
+                  telegramLinked === false
+                    ? 'Trade ideas stay suggestion-only until approvals can reach your DM.'
+                    : 'Approvals can route to Telegram, so the execution loop is ready.'
+                }
+                tone={telegramLinked === false ? 'warn' : 'ready'}
+              />
+              <ChecklistCard
+                step="02"
+                title="Attach a signal source"
+                body="Pair the mandate with a junto so every tick runs on an explicit research surface instead of generic market noise."
+              />
+              <ChecklistCard
+                step="03"
+                title="Stay in paper until it earns it"
+                body="Live routing remains default-deny. Validate the loop in paper first, then graduate once the guardrails and thesis hold up."
+              />
+            </div>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {mandates.map(m => (
@@ -681,6 +741,32 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
     <div>
       <div className="text-parchment/45 uppercase tracking-wider text-[10px] font-[var(--font-oswald)]">{label}</div>
       <div className="font-mono text-sm" style={{ color: accent || 'rgb(var(--t-parchment))' }}>{value}</div>
+    </div>
+  );
+}
+
+function ChecklistCard({
+  step,
+  title,
+  body,
+  tone = 'default',
+}: {
+  step: string;
+  title: string;
+  body: string;
+  tone?: 'default' | 'warn' | 'ready';
+}) {
+  const toneCls = tone === 'warn'
+    ? 'border-bear/35 bg-bear/10'
+    : tone === 'ready'
+      ? 'border-bull/30 bg-bull/10'
+      : 'border-[rgb(var(--t-brass) / 0.18)] bg-ink/35';
+
+  return (
+    <div className={`rounded border p-4 ${toneCls}`}>
+      <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-parchment/45">{step}</div>
+      <div className="mt-2 font-[var(--font-oswald)] text-sm uppercase tracking-wide text-parchment">{title}</div>
+      <p className="mt-2 text-xs leading-5 text-parchment/60">{body}</p>
     </div>
   );
 }

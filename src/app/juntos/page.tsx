@@ -297,7 +297,48 @@ export default function JuntosPage() {
             )}
           </div>
         ) : (
-          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-x-auto">
+          <>
+          {/* Mobile: stacked cards (table forces a 640px horizontal scroll on phones) */}
+          <div className="md:hidden space-y-3">
+            {filtered.map((junto) => (
+              <button
+                key={junto.id}
+                type="button"
+                onClick={() => setSelectedJunto(junto)}
+                className="w-full text-left rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface p-4 transition-colors hover:bg-raised"
+              >
+                <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                  <span className="text-sm font-semibold uppercase tracking-wide text-parchment font-[var(--font-oswald)]">
+                    {junto.name}
+                  </span>
+                  {junto.is_own && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-sm" style={{ background: 'rgb(var(--t-brass) / 0.15)', color: 'rgb(var(--t-brass))', border: '1px solid rgb(var(--t-brass) / 0.28)' }}>
+                      Yours
+                    </span>
+                  )}
+                  {!junto.is_public && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-sm" style={{ background: 'rgb(var(--t-raised))', color: 'rgb(var(--t-parchment) / 0.45)', border: '1px solid rgb(var(--t-brass) / 0.18)' }}>
+                      Private
+                    </span>
+                  )}
+                </div>
+                {junto.description && (
+                  <p className="text-sm text-parchment/60 line-clamp-2 mb-2.5">{junto.description}</p>
+                )}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {junto.sources.length > 0 ? <AvatarStack sources={junto.sources} max={5} /> : null}
+                    <span className="text-xs text-parchment/55 font-mono shrink-0">{junto.source_count} sources</span>
+                  </div>
+                  <span className="text-[11px] text-parchment/50 shrink-0">
+                    {junto.dispatches.length > 0 ? `${junto.dispatches.length} dispatch${junto.dispatches.length === 1 ? '' : 'es'}` : 'No dispatches'}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+          {/* Desktop: full table */}
+          <div className="hidden md:block rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-x-auto">
             <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="bg-surface border-b border-[rgb(var(--t-brass) / 0.28)]">
@@ -368,6 +409,7 @@ export default function JuntosPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
