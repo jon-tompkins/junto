@@ -192,7 +192,76 @@ export default function ExplorePage() {
             </Link>
           </div>
         ) : (
-          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-x-auto">
+          <>
+          {/* Mobile: card stack (avoids clipped horizontal-scroll table) */}
+          <div className="sm:hidden flex flex-col gap-2.5">
+            {newsletters.map((nl) => {
+              const isSubscribed = subscribedIds.has(nl.id);
+              return (
+                <div
+                  key={nl.id}
+                  onClick={() => { window.location.href = `/newsletter/${nl.id}`; }}
+                  className="rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface/40 p-3.5 cursor-pointer active:bg-surface transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-parchment font-[var(--font-oswald)] uppercase tracking-wide">{nl.name}</div>
+                      {nl.description && (
+                        <p className="text-xs text-parchment/55 mt-1 line-clamp-2">{nl.description}</p>
+                      )}
+                    </div>
+                    <span className="shrink-0 text-xs px-2 py-0.5 rounded-sm bg-brass/15 text-brass font-medium whitespace-nowrap">
+                      {CADENCE_LABELS[nl.schedule_cadence] || nl.schedule_cadence}
+                    </span>
+                  </div>
+                  {nl.labels.length > 0 && (
+                    <div className="flex gap-1 flex-wrap mt-2">
+                      {nl.labels.slice(0, 3).map((label) => (
+                        <span key={label} className="text-[10px] px-1.5 py-0.5 rounded-sm bg-raised text-parchment/60">
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between gap-2 mt-3">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {nl.curator ? (
+                        <>
+                          {nl.curator.avatar_url ? (
+                            <img src={nl.curator.avatar_url} alt="" className="w-4 h-4 rounded-sm shrink-0" />
+                          ) : (
+                            <div className="w-4 h-4 rounded-sm bg-raised shrink-0" />
+                          )}
+                          <span className="text-xs text-parchment/55 truncate">
+                            {nl.curator.twitter_handle ? `@${nl.curator.twitter_handle}` : nl.curator.name || 'Anonymous'}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-xs text-parchment/45">—</span>
+                      )}
+                      <span className="text-xs text-parchment/45 font-mono whitespace-nowrap ml-1">· {nl.subscriber_count} subs</span>
+                    </div>
+                    <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                      {isSubscribed ? (
+                        <span className="text-xs px-2 py-1 rounded bg-bull/10 text-bull font-medium">
+                          ✓ Subscribed
+                        </span>
+                      ) : (
+                        <button
+                          onClick={(e) => openSubscribeModal(e, nl)}
+                          className="text-xs px-2.5 py-1 rounded bg-brass hover:bg-brass/80 text-ink font-semibold transition font-[var(--font-oswald)] uppercase tracking-wide"
+                        >
+                          Subscribe
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Desktop: table */}
+          <div className="hidden sm:block rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-x-auto">
             <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="bg-surface border-b border-[rgb(var(--t-brass) / 0.28)]">
@@ -272,6 +341,7 @@ export default function ExplorePage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
