@@ -456,7 +456,7 @@ export default function PositionsPage() {
           // ─── Table ─────────────────────────────────────────────────
           <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded overflow-hidden">
             <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
+            <table className="w-full min-w-0 sm:min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-[rgb(var(--t-brass) / 0.28)]">
                   {([
@@ -476,8 +476,8 @@ export default function PositionsPage() {
                       </span>
                     </th>
                   ))}
-                  <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-parchment/55 font-[var(--font-oswald)]">Type</th>
-                  <th className="text-left px-5 py-3 text-xs uppercase tracking-wider text-parchment/55 font-[var(--font-oswald)]">Profiles</th>
+                  <th className="hidden sm:table-cell text-left px-5 py-3 text-xs uppercase tracking-wider text-parchment/55 font-[var(--font-oswald)]">Type</th>
+                  <th className="hidden sm:table-cell text-left px-5 py-3 text-xs uppercase tracking-wider text-parchment/55 font-[var(--font-oswald)]">Profiles</th>
                   {session?.user && <th className="px-3 py-3 w-8" />}
                 </tr>
               </thead>
@@ -536,10 +536,10 @@ export default function PositionsPage() {
                           )}
                         </div>
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="hidden sm:table-cell px-5 py-3">
                         <span className="text-xs capitalize text-parchment/50">{item.category}</span>
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="hidden sm:table-cell px-5 py-3">
                         <div className="flex flex-wrap gap-2">
                           {visibleSources.slice(0, 5).map((s) => (
                             <Link
