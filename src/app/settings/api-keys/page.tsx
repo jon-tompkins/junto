@@ -152,8 +152,8 @@ export default function ApiKeysPage() {
             No keys yet.
           </p>
         ) : (
-          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="rounded border border-[rgb(var(--t-brass) / 0.28)] overflow-x-auto">
+            <table className="w-full text-sm min-w-[520px]">
               <thead>
                 <tr className="bg-surface text-[10px] uppercase tracking-[0.12em] text-parchment/60">
                   <th className="text-left px-4 py-2 font-normal">Name</th>
