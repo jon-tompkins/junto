@@ -52,26 +52,43 @@ async function loadFeaturedJuntoSources(juntoId: string) {
   return (data || []) as unknown as JuntoSourceRow[];
 }
 
+async function tickersForWatchlist(supabase: ReturnType<typeof getSupabase>, watchlistId: string) {
+  const { data: rows } = await supabase
+    .from('watchlist_tickers')
+    .select('ticker')
+    .eq('watchlist_id', watchlistId);
+  return (rows || []).map((r: any) => r.ticker.toUpperCase());
+}
+
 async function loadWatchlistContext(userId: string) {
   const supabase = getSupabase();
 
-  // Prefer the per-dispatch watchlist linked to the user's personal newsletter.
-  // Fall back to legacy user_watchlist for users that haven't been migrated yet.
+  // Source of truth is the dashboard watchlist (users.featured_watchlist_id) —
+  // that's the list the user actually sees and edits. Fall back to the legacy
+  // per-dispatch pointer (newsletters_v2.watchlist_id) and then user_watchlist
+  // for users whose featured watchlist isn't set yet.
   let tickers: string[] = [];
 
-  const { data: personalNl } = await supabase
-    .from('newsletters_v2')
-    .select('watchlist_id')
-    .eq('admin_user_id', userId)
-    .eq('is_personal', true)
+  const { data: userRow } = await supabase
+    .from('users')
+    .select('featured_watchlist_id')
+    .eq('id', userId)
     .maybeSingle();
 
-  if (personalNl?.watchlist_id) {
-    const { data: rows } = await supabase
-      .from('watchlist_tickers')
-      .select('ticker')
-      .eq('watchlist_id', personalNl.watchlist_id);
-    tickers = (rows || []).map((r: any) => r.ticker.toUpperCase());
+  if (userRow?.featured_watchlist_id) {
+    tickers = await tickersForWatchlist(supabase, userRow.featured_watchlist_id);
+  }
+
+  if (tickers.length === 0) {
+    const { data: personalNl } = await supabase
+      .from('newsletters_v2')
+      .select('watchlist_id')
+      .eq('admin_user_id', userId)
+      .eq('is_personal', true)
+      .maybeSingle();
+    if (personalNl?.watchlist_id) {
+      tickers = await tickersForWatchlist(supabase, personalNl.watchlist_id);
+    }
   }
 
   if (tickers.length === 0) {
