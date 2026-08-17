@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1786936654,
+  "generated_at": 1786937123,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 7711710,
+        "uptime_sec": 7712179,
         "load": [
-          0,
-          0.03,
-          0
+          0.16,
+          0.13,
+          0.05
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16525529088,
+          "used": 16535121920,
           "pct": 69
         },
         "mem": {
           "total": 4020396032,
-          "used": 1405587456,
-          "pct": 35
+          "used": 1535827968,
+          "pct": 38
         }
       },
       "memory": {
@@ -1455,6 +1455,11 @@
         },
         "git": [
           {
+            "hash": "0a76426",
+            "ts": 1786937015,
+            "subject": "feat: Mindscape — agent-mind telemetry dashboard (static, self-contained)"
+          },
+          {
             "hash": "1cb0a62",
             "ts": 1786644521,
             "subject": "fix(dispatch): personal dispatch reads dashboard watchlist (featured_watchlist_id)"
@@ -1523,11 +1528,6 @@
             "hash": "b035c66",
             "ts": 1784662263,
             "subject": "Add VC spike and dispatch X review queue"
-          },
-          {
-            "hash": "58ed9dd",
-            "ts": 1784657642,
-            "subject": "scripts: subscription-based backfill pipeline (prep + apply)"
           }
         ]
       },
