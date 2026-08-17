@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1786966764,
+  "generated_at": 1786975202,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 7741820,
+        "uptime_sec": 7750258,
         "load": [
-          0.1,
-          0.05,
-          0.01
+          0,
+          0,
+          0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16552501248,
+          "used": 16553730048,
           "pct": 69
         },
         "mem": {
           "total": 4020396032,
-          "used": 1463373824,
-          "pct": 36
+          "used": 1225486336,
+          "pct": 30
         }
       },
       "memory": {
@@ -50,7 +50,7 @@
           {
             "name": "project_mindscape",
             "type": "project",
-            "mtime": 1786937199,
+            "mtime": 1786966842,
             "desc": "\"Mindscape — agent-mind telemetry dashboard visualizing Benji's (and Bob's) memory, context, machine health, and project states\""
           },
           {
@@ -1491,6 +1491,11 @@
         },
         "git": [
           {
+            "hash": "84e7c9a",
+            "ts": 1786966764,
+            "subject": "feat(mindscape): full observed Bob card + cron-pipeline panel (schema v1.1 converge)"
+          },
+          {
             "hash": "7c641a1",
             "ts": 1786937687,
             "subject": "feat(mindscape): shared agent-object schema + prefilled Bob example for cross-feed"
@@ -1559,11 +1564,6 @@
             "hash": "79b24e3",
             "ts": 1784762354,
             "subject": "fix(newsletter): stack settings rows on mobile"
-          },
-          {
-            "hash": "f5d231b",
-            "ts": 1784736111,
-            "subject": "scripts(backfill-entry): add --source filter + keyless --dump/--picks phases"
           }
         ]
       },
