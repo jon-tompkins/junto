@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 import { markdownToHtml } from '@/lib/utils/markdown-client';
+import { formatSendWindowLabel } from '@/lib/utils/date';
 import { PositionsHeatmap } from '@/components/positions-heatmap';
 import { JuntoChat } from '@/components/junto-chat';
 
@@ -135,24 +136,6 @@ const DAY_OPTIONS = [
 
 const DAY_LABELS: Record<string, string> = {
   mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun',
-};
-
-function pacificToLocal(pacificHour: number): string {
-  const now = new Date();
-  const pacificStr = now.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' });
-  const [month, day, year] = pacificStr.split('/');
-  const targetDate = new Date(`${year}-${month}-${day}T${String(pacificHour).padStart(2, '0')}:00:00`);
-  const pacificTime = new Date(targetDate.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
-  const offsetMs = targetDate.getTime() - pacificTime.getTime();
-  const utcDate = new Date(targetDate.getTime() + offsetMs);
-  return utcDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-}
-
-const LOCAL_WINDOW_LABELS: Record<string, string> = {
-  morning: pacificToLocal(6),
-  midday: pacificToLocal(12),
-  evening: pacificToLocal(18),
-  night: pacificToLocal(0),
 };
 
 // ─── Collapsible section wrapper ────────────────────
@@ -941,6 +924,9 @@ export default function DashboardPage() {
 
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
+  const [timezone, setTimezone] = useState<string | null>(null);
+  // Render fixed send-window times in the viewer's saved timezone (display only).
+  const windowLabel = (w: string) => formatSendWindowLabel(w, timezone || undefined);
   const [emailInput, setEmailInput] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
 
@@ -1169,6 +1155,7 @@ export default function DashboardPage() {
         const data = await accountRes.json();
         setCreditBalance(data.balance ?? null);
         setAccountEmail(data.email ?? null);
+        setTimezone(data.timezone ?? null);
         if (data.isOnboarded === false) {
           router.push('/welcome');
           return;
@@ -2002,7 +1989,7 @@ export default function DashboardPage() {
                         <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-parchment/55">
                           <div>
                             <div className="text-[10px] uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)]">Send times</div>
-                            <div className="mt-1">{(sub.receive_windows || sub.send_windows || ['morning']).map(w => LOCAL_WINDOW_LABELS[w] || w).join(', ')}</div>
+                            <div className="mt-1">{(sub.receive_windows || sub.send_windows || ['morning']).map(w => windowLabel(w)).join(', ')}</div>
                           </div>
                           <div>
                             <div className="text-[10px] uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)]">Days</div>
@@ -2047,7 +2034,7 @@ export default function DashboardPage() {
                                       : 'bg-ink text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)] hover:bg-raised'
                                   }`}
                                 >
-                                  {LOCAL_WINDOW_LABELS[w.key]}
+                                  {windowLabel(w.key)}
                                 </button>
                               ))}
                             </div>
@@ -2120,7 +2107,7 @@ export default function DashboardPage() {
                             </div>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-xs text-parchment/55">
-                            {(sub.receive_windows || sub.send_windows || ['morning']).map(w => LOCAL_WINDOW_LABELS[w] || w).join(', ')}
+                            {(sub.receive_windows || sub.send_windows || ['morning']).map(w => windowLabel(w)).join(', ')}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-xs text-parchment/55">
                             {(sub.receive_days || ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']).map(d => DAY_LABELS[d] || d).join(', ')}
@@ -2164,7 +2151,7 @@ export default function DashboardPage() {
                                             : 'bg-surface text-parchment/60 border border-[rgb(var(--t-brass) / 0.18)] hover:bg-raised'
                                         }`}
                                       >
-                                        {LOCAL_WINDOW_LABELS[w.key]}
+                                        {windowLabel(w.key)}
                                       </button>
                                     ))}
                                   </div>

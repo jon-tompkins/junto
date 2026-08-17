@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 import { AuthModal } from '@/components/auth-modal';
 import { TopNav } from '@/components/top-nav';
 import { calculateOwnerCreditCost } from '@/lib/pricing';
+import { formatSendWindowLabel } from '@/lib/utils/date';
 
 type SourceType = 'twitter' | 'youtube';
 
@@ -70,6 +71,13 @@ function CreatePageInner() {
   const { data: session, status: authStatus } = useSession();
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [viewerTz, setViewerTz] = useState<string | null>(null);
+  useEffect(() => {
+    fetch('/api/v2/account')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.timezone) setViewerTz(d.timezone); })
+      .catch(() => {});
+  }, []);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const templateDispatchId = searchParams?.get('template_dispatch') || null;
@@ -889,13 +897,13 @@ function CreatePageInner() {
 
             {/* Time windows */}
             <div>
-              <p className="text-xs mb-3" style={{ color: 'rgb(var(--t-parchment) / 0.45)' }}>Dispatch times <span className="font-mono" style={{ color: 'rgb(var(--t-parchment) / 0.3)' }}>(Pacific time)</span></p>
+              <p className="text-xs mb-3" style={{ color: 'rgb(var(--t-parchment) / 0.45)' }}>Dispatch times <span className="font-mono" style={{ color: 'rgb(var(--t-parchment) / 0.3)' }}>(shown in your timezone)</span></p>
               <div className="grid grid-cols-2 gap-2">
                 {([
-                  { key: 'morning', label: 'Morning', time: '6:00 AM' },
-                  { key: 'midday',  label: 'Midday',  time: '12:00 PM' },
-                  { key: 'evening', label: 'Evening', time: '6:00 PM' },
-                  { key: 'night',   label: 'Night',   time: '12:00 AM' },
+                  { key: 'morning', label: 'Morning', time: formatSendWindowLabel('morning', viewerTz || undefined) },
+                  { key: 'midday',  label: 'Midday',  time: formatSendWindowLabel('midday', viewerTz || undefined) },
+                  { key: 'evening', label: 'Evening', time: formatSendWindowLabel('evening', viewerTz || undefined) },
+                  { key: 'night',   label: 'Night',   time: formatSendWindowLabel('night', viewerTz || undefined) },
                 ] as const).map(w => {
                   const on = sendWindows.includes(w.key);
                   return (

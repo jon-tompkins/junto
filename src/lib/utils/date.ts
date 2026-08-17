@@ -39,3 +39,27 @@ export function getRelativeTime(date: string | Date): string {
 export function toUTC(date: string | Date): string {
   return dayjs(date).utc().toISOString();
 }
+
+// Canonical send-window → Pacific clock hour. Mirrors SEND_WINDOW_PACIFIC_HOURS
+// in src/lib/db/newsletters-v2.ts (server dispatch source of truth). Kept here as a
+// client-safe copy so UI components can render window times without importing the db module.
+export const SEND_WINDOW_PACIFIC_HOURS: Record<string, number> = {
+  morning: 6,
+  midday: 12,
+  evening: 18,
+  night: 0,
+};
+
+// Display-only: send windows fire at a fixed Pacific hour for everyone; this converts
+// that fixed instant into the viewer's timezone purely for display. Timing is unchanged.
+export function formatSendWindowLabel(windowKey: string, tz?: string): string {
+  const hour = SEND_WINDOW_PACIFIC_HOURS[windowKey];
+  if (hour === undefined) return windowKey;
+  const dateStr = dayjs().tz('America/Los_Angeles').format('YYYY-MM-DD');
+  const pacificInstant = dayjs.tz(
+    `${dateStr} ${String(hour).padStart(2, '0')}:00`,
+    'America/Los_Angeles',
+  );
+  const target = tz || dayjs.tz.guess();
+  return pacificInstant.tz(target).format('h:mm A');
+}

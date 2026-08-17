@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { CADENCE_LABELS } from '@/lib/pricing';
 import { TopNav } from '@/components/top-nav';
+import { formatSendWindowLabel } from '@/lib/utils/date';
 
 interface PromptTemplateOption {
   id: string;
@@ -43,6 +44,13 @@ export default function EditNewsletterPage() {
 
   const [newsletter, setNewsletter] = useState<NewsletterDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewerTz, setViewerTz] = useState<string | null>(null);
+  useEffect(() => {
+    fetch('/api/v2/account')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.timezone) setViewerTz(d.timezone); })
+      .catch(() => {});
+  }, []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -550,14 +558,14 @@ export default function EditNewsletterPage() {
           <div>
             <label className="block text-sm font-medium text-parchment/60 mb-2">
               Send Windows
-              <span className="text-parchment/45 font-normal ml-1">(Pacific time — newsletter generates in these windows)</span>
+              <span className="text-parchment/45 font-normal ml-1">(shown in your timezone — newsletter generates in these windows)</span>
             </label>
             <div className="flex flex-wrap gap-2">
               {[
-                { key: 'morning', label: 'Morning (6 AM)' },
-                { key: 'midday', label: 'Midday (12 PM)' },
-                { key: 'evening', label: 'Evening (6 PM)' },
-                { key: 'night', label: 'Night (12 AM)' },
+                { key: 'morning', label: `Morning (${formatSendWindowLabel('morning', viewerTz || undefined)})` },
+                { key: 'midday', label: `Midday (${formatSendWindowLabel('midday', viewerTz || undefined)})` },
+                { key: 'evening', label: `Evening (${formatSendWindowLabel('evening', viewerTz || undefined)})` },
+                { key: 'night', label: `Night (${formatSendWindowLabel('night', viewerTz || undefined)})` },
               ].map((w) => (
                 <button
                   key={w.key}
