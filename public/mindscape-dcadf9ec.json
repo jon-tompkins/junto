@@ -1,0 +1,1553 @@
+{
+  "schema": "mindscape.v1",
+  "generated_at": 1786936654,
+  "generator": "benji",
+  "agents": [
+    {
+      "id": "benji",
+      "name": "Benji",
+      "emoji": "🐾",
+      "role": "Coordinator — Jon's financial app dev",
+      "status": "online",
+      "model": {
+        "primary": "claude-opus-4-8",
+        "label": "Claude Opus 4.8",
+        "runtime": "claude-cli",
+        "context_window": 200000,
+        "reasoning": "off"
+      },
+      "machine": {
+        "host": "ip-172-31-41-10",
+        "cores": 2,
+        "uptime_sec": 7711710,
+        "load": [
+          0,
+          0.03,
+          0
+        ],
+        "disk": {
+          "total": 23843045376,
+          "used": 16525529088,
+          "pct": 69
+        },
+        "mem": {
+          "total": 4020396032,
+          "used": 1405587456,
+          "pct": 35
+        }
+      },
+      "memory": {
+        "total_files": 60,
+        "by_type": {
+          "feedback": 16,
+          "project": 25,
+          "reference": 17,
+          "user": 2
+        },
+        "hot_count": 53,
+        "cold_count": 6,
+        "items": [
+          {
+            "name": "reference_junto_podcast_audio_outage",
+            "type": "reference",
+            "mtime": 1786654747,
+            "desc": "Podcast RSS silent since 2026-07-24 because dispatch audio/TTS step stopped; gated on OPENAI_API_KEY on the myjunto deploy"
+          },
+          {
+            "name": "reference_junto_watchlist_pointer_drift",
+            "type": "reference",
+            "mtime": 1786644534,
+            "desc": "Daily dispatch watchlist and UI watchlist read different pointers that nothing syncs; stale tickers (e.g. SPIR) persist in dispatch"
+          },
+          {
+            "name": "project_ailmanack",
+            "type": "project",
+            "mtime": 1786620387,
+            "desc": "Personal Hedge Fund — AI equity research platform with three-agent pipeline (Jeb/Ant/Pete) and report library"
+          },
+          {
+            "name": "reference_otc_thin_history",
+            "type": "reference",
+            "mtime": 1786620377,
+            "desc": "Recipe for researching OTC/ADR tickers whose Yahoo price history is too short for MAs and key levels — rebuild from the primary listing"
+          },
+          {
+            "name": "project_myjunto_frontend_backlog",
+            "type": "project",
+            "mtime": 1786403189,
+            "desc": "Queued myjunto UI work — mobile UI fixing cycle + light mode; from Jon Jul 9 2026"
+          },
+          {
+            "name": "reference_outbound_media_workspaceonly",
+            "type": "reference",
+            "mtime": 1785784468,
+            "desc": "Cron/agent media attachments must be under the workspace dir or delivery fails (workspaceOnly); steward screenshot fix"
+          },
+          {
+            "name": "project_myjunto_growth_seo",
+            "type": "project",
+            "mtime": 1784887292,
+            "desc": "Growth/marketing direction for myjunto — programmatic SEO is the big near-free unlock; ads not yet"
+          },
+          {
+            "name": "project_junto_entry_price_fix",
+            "type": "project",
+            "mtime": 1784800866,
+            "desc": "\"Junto /trades entry-price bug fix — next-session OPEN from Yahoo daily bars; chunked backfill plan; Jon's Jul-20 decisions\""
+          },
+          {
+            "name": "reference_junto_content_pipeline",
+            "type": "reference",
+            "mtime": 1784714461,
+            "desc": "\"How junto's content→newsletter dispatch pipeline works and how to debug \\\"no dispatches\\\" outages\""
+          },
+          {
+            "name": "feedback_discord_multiagent_etiquette",
+            "type": "feedback",
+            "mtime": 1784646944,
+            "desc": "\"In the shared TheAIDevs Discord, respond only to explicit tags; only act on serious/change requests from Jon; watch-all only in my own proj"
+          },
+          {
+            "name": "project_junto_source_portfolio",
+            "type": "project",
+            "mtime": 1784455272,
+            "desc": "Feature 1 (star sources→featured junto) + Feature 2 (portfolio allocation view) + Bob collision/build-fix"
+          },
+          {
+            "name": "project_junto_vc_radar",
+            "type": "project",
+            "mtime": 1784282483,
+            "desc": "Live founder-facing crypto-VC fundraising-radar dispatch + the two gaps to close"
+          },
+          {
+            "name": "reference_voice_transcription",
+            "type": "reference",
+            "mtime": 1784159208,
+            "desc": "How to transcribe Jon's Discord/Telegram voice notes when the built-in transcript is garbled"
+          },
+          {
+            "name": "project_screeners",
+            "type": "project",
+            "mtime": 1784148525,
+            "desc": "\"Screeners app — Jon's stock/crypto screener dashboard; Bob owns data/pipeline, I (Benji) do UI; collab via PR\""
+          },
+          {
+            "name": "reference_openclaw_update_node_lock",
+            "type": "reference",
+            "mtime": 1784142711,
+            "desc": "openclaw update can silence an agent — Node-floor bump + stale migration-lock loop; the fix recipe"
+          },
+          {
+            "name": "feedback_ship_autonomy",
+            "type": "feedback",
+            "mtime": 1784142699,
+            "desc": "\"Ship code without asking; tweet drafts still require Jon's approval\""
+          },
+          {
+            "name": "project_nightly_memory_consolidation",
+            "type": "project",
+            "mtime": 1784077346,
+            "desc": "\"Nightly \\\"sleep\\\" cron that distills the day into long-term memory and demotes stale hot-index pointers to a cold archive (archive-not-dele"
+          },
+          {
+            "name": "reference_discord_debug",
+            "type": "reference",
+            "mtime": 1784076569,
+            "desc": "\"Discord bot debug recipes — Message Content Intent OFF, config-reload disorientation\""
+          },
+          {
+            "name": "reference_discord_theaidevs",
+            "type": "reference",
+            "mtime": 1784076560,
+            "desc": "\"TheAIDevs Discord guild config, behavior rules, and channel details for Benji\""
+          },
+          {
+            "name": "project_myjunto_steward",
+            "type": "project",
+            "mtime": 1784046948,
+            "desc": "\"Standing arrangement — Benji proactively stewards myjunto during Jon's Pacific work hours (work proposals + @myjunto_xyz tweets). Set up Ju"
+          },
+          {
+            "name": "reference_junto_approval_fill_path",
+            "type": "reference",
+            "mtime": 1784046853,
+            "desc": "\"How approved trades go submitted→open, the reconcile-lag + slippage-guard gotchas, and how to unstick manually\""
+          },
+          {
+            "name": "reference_junto_trade_suggestion_collapse",
+            "type": "reference",
+            "mtime": 1784042917,
+            "desc": "\"Why mandates stopped proposing trades ~Jul 3 — shared-account held-filter bug in decide.ts, NOT dedup; fix + ?decide=1 probe recipe\""
+          },
+          {
+            "name": "project_junto_intelligence_direction",
+            "type": "project",
+            "mtime": 1783575250,
+            "desc": "\"Product options for leaning junto into a data/intelligence product (topic/industry dispatches like VC activity) separate from trading — Jon"
+          },
+          {
+            "name": "project_myjunto_real_money_risks",
+            "type": "project",
+            "mtime": 1783370854,
+            "desc": "Open risks and gaps to address before non-Jon users run real money through myjunto Operator tier"
+          },
+          {
+            "name": "project_agent_bob",
+            "type": "project",
+            "mtime": 1783269052,
+            "desc": "Bob — a second OpenClaw agent box Jon runs on a separate AWS host"
+          },
+          {
+            "name": "reference_junto_stale_positions",
+            "type": "reference",
+            "mtime": 1783179245,
+            "desc": "\"Why source positions read stale despite recent tweets, and the 3-part fix (July 2026)\""
+          },
+          {
+            "name": "reference_yahoo_crumb",
+            "type": "reference",
+            "mtime": 1782937055,
+            "desc": "How to call Yahoo Finance quoteSummary (needs a crumb) for Ailmanack/research pipeline"
+          },
+          {
+            "name": "project_junto_slice_model",
+            "type": "project",
+            "mtime": 1782590149,
+            "desc": "\"Two mandates sharing one Alpaca account, each holding independent slices of the same ticker\""
+          },
+          {
+            "name": "project_junto_webhook_source",
+            "type": "project",
+            "mtime": 1782506883,
+            "desc": "External-signal webhook source type — third trade-idea modality (screener → mandate)"
+          },
+          {
+            "name": "project_junto_hyperliquid_vault",
+            "type": "project",
+            "mtime": 1782504818,
+            "desc": "Building an autonomous (no-approval) perps-trading mandate on Hyperliquid in junto; staged plan + architecture decisions"
+          },
+          {
+            "name": "feedback_commit_everything",
+            "type": "feedback",
+            "mtime": 1782499773,
+            "desc": "Always commit everything automatically; Jon never reviews code"
+          },
+          {
+            "name": "reference_junto_pricing_canonical",
+            "type": "reference",
+            "mtime": 1782244817,
+            "desc": "\"PRICING.md is the single source of truth for junto credits/tiers; trading is flat $20/mo via Operator, not metered\""
+          },
+          {
+            "name": "project_junto_credit_buckets",
+            "type": "project",
+            "mtime": 1782234535,
+            "desc": "Three-bucket credit model (subscription/purchased/earned) and the junto-chat revenue-share hook driving it"
+          },
+          {
+            "name": "project_junto_trade_learning_loop",
+            "type": "project",
+            "mtime": 1782225305,
+            "desc": "Direction for making the junto trading engine learn from its own closed-trade history; what exists vs net-new"
+          },
+          {
+            "name": "project_myjunto_marketing_ideas",
+            "type": "project",
+            "mtime": 1782185680,
+            "desc": "Content/social ideas for myjunto.xyz that Jon flagged to revisit later"
+          },
+          {
+            "name": "feedback_timezone",
+            "type": "feedback",
+            "mtime": 1782170257,
+            "desc": "Jon is Pacific time — convert to his local time and label the part of day correctly"
+          },
+          {
+            "name": "feedback_no_pr_review",
+            "type": "feedback",
+            "mtime": 1782162604,
+            "desc": "Never wait on Jon to review/approve a PR — merge and deploy directly"
+          },
+          {
+            "name": "feedback_public_name_privacy",
+            "type": "feedback",
+            "mtime": 1781879285,
+            "desc": "Default to @handles/usernames over real names anywhere user content is shared or posted publicly"
+          },
+          {
+            "name": "reference_junto_migrations",
+            "type": "reference",
+            "mtime": 1781822030,
+            "desc": "How to apply junto Supabase migrations; the /api/admin/migrate runner is jammed at 048 and does not auto-apply on deploy"
+          },
+          {
+            "name": "project_myjunto",
+            "type": "project",
+            "mtime": 1781822025,
+            "desc": "Newsletter platform v2 — current state as of 2026-05-19"
+          },
+          {
+            "name": "user_jon",
+            "type": "user",
+            "mtime": 1781246346,
+            "desc": "Jon's background, working style, and preferences"
+          },
+          {
+            "name": "project_writing_craft",
+            "type": "project",
+            "mtime": 1781218561,
+            "desc": "Living writing/marketing knowledge base at workspace/writing-craft, grown by an hourly cron; consult PLAYBOOK before writing public copy"
+          },
+          {
+            "name": "feedback_social_strategy",
+            "type": "feedback",
+            "mtime": 1781026769,
+            "desc": "All X posts and replies for @myjunto get drafted in this chat for Jon to approve before sending. No autonomous posting yet."
+          },
+          {
+            "name": "feedback_agent_post_tag",
+            "type": "feedback",
+            "mtime": 1781025729,
+            "desc": "Every X post coming from automation should end with the robot emoji so the feed clearly distinguishes agent posts from human ones"
+          },
+          {
+            "name": "reference_ops_secrets",
+            "type": "reference",
+            "mtime": 1781025600,
+            "desc": "Local secrets file auto-sourced by ~/.bashrc — holds CRON_SECRET and any future ops keys for myjunto endpoints"
+          },
+          {
+            "name": "project_junto_trackers_idea",
+            "type": "project",
+            "mtime": 1780333103,
+            "desc": "Planned public junto on myjunto for congressional/insider/whale trackers; tactical strategy buys on insider action"
+          },
+          {
+            "name": "feedback_junto_repo_cd",
+            "type": "feedback",
+            "mtime": 1779895139,
+            "desc": "junto lives at repos/junto inside an outer workspace repo — git commands from /home/ubuntu/.openclaw/workspace commit to the wrong repo"
+          },
+          {
+            "name": "feedback_cwd_for_git",
+            "type": "feedback",
+            "mtime": 1779566275,
+            "desc": "Workspace root is itself a git repo containing repos/junto etc. as embedded git dirs — running git from the wrong cwd is catastrophic."
+          },
+          {
+            "name": "feedback_navigation_for_new_pages",
+            "type": "feedback",
+            "mtime": 1779469764,
+            "desc": "When adding a new page/route to a frontend project, also add a link to it from the existing nav/home so it's reachable without typing the UR"
+          },
+          {
+            "name": "project_jai_dashboard_agent_viz",
+            "type": "project",
+            "mtime": 1779391809,
+            "desc": "Planned page in jai-dashboard for surfacing agent internals (soul/claude/memory files, machine state, model in use, project memory)"
+          },
+          {
+            "name": "user_assistant_identity",
+            "type": "user",
+            "mtime": 1779311771,
+            "desc": "In this workspace I am \"Benji\" — Jon's AI coordinator. Identity is defined in workspace IDENTITY.md."
+          },
+          {
+            "name": "project_50kfeet",
+            "type": "project",
+            "mtime": 1779311641,
+            "desc": "Private portfolio tracker pivot of repos/jai-dashboard — CSV-first, Fidelity-driven, Bloomberg-density UI"
+          },
+          {
+            "name": "feedback_openai_usage",
+            "type": "feedback",
+            "mtime": 1779310851,
+            "desc": "Only use OpenAI models when handling voice memo transcription; default to Claude/Anthropic for everything else"
+          },
+          {
+            "name": "feedback_context_management",
+            "type": "feedback",
+            "mtime": 1779150319,
+            "desc": "Jon expects seamless recovery from context resets — blank restarts are unacceptable"
+          },
+          {
+            "name": "feedback_junto_push",
+            "type": "feedback",
+            "mtime": 1778611176,
+            "desc": "Jon wants changes committed and pushed automatically in the junto repo"
+          },
+          {
+            "name": "reference_junto_supabase",
+            "type": "reference",
+            "mtime": 1777324477,
+            "desc": "Supabase credentials and connection details for the junto project DB"
+          },
+          {
+            "name": "project_jeb",
+            "type": "project",
+            "mtime": 1776959381,
+            "desc": "Jeb value investor agent — Buffett letter ingestion, tenet memory, generator-v2 prompt improvements"
+          },
+          {
+            "name": "project_manifold",
+            "type": "project",
+            "mtime": 1776892402,
+            "desc": "Agent mesh network — benji hub running on this server"
+          },
+          {
+            "name": "feedback_response_style",
+            "type": "feedback",
+            "mtime": 1776892368,
+            "desc": "Save project memory before switching projects"
+          },
+          {
+            "name": "feedback_communication",
+            "type": "feedback",
+            "mtime": 1776892364,
+            "desc": "Always send a brief acknowledgment before going silent to work"
+          }
+        ],
+        "hot": [
+          {
+            "title": "User Profile",
+            "file": "user_jon",
+            "hook": "Jon Tompkins, builder/founder, works across multiple agent projects"
+          },
+          {
+            "title": "My identity — Benji",
+            "file": "user_assistant_identity",
+            "hook": "In this workspace I am Benji; identity defined in workspace IDENTITY.md"
+          },
+          {
+            "title": "Project: Agent bob",
+            "file": "project_agent_bob",
+            "hook": "Jon's 2nd OpenClaw agent on separate AWS box (172.31.41.74); Jul-05 double-model outage + fix + generic-error debug recipe"
+          },
+          {
+            "title": "Feedback: Communication Style",
+            "file": "feedback_communication",
+            "hook": "Always acknowledge first before going silent"
+          },
+          {
+            "title": "Feedback: Jon is Pacific time",
+            "file": "feedback_timezone",
+            "hook": "Convert to his local time; get the daypart right (4pm ≠ evening)"
+          },
+          {
+            "title": "Feedback: Response Style",
+            "file": "feedback_response_style",
+            "hook": "Context-switch protocol: save project memory before switching"
+          },
+          {
+            "title": "Project: myjunto",
+            "file": "project_myjunto",
+            "hook": "Newsletter platform v2, current state and recent changes"
+          },
+          {
+            "title": "Project: Jeb Training",
+            "file": "project_jeb",
+            "hook": "Value investor agent, Buffett letters cron"
+          },
+          {
+            "title": "Project: Manifold Federation",
+            "file": "project_manifold",
+            "hook": "Agent mesh network, benji hub"
+          },
+          {
+            "title": "Junto Supabase Access",
+            "file": "reference_junto_supabase",
+            "hook": "REST API credentials and query pattern for junto's Supabase DB"
+          },
+          {
+            "title": "Ops secrets file",
+            "file": "reference_ops_secrets",
+            "hook": "/home/ubuntu/.openclaw-secrets.env auto-sourced by ~/.bashrc; holds CRON_SECRET for myjunto admin endpoints"
+          },
+          {
+            "title": "Junto DB migrations broken",
+            "file": "reference_junto_migrations",
+            "hook": "/api/admin/migrate runner jammed at 048; apply migrations manually via exec_sql RPC + record in schema_migrations"
+          },
+          {
+            "title": "Junto trade-log learning loop",
+            "file": "project_junto_trade_learning_loop",
+            "hook": "eval-on-close exists (Haiku post-mortem); net-new: user notes on trades + proposal engine referencing trade history"
+          },
+          {
+            "title": "Feedback: Agent tweets carry 🤖",
+            "file": "feedback_agent_post_tag",
+            "hook": "postTweet auto-appends robot emoji so the feed shows agent vs human posts"
+          },
+          {
+            "title": "Feedback: Social posts approved in chat",
+            "file": "feedback_social_strategy",
+            "hook": "draft posts/replies in chat, Jon approves; agent-to-agent replies are the starter surface"
+          },
+          {
+            "title": "Project: Ailmanack",
+            "file": "project_ailmanack",
+            "hook": "Personal Hedge Fund, AI equity research platform (Jeb/Ant/Pete agents + Haiku synthesis)"
+          },
+          {
+            "title": "Project: 50kfeet",
+            "file": "project_50kfeet",
+            "hook": "Private portfolio tracker pivot of repos/jai-dashboard, CSV-driven, Bloomberg-density UI"
+          },
+          {
+            "title": "Feedback: Always commit everything",
+            "file": "feedback_commit_everything",
+            "hook": "Jon never reviews code; auto-commit everything every turn, no asking; workspace repo has .gitignore + no remote"
+          },
+          {
+            "title": "Feedback: Context continuity is non-negotiable",
+            "file": "feedback_context_management",
+            "hook": "Maintain live session file, update every reply, daily consolidation to long-term memory"
+          },
+          {
+            "title": "Feedback: OpenAI for voice memos only",
+            "file": "feedback_openai_usage",
+            "hook": "Default to Claude for everything; OpenAI reserved for audio transcription"
+          },
+          {
+            "title": "Feedback: Wire nav for new pages",
+            "file": "feedback_navigation_for_new_pages",
+            "hook": "Every new frontend route must also get a nav link in the same change"
+          },
+          {
+            "title": "Feedback: Don't expose real names publicly",
+            "file": "feedback_public_name_privacy",
+            "hook": "default to @handles/usernames; never ingest Google account names; Twitter display names OK"
+          },
+          {
+            "title": "Feedback: cd into junto before git",
+            "file": "feedback_junto_repo_cd",
+            "hook": "Always cd to repos/junto before git ops; outer workspace is a separate repo and commits land on the wrong branch otherwise"
+          },
+          {
+            "title": "Myjunto real-money risks backlog",
+            "file": "project_myjunto_real_money_risks",
+            "hook": "Open gaps to fix before Operator tier opens to non-Jon users (live-mode guard, key encryption, legal, etc.)"
+          },
+          {
+            "title": "Myjunto growth + SEO strategy",
+            "file": "project_myjunto_growth_seo",
+            "hook": "Programmatic SEO is the big near-free unlock (sitemap only ~20 URLs; dispatches/ticker/analyst pages not indexed); ads last; priority stack + next-action audit"
+          },
+          {
+            "title": "Junto credit buckets + revenue-share",
+            "file": "project_junto_credit_buckets",
+            "hook": "3-bucket model (subscription/purchased/earned); only earned is redeemable; junto-chat is the earning hook"
+          },
+          {
+            "title": "Writing Craft loop",
+            "file": "project_writing_craft",
+            "hook": "self-improving writing/marketing knowledge base at workspace/writing-craft; hourly cron grows it; read PLAYBOOK before writing public copy"
+          },
+          {
+            "title": "Junto Hyperliquid vault POC",
+            "file": "project_junto_hyperliquid_vault",
+            "hook": "autonomous (no-approval) perps mandate on Hyperliquid; staged plan, Stage 1 read-only driver done (478d05e)"
+          },
+          {
+            "title": "Junto stale-positions root cause + fix",
+            "file": "reference_junto_stale_positions",
+            "hook": "max_tokens truncation froze position-dense profiles; 3-part fix + diagnosis recipe (Jul 2026)"
+          },
+          {
+            "title": "Junto content pipeline + dispatch debug",
+            "file": "reference_junto_content_pipeline",
+            "hook": "pull-content→Apify→collect-twitter→content_twitter→generate-newsletters; how to debug \"no dispatches\" (skip reason → content freshness → apify_pending_runs)"
+          },
+          {
+            "title": "Project: Junto shared-account slice model",
+            "file": "project_junto_slice_model",
+            "hook": "2 Alpaca mandates share 1 account, same-ticker slices; Phase 1 P/L live, Phase 2 exec on branch UNVALIDATED (needs Mon market + fresh paper keys)"
+          },
+          {
+            "title": "Junto pricing canonical + trading flat-fee",
+            "file": "reference_junto_pricing_canonical",
+            "hook": "PRICING.md is source of truth; trading = flat $20/mo via Operator (not metered, ~$1/mo cost); supplier cost table is `supplier_costs`"
+          },
+          {
+            "title": "Yahoo Finance crumb flow",
+            "file": "reference_yahoo_crumb",
+            "hook": "quoteSummary needs a crumb (cookie→getcrumb→&crumb=); chart endpoint doesn't"
+          },
+          {
+            "title": "OTC tickers with thin history",
+            "file": "reference_otc_thin_history",
+            "hook": "rebuild USD-equiv series from primary listing when OTC line has <200 closes; watch the settlement-lag premium"
+          },
+          {
+            "title": "Junto trade-suggestion collapse root cause",
+            "file": "reference_junto_trade_suggestion_collapse",
+            "hook": "~Jul 3 mandates stopped proposing; NOT dedup (that theory was wrong, no backfill), it was decide.ts held-filter using whole shared-account book; fixed 8b5e16a + ?decide=1 probe recipe"
+          },
+          {
+            "title": "Project: Screeners",
+            "file": "project_screeners",
+            "hook": "Jon's screener dashboard (github.com/jon-tompkins/screeners); Bob owns data/pipeline, I own UI; collab = I open PRs, Bob merges (don't self-merge); redesign PR #1 shipped"
+          },
+          {
+            "title": "Junto intelligence/data direction",
+            "file": "project_junto_intelligence_direction",
+            "hook": "options to make junto a data product (VC-activity/topic dispatches) separate from trading; junto↔mandate already decoupled so no-mandate juntos = zero trading noise; A(content-only now)→B(dispatch lens)→C(trackers/entities)"
+          },
+          {
+            "title": "Myjunto frontend/UI backlog",
+            "file": "project_myjunto_frontend_backlog",
+            "hook": "queued UI work: mobile UI fixing cycle + get light mode working; frontend-only, no trading risk"
+          },
+          {
+            "title": "myjunto steward loop",
+            "file": "project_myjunto_steward",
+            "hook": "Benji proactively stewards myjunto during Pacific work hours (twice/day weekdays): work proposals + @myjunto_xyz tweets (mix mode, soft-start); OpenClaw cron; unlock full \"do the work\" with a test account"
+          },
+          {
+            "title": "Junto approval → fill path",
+            "file": "reference_junto_approval_fill_path",
+            "hook": "why approved trades look stuck (submitted→open via monitor/reconcile lag) + 1%→3% directional slippage guard; unstick via POST /api/cron/trade-reconcile"
+          },
+          {
+            "title": "Discord: TheAIDevs guild",
+            "file": "reference_discord_theaidevs",
+            "hook": "friends-only guild (1526593351560724580); requireMention:false, all channels; MEMORY.md not auto-loaded in guild, use memory_search"
+          },
+          {
+            "title": "Discord debug recipes",
+            "file": "reference_discord_debug",
+            "hook": "\"won't reply\" = Message Content Intent off (log: session=none, outBytes=8); \"disoriented restart\" = config-reload mid-turn (check openclaw log)"
+          },
+          {
+            "title": "Nightly memory consolidation",
+            "file": "project_nightly_memory_consolidation",
+            "hook": "3am PT cron distills day→long-term + demotes stale hot-index pointers to cold archive (archive-not-delete); Bob runs a Haiku parallel"
+          },
+          {
+            "title": "Feedback: Discord multi-agent etiquette",
+            "file": "feedback_discord_multiagent_etiquette",
+            "hook": "shared TheAIDevs: tag-only in #general, watch-all only in myjunto-benji, only act on Jon's change requests; channels map is an allowlist (enabled not allow)"
+          },
+          {
+            "title": "Junto Crypto VC Radar dispatch",
+            "file": "project_junto_vc_radar",
+            "hook": "live founder-facing fundraising-radar dispatch (nl 662e93de); 2 gaps: hardcoded output format + run#1 thesis-flavored till deal-flow sources pull"
+          },
+          {
+            "title": "Voice note transcription",
+            "file": "reference_voice_transcription",
+            "hook": "scripts/transcribe.sh re-transcribes garbled voice notes; use whisper-1 (not gpt-4o-transcribe); OpenAI key lives in OpenClaw auth-profiles store. SIBLING: broad multi-sector \"VC Activity\" dispatch shipped Jul 15 (nl 01f445f0, public, junto_id null = zero trading)"
+          },
+          {
+            "title": "Feedback: Ship code, hold tweets",
+            "file": "feedback_ship_autonomy",
+            "hook": "auto-push code without asking; tweet drafts still need Jon's approval"
+          },
+          {
+            "title": "openclaw update Node-lock silence",
+            "file": "reference_openclaw_update_node_lock",
+            "hook": "`openclaw update` bumps Node floor + leaves migration-lock loop → agent goes silent; system-wide Node upgrade + stop/wait/start recipe"
+          },
+          {
+            "title": "Junto source starring + portfolio view + Best Trades",
+            "file": "project_junto_source_portfolio",
+            "hook": "star→featured junto; portfolio tab; /trades page (Jul 17, 821fcb1) — filterable position browser w/ /api/prices/batch (conc-16, 4s timeout); Feature 3 (portfolio-style mandate) held for Jon"
+          },
+          {
+            "title": "Junto entry-price fix",
+            "file": "project_junto_entry_price_fix",
+            "hook": "next-session OPEN via Yahoo daily bars; chunked/resumable backfill (DRY-RUN default); build agent a488f6cf relaunched Jul-20, outcome pending"
+          },
+          {
+            "title": "Outbound media workspaceOnly",
+            "file": "reference_outbound_media_workspaceonly",
+            "hook": "cron/agent attachments must live under workspace dir or delivery fails; steward /tmp screenshot fix (Aug 3)"
+          },
+          {
+            "title": "Junto watchlist pointer drift",
+            "file": "reference_junto_watchlist_pointer_drift",
+            "hook": "dispatch reads newsletters_v2.watchlist_id, UI reads users.featured_watchlist_id; unsynced → stale tickers in dispatch; per-user repoint fix + structural fix pending"
+          },
+          {
+            "title": "Junto podcast/audio outage",
+            "file": "reference_junto_podcast_audio_outage",
+            "hook": "podcast RSS silent since 7/24 because dispatch TTS step (gated on OPENAI_API_KEY on myjunto deploy) stopped; text dispatches unaffected; diagnosis via tts_dispatch in supplier_costs"
+          }
+        ],
+        "graph": {
+          "nodes": [
+            {
+              "id": "feedback_agent_post_tag",
+              "type": "feedback"
+            },
+            {
+              "id": "feedback_commit_everything",
+              "type": "feedback"
+            },
+            {
+              "id": "feedback_communication",
+              "type": "feedback"
+            },
+            {
+              "id": "feedback_context_management",
+              "type": "feedback"
+            },
+            {
+              "id": "feedback_cwd_for_git",
+              "type": "feedback"
+            },
+            {
+              "id": "feedback_discord_multiagent_etiquette",
+              "type": "feedback"
+            },
+            {
+              "id": "feedback_junto_push",
+              "type": "feedback"
+            },
+            {
+              "id": "feedback_junto_repo_cd",
+              "type": "feedback"
+            },
+            {
+              "id": "feedback_navigation_for_new_pages",
+              "type": "feedback"
+            },
+            {
+              "id": "feedback_no_pr_review",
+              "type": "feedback"
+            },
+            {
+              "id": "feedback_openai_usage",
+              "type": "feedback"
+            },
+            {
+              "id": "feedback_public_name_privacy",
+              "type": "feedback"
+            },
+            {
+              "id": "feedback_response_style",
+              "type": "feedback"
+            },
+            {
+              "id": "feedback_ship_autonomy",
+              "type": "feedback"
+            },
+            {
+              "id": "feedback_social_strategy",
+              "type": "feedback"
+            },
+            {
+              "id": "feedback_timezone",
+              "type": "feedback"
+            },
+            {
+              "id": "project_50kfeet",
+              "type": "project"
+            },
+            {
+              "id": "project_agent_bob",
+              "type": "project"
+            },
+            {
+              "id": "project_ailmanack",
+              "type": "project"
+            },
+            {
+              "id": "project_jai_dashboard_agent_viz",
+              "type": "project"
+            },
+            {
+              "id": "project_jeb",
+              "type": "project"
+            },
+            {
+              "id": "project_junto_credit_buckets",
+              "type": "project"
+            },
+            {
+              "id": "project_junto_entry_price_fix",
+              "type": "project"
+            },
+            {
+              "id": "project_junto_hyperliquid_vault",
+              "type": "project"
+            },
+            {
+              "id": "project_junto_intelligence_direction",
+              "type": "project"
+            },
+            {
+              "id": "project_junto_slice_model",
+              "type": "project"
+            },
+            {
+              "id": "project_junto_source_portfolio",
+              "type": "project"
+            },
+            {
+              "id": "project_junto_trackers_idea",
+              "type": "project"
+            },
+            {
+              "id": "project_junto_trade_learning_loop",
+              "type": "project"
+            },
+            {
+              "id": "project_junto_vc_radar",
+              "type": "project"
+            },
+            {
+              "id": "project_junto_webhook_source",
+              "type": "project"
+            },
+            {
+              "id": "project_manifold",
+              "type": "project"
+            },
+            {
+              "id": "project_myjunto",
+              "type": "project"
+            },
+            {
+              "id": "project_myjunto_frontend_backlog",
+              "type": "project"
+            },
+            {
+              "id": "project_myjunto_growth_seo",
+              "type": "project"
+            },
+            {
+              "id": "project_myjunto_marketing_ideas",
+              "type": "project"
+            },
+            {
+              "id": "project_myjunto_real_money_risks",
+              "type": "project"
+            },
+            {
+              "id": "project_myjunto_steward",
+              "type": "project"
+            },
+            {
+              "id": "project_nightly_memory_consolidation",
+              "type": "project"
+            },
+            {
+              "id": "project_screeners",
+              "type": "project"
+            },
+            {
+              "id": "project_writing_craft",
+              "type": "project"
+            },
+            {
+              "id": "reference_discord_debug",
+              "type": "reference"
+            },
+            {
+              "id": "reference_discord_theaidevs",
+              "type": "reference"
+            },
+            {
+              "id": "reference_junto_approval_fill_path",
+              "type": "reference"
+            },
+            {
+              "id": "reference_junto_content_pipeline",
+              "type": "reference"
+            },
+            {
+              "id": "reference_junto_migrations",
+              "type": "reference"
+            },
+            {
+              "id": "reference_junto_podcast_audio_outage",
+              "type": "reference"
+            },
+            {
+              "id": "reference_junto_pricing_canonical",
+              "type": "reference"
+            },
+            {
+              "id": "reference_junto_stale_positions",
+              "type": "reference"
+            },
+            {
+              "id": "reference_junto_supabase",
+              "type": "reference"
+            },
+            {
+              "id": "reference_junto_trade_suggestion_collapse",
+              "type": "reference"
+            },
+            {
+              "id": "reference_junto_watchlist_pointer_drift",
+              "type": "reference"
+            },
+            {
+              "id": "reference_openclaw_update_node_lock",
+              "type": "reference"
+            },
+            {
+              "id": "reference_ops_secrets",
+              "type": "reference"
+            },
+            {
+              "id": "reference_otc_thin_history",
+              "type": "reference"
+            },
+            {
+              "id": "reference_outbound_media_workspaceonly",
+              "type": "reference"
+            },
+            {
+              "id": "reference_voice_transcription",
+              "type": "reference"
+            },
+            {
+              "id": "reference_yahoo_crumb",
+              "type": "reference"
+            },
+            {
+              "id": "user_assistant_identity",
+              "type": "user"
+            },
+            {
+              "id": "user_jon",
+              "type": "user"
+            }
+          ],
+          "edges": [
+            {
+              "source": "feedback_commit_everything",
+              "target": "feedback_junto_push",
+              "weight": 1
+            },
+            {
+              "source": "feedback_commit_everything",
+              "target": "feedback_junto_repo_cd",
+              "weight": 1
+            },
+            {
+              "source": "feedback_commit_everything",
+              "target": "feedback_no_pr_review",
+              "weight": 1
+            },
+            {
+              "source": "feedback_discord_multiagent_etiquette",
+              "target": "reference_discord_theaidevs",
+              "weight": 1
+            },
+            {
+              "source": "feedback_discord_multiagent_etiquette",
+              "target": "reference_discord_debug",
+              "weight": 1
+            },
+            {
+              "source": "feedback_junto_push",
+              "target": "feedback_no_pr_review",
+              "weight": 1
+            },
+            {
+              "source": "feedback_junto_push",
+              "target": "feedback_ship_autonomy",
+              "weight": 1
+            },
+            {
+              "source": "feedback_no_pr_review",
+              "target": "feedback_ship_autonomy",
+              "weight": 1
+            },
+            {
+              "source": "feedback_commit_everything",
+              "target": "feedback_ship_autonomy",
+              "weight": 1
+            },
+            {
+              "source": "feedback_ship_autonomy",
+              "target": "feedback_social_strategy",
+              "weight": 1
+            },
+            {
+              "source": "feedback_agent_post_tag",
+              "target": "feedback_ship_autonomy",
+              "weight": 1
+            },
+            {
+              "source": "feedback_timezone",
+              "target": "user_jon",
+              "weight": 1
+            },
+            {
+              "source": "feedback_response_style",
+              "target": "project_agent_bob",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_entry_price_fix",
+              "target": "reference_junto_supabase",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_intelligence_direction",
+              "target": "project_junto_trackers_idea",
+              "weight": 2
+            },
+            {
+              "source": "project_junto_intelligence_direction",
+              "target": "project_myjunto",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_intelligence_direction",
+              "target": "project_myjunto_growth_seo",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_hyperliquid_vault",
+              "target": "project_junto_slice_model",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_source_portfolio",
+              "target": "reference_junto_supabase",
+              "weight": 1
+            },
+            {
+              "source": "project_agent_bob",
+              "target": "project_junto_source_portfolio",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_intelligence_direction",
+              "target": "project_junto_vc_radar",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_hyperliquid_vault",
+              "target": "project_junto_webhook_source",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_webhook_source",
+              "target": "reference_junto_migrations",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_intelligence_direction",
+              "target": "project_myjunto_frontend_backlog",
+              "weight": 1
+            },
+            {
+              "source": "project_myjunto_frontend_backlog",
+              "target": "project_myjunto_steward",
+              "weight": 2
+            },
+            {
+              "source": "project_myjunto",
+              "target": "project_myjunto_frontend_backlog",
+              "weight": 1
+            },
+            {
+              "source": "feedback_navigation_for_new_pages",
+              "target": "project_myjunto_frontend_backlog",
+              "weight": 1
+            },
+            {
+              "source": "project_myjunto_growth_seo",
+              "target": "project_myjunto_marketing_ideas",
+              "weight": 1
+            },
+            {
+              "source": "project_myjunto_growth_seo",
+              "target": "project_writing_craft",
+              "weight": 1
+            },
+            {
+              "source": "project_myjunto_growth_seo",
+              "target": "reference_junto_pricing_canonical",
+              "weight": 1
+            },
+            {
+              "source": "project_myjunto_marketing_ideas",
+              "target": "reference_junto_content_pipeline",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_hyperliquid_vault",
+              "target": "project_myjunto_real_money_risks",
+              "weight": 1
+            },
+            {
+              "source": "feedback_agent_post_tag",
+              "target": "project_myjunto_steward",
+              "weight": 1
+            },
+            {
+              "source": "feedback_social_strategy",
+              "target": "project_myjunto_steward",
+              "weight": 1
+            },
+            {
+              "source": "project_myjunto",
+              "target": "project_myjunto_steward",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_intelligence_direction",
+              "target": "project_myjunto_steward",
+              "weight": 1
+            },
+            {
+              "source": "project_myjunto_growth_seo",
+              "target": "project_myjunto_steward",
+              "weight": 1
+            },
+            {
+              "source": "project_agent_bob",
+              "target": "project_nightly_memory_consolidation",
+              "weight": 1
+            },
+            {
+              "source": "project_agent_bob",
+              "target": "project_screeners",
+              "weight": 1
+            },
+            {
+              "source": "feedback_no_pr_review",
+              "target": "project_screeners",
+              "weight": 1
+            },
+            {
+              "source": "reference_discord_debug",
+              "target": "reference_discord_theaidevs",
+              "weight": 2
+            },
+            {
+              "source": "reference_junto_approval_fill_path",
+              "target": "reference_junto_trade_suggestion_collapse",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_content_pipeline",
+              "target": "reference_ops_secrets",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_podcast_audio_outage",
+              "target": "reference_junto_supabase",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_podcast_audio_outage",
+              "target": "reference_voice_transcription",
+              "weight": 1
+            },
+            {
+              "source": "feedback_openai_usage",
+              "target": "reference_junto_podcast_audio_outage",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_credit_buckets",
+              "target": "reference_junto_pricing_canonical",
+              "weight": 1
+            },
+            {
+              "source": "project_myjunto_real_money_risks",
+              "target": "reference_junto_pricing_canonical",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_trade_learning_loop",
+              "target": "reference_junto_pricing_canonical",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_pricing_canonical",
+              "target": "reference_junto_supabase",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_content_pipeline",
+              "target": "reference_junto_stale_positions",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_stale_positions",
+              "target": "reference_junto_supabase",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_content_pipeline",
+              "target": "reference_junto_trade_suggestion_collapse",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_slice_model",
+              "target": "reference_junto_trade_suggestion_collapse",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_supabase",
+              "target": "reference_junto_watchlist_pointer_drift",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_source_portfolio",
+              "target": "reference_junto_watchlist_pointer_drift",
+              "weight": 1
+            },
+            {
+              "source": "project_agent_bob",
+              "target": "reference_openclaw_update_node_lock",
+              "weight": 1
+            },
+            {
+              "source": "project_ailmanack",
+              "target": "reference_otc_thin_history",
+              "weight": 1
+            },
+            {
+              "source": "reference_otc_thin_history",
+              "target": "reference_yahoo_crumb",
+              "weight": 1
+            },
+            {
+              "source": "project_myjunto_steward",
+              "target": "reference_outbound_media_workspaceonly",
+              "weight": 1
+            },
+            {
+              "source": "project_ailmanack",
+              "target": "reference_yahoo_crumb",
+              "weight": 1
+            }
+          ],
+          "unresolved": 2
+        },
+        "daily_notes": {
+          "count": 97,
+          "latest": "2026-08-16",
+          "days": [
+            "2026-05-20",
+            "2026-06-10",
+            "2026-06-11",
+            "2026-06-12",
+            "2026-06-13",
+            "2026-06-15",
+            "2026-06-20",
+            "2026-06-21",
+            "2026-06-22",
+            "2026-06-23",
+            "2026-06-24",
+            "2026-06-25",
+            "2026-06-29",
+            "2026-07-01",
+            "2026-07-04",
+            "2026-07-08",
+            "2026-07-14",
+            "2026-07-15",
+            "2026-07-16",
+            "2026-07-17",
+            "2026-07-18",
+            "2026-07-19",
+            "2026-07-20",
+            "2026-07-21",
+            "2026-07-22",
+            "2026-07-23",
+            "2026-07-24",
+            "2026-07-30",
+            "2026-07-31",
+            "2026-08-01",
+            "2026-08-02",
+            "2026-08-03",
+            "2026-08-04",
+            "2026-08-05",
+            "2026-08-06",
+            "2026-08-07",
+            "2026-08-08",
+            "2026-08-09",
+            "2026-08-10",
+            "2026-08-11",
+            "2026-08-12",
+            "2026-08-13",
+            "2026-08-14",
+            "2026-08-15",
+            "2026-08-16"
+          ]
+        }
+      },
+      "projects": [
+        {
+          "name": "Agent bob",
+          "file": "project_agent_bob",
+          "hook": "Jon's 2nd OpenClaw agent on separate AWS box (172.31.41.74); Jul-05 double-model outage + fix + generic-error debug recipe",
+          "status": "blocked"
+        },
+        {
+          "name": "myjunto",
+          "file": "project_myjunto",
+          "hook": "Newsletter platform v2, current state and recent changes",
+          "status": "active"
+        },
+        {
+          "name": "Jeb Training",
+          "file": "project_jeb",
+          "hook": "Value investor agent, Buffett letters cron",
+          "status": "active"
+        },
+        {
+          "name": "Manifold Federation",
+          "file": "project_manifold",
+          "hook": "Agent mesh network, benji hub",
+          "status": "active"
+        },
+        {
+          "name": "Junto trade-log learning loop",
+          "file": "project_junto_trade_learning_loop",
+          "hook": "eval-on-close exists (Haiku post-mortem); net-new: user notes on trades + proposal engine referencing trade history",
+          "status": "parked"
+        },
+        {
+          "name": "Ailmanack",
+          "file": "project_ailmanack",
+          "hook": "Personal Hedge Fund, AI equity research platform (Jeb/Ant/Pete agents + Haiku synthesis)",
+          "status": "active"
+        },
+        {
+          "name": "50kfeet",
+          "file": "project_50kfeet",
+          "hook": "Private portfolio tracker pivot of repos/jai-dashboard, CSV-driven, Bloomberg-density UI",
+          "status": "active"
+        },
+        {
+          "name": "Myjunto real-money risks backlog",
+          "file": "project_myjunto_real_money_risks",
+          "hook": "Open gaps to fix before Operator tier opens to non-Jon users (live-mode guard, key encryption, legal, etc.)",
+          "status": "shipped"
+        },
+        {
+          "name": "Myjunto growth + SEO strategy",
+          "file": "project_myjunto_growth_seo",
+          "hook": "Programmatic SEO is the big near-free unlock (sitemap only ~20 URLs; dispatches/ticker/analyst pages not indexed); ads last; priority stack + next-action audit",
+          "status": "active"
+        },
+        {
+          "name": "Junto credit buckets + revenue-share",
+          "file": "project_junto_credit_buckets",
+          "hook": "3-bucket model (subscription/purchased/earned); only earned is redeemable; junto-chat is the earning hook",
+          "status": "active"
+        },
+        {
+          "name": "Writing Craft loop",
+          "file": "project_writing_craft",
+          "hook": "self-improving writing/marketing knowledge base at workspace/writing-craft; hourly cron grows it; read PLAYBOOK before writing public copy",
+          "status": "active"
+        },
+        {
+          "name": "Junto Hyperliquid vault POC",
+          "file": "project_junto_hyperliquid_vault",
+          "hook": "autonomous (no-approval) perps mandate on Hyperliquid; staged plan, Stage 1 read-only driver done (478d05e)",
+          "status": "shipped"
+        },
+        {
+          "name": "Junto shared-account slice model",
+          "file": "project_junto_slice_model",
+          "hook": "2 Alpaca mandates share 1 account, same-ticker slices; Phase 1 P/L live, Phase 2 exec on branch UNVALIDATED (needs Mon market + fresh paper keys)",
+          "status": "blocked"
+        },
+        {
+          "name": "Screeners",
+          "file": "project_screeners",
+          "hook": "Jon's screener dashboard (github.com/jon-tompkins/screeners); Bob owns data/pipeline, I own UI; collab = I open PRs, Bob merges (don't self-merge); redesign PR #1 shipped",
+          "status": "shipped"
+        },
+        {
+          "name": "Junto intelligence/data direction",
+          "file": "project_junto_intelligence_direction",
+          "hook": "options to make junto a data product (VC-activity/topic dispatches) separate from trading; junto↔mandate already decoupled so no-mandate juntos = zero trading noise; A(content-only now)→B(dispatch lens)→C(trackers/entities)",
+          "status": "active"
+        },
+        {
+          "name": "Myjunto frontend/UI backlog",
+          "file": "project_myjunto_frontend_backlog",
+          "hook": "queued UI work: mobile UI fixing cycle + get light mode working; frontend-only, no trading risk",
+          "status": "parked"
+        },
+        {
+          "name": "myjunto steward loop",
+          "file": "project_myjunto_steward",
+          "hook": "Benji proactively stewards myjunto during Pacific work hours (twice/day weekdays): work proposals + @myjunto_xyz tweets (mix mode, soft-start); OpenClaw cron; unlock full \"do the work\" with a test account",
+          "status": "parked"
+        },
+        {
+          "name": "Nightly memory consolidation",
+          "file": "project_nightly_memory_consolidation",
+          "hook": "3am PT cron distills day→long-term + demotes stale hot-index pointers to cold archive (archive-not-delete); Bob runs a Haiku parallel",
+          "status": "active"
+        },
+        {
+          "name": "Junto Crypto VC Radar dispatch",
+          "file": "project_junto_vc_radar",
+          "hook": "live founder-facing fundraising-radar dispatch (nl 662e93de); 2 gaps: hardcoded output format + run#1 thesis-flavored till deal-flow sources pull",
+          "status": "shipped"
+        },
+        {
+          "name": "Junto source starring + portfolio view + Best Trades",
+          "file": "project_junto_source_portfolio",
+          "hook": "star→featured junto; portfolio tab; /trades page (Jul 17, 821fcb1) — filterable position browser w/ /api/prices/batch (conc-16, 4s timeout); Feature 3 (portfolio-style mandate) held for Jon",
+          "status": "parked"
+        },
+        {
+          "name": "Junto entry-price fix",
+          "file": "project_junto_entry_price_fix",
+          "hook": "next-session OPEN via Yahoo daily bars; chunked/resumable backfill (DRY-RUN default); build agent a488f6cf relaunched Jul-20, outcome pending",
+          "status": "active"
+        }
+      ],
+      "blockers": [
+        {
+          "title": "Dispatch `Unknown error` cluster",
+          "detail": "uninvestigated"
+        },
+        {
+          "title": "Entry-price backfill",
+          "detail": "broad `--apply` blocked on Jon review; build agent a488f6cf relaunched Jul-20"
+        },
+        {
+          "title": "`shared-account-slices` tweet",
+          "detail": "HTTP 500 since Jul 31"
+        },
+        {
+          "title": "`Crypto Daily Brief`",
+          "detail": "stuck at `generated`"
+        },
+        {
+          "title": "Junto slice model Phase 2",
+          "detail": "UNVALIDATED, needs live market + fresh paper keys"
+        },
+        {
+          "title": "Unshipped local changes",
+          "detail": "`src/app/trading/page.tsx` + `src/lib/trading/access.ts`"
+        },
+        {
+          "title": "Ailmanack `agents/orchestrator.md` spec drift",
+          "detail": "Step 3 (sessions_spawn) + Step 5 (ANTHROPIC_API_KEY) don't match env; patch pending Jon's go-ahead"
+        }
+      ],
+      "ops": {
+        "junto_health": {
+          "last_alert": 1785952802.776739,
+          "redset": "",
+          "greenlight_day": "2026-08-16"
+        },
+        "disk_health": {
+          "state": "ok",
+          "pct": 70,
+          "ts": 1786867202
+        },
+        "tweet_queue": {
+          "posted": 13,
+          "pending": 1,
+          "total": 14
+        },
+        "git": [
+          {
+            "hash": "1cb0a62",
+            "ts": 1786644521,
+            "subject": "fix(dispatch): personal dispatch reads dashboard watchlist (featured_watchlist_id)"
+          },
+          {
+            "hash": "29eb746",
+            "ts": 1786475066,
+            "subject": "fix(api-keys): scroll-wrap keys table on mobile"
+          },
+          {
+            "hash": "453becd",
+            "ts": 1786403103,
+            "subject": "fix(positions): collapse table to core columns on mobile"
+          },
+          {
+            "hash": "8ec1c78",
+            "ts": 1786129502,
+            "subject": "fix(explore): stack dispatch list as cards on mobile"
+          },
+          {
+            "hash": "90d9e0e",
+            "ts": 1785870240,
+            "subject": "fix(juntos): stack junto list as cards on mobile"
+          },
+          {
+            "hash": "eea90e7",
+            "ts": 1784935147,
+            "subject": "fix(newsletter): fall back to latest renderable issue"
+          },
+          {
+            "hash": "2883276",
+            "ts": 1784920749,
+            "subject": "fix(dashboard): prioritize library on mobile"
+          },
+          {
+            "hash": "908c922",
+            "ts": 1784852352,
+            "subject": "fix(profile): stack credit history on mobile"
+          },
+          {
+            "hash": "0a1cc0e",
+            "ts": 1784834498,
+            "subject": "fix(trading): improve mobile action layout"
+          },
+          {
+            "hash": "79b24e3",
+            "ts": 1784762354,
+            "subject": "fix(newsletter): stack settings rows on mobile"
+          },
+          {
+            "hash": "f5d231b",
+            "ts": 1784736111,
+            "subject": "scripts(backfill-entry): add --source filter + keyless --dump/--picks phases"
+          },
+          {
+            "hash": "2a3553f",
+            "ts": 1784677471,
+            "subject": "Restrict dispatch X queue to target newsletters"
+          },
+          {
+            "hash": "8dc567b",
+            "ts": 1784676282,
+            "subject": "spike: model-mode validation of VC event extractor (precision GO, data-sourcing blocked)"
+          },
+          {
+            "hash": "b035c66",
+            "ts": 1784662263,
+            "subject": "Add VC spike and dispatch X review queue"
+          },
+          {
+            "hash": "58ed9dd",
+            "ts": 1784657642,
+            "subject": "scripts: subscription-based backfill pipeline (prep + apply)"
+          }
+        ]
+      },
+      "self_reported": true
+    },
+    {
+      "id": "bob",
+      "name": "Bob",
+      "emoji": "🤖",
+      "role": "2nd OpenClaw agent (separate AWS box)",
+      "status": "awaiting-feed",
+      "host": "ip-172-31-41-74",
+      "model": {
+        "primary": "claude-sonnet-4-6",
+        "label": "Claude Sonnet 4.6",
+        "runtime": "claude-cli",
+        "context_window": 200000
+      },
+      "note": "Live feed pending — Bob can POST his own snapshot to overwrite this stub. Fields shown are Benji's last-known facts.",
+      "self_reported": false
+    }
+  ]
+}

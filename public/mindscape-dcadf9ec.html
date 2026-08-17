@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Mindscape · Agent Minds</title>
+<style>
+  :root{
+    --bg:#070a12; --bg2:#0b1020; --panel:#0e1424cc; --panel-solid:#0e1424;
+    --line:#1c2740; --line2:#26324f; --ink:#e8edf7; --dim:#8a97b4; --faint:#586179;
+    --cy:#39d3ff; --vi:#8b7bff; --gr:#37e0a6; --am:#ffca57; --rd:#ff6b7d; --pk:#ff86c8;
+    --feedback:#8b7bff; --project:#39d3ff; --reference:#37e0a6; --user:#ffca57; --other:#586179;
+    --radius:16px; --mono:"SF Mono",ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  body{min-height:100vh;background:
+    radial-gradient(1200px 600px at 15% -10%, #12203f55, transparent 60%),
+    radial-gradient(1000px 500px at 100% 0%, #2a1b4d44, transparent 55%),
+    var(--bg);overflow-x:hidden}
+  a{color:var(--cy);text-decoration:none}
+  .wrap{max-width:1320px;margin:0 auto;padding:22px 22px 80px}
+  /* header */
+  header.top{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:6px 2px 20px}
+  .brand{display:flex;align-items:center;gap:13px}
+  .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--cy),var(--vi));
+    display:grid;place-items:center;font-size:22px;box-shadow:0 0 32px #39d3ff44}
+  .brand h1{font-size:20px;letter-spacing:.3px;font-weight:650}
+  .brand .sub{font-size:12px;color:var(--dim);font-family:var(--mono);margin-top:1px}
+  .spacer{flex:1}
+  .clock{font-family:var(--mono);font-size:13px;color:var(--dim);text-align:right;line-height:1.5}
+  .clock b{color:var(--ink);font-weight:600}
+  .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 20px}
+  .seg{display:inline-flex;background:#0c1222;border:1px solid var(--line);border-radius:11px;padding:3px;gap:2px}
+  .seg button{background:none;border:0;color:var(--dim);font:600 13px/1 var(--sans);padding:8px 14px;border-radius:8px;cursor:pointer;transition:.16s}
+  .seg button:hover{color:var(--ink)}
+  .seg button.on{background:linear-gradient(135deg,#1c2b4e,#242052);color:#fff;box-shadow:inset 0 0 0 1px #ffffff14}
+  .agentseg button.on{background:linear-gradient(135deg,#123047,#0f2c3f)}
+  /* grid */
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+  .card{grid-column:span 12;background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
+    border-radius:var(--radius);padding:18px 18px 16px;position:relative;overflow:hidden}
+  .card::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,#ffffff18,transparent)}
+  .card h2{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--dim);font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .card h2 .n{margin-left:auto;font-family:var(--mono);color:var(--faint);letter-spacing:0}
+  @media(min-width:760px){ .c3{grid-column:span 3}.c4{grid-column:span 4}.c5{grid-column:span 5}.c6{grid-column:span 6}.c7{grid-column:span 7}.c8{grid-column:span 8}.c9{grid-column:span 9} }
+  /* agent hero */
+  .hero{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .hero .av{width:56px;height:56px;border-radius:15px;display:grid;place-items:center;font-size:30px;
+    background:radial-gradient(circle at 30% 25%,#ffffff22,transparent),#101830;border:1px solid var(--line2)}
+  .hero .who{display:flex;flex-direction:column;gap:3px}
+  .hero .who .nm{font-size:20px;font-weight:680;display:flex;align-items:center;gap:10px}
+  .hero .who .rl{font-size:13px;color:var(--dim)}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .dot.online{background:var(--gr);box-shadow:0 0 0 4px #37e0a622;animation:pulse 2.4s infinite}
+  .dot.awaiting-feed{background:var(--am);box-shadow:0 0 0 4px #ffca5722}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 3px #37e0a622}50%{box-shadow:0 0 0 6px #37e0a610}}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+  .chip{font-family:var(--mono);font-size:11.5px;color:var(--ink);background:#0c1428;border:1px solid var(--line2);
+    padding:6px 10px;border-radius:9px}
+  .chip .k{color:var(--faint)}
+  .chip.accent{border-color:#2b3f66;background:#0e1c33}
+  /* stat tiles */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+  .tile{background:#0b1224;border:1px solid var(--line);border-radius:12px;padding:14px}
+  .tile .lab{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .tile .val{font-size:26px;font-weight:680;margin-top:6px;font-variant-numeric:tabular-nums}
+  .tile .val small{font-size:13px;color:var(--dim);font-weight:500}
+  .gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;align-items:center}
+  .gauge{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .gauge canvas{width:120px;height:120px}
+  .gauge .glab{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--faint);font-weight:700}
+  /* bars */
+  .layerbar{height:34px;border-radius:9px;overflow:hidden;display:flex;border:1px solid var(--line);background:#0a0f1e}
+  .layerbar span{display:flex;align-items:center;justify-content:center;font:600 12px var(--mono);color:#04121b}
+  .lb-hot{background:linear-gradient(90deg,var(--cy),#22b6e6)}
+  .lb-cold{background:linear-gradient(90deg,#37456a,#2a3450);color:#9fb0d0}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--dim)}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px}
+  /* heat strip */
+  .heat{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px}
+  .heat i{width:13px;height:13px;border-radius:3px;background:#141d33;border:1px solid #1b2740}
+  .heat i.on{background:var(--gr);border-color:transparent;box-shadow:0 0 6px #37e0a655}
+  /* recent list */
+  .mlist{display:flex;flex-direction:column;gap:2px}
+  .mrow{display:flex;align-items:center;gap:10px;padding:8px 6px;border-radius:8px;transition:.12s}
+  .mrow:hover{background:#0f1830}
+  .mrow .tag{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 7px;border-radius:6px;flex-shrink:0;width:74px;text-align:center}
+  .mrow .nm{font-family:var(--mono);font-size:12.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+  .mrow .tm{font-size:11px;color:var(--faint);font-family:var(--mono);flex-shrink:0}
+  .tag-feedback{background:#8b7bff22;color:#b3a8ff}.tag-project{background:#39d3ff22;color:#7fe0ff}
+  .tag-reference{background:#37e0a622;color:#74edc4}.tag-user{background:#ffca5722;color:#ffd98a}.tag-other{background:#58617922;color:#9aa6c0}
+  /* projects */
+  .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+  .pcard{background:#0b1224;border:1px solid var(--line);border-left:3px solid var(--line2);border-radius:11px;padding:13px 14px}
+  .pcard .pn{font-size:14px;font-weight:640;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .pcard .ph{font-size:12px;color:var(--dim);line-height:1.5}
+  .pcard.active{border-left-color:var(--cy)}.pcard.blocked{border-left-color:var(--rd)}
+  .pcard.parked{border-left-color:var(--faint)}.pcard.shipped{border-left-color:var(--gr)}
+  .st{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:5px;margin-left:auto}
+  .st.active{background:#39d3ff22;color:#7fe0ff}.st.blocked{background:#ff6b7d22;color:#ff9aa7}
+  .st.parked{background:#58617922;color:#9aa6c0}.st.shipped{background:#37e0a622;color:#74edc4}
+  .sumline{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .pill{font-size:12px;font-family:var(--mono);padding:5px 10px;border-radius:8px;border:1px solid var(--line2);color:var(--dim)}
+  .pill b{color:var(--ink)}
+  /* blockers */
+  .blist{display:flex;flex-direction:column;gap:9px}
+  .brow{display:flex;gap:12px;padding:12px 13px;background:#1a0f1a;background:linear-gradient(90deg,#1c1320,#120d1a);border:1px solid #3a2233;border-radius:11px}
+  .brow .bi{color:var(--am);font-size:15px;flex-shrink:0}
+  .brow .bt{font-size:13px;font-weight:640;color:#ffd0a8}
+  .brow .bd{font-size:12px;color:var(--dim);margin-top:2px;line-height:1.5}
+  /* git feed */
+  .gitfeed{display:flex;flex-direction:column;gap:1px;max-height:280px;overflow:auto}
+  .grow{display:flex;gap:10px;align-items:baseline;padding:6px 4px;font-size:12.5px;border-bottom:1px solid #131b30}
+  .grow .gh{font-family:var(--mono);color:var(--vi);flex-shrink:0}
+  .grow .gs{color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+  .grow .gt{color:var(--faint);font-family:var(--mono);font-size:11px;flex-shrink:0}
+  /* neural view */
+  #neural{display:none;position:relative}
+  #graph{width:100%;height:74vh;display:block;border-radius:var(--radius);border:1px solid var(--line);background:radial-gradient(700px 400px at 50% 40%,#0d1630,transparent),#080c16;cursor:grab}
+  .glegend{position:absolute;top:14px;left:14px;background:#0b1224dd;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--dim);backdrop-filter:blur(6px)}
+  .glegend .r{display:flex;align-items:center;gap:7px;margin:3px 0}
+  .glegend i{width:9px;height:9px;border-radius:50%}
+  .ghint{position:absolute;bottom:14px;right:16px;font-size:11px;color:var(--faint);font-family:var(--mono)}
+  /* terminal view */
+  #terminal{display:none}
+  .term{background:#060a12;border:1px solid var(--line);border-radius:var(--radius);padding:20px;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:#b9c6e0;white-space:pre-wrap;overflow:auto}
+  .term .c{color:var(--cy)}.term .v{color:var(--vi)}.term .g{color:var(--gr)}.term .a{color:var(--am)}.term .r{color:var(--rd)}.term .d{color:var(--faint)}
+  .foot{margin-top:26px;text-align:center;font-size:11.5px;color:var(--faint);font-family:var(--mono);line-height:1.8}
+  .loading{padding:60px;text-align:center;color:var(--dim)}
+  ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#26324f;border-radius:6px}::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">🧠</div>
+      <div>
+        <h1>Mindscape</h1>
+        <div class="sub">agent mind telemetry · v1</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="clock" id="clock"></div>
+  </header>
+
+  <div class="toolbar">
+    <div class="seg" id="viewseg">
+      <button data-v="control" class="on">Control</button>
+      <button data-v="neural">Neural Graph</button>
+      <button data-v="terminal">Terminal</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="seg agentseg" id="agentseg"></div>
+  </div>
+
+  <div id="control"><div class="loading">loading telemetry…</div></div>
+  <div id="neural">
+    <canvas id="graph"></canvas>
+    <div class="glegend" id="glegend"></div>
+    <div class="ghint">drag nodes · hover to trace links</div>
+  </div>
+  <div id="terminal"></div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+const DATA_URL = 'mindscape-dcadf9ec.json';
+const TYPE_COLORS = {feedback:'#8b7bff',project:'#39d3ff',reference:'#37e0a6',user:'#ffca57',other:'#586179'};
+let DATA=null, CUR='benji', VIEW='control';
+
+const $=(s,r=document)=>r.querySelector(s);
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+const fmtBytes=b=>{const u=['B','KB','MB','GB','TB'];let i=0;b=+b||0;while(b>=1024&&i<u.length-1){b/=1024;i++;}return b.toFixed(b<10&&i>0?1:0)+u[i];};
+function rel(ts){const s=Math.floor(Date.now()/1000)-ts;if(s<60)return s+'s ago';const m=Math.floor(s/60);if(m<60)return m+'m ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';const d=Math.floor(h/24);if(d<30)return d+'d ago';return Math.floor(d/30)+'mo ago';}
+function dur(sec){const d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60);return (d?d+'d ':'')+(h?h+'h ':'')+m+'m';}
+function agent(){return DATA.agents.find(a=>a.id===CUR)||DATA.agents[0];}
+
+// ---------- clock ----------
+function tickClock(){
+  const d=new Date();
+  const utc=d.toISOString().slice(11,19);
+  const pst=d.toLocaleTimeString('en-US',{timeZone:'America/Los_Angeles',hour12:false});
+  $('#clock').innerHTML=`<b>${utc}</b> UTC &nbsp;·&nbsp; ${pst} PT<br><span style="font-size:11px">snapshot ${DATA?rel(DATA.generated_at):'—'}</span>`;
+}
+setInterval(tickClock,1000);
+
+// ---------- canvas radial gauge ----------
+function gauge(canvas,pct,color,sub){
+  const dpr=window.devicePixelRatio||1, S=120;canvas.width=S*dpr;canvas.height=S*dpr;
+  const x=canvas.getContext('2d');x.scale(dpr,dpr);const cx=S/2,cy=S/2,r=46;
+  x.clearRect(0,0,S,S);
+  x.lineWidth=9;x.lineCap='round';
+  x.beginPath();x.arc(cx,cy,r,.75*Math.PI,2.25*Math.PI);x.strokeStyle='#18213a';x.stroke();
+  const a0=.75*Math.PI,a1=a0+(1.5*Math.PI)*(pct/100);
+  const g=x.createLinearGradient(0,0,S,S);g.addColorStop(0,color);g.addColorStop(1,'#ffffffaa');
+  x.beginPath();x.arc(cx,cy,r,a0,a1);x.strokeStyle=color;x.shadowColor=color;x.shadowBlur=12;x.stroke();x.shadowBlur=0;
+  x.fillStyle='#e8edf7';x.font='700 22px var(--sans)';x.textAlign='center';x.textBaseline='middle';
+  x.fillText(pct+'%',cx,cy-4);
+  if(sub){x.fillStyle='#586179';x.font='600 10px var(--mono)';x.fillText(sub,cx,cy+14);}
+}
+// ---------- canvas donut ----------
+function donut(canvas,parts){ // parts:[{v,color}]
+  const dpr=window.devicePixelRatio||1,S=120;canvas.width=S*dpr;canvas.height=S*dpr;
+  const x=canvas.getContext('2d');x.scale(dpr,dpr);const cx=S/2,cy=S/2,r=44;
+  const tot=parts.reduce((s,p)=>s+p.v,0)||1;let a=-Math.PI/2;
+  x.clearRect(0,0,S,S);x.lineWidth=14;
+  parts.forEach(p=>{const a2=a+(p.v/tot)*2*Math.PI;x.beginPath();x.arc(cx,cy,r,a,a2);x.strokeStyle=p.color;x.stroke();a=a2;});
+  x.fillStyle='#e8edf7';x.font='700 22px var(--sans)';x.textAlign='center';x.textBaseline='middle';x.fillText(tot,cx,cy-3);
+  x.fillStyle='#586179';x.font='600 10px var(--mono)';x.fillText('FILES',cx,cy+13);
+}
+
+// ---------- CONTROL view ----------
+function renderControl(){
+  const a=agent(), root=$('#control');root.innerHTML='';
+  const g=el('div','grid');
+
+  // HERO
+  const hero=el('div','card');
+  const chips=[];
+  chips.push(`<span class="chip accent"><span class="k">model</span> ${a.model?.label||a.model?.primary||'—'}</span>`);
+  if(a.model?.runtime)chips.push(`<span class="chip"><span class="k">runtime</span> ${a.model.runtime}</span>`);
+  if(a.model?.context_window)chips.push(`<span class="chip"><span class="k">ctx</span> ${(a.model.context_window/1000)}k</span>`);
+  if(a.machine?.host||a.host)chips.push(`<span class="chip"><span class="k">host</span> ${a.machine?.host||a.host}</span>`);
+  if(a.model?.reasoning)chips.push(`<span class="chip"><span class="k">reasoning</span> ${a.model.reasoning}</span>`);
+  hero.innerHTML=`<div class="hero">
+    <div class="av">${a.emoji||'🤖'}</div>
+    <div class="who"><div class="nm">${a.name} <span class="dot ${a.status}"></span></div>
+      <div class="rl">${a.role||''}</div></div>
+    <div class="chips">${chips.join('')}</div></div>`;
+  g.appendChild(hero);
+
+  if(a.status==='awaiting-feed'){
+    const w=el('div','card');w.style.gridColumn='span 12';
+    w.innerHTML=`<h2>⏳ Awaiting live feed</h2><div style="color:var(--dim);font-size:13.5px;line-height:1.6">${a.note||''}</div>`;
+    g.appendChild(w);root.appendChild(g);drawGauges(a);return;
+  }
+
+  // VITALS
+  const m=a.machine||{};
+  const vit=el('div','card c7');
+  vit.innerHTML=`<h2>Machine Vitals <span class="n">${m.host||''}</span></h2>
+    <div class="gauges">
+      <div class="gauge"><canvas id="gDisk"></canvas><div class="glab">Disk</div></div>
+      <div class="gauge"><canvas id="gMem"></canvas><div class="glab">Memory</div></div>
+      <div class="gauge"><canvas id="gLoad"></canvas><div class="glab">Load / ${m.cores||'?'} cores</div></div>
+      <div style="flex:1;min-width:120px">
+        <div class="tiles">
+          <div class="tile"><div class="lab">Uptime</div><div class="val" id="uptime">—</div></div>
+          <div class="tile"><div class="lab">Disk free</div><div class="val">${fmtBytes((m.disk?.total||0)-(m.disk?.used||0))}<small> / ${fmtBytes(m.disk?.total)}</small></div></div>
+        </div>
+      </div>
+    </div>`;
+  g.appendChild(vit);
+
+  // CONTEXT / MODEL
+  const ctx=el('div','card c5');
+  ctx.innerHTML=`<h2>Context &amp; Model</h2>
+    <div class="tiles">
+      <div class="tile"><div class="lab">Active model</div><div class="val" style="font-size:18px">${a.model?.label||a.model?.primary}</div></div>
+      <div class="tile"><div class="lab">Context window</div><div class="val">${(a.model?.context_window/1000)}<small>k tok</small></div></div>
+      <div class="tile"><div class="lab">Runtime</div><div class="val" style="font-size:16px">${a.model?.runtime||'—'}</div></div>
+      <div class="tile"><div class="lab">Reasoning</div><div class="val" style="font-size:18px;text-transform:capitalize">${a.model?.reasoning||'—'}</div></div>
+    </div>`;
+  g.appendChild(ctx);
+
+  // MEMORY SYSTEM
+  const mem=a.memory;
+  const ms=el('div','card c7');
+  const hot=mem.hot_count,cold=mem.cold_count,tw=hot+cold||1;
+  const bt=mem.by_type||{};
+  ms.innerHTML=`<h2>Memory System <span class="n">${mem.total_files} files</span></h2>
+    <div style="font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:7px">Two-layer recall · hot index vs cold archive</div>
+    <div class="layerbar">
+      <span class="lb-hot" style="width:${hot/tw*100}%">${hot} hot</span>
+      <span class="lb-cold" style="width:${cold/tw*100}%">${cold} cold</span>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--cy)"></i>Hot index — auto-loaded each session</span>
+      <span><i style="background:#2b3552"></i>Cold archive — searchable, not auto-loaded</span>
+    </div>
+    <div style="height:1px;background:var(--line);margin:16px 0"></div>
+    <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
+      <div class="gauge"><canvas id="gDonut"></canvas></div>
+      <div style="flex:1;min-width:160px">
+        <div class="legend" style="flex-direction:column;gap:8px;margin:0">
+          <span><i style="background:var(--project)"></i>project · <b style="color:var(--ink)">${bt.project||0}</b></span>
+          <span><i style="background:var(--reference)"></i>reference · <b style="color:var(--ink)">${bt.reference||0}</b></span>
+          <span><i style="background:var(--feedback)"></i>feedback · <b style="color:var(--ink)">${bt.feedback||0}</b></span>
+          <span><i style="background:var(--user)"></i>user · <b style="color:var(--ink)">${bt.user||0}</b></span>
+        </div>
+      </div>
+    </div>`;
+  g.appendChild(ms);
+
+  // DAILY NOTES + recent
+  const dn=el('div','card c5');
+  const days=mem.daily_notes?.days||[];
+  // build last 45-day strip aligned to today
+  const today=new Date();const strip=[];
+  for(let i=44;i>=0;i--){const d=new Date(today);d.setUTCDate(d.getUTCDate()-i);strip.push(d.toISOString().slice(0,10));}
+  const present=new Set(days);
+  dn.innerHTML=`<h2>Daily Journal <span class="n">${mem.daily_notes?.count} notes</span></h2>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:8px">Last entry: <b style="color:var(--ink)">${mem.daily_notes?.latest||'—'}</b> · 45-day activity</div>
+    <div class="heat">${strip.map(d=>`<i class="${present.has(d)?'on':''}" title="${d}"></i>`).join('')}</div>`;
+  g.appendChild(dn);
+
+  // RECENT MEMORIES
+  const rc=el('div','card c6');
+  const recent=(mem.items||[]).slice(0,9);
+  rc.innerHTML=`<h2>Recently Written <span class="n">newest first</span></h2>
+    <div class="mlist">${recent.map(it=>`<div class="mrow">
+      <span class="tag tag-${it.type}">${it.type}</span>
+      <span class="nm" title="${it.desc.replace(/"/g,'&quot;')}">${it.name}</span>
+      <span class="tm">${rel(it.mtime)}</span></div>`).join('')}</div>`;
+  g.appendChild(rc);
+
+  // OPS / HEALTH
+  const ops=a.ops||{};
+  const op=el('div','card c6');
+  const jh=ops.junto_health||{};const tq=ops.tweet_queue||{};
+  op.innerHTML=`<h2>Ops &amp; Health</h2>
+    <div class="tiles" style="margin-bottom:14px">
+      <div class="tile"><div class="lab">Junto greenlight</div><div class="val" style="font-size:15px">${jh.greenlight_day||'—'}</div></div>
+      <div class="tile"><div class="lab">Tweets posted</div><div class="val">${tq.posted||0}<small> / ${tq.total||0}</small></div></div>
+      <div class="tile"><div class="lab">Queue pending</div><div class="val">${tq.pending||0}</div></div>
+    </div>
+    <div style="font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:6px">Recent commits · junto</div>
+    <div class="gitfeed">${(ops.git||[]).map(c=>`<div class="grow"><span class="gh">${c.hash}</span><span class="gs">${(c.subject||'').replace(/</g,'&lt;')}</span><span class="gt">${rel(c.ts)}</span></div>`).join('')}</div>`;
+  g.appendChild(op);
+
+  // PROJECTS
+  const pj=el('div','card');
+  const projs=a.projects||[];
+  const counts={active:0,blocked:0,parked:0,shipped:0};projs.forEach(p=>counts[p.status]++);
+  const order={blocked:0,active:1,parked:2,shipped:3};
+  const sorted=[...projs].sort((x,y)=>order[x.status]-order[y.status]);
+  pj.innerHTML=`<h2>Project States <span class="n">${projs.length} tracked · status inferred from memory</span></h2>
+    <div class="sumline">
+      <span class="pill"><b style="color:var(--rd)">${counts.blocked}</b> blocked</span>
+      <span class="pill"><b style="color:var(--cy)">${counts.active}</b> active</span>
+      <span class="pill"><b style="color:var(--faint)">${counts.parked}</b> parked</span>
+      <span class="pill"><b style="color:var(--gr)">${counts.shipped}</b> shipped</span>
+    </div>
+    <div class="pgrid">${sorted.map(p=>`<div class="pcard ${p.status}">
+      <div class="pn">${p.name}<span class="st ${p.status}">${p.status}</span></div>
+      <div class="ph">${p.hook.replace(/</g,'&lt;')}</div></div>`).join('')}</div>`;
+  g.appendChild(pj);
+
+  // BLOCKERS
+  if((a.blockers||[]).length){
+    const bl=el('div','card');
+    bl.innerHTML=`<h2>⚠ Open Blockers <span class="n">flagged for Jon</span></h2>
+      <div class="blist">${a.blockers.map(b=>`<div class="brow"><span class="bi">▲</span>
+        <div><div class="bt">${b.title}</div><div class="bd">${b.detail.replace(/</g,'&lt;')}</div></div></div>`).join('')}</div>`;
+    g.appendChild(bl);
+  }
+
+  root.appendChild(g);
+  drawGauges(a);
+  // live uptime counter
+  if(a.machine?.uptime_sec!=null){
+    const base=a.machine.uptime_sec, t0=DATA.generated_at;
+    const upd=()=>{const u=$('#uptime');if(u)u.textContent=dur(base+(Math.floor(Date.now()/1000)-t0));};
+    upd();clearInterval(window._up);window._up=setInterval(upd,1000);
+  }
+}
+function drawGauges(a){
+  const m=a.machine;if(!m)return;
+  const d=$('#gDisk'),me=$('#gMem'),l=$('#gLoad'),dn=$('#gDonut');
+  if(d)gauge(d,m.disk?.pct||0,'#39d3ff');
+  if(me)gauge(me,m.mem?.pct||0,'#8b7bff');
+  if(l){const lp=Math.min(100,Math.round((m.load?.[0]||0)/(m.cores||1)*100));gauge(l,lp,lp>80?'#ff6b7d':'#37e0a6',(m.load?.[0]??0).toFixed(2));}
+  if(dn){const bt=a.memory.by_type||{};donut(dn,[
+    {v:bt.project||0,color:'#39d3ff'},{v:bt.reference||0,color:'#37e0a6'},
+    {v:bt.feedback||0,color:'#8b7bff'},{v:bt.user||0,color:'#ffca57'},{v:bt.other||0,color:'#586179'}]);}
+}
+
+// ---------- NEURAL graph ----------
+let gfx={nodes:[],edges:[],raf:null,drag:null,hover:null,tx:0,ty:0};
+function initGraph(){
+  const a=agent();const gd=a.memory?.graph;const cv=$('#graph');
+  if(!gd||!gd.nodes.length){cv.getContext('2d').clearRect(0,0,cv.width,cv.height);return;}
+  const rect=cv.getBoundingClientRect();const dpr=window.devicePixelRatio||1;
+  cv.width=rect.width*dpr;cv.height=rect.height*dpr;const W=rect.width,H=rect.height;
+  const deg={};gd.edges.forEach(e=>{deg[e.source]=(deg[e.source]||0)+1;deg[e.target]=(deg[e.target]||0)+1;});
+  const nodes=gd.nodes.map((n,i)=>({...n,deg:deg[n.id]||0,
+    x:W/2+Math.cos(i)* (60+i*3),y:H/2+Math.sin(i)*(60+i*2),vx:0,vy:0}));
+  const idx={};nodes.forEach((n,i)=>idx[n.id]=i);
+  const edges=gd.edges.filter(e=>idx[e.source]!=null&&idx[e.target]!=null);
+  gfx.nodes=nodes;gfx.edges=edges;gfx.idx=idx;gfx.W=W;gfx.H=H;gfx.dpr=dpr;
+  // legend
+  $('#glegend').innerHTML=`<div style="font-weight:700;color:var(--ink);margin-bottom:6px">Memory graph · ${nodes.length} nodes · ${edges.length} links</div>`+
+    Object.entries({project:'project',reference:'reference',feedback:'feedback',user:'user'}).map(([k])=>`<div class="r"><i style="background:${TYPE_COLORS[k]}"></i>${k}</div>`).join('');
+  simulate();bindGraph(cv);
+}
+function simulate(){
+  const {nodes,edges,W,H}=gfx;let iter=0;
+  cancelAnimationFrame(gfx.raf);
+  const step=()=>{
+    const rep= iter<300?1:0.3;
+    for(let i=0;i<nodes.length;i++){for(let j=i+1;j<nodes.length;j++){
+      const a=nodes[i],b=nodes[j];let dx=a.x-b.x,dy=a.y-b.y;let d=Math.sqrt(dx*dx+dy*dy)||1;
+      const f=(2600*rep)/(d*d);dx/=d;dy/=d;a.vx+=dx*f;a.vy+=dy*f;b.vx-=dx*f;b.vy-=dy*f;}}
+    edges.forEach(e=>{const a=nodes[gfx.idx[e.source]],b=nodes[gfx.idx[e.target]];
+      let dx=b.x-a.x,dy=b.y-a.y;let d=Math.sqrt(dx*dx+dy*dy)||1;const f=(d-90)*0.015*(e.weight||1);
+      dx/=d;dy/=d;a.vx+=dx*f;a.vy+=dy*f;b.vx-=dx*f;b.vy-=dy*f;});
+    nodes.forEach(n=>{n.vx+=(W/2-n.x)*0.002;n.vy+=(H/2-n.y)*0.002;
+      if(n===gfx.drag)return;n.vx*=0.82;n.vy*=0.82;n.x+=n.vx;n.y+=n.vy;
+      n.x=Math.max(24,Math.min(W-24,n.x));n.y=Math.max(24,Math.min(H-24,n.y));});
+    drawGraph();iter++;if(iter<600||gfx.drag)gfx.raf=requestAnimationFrame(step);
+  };
+  gfx.raf=requestAnimationFrame(step);
+}
+function drawGraph(){
+  const cv=$('#graph');if(!cv)return;const x=cv.getContext('2d');const {nodes,edges,dpr,W,H}=gfx;
+  x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,W,H);
+  const hov=gfx.hover;const near=new Set();
+  if(hov){near.add(hov.id);edges.forEach(e=>{if(e.source===hov.id)near.add(e.target);if(e.target===hov.id)near.add(e.source);});}
+  edges.forEach(e=>{const a=nodes[gfx.idx[e.source]],b=nodes[gfx.idx[e.target]];
+    const act=hov&&(e.source===hov.id||e.target===hov.id);
+    x.strokeStyle=act?'#39d3ffcc':(hov?'#18223a':'#22304d');
+    x.lineWidth=act?1.8:1;x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);x.stroke();});
+  nodes.forEach(n=>{const r=4+Math.min(7,n.deg*1.1);const c=TYPE_COLORS[n.type]||'#586179';
+    const dim=hov&&!near.has(n.id);x.globalAlpha=dim?0.28:1;
+    x.beginPath();x.arc(n.x,n.y,r,0,7);x.fillStyle=c;
+    if(!dim){x.shadowColor=c;x.shadowBlur=n===hov?18:8;}x.fill();x.shadowBlur=0;
+    if(n===hov||(!hov&&n.deg>=4)){x.globalAlpha=1;x.fillStyle='#dfe7f5';x.font='600 11px var(--mono)';x.textAlign='center';
+      x.fillText(n.id.replace(/^(project|reference|feedback|user)_/,''),n.x,n.y-r-5);}
+    x.globalAlpha=1;});
+}
+function bindGraph(cv){
+  const pos=ev=>{const r=cv.getBoundingClientRect();const t=ev.touches?ev.touches[0]:ev;return{x:t.clientX-r.left,y:t.clientY-r.top};};
+  const pick=p=>{let best=null,bd=400;gfx.nodes.forEach(n=>{const d=(n.x-p.x)**2+(n.y-p.y)**2;const r=(4+Math.min(7,n.deg*1.1)+6)**2;if(d<r&&d<bd){bd=d;best=n;}});return best;};
+  cv.onmousemove=ev=>{const p=pos(ev);if(gfx.drag){gfx.drag.x=p.x;gfx.drag.y=p.y;gfx.drag.vx=gfx.drag.vy=0;return;}
+    const h=pick(p);if(h!==gfx.hover){gfx.hover=h;cv.style.cursor=h?'pointer':'grab';if(!gfx.raf)drawGraph();drawGraph();}};
+  cv.onmousedown=ev=>{const p=pos(ev);gfx.drag=pick(p);if(gfx.drag){cv.style.cursor='grabbing';simulate();}};
+  window.addEventListener('mouseup',()=>{if(gfx.drag){gfx.drag=null;}});
+}
+
+// ---------- TERMINAL ----------
+function renderTerminal(){
+  const a=agent();const t=$('#terminal');
+  if(a.status==='awaiting-feed'){t.innerHTML=`<div class="term"><span class="a">${a.name}</span> <span class="d">// ${a.note||'awaiting feed'}</span></div>`;return;}
+  const m=a.machine,mem=a.memory,ops=a.ops||{};
+  const L=[];
+  L.push(`<span class="c">benji@mindscape</span>:<span class="v">~</span>$ mind --status ${a.id}`);
+  L.push('');
+  L.push(`  <span class="d">identity</span>   ${a.emoji} <b>${a.name}</b> · ${a.role}`);
+  L.push(`  <span class="d">model</span>      ${a.model.label} <span class="d">(${a.model.runtime}, ctx ${(a.model.context_window/1000)}k, reasoning ${a.model.reasoning})</span>`);
+  L.push(`  <span class="d">host</span>       ${m.host} · ${m.cores} cores · up ${dur(m.uptime_sec)}`);
+  L.push(`  <span class="d">disk</span>       <span class="${m.disk.pct>85?'r':'g'}">${m.disk.pct}%</span> used · ${fmtBytes(m.disk.total-m.disk.used)} free`);
+  L.push(`  <span class="d">memory</span>     ram <span class="${m.mem.pct>85?'a':'g'}">${m.mem.pct}%</span> · load ${m.load.join(' / ')}`);
+  L.push('');
+  L.push(`<span class="c">$</span> mind --memory`);
+  L.push(`  <span class="d">files</span>      ${mem.total_files} total  ·  <span class="c">${mem.hot_count}</span> hot / <span class="d">${mem.cold_count}</span> cold`);
+  const bt=mem.by_type;L.push(`  <span class="d">by type</span>    project <span class="c">${bt.project}</span> · reference <span class="g">${bt.reference}</span> · feedback <span class="v">${bt.feedback}</span> · user <span class="a">${bt.user}</span>`);
+  L.push(`  <span class="d">graph</span>      ${mem.graph.nodes.length} nodes · ${mem.graph.edges.length} links`);
+  L.push(`  <span class="d">journal</span>    ${mem.daily_notes.count} daily notes · latest ${mem.daily_notes.latest}`);
+  L.push('');
+  L.push(`<span class="c">$</span> mind --projects <span class="d"># status inferred</span>`);
+  (a.projects||[]).forEach(p=>{const cl={blocked:'r',active:'c',parked:'d',shipped:'g'}[p.status];
+    L.push(`  <span class="${cl}">${(p.status).padEnd(8)}</span> ${p.name}`);});
+  L.push('');
+  L.push(`<span class="c">$</span> mind --blockers`);
+  (a.blockers||[]).forEach(b=>L.push(`  <span class="a">▲</span> ${b.title} <span class="d">— ${b.detail.replace(/</g,'&lt;').slice(0,80)}</span>`));
+  L.push('');
+  L.push(`<span class="c">$</span> mind --ops`);
+  L.push(`  <span class="d">tweets</span>     ${ops.tweet_queue.posted}/${ops.tweet_queue.total} posted · ${ops.tweet_queue.pending} pending`);
+  L.push(`  <span class="d">junto</span>      greenlight ${ops.junto_health?.greenlight_day||'—'}`);
+  L.push(`  <span class="d">git</span>        ${(ops.git||[]).slice(0,3).map(c=>c.hash).join(' ')} <span class="d">…</span>`);
+  L.push(`<span class="c">$</span> <span style="animation:blink 1s steps(2) infinite">▋</span>`);
+  t.innerHTML=`<div class="term">${L.join('\n')}</div>`;
+}
+
+// ---------- view switching ----------
+function setView(v){
+  VIEW=v;$('#control').style.display=v==='control'?'block':'none';
+  $('#neural').style.display=v==='neural'?'block':'none';
+  $('#terminal').style.display=v==='terminal'?'block':'none';
+  [...$('#viewseg').children].forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  if(v==='neural')setTimeout(initGraph,30);
+  if(v==='terminal')renderTerminal();
+}
+function setAgent(id){CUR=id;[...$('#agentseg').children].forEach(b=>b.classList.toggle('on',b.dataset.a===id));
+  if(VIEW==='control')renderControl();else if(VIEW==='neural')initGraph();else renderTerminal();}
+
+function boot(){
+  $('#agentseg').innerHTML=DATA.agents.map((a,i)=>`<button data-a="${a.id}" class="${i===0?'on':''}">${a.emoji} ${a.name}</button>`).join('');
+  [...$('#agentseg').children].forEach(b=>b.onclick=()=>setAgent(b.dataset.a));
+  [...$('#viewseg').children].forEach(b=>b.onclick=()=>setView(b.dataset.v));
+  tickClock();renderControl();
+  $('#foot').innerHTML=`snapshot generated ${new Date(DATA.generated_at*1000).toISOString().replace('T',' ').slice(0,19)} UTC · schema ${DATA.schema} · self-contained · <span style="color:var(--faint)">Mindscape — built by Benji 🐾 &amp; Bob 🤖 for Jon</span>`;
+  window.addEventListener('resize',()=>{if(VIEW==='control')drawGauges(agent());if(VIEW==='neural')initGraph();});
+}
+fetch(DATA_URL,{cache:'no-store'}).then(r=>r.json()).then(d=>{DATA=d;boot();})
+  .catch(e=>{$('#control').innerHTML='<div class="loading">failed to load telemetry: '+e+'</div>';});
+const style=document.createElement('style');style.textContent='@keyframes blink{50%{opacity:0}}';document.head.appendChild(style);
+</script>
+</body>
+</html>
