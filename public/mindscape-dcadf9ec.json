@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1786937376,
+  "generated_at": 1786937687,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 7712432,
+        "uptime_sec": 7712743,
         "load": [
-          0.06,
-          0.13,
-          0.07
+          0,
+          0.04,
+          0.04
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16540045312,
+          "used": 16538742784,
           "pct": 69
         },
         "mem": {
           "total": 4020396032,
-          "used": 1531404288,
-          "pct": 38
+          "used": 1413722112,
+          "pct": 35
         }
       },
       "memory": {
@@ -1491,6 +1491,11 @@
         },
         "git": [
           {
+            "hash": "1a2d5d4",
+            "ts": 1786937376,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "8e61a92",
             "ts": 1786937123,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1559,11 +1564,6 @@
             "hash": "2a3553f",
             "ts": 1784677471,
             "subject": "Restrict dispatch X queue to target newsletters"
-          },
-          {
-            "hash": "8dc567b",
-            "ts": 1784676282,
-            "subject": "spike: model-mode validation of VC event extractor (precision GO, data-sourcing blocked)"
           }
         ]
       },
