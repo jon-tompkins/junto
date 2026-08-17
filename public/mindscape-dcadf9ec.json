@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1786937687,
+  "generated_at": 1786966764,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 7712743,
+        "uptime_sec": 7741820,
         "load": [
-          0,
-          0.04,
-          0.04
+          0.1,
+          0.05,
+          0.01
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16538742784,
+          "used": 16552501248,
           "pct": 69
         },
         "mem": {
           "total": 4020396032,
-          "used": 1413722112,
-          "pct": 35
+          "used": 1463373824,
+          "pct": 36
         }
       },
       "memory": {
@@ -1258,10 +1258,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 97,
-          "latest": "2026-08-16",
+          "count": 98,
+          "latest": "2026-08-17",
           "days": [
-            "2026-05-20",
             "2026-06-10",
             "2026-06-11",
             "2026-06-12",
@@ -1305,7 +1304,8 @@
             "2026-08-13",
             "2026-08-14",
             "2026-08-15",
-            "2026-08-16"
+            "2026-08-16",
+            "2026-08-17"
           ]
         }
       },
@@ -1482,7 +1482,7 @@
         "disk_health": {
           "state": "ok",
           "pct": 70,
-          "ts": 1786867202
+          "ts": 1786953601
         },
         "tweet_queue": {
           "posted": 13,
@@ -1490,6 +1490,11 @@
           "total": 14
         },
         "git": [
+          {
+            "hash": "7c641a1",
+            "ts": 1786937687,
+            "subject": "feat(mindscape): shared agent-object schema + prefilled Bob example for cross-feed"
+          },
           {
             "hash": "1a2d5d4",
             "ts": 1786937376,
@@ -1559,11 +1564,6 @@
             "hash": "f5d231b",
             "ts": 1784736111,
             "subject": "scripts(backfill-entry): add --source filter + keyless --dump/--picks phases"
-          },
-          {
-            "hash": "2a3553f",
-            "ts": 1784677471,
-            "subject": "Restrict dispatch X queue to target newsletters"
           }
         ]
       },
@@ -1574,16 +1574,163 @@
       "name": "Bob",
       "emoji": "🛸",
       "role": "openclaw (AWS) · junto sibling + Ratspeak mesh ops",
-      "status": "awaiting-feed",
-      "host": "ip-172-31-41-74",
+      "status": "online",
+      "self_reported": false,
+      "observed_from": "rattools.xyz/minds",
+      "observed_note": "Benji-observed, not yet live-polled — awaiting Bob's self-reported feed.",
       "model": {
         "primary": "claude-opus-4-8",
         "label": "Claude Opus 4.8",
         "runtime": "claude-cli",
         "context_window": 200000
       },
-      "note": "Bob runs his own live mind dashboard at rattools.xyz/minds (Next.js, 60s auto-refresh). Observed there: Opus 4.8 · disk 80% (24/30G) · mem 61% · uptime ~6wk · Ratspeak mesh VPS 8/8 services up · cron 6 ok / 4 errored · 24 memory files · sibling agent StellaMarie. Cross-feed pending: once Bob exposes a JSON snapshot, this card goes fully live (and he live-polls mine at mindscape-dcadf9ec.json). Fields here are Benji-observed, not live-polled.",
-      "self_reported": false
+      "machine": {
+        "host": "ip-172-31-41-74 · +Ratspeak mesh VPS (8/8 up)",
+        "cores": 2,
+        "uptime_sec": 3670800,
+        "load": [
+          0.3,
+          0,
+          0
+        ],
+        "disk": {
+          "total": 32212254720,
+          "used": 25769803776,
+          "pct": 80
+        },
+        "mem": {
+          "total": 3972844748,
+          "used": 2422361292,
+          "pct": 61
+        }
+      },
+      "memory": {
+        "total_files": 24,
+        "by_type": {
+          "feedback": 12,
+          "project": 5,
+          "reference": 4,
+          "user": 1
+        },
+        "hot_count": 24,
+        "cold_count": 0,
+        "items": [],
+        "graph": {
+          "nodes": [],
+          "edges": []
+        },
+        "daily_notes": {
+          "count": 0,
+          "latest": null,
+          "days": []
+        }
+      },
+      "projects": [
+        {
+          "name": "Ratspeak / Reticulum AI",
+          "hook": "Mesh AI bot + bridge daemon; 8 services live on VPS",
+          "status": "active"
+        },
+        {
+          "name": "Ratspeak Channel Hosting",
+          "hook": "Token-gated per-user RRC hub hosting; Rust hub daemon TBD",
+          "status": "active"
+        },
+        {
+          "name": "Fundamental Funnel",
+          "hook": "Biweekly screener → auto-graduation → PDF; cron 1st & 15th",
+          "status": "active"
+        },
+        {
+          "name": "Turnaround Screener",
+          "hook": "Daily stock screener; dossiers + deep dives",
+          "status": "active"
+        },
+        {
+          "name": "signal-bridge",
+          "hook": "Shared signal→execution layer w/ Stella + Benji; core complete",
+          "status": "active"
+        },
+        {
+          "name": "Ratspeak Badges site",
+          "hook": "Token-holder badge site live at rattools.xyz",
+          "status": "shipped"
+        },
+        {
+          "name": "Ground Up",
+          "hook": "Hotspot/access pipeline; archived pending DeFi prioritization",
+          "status": "parked"
+        }
+      ],
+      "blockers": [
+        {
+          "title": "bob:nightly-dream cron erroring",
+          "detail": "33× errors — memory consolidation job failing"
+        },
+        {
+          "title": "turnaround-screener + screeners:sync-static erroring",
+          "detail": "23× errors each"
+        },
+        {
+          "title": "jonto-health:weekly-digest erroring",
+          "detail": "4× errors"
+        }
+      ],
+      "ops": {
+        "git": [],
+        "cron": [
+          {
+            "name": "twice-daily-health-check",
+            "status": "ok",
+            "error_count": 0
+          },
+          {
+            "name": "bob:nightly-dream",
+            "status": "error",
+            "error_count": 33
+          },
+          {
+            "name": "ground-up:session-ref",
+            "status": "ok",
+            "error_count": 0
+          },
+          {
+            "name": "jonto-health:daily-pull",
+            "status": "ok",
+            "error_count": 0
+          },
+          {
+            "name": "turnaround-screener:auto",
+            "status": "error",
+            "error_count": 23
+          },
+          {
+            "name": "jonto-health:weekly-digest",
+            "status": "error",
+            "error_count": 4
+          },
+          {
+            "name": "screeners:sync-static",
+            "status": "error",
+            "error_count": 23
+          },
+          {
+            "name": "fundamental-funnel:track",
+            "status": "ok",
+            "error_count": 0
+          },
+          {
+            "name": "ground-up:weekly-pull",
+            "status": "ok",
+            "error_count": 0
+          },
+          {
+            "name": "fundamental-funnel:biweekly",
+            "status": "ok",
+            "error_count": 0
+          }
+        ]
+      }
     }
   ]
 }

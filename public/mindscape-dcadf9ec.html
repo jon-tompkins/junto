@@ -129,6 +129,10 @@
   .term{background:#060a12;border:1px solid var(--line);border-radius:var(--radius);padding:20px;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:#b9c6e0;white-space:pre-wrap;overflow:auto}
   .term .c{color:var(--cy)}.term .v{color:var(--vi)}.term .g{color:var(--gr)}.term .a{color:var(--am)}.term .r{color:var(--rd)}.term .d{color:var(--faint)}
   .foot{margin-top:26px;text-align:center;font-size:11.5px;color:var(--faint);font-family:var(--mono);line-height:1.8}
+  .obsbadge{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--am);background:#ffca5718;border:1px solid #ffca5740;padding:3px 8px;border-radius:6px;vertical-align:2px;cursor:help}
+  .cdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .cdot.ok{background:var(--gr);box-shadow:0 0 6px #37e0a655}.cdot.err{background:var(--rd);box-shadow:0 0 6px #ff6b7d55}
+  .tm.cerr{color:var(--rd)}
   .loading{padding:60px;text-align:center;color:var(--dim)}
   ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#26324f;border-radius:6px}::-webkit-scrollbar-track{background:transparent}
 </style>
@@ -227,9 +231,10 @@ function renderControl(){
   if(a.model?.context_window)chips.push(`<span class="chip"><span class="k">ctx</span> ${(a.model.context_window/1000)}k</span>`);
   if(a.machine?.host||a.host)chips.push(`<span class="chip"><span class="k">host</span> ${a.machine?.host||a.host}</span>`);
   if(a.model?.reasoning)chips.push(`<span class="chip"><span class="k">reasoning</span> ${a.model.reasoning}</span>`);
+  const obs=a.self_reported===false?`<span class="obsbadge" title="${(a.observed_note||'Observed by Benji, not self-reported').replace(/"/g,'&quot;')}">observed${a.observed_from?' · '+a.observed_from:''}</span>`:'';
   hero.innerHTML=`<div class="hero">
     <div class="av">${a.emoji||'🤖'}</div>
-    <div class="who"><div class="nm">${a.name} <span class="dot ${a.status}"></span></div>
+    <div class="who"><div class="nm">${a.name} <span class="dot ${a.status}"></span> ${obs}</div>
       <div class="rl">${a.role||''}</div></div>
     <div class="chips">${chips.join('')}</div></div>`;
   g.appendChild(hero);
@@ -276,8 +281,8 @@ function renderControl(){
   ms.innerHTML=`<h2>Memory System <span class="n">${mem.total_files} files</span></h2>
     <div style="font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:7px">Two-layer recall · hot index vs cold archive</div>
     <div class="layerbar">
-      <span class="lb-hot" style="width:${hot/tw*100}%">${hot} hot</span>
-      <span class="lb-cold" style="width:${cold/tw*100}%">${cold} cold</span>
+      <span class="lb-hot" style="width:${cold>0?hot/tw*100:100}%">${hot} hot</span>
+      ${cold>0?`<span class="lb-cold" style="width:${cold/tw*100}%">${cold} cold</span>`:''}
     </div>
     <div class="legend">
       <span><i style="background:var(--cy)"></i>Hot index — auto-loaded each session</span>
@@ -304,19 +309,20 @@ function renderControl(){
   const today=new Date();const strip=[];
   for(let i=44;i>=0;i--){const d=new Date(today);d.setUTCDate(d.getUTCDate()-i);strip.push(d.toISOString().slice(0,10));}
   const present=new Set(days);
-  dn.innerHTML=`<h2>Daily Journal <span class="n">${mem.daily_notes?.count} notes</span></h2>
+  dn.innerHTML=`<h2>Daily Journal <span class="n">${mem.daily_notes?.count||0} notes</span></h2>
     <div style="font-size:12px;color:var(--dim);margin-bottom:8px">Last entry: <b style="color:var(--ink)">${mem.daily_notes?.latest||'—'}</b> · 45-day activity</div>
-    <div class="heat">${strip.map(d=>`<i class="${present.has(d)?'on':''}" title="${d}"></i>`).join('')}</div>`;
+    <div class="heat">${strip.map(d=>`<i class="${present.has(d)?'on':''}" title="${d}"></i>`).join('')}</div>
+    ${(mem.daily_notes?.count||0)===0?'<div style="color:var(--faint);font-size:12px;padding:8px 2px 0">journal feed not shared by this agent yet</div>':''}`;
   g.appendChild(dn);
 
   // RECENT MEMORIES
   const rc=el('div','card c6');
   const recent=(mem.items||[]).slice(0,9);
   rc.innerHTML=`<h2>Recently Written <span class="n">newest first</span></h2>
-    <div class="mlist">${recent.map(it=>`<div class="mrow">
+    <div class="mlist">${recent.length?recent.map(it=>`<div class="mrow">
       <span class="tag tag-${it.type}">${it.type}</span>
       <span class="nm" title="${it.desc.replace(/"/g,'&quot;')}">${it.name}</span>
-      <span class="tm">${rel(it.mtime)}</span></div>`).join('')}</div>`;
+      <span class="tm">${rel(it.mtime)}</span></div>`).join(''):'<div style="color:var(--faint);font-size:12px;padding:8px 4px">per-file memory list not in this agent\'s feed yet</div>'}</div>`;
   g.appendChild(rc);
 
   // OPS / HEALTH
@@ -330,8 +336,20 @@ function renderControl(){
       <div class="tile"><div class="lab">Queue pending</div><div class="val">${tq.pending||0}</div></div>
     </div>
     <div style="font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:6px">Recent commits · junto</div>
-    <div class="gitfeed">${(ops.git||[]).map(c=>`<div class="grow"><span class="gh">${c.hash}</span><span class="gs">${(c.subject||'').replace(/</g,'&lt;')}</span><span class="gt">${rel(c.ts)}</span></div>`).join('')}</div>`;
+    <div class="gitfeed">${(ops.git||[]).map(c=>`<div class="grow"><span class="gh">${c.hash}</span><span class="gs">${(c.subject||'').replace(/</g,'&lt;')}</span><span class="gt">${rel(c.ts)}</span></div>`).join('')}${(ops.git||[]).length?'':'<div style="color:var(--faint);font-size:12px;padding:8px 4px">no commit feed on this agent</div>'}</div>`;
   g.appendChild(op);
+
+  // CRON PIPELINES (schema v1.1 — rendered when present)
+  if((ops.cron||[]).length){
+    const cr=el('div','card c6');
+    const okN=ops.cron.filter(c=>c.status==='ok').length, errN=ops.cron.filter(c=>c.status!=='ok').length;
+    cr.innerHTML=`<h2>Cron Pipelines <span class="n">${ops.cron.length} jobs</span></h2>
+      <div class="sumline"><span class="pill"><b style="color:var(--gr)">${okN}</b> ok</span><span class="pill"><b style="color:var(--rd)">${errN}</b> errored</span></div>
+      <div class="mlist">${ops.cron.map(c=>`<div class="mrow"><span class="cdot ${c.status==='ok'?'ok':'err'}"></span>
+        <span class="nm">${(c.name||'').replace(/</g,'&lt;')}</span>
+        <span class="tm ${c.status==='ok'?'':'cerr'}">${c.status==='ok'?(c.last_ts?rel(c.last_ts):'ok'):'error'+(c.error_count?' ('+c.error_count+'×)':'')}</span></div>`).join('')}</div>`;
+    g.appendChild(cr);
+  }
 
   // PROJECTS
   const pj=el('div','card');
