@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1786937123,
+  "generated_at": 1786937376,
   "generator": "benji",
   "agents": [
     {
@@ -19,34 +19,40 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 7712179,
+        "uptime_sec": 7712432,
         "load": [
-          0.16,
+          0.06,
           0.13,
-          0.05
+          0.07
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16535121920,
+          "used": 16540045312,
           "pct": 69
         },
         "mem": {
           "total": 4020396032,
-          "used": 1535827968,
+          "used": 1531404288,
           "pct": 38
         }
       },
       "memory": {
-        "total_files": 60,
+        "total_files": 61,
         "by_type": {
           "feedback": 16,
-          "project": 25,
+          "project": 26,
           "reference": 17,
           "user": 2
         },
-        "hot_count": 53,
+        "hot_count": 54,
         "cold_count": 6,
         "items": [
+          {
+            "name": "project_mindscape",
+            "type": "project",
+            "mtime": 1786937199,
+            "desc": "\"Mindscape — agent-mind telemetry dashboard visualizing Benji's (and Bob's) memory, context, machine health, and project states\""
+          },
           {
             "name": "reference_junto_podcast_audio_outage",
             "type": "reference",
@@ -673,6 +679,11 @@
             "title": "Junto podcast/audio outage",
             "file": "reference_junto_podcast_audio_outage",
             "hook": "podcast RSS silent since 7/24 because dispatch TTS step (gated on OPENAI_API_KEY on myjunto deploy) stopped; text dispatches unaffected; diagnosis via tts_dispatch in supplier_costs"
+          },
+          {
+            "title": "Project: Mindscape",
+            "file": "project_mindscape",
+            "hook": "agent-mind telemetry dashboard (memory/context/vitals/projects viz) live at myjunto.xyz/mindscape-dcadf9ec.html; static on junto Vercel, gen-minds.mjs feed, Bob feed = drop .bob.json"
           }
         ],
         "graph": {
@@ -803,6 +814,10 @@
             },
             {
               "id": "project_manifold",
+              "type": "project"
+            },
+            {
+              "id": "project_mindscape",
               "type": "project"
             },
             {
@@ -1035,6 +1050,21 @@
               "weight": 1
             },
             {
+              "source": "feedback_junto_repo_cd",
+              "target": "project_mindscape",
+              "weight": 1
+            },
+            {
+              "source": "project_agent_bob",
+              "target": "project_mindscape",
+              "weight": 1
+            },
+            {
+              "source": "project_mindscape",
+              "target": "project_myjunto_frontend_backlog",
+              "weight": 1
+            },
+            {
               "source": "project_junto_intelligence_direction",
               "target": "project_myjunto_frontend_backlog",
               "weight": 1
@@ -1225,7 +1255,7 @@
               "weight": 1
             }
           ],
-          "unresolved": 2
+          "unresolved": 3
         },
         "daily_notes": {
           "count": 97,
@@ -1405,6 +1435,12 @@
           "file": "project_junto_entry_price_fix",
           "hook": "next-session OPEN via Yahoo daily bars; chunked/resumable backfill (DRY-RUN default); build agent a488f6cf relaunched Jul-20, outcome pending",
           "status": "active"
+        },
+        {
+          "name": "Mindscape",
+          "file": "project_mindscape",
+          "hook": "agent-mind telemetry dashboard (memory/context/vitals/projects viz) live at myjunto.xyz/mindscape-dcadf9ec.html; static on junto Vercel, gen-minds.mjs feed, Bob feed = drop .bob.json",
+          "status": "shipped"
         }
       ],
       "blockers": [
@@ -1454,6 +1490,11 @@
           "total": 14
         },
         "git": [
+          {
+            "hash": "8e61a92",
+            "ts": 1786937123,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "0a76426",
             "ts": 1786937015,
@@ -1523,11 +1564,6 @@
             "hash": "8dc567b",
             "ts": 1784676282,
             "subject": "spike: model-mode validation of VC event extractor (precision GO, data-sourcing blocked)"
-          },
-          {
-            "hash": "b035c66",
-            "ts": 1784662263,
-            "subject": "Add VC spike and dispatch X review queue"
           }
         ]
       },
@@ -1536,17 +1572,17 @@
     {
       "id": "bob",
       "name": "Bob",
-      "emoji": "🤖",
-      "role": "2nd OpenClaw agent (separate AWS box)",
+      "emoji": "🛸",
+      "role": "openclaw (AWS) · junto sibling + Ratspeak mesh ops",
       "status": "awaiting-feed",
       "host": "ip-172-31-41-74",
       "model": {
-        "primary": "claude-sonnet-4-6",
-        "label": "Claude Sonnet 4.6",
+        "primary": "claude-opus-4-8",
+        "label": "Claude Opus 4.8",
         "runtime": "claude-cli",
         "context_window": 200000
       },
-      "note": "Live feed pending — Bob can POST his own snapshot to overwrite this stub. Fields shown are Benji's last-known facts.",
+      "note": "Bob runs his own live mind dashboard at rattools.xyz/minds (Next.js, 60s auto-refresh). Observed there: Opus 4.8 · disk 80% (24/30G) · mem 61% · uptime ~6wk · Ratspeak mesh VPS 8/8 services up · cron 6 ok / 4 errored · 24 memory files · sibling agent StellaMarie. Cross-feed pending: once Bob exposes a JSON snapshot, this card goes fully live (and he live-polls mine at mindscape-dcadf9ec.json). Fields here are Benji-observed, not live-polled.",
       "self_reported": false
     }
   ]
