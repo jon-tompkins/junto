@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1786975202,
+  "generated_at": 1787004001,
   "generator": "benji",
   "agents": [
     {
@@ -19,7 +19,7 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 7750258,
+        "uptime_sec": 7779058,
         "load": [
           0,
           0,
@@ -27,26 +27,32 @@
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16553730048,
+          "used": 16557383680,
           "pct": 69
         },
         "mem": {
           "total": 4020396032,
-          "used": 1225486336,
+          "used": 1214025728,
           "pct": 30
         }
       },
       "memory": {
-        "total_files": 61,
+        "total_files": 62,
         "by_type": {
           "feedback": 16,
-          "project": 26,
+          "project": 27,
           "reference": 17,
           "user": 2
         },
-        "hot_count": 54,
+        "hot_count": 55,
         "cold_count": 6,
         "items": [
+          {
+            "name": "project_junto_send_window_tz",
+            "type": "project",
+            "mtime": 1786980546,
+            "desc": "\"Send windows fire at fixed Pacific hours for all users by design; the app only localizes the DISPLAY of those times to the user's saved tim"
+          },
           {
             "name": "project_mindscape",
             "type": "project",
@@ -681,6 +687,11 @@
             "hook": "podcast RSS silent since 7/24 because dispatch TTS step (gated on OPENAI_API_KEY on myjunto deploy) stopped; text dispatches unaffected; diagnosis via tts_dispatch in supplier_costs"
           },
           {
+            "title": "Junto send-window tz is display-only",
+            "file": "project_junto_send_window_tz",
+            "hook": "send windows fire at fixed Pacific hours for ALL users by design (Jon's call); app only localizes the DISPLAYED time to users.timezone; shipped ce638dc (dashboard was using browser tz)"
+          },
+          {
             "title": "Project: Mindscape",
             "file": "project_mindscape",
             "hook": "agent-mind telemetry dashboard (memory/context/vitals/projects viz) live at myjunto.xyz/mindscape-dcadf9ec.html; static on junto Vercel, gen-minds.mjs feed, Bob feed = drop .bob.json"
@@ -786,6 +797,10 @@
             },
             {
               "id": "project_junto_intelligence_direction",
+              "type": "project"
+            },
+            {
+              "id": "project_junto_send_window_tz",
               "type": "project"
             },
             {
@@ -1017,6 +1032,21 @@
             {
               "source": "project_junto_intelligence_direction",
               "target": "project_myjunto_growth_seo",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_send_window_tz",
+              "target": "reference_junto_podcast_audio_outage",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_send_window_tz",
+              "target": "reference_junto_watchlist_pointer_drift",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_send_window_tz",
+              "target": "reference_junto_supabase",
               "weight": 1
             },
             {
@@ -1437,6 +1467,12 @@
           "status": "active"
         },
         {
+          "name": "Junto send-window tz is display-only",
+          "file": "project_junto_send_window_tz",
+          "hook": "send windows fire at fixed Pacific hours for ALL users by design (Jon's call); app only localizes the DISPLAYED time to users.timezone; shipped ce638dc (dashboard was using browser tz)",
+          "status": "shipped"
+        },
+        {
           "name": "Mindscape",
           "file": "project_mindscape",
           "hook": "agent-mind telemetry dashboard (memory/context/vitals/projects viz) live at myjunto.xyz/mindscape-dcadf9ec.html; static on junto Vercel, gen-minds.mjs feed, Bob feed = drop .bob.json",
@@ -1490,6 +1526,16 @@
           "total": 14
         },
         "git": [
+          {
+            "hash": "ce638dc",
+            "ts": 1786980524,
+            "subject": "feat(dispatch-ui): show send-window times in the viewer's saved timezone"
+          },
+          {
+            "hash": "252f6f7",
+            "ts": 1786975202,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "84e7c9a",
             "ts": 1786966764,
@@ -1554,16 +1600,6 @@
             "hash": "908c922",
             "ts": 1784852352,
             "subject": "fix(profile): stack credit history on mobile"
-          },
-          {
-            "hash": "0a1cc0e",
-            "ts": 1784834498,
-            "subject": "fix(trading): improve mobile action layout"
-          },
-          {
-            "hash": "79b24e3",
-            "ts": 1784762354,
-            "subject": "fix(newsletter): stack settings rows on mobile"
           }
         ]
       },
