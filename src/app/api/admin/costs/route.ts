@@ -22,61 +22,42 @@ export async function GET(req: NextRequest) {
 
   const supabase = getSupabase();
 
-  // Pull all cost rows since the window start. For bigger datasets, swap to
-  // a Postgres RPC / view — but this is fine at current volume.
-  const { data: rows, error } = await supabase
-    .from('supplier_costs')
-    .select('supplier, operation, cost_cents, usage_amount, usage_unit, input_tokens, output_tokens, newsletter_id, user_id, created_at')
-    .gte('created_at', since)
-    .order('created_at', { ascending: false })
-    .limit(5000);
+  // Aggregate in Postgres (admin_cost_summary RPC) rather than pulling raw rows.
+  // PostgREST caps row responses at 1000, so the old row-fetch-then-reduce path
+  // silently summed only the newest 1000 rows — making every time window look
+  // identical and undercounting spend. The RPC sums server-side, uncapped.
+  const { data: summary, error } = await supabase.rpc('admin_cost_summary', {
+    since_ts: since,
+  });
 
   if (error) {
     console.error('[admin/costs] Query failed:', error.message);
     return NextResponse.json({ error: 'Query failed' }, { status: 500 });
   }
 
-  const events = rows || [];
+  const agg = (summary || {}) as {
+    total_cents?: number;
+    total_calls?: number;
+    by_supplier?: Record<string, { cost_cents: number; calls: number; usage_amount: number }>;
+    by_operation?: Record<string, { cost_cents: number; calls: number }>;
+    daily?: Array<Record<string, number | string>>;
+  };
 
-  // Aggregations
-  const bySupplier: Record<string, { cost_cents: number; calls: number; usage_amount: number }> = {};
-  const byOperation: Record<string, { cost_cents: number; calls: number }> = {};
-  const byDay: Record<string, Record<string, number>> = {}; // day -> supplier -> cost_cents
-
-  let totalCents = 0;
-  let totalCalls = 0;
-
-  for (const row of events) {
-    const cents = Number(row.cost_cents) || 0;
-    totalCents += cents;
-    totalCalls += 1;
-
-    if (!bySupplier[row.supplier]) bySupplier[row.supplier] = { cost_cents: 0, calls: 0, usage_amount: 0 };
-    bySupplier[row.supplier].cost_cents += cents;
-    bySupplier[row.supplier].calls += 1;
-    bySupplier[row.supplier].usage_amount += row.usage_amount || 0;
-
-    if (!byOperation[row.operation]) byOperation[row.operation] = { cost_cents: 0, calls: 0 };
-    byOperation[row.operation].cost_cents += cents;
-    byOperation[row.operation].calls += 1;
-
-    const day = (row.created_at as string).substring(0, 10); // YYYY-MM-DD
-    if (!byDay[day]) byDay[day] = {};
-    byDay[day][row.supplier] = (byDay[day][row.supplier] || 0) + cents;
-  }
-
-  // Sort byDay ascending
-  const dailySeries = Object.entries(byDay)
-    .map(([day, suppliers]) => ({ day, ...suppliers, total: Object.values(suppliers).reduce((a, b) => a + b, 0) }))
-    .sort((a, b) => a.day.localeCompare(b.day));
+  // recent_events is a small, uncapped-enough tail for the activity view.
+  const { data: recent } = await supabase
+    .from('supplier_costs')
+    .select('supplier, operation, cost_cents, usage_amount, usage_unit, input_tokens, output_tokens, newsletter_id, user_id, created_at')
+    .gte('created_at', since)
+    .order('created_at', { ascending: false })
+    .limit(100);
 
   return NextResponse.json({
     since,
-    total_cents: totalCents,
-    total_calls: totalCalls,
-    by_supplier: bySupplier,
-    by_operation: byOperation,
-    daily: dailySeries,
-    recent_events: events.slice(0, 100),
+    total_cents: agg.total_cents ?? 0,
+    total_calls: agg.total_calls ?? 0,
+    by_supplier: agg.by_supplier ?? {},
+    by_operation: agg.by_operation ?? {},
+    daily: agg.daily ?? [],
+    recent_events: recent || [],
   });
 }
