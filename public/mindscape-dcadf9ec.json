@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1787061602,
+  "generated_at": 1787090402,
   "generator": "benji",
   "agents": [
     {
@@ -19,34 +19,40 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 7836658,
+        "uptime_sec": 7865458,
         "load": [
-          0.07,
-          0.06,
-          0.02
+          0,
+          0,
+          0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16561537024,
+          "used": 16565874688,
           "pct": 69
         },
         "mem": {
           "total": 4020396032,
-          "used": 1221779456,
+          "used": 1216442368,
           "pct": 30
         }
       },
       "memory": {
-        "total_files": 62,
+        "total_files": 63,
         "by_type": {
           "feedback": 16,
           "project": 27,
-          "reference": 17,
+          "reference": 18,
           "user": 2
         },
-        "hot_count": 55,
+        "hot_count": 56,
         "cold_count": 6,
         "items": [
+          {
+            "name": "reference_junto_postgrest_row_cap",
+            "type": "reference",
+            "mtime": 1787076637,
+            "desc": "Fetching raw rows and summing in JS silently caps at 1000 rows (PostgREST default); aggregate in a Postgres RPC instead"
+          },
           {
             "name": "project_junto_send_window_tz",
             "type": "project",
@@ -692,6 +698,11 @@
             "hook": "send windows fire at fixed Pacific hours for ALL users by design (Jon's call); app only localizes the DISPLAYED time to users.timezone; shipped ce638dc (dashboard was using browser tz)"
           },
           {
+            "title": "Junto PostgREST 1000-row cap undercount",
+            "file": "reference_junto_postgrest_row_cap",
+            "hook": "admin COSTS showed identical numbers across timeframes + undercounted spend b/c route summed raw rows in JS (capped at 1000); fixed via admin_cost_summary RPC (mig 087, 71ffb26); audit DATA/TRADING tabs for same pattern"
+          },
+          {
             "title": "Project: Mindscape",
             "file": "project_mindscape",
             "hook": "agent-mind telemetry dashboard (memory/context/vitals/projects viz) live at myjunto.xyz/mindscape-dcadf9ec.html; static on junto Vercel, gen-minds.mjs feed, Bob feed = drop .bob.json"
@@ -893,6 +904,10 @@
             },
             {
               "id": "reference_junto_podcast_audio_outage",
+              "type": "reference"
+            },
+            {
+              "id": "reference_junto_postgrest_row_cap",
               "type": "reference"
             },
             {
@@ -1207,6 +1222,16 @@
             {
               "source": "feedback_openai_usage",
               "target": "reference_junto_podcast_audio_outage",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_migrations",
+              "target": "reference_junto_postgrest_row_cap",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_postgrest_row_cap",
+              "target": "reference_junto_supabase",
               "weight": 1
             },
             {
@@ -1527,6 +1552,16 @@
         },
         "git": [
           {
+            "hash": "71ffb26",
+            "ts": 1787076611,
+            "subject": "fix(admin/costs): aggregate spend in Postgres so time windows differ"
+          },
+          {
+            "hash": "121bb5f",
+            "ts": 1787061602,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "1a21fbc",
             "ts": 1787004002,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1590,16 +1625,6 @@
             "hash": "90d9e0e",
             "ts": 1785870240,
             "subject": "fix(juntos): stack junto list as cards on mobile"
-          },
-          {
-            "hash": "eea90e7",
-            "ts": 1784935147,
-            "subject": "fix(newsletter): fall back to latest renderable issue"
-          },
-          {
-            "hash": "2883276",
-            "ts": 1784920749,
-            "subject": "fix(dashboard): prioritize library on mobile"
           }
         ]
       },
