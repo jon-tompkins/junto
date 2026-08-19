@@ -19,10 +19,9 @@ export async function GET(req: NextRequest) {
   );
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
-  const { data, error } = await getSupabase()
-    .from('funnel_events')
-    .select('event, user_id')
-    .gte('created_at', since);
+  // Aggregate distinct-users + totals server-side (RPC) — a raw row read is capped
+  // at 1000 by PostgREST, which would silently undercount over the window.
+  const { data, error } = await getSupabase().rpc('admin_funnel_summary', { since_ts: since });
 
   if (error) {
     // funnel_events table may not exist yet (migration not applied) — return empty gracefully.
@@ -32,16 +31,8 @@ export async function GET(req: NextRequest) {
   }
 
   const EVENT_ORDER = ['signup', 'onboarding_complete', 'subscribe', 'junto_create'];
-  const agg = new Map<string, { users: Set<string>; total: number }>();
-  for (const row of data || []) {
-    const a = agg.get(row.event) ?? { users: new Set(), total: 0 };
-    a.users.add(row.user_id);
-    a.total += 1;
-    agg.set(row.event, a);
-  }
-
-  const rows: FunnelRow[] = [...agg.entries()]
-    .map(([event, a]) => ({ event, users: a.users.size, total_events: a.total }))
+  const rows: FunnelRow[] = ((data || []) as FunnelRow[])
+    .map((r) => ({ event: r.event, users: Number(r.users) || 0, total_events: Number(r.total_events) || 0 }))
     .sort(
       (a, b) =>
         (EVENT_ORDER.indexOf(a.event) + 1 || 999) - (EVENT_ORDER.indexOf(b.event) + 1 || 999),

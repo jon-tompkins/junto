@@ -359,12 +359,12 @@ export async function getSourcesMissingOrStaleProfiles(): Promise<Array<{ id: st
     if (r.last_updated < staleThreshold) staleIds.add(r.source_id);
   }
 
-  const { data: active } = await supabase
-    .from('content_twitter')
-    .select('source_id')
-    .limit(1000);
+  // Distinct source_ids with any stored tweets, via RPC. A raw `.select('source_id')`
+  // is capped at 1000 rows by PostgREST, so sources outside that arbitrary slice were
+  // silently never seeded/refreshed. The RPC returns the full distinct set (one jsonb row).
+  const { data: activeIds } = await supabase.rpc('content_active_source_ids');
 
-  const targetIds = [...new Set((active || []).map((r: any) => r.source_id as string))].filter(
+  const targetIds = ((activeIds || []) as string[]).filter(
     (id) => !existingIds.has(id) || staleIds.has(id),
   );
 

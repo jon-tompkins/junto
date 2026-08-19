@@ -56,16 +56,13 @@ async function getJuntoWithSources(juntoId: string) {
   const junto = data as any;
   const sourceIds = (junto.junto_sources || []).map((js: any) => js.source_id);
   if (sourceIds.length > 0) {
-    const { data: tweets } = await supabase
-      .from('content_twitter')
-      .select('source_id, posted_at')
-      .in('source_id', sourceIds)
-      .order('posted_at', { ascending: false });
-
-    const lastTweetBySource: Record<string, string> = {};
-    for (const t of tweets || []) {
-      if (!lastTweetBySource[t.source_id]) lastTweetBySource[t.source_id] = t.posted_at;
-    }
+    // max(posted_at) per source via RPC. Deduping a raw tweet read here was wrong:
+    // PostgREST caps the read at 1000 rows, so quieter sources whose newest tweet fell
+    // outside the 1000-newest slice were mislabeled as never-tweeted.
+    const { data: lastBySource } = await supabase.rpc('last_tweet_by_sources', {
+      source_ids: sourceIds,
+    });
+    const lastTweetBySource = (lastBySource || {}) as Record<string, string>;
     for (const js of junto.junto_sources) {
       js.last_tweeted_at = lastTweetBySource[js.source_id] ?? null;
     }

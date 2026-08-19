@@ -30,10 +30,29 @@ export async function GET() {
   const ids = (mandates || []).map((m: any) => m.id);
   const juntoIds = Array.from(new Set((mandates || []).map((m: any) => m.junto_id).filter(Boolean)));
 
+  // Paginate the trades read: a single PostgREST response is capped at 1000 rows, so
+  // an unbounded read would silently drop older trades and undercount realized P&L /
+  // closed-trade counts once lifetime trades exceed 1000.
+  const fetchAllTrades = async () => {
+    if (!ids.length) return { data: [] as any[] };
+    const all: any[] = [];
+    const PAGE = 1000;
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from('trades')
+        .select('id, mandate_id, status, realized_pnl_usd, ticker, entry_price, qty, side')
+        .in('mandate_id', ids)
+        .order('id', { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error) return { data: all, error };
+      all.push(...(data || []));
+      if (!data || data.length < PAGE) break;
+    }
+    return { data: all };
+  };
+
   const [tradesRes, juntosRes] = await Promise.all([
-    ids.length
-      ? supabase.from('trades').select('id, mandate_id, status, realized_pnl_usd, ticker, entry_price, qty, side').in('mandate_id', ids)
-      : Promise.resolve({ data: [] as any[] }),
+    fetchAllTrades(),
     juntoIds.length
       ? supabase.from('juntos').select('id, name').in('id', juntoIds)
       : Promise.resolve({ data: [] as any[] }),
