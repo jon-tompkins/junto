@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1787090402,
+  "generated_at": 1787148002,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 7865458,
+        "uptime_sec": 7923058,
         "load": [
           0,
-          0,
+          0.03,
           0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16565874688,
-          "pct": 69
+          "used": 16656592896,
+          "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1216442368,
-          "pct": 30
+          "used": 1229266944,
+          "pct": 31
         }
       },
       "memory": {
@@ -1313,10 +1313,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 99,
-          "latest": "2026-08-18",
+          "count": 100,
+          "latest": "2026-08-19",
           "days": [
-            "2026-06-11",
             "2026-06-12",
             "2026-06-13",
             "2026-06-15",
@@ -1360,7 +1359,8 @@
             "2026-08-15",
             "2026-08-16",
             "2026-08-17",
-            "2026-08-18"
+            "2026-08-18",
+            "2026-08-19"
           ]
         }
       },
@@ -1532,18 +1532,26 @@
         {
           "title": "Ailmanack `agents/orchestrator.md` spec drift",
           "detail": "Step 3 (sessions_spawn) + Step 5 (ANTHROPIC_API_KEY) don't match env; patch pending Jon's go-ahead"
+        },
+        {
+          "title": "Junto podcast/audio outage",
+          "detail": "TTS step gated on OPENAI_API_KEY on myjunto deploy; silent since Jul 24; text dispatches unaffected. See [[reference_junto_podcast_audio_outage]]"
+        },
+        {
+          "title": "Junto watchlist pointer drift",
+          "detail": "structural fix pending (newsletters_v2.watchlist_id vs users.featured_watchlist_id unsynced). See [[reference_junto_watchlist_pointer_drift]]"
         }
       ],
       "ops": {
         "junto_health": {
           "last_alert": 1785952802.776739,
           "redset": "",
-          "greenlight_day": "2026-08-18"
+          "greenlight_day": "2026-08-19"
         },
         "disk_health": {
           "state": "ok",
           "pct": 70,
-          "ts": 1787040001
+          "ts": 1787126401
         },
         "tweet_queue": {
           "posted": 13,
@@ -1551,6 +1559,11 @@
           "total": 14
         },
         "git": [
+          {
+            "hash": "0c892db",
+            "ts": 1787090402,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "71ffb26",
             "ts": 1787076611,
@@ -1620,11 +1633,6 @@
             "hash": "8ec1c78",
             "ts": 1786129502,
             "subject": "fix(explore): stack dispatch list as cards on mobile"
-          },
-          {
-            "hash": "90d9e0e",
-            "ts": 1785870240,
-            "subject": "fix(juntos): stack junto list as cards on mobile"
           }
         ]
       },
