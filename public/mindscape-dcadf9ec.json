@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1787148002,
+  "generated_at": 1787176801,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 7923058,
+        "uptime_sec": 7951858,
         "load": [
           0,
-          0.03,
+          0,
           0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16656592896,
+          "used": 16654090240,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1229266944,
-          "pct": 31
+          "used": 1214095360,
+          "pct": 30
         }
       },
       "memory": {
@@ -50,7 +50,7 @@
           {
             "name": "reference_junto_postgrest_row_cap",
             "type": "reference",
-            "mtime": 1787076637,
+            "mtime": 1787155643,
             "desc": "Fetching raw rows and summing in JS silently caps at 1000 rows (PostgREST default); aggregate in a Postgres RPC instead"
           },
           {
@@ -1560,6 +1560,16 @@
         },
         "git": [
           {
+            "hash": "79591a3",
+            "ts": 1787155625,
+            "subject": "fix(data): eliminate PostgREST 1000-row cap undercounts across 5 read paths"
+          },
+          {
+            "hash": "9d6f85a",
+            "ts": 1787148002,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "0c892db",
             "ts": 1787090402,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1623,16 +1633,6 @@
             "hash": "29eb746",
             "ts": 1786475066,
             "subject": "fix(api-keys): scroll-wrap keys table on mobile"
-          },
-          {
-            "hash": "453becd",
-            "ts": 1786403103,
-            "subject": "fix(positions): collapse table to core columns on mobile"
-          },
-          {
-            "hash": "8ec1c78",
-            "ts": 1786129502,
-            "subject": "fix(explore): stack dispatch list as cards on mobile"
           }
         ]
       },
