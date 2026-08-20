@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1787234402,
+  "generated_at": 1787263202,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 8009458,
+        "uptime_sec": 8038258,
         "load": [
-          0.01,
-          0.01,
-          0
+          0.2,
+          0.07,
+          0.02
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16657686528,
+          "used": 16673849344,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1226899456,
+          "used": 1231314944,
           "pct": 31
         }
       },
@@ -1549,6 +1549,11 @@
         },
         "git": [
           {
+            "hash": "f84c345",
+            "ts": 1787234402,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "d79d62d",
             "ts": 1787176802,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1617,11 +1622,6 @@
             "hash": "0a76426",
             "ts": 1786937015,
             "subject": "feat: Mindscape — agent-mind telemetry dashboard (static, self-contained)"
-          },
-          {
-            "hash": "1cb0a62",
-            "ts": 1786644521,
-            "subject": "fix(dispatch): personal dispatch reads dashboard watchlist (featured_watchlist_id)"
           }
         ]
       },
