@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1787176801,
+  "generated_at": 1787234402,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 7951858,
+        "uptime_sec": 8009458,
         "load": [
-          0,
-          0,
+          0.01,
+          0.01,
           0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16654090240,
+          "used": 16657686528,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1214095360,
-          "pct": 30
+          "used": 1226899456,
+          "pct": 31
         }
       },
       "memory": {
@@ -44,8 +44,8 @@
           "reference": 18,
           "user": 2
         },
-        "hot_count": 56,
-        "cold_count": 6,
+        "hot_count": 55,
+        "cold_count": 7,
         "items": [
           {
             "name": "reference_junto_postgrest_row_cap",
@@ -693,11 +693,6 @@
             "hook": "podcast RSS silent since 7/24 because dispatch TTS step (gated on OPENAI_API_KEY on myjunto deploy) stopped; text dispatches unaffected; diagnosis via tts_dispatch in supplier_costs"
           },
           {
-            "title": "Junto send-window tz is display-only",
-            "file": "project_junto_send_window_tz",
-            "hook": "send windows fire at fixed Pacific hours for ALL users by design (Jon's call); app only localizes the DISPLAYED time to users.timezone; shipped ce638dc (dashboard was using browser tz)"
-          },
-          {
             "title": "Junto PostgREST 1000-row cap undercount",
             "file": "reference_junto_postgrest_row_cap",
             "hook": "admin COSTS showed identical numbers across timeframes + undercounted spend b/c route summed raw rows in JS (capped at 1000); fixed via admin_cost_summary RPC (mig 087, 71ffb26); audit DATA/TRADING tabs for same pattern"
@@ -1313,10 +1308,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 100,
-          "latest": "2026-08-19",
+          "count": 101,
+          "latest": "2026-08-20",
           "days": [
-            "2026-06-12",
             "2026-06-13",
             "2026-06-15",
             "2026-06-20",
@@ -1360,7 +1354,8 @@
             "2026-08-16",
             "2026-08-17",
             "2026-08-18",
-            "2026-08-19"
+            "2026-08-19",
+            "2026-08-20"
           ]
         }
       },
@@ -1492,12 +1487,6 @@
           "status": "active"
         },
         {
-          "name": "Junto send-window tz is display-only",
-          "file": "project_junto_send_window_tz",
-          "hook": "send windows fire at fixed Pacific hours for ALL users by design (Jon's call); app only localizes the DISPLAYED time to users.timezone; shipped ce638dc (dashboard was using browser tz)",
-          "status": "shipped"
-        },
-        {
           "name": "Mindscape",
           "file": "project_mindscape",
           "hook": "agent-mind telemetry dashboard (memory/context/vitals/projects viz) live at myjunto.xyz/mindscape-dcadf9ec.html; static on junto Vercel, gen-minds.mjs feed, Bob feed = drop .bob.json",
@@ -1546,12 +1535,12 @@
         "junto_health": {
           "last_alert": 1785952802.776739,
           "redset": "",
-          "greenlight_day": "2026-08-19"
+          "greenlight_day": "2026-08-20"
         },
         "disk_health": {
           "state": "ok",
           "pct": 70,
-          "ts": 1787126401
+          "ts": 1787212802
         },
         "tweet_queue": {
           "posted": 13,
@@ -1559,6 +1548,11 @@
           "total": 14
         },
         "git": [
+          {
+            "hash": "d79d62d",
+            "ts": 1787176802,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "79591a3",
             "ts": 1787155625,
@@ -1628,11 +1622,6 @@
             "hash": "1cb0a62",
             "ts": 1786644521,
             "subject": "fix(dispatch): personal dispatch reads dashboard watchlist (featured_watchlist_id)"
-          },
-          {
-            "hash": "29eb746",
-            "ts": 1786475066,
-            "subject": "fix(api-keys): scroll-wrap keys table on mobile"
           }
         ]
       },
