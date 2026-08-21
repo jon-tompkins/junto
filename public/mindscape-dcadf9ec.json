@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1787320801,
+  "generated_at": 1787349601,
   "generator": "benji",
   "agents": [
     {
@@ -19,7 +19,7 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 8095857,
+        "uptime_sec": 8124658,
         "load": [
           0,
           0,
@@ -27,26 +27,32 @@
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16692539392,
+          "used": 16669622272,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1230794752,
-          "pct": 31
+          "used": 1095544832,
+          "pct": 27
         }
       },
       "memory": {
-        "total_files": 63,
+        "total_files": 64,
         "by_type": {
           "feedback": 16,
           "project": 27,
-          "reference": 18,
+          "reference": 19,
           "user": 2
         },
-        "hot_count": 55,
+        "hot_count": 56,
         "cold_count": 7,
         "items": [
+          {
+            "name": "reference_junto_exit_signal_double_card",
+            "type": "reference",
+            "mtime": 1787324653,
+            "desc": "One exit signal on a held ticker fired both a BUY/HOLD trade proposal and a Close amendment in the same trade-tick; fixed by routing exit si"
+          },
           {
             "name": "reference_junto_postgrest_row_cap",
             "type": "reference",
@@ -695,7 +701,12 @@
           {
             "title": "Junto PostgREST 1000-row cap undercount",
             "file": "reference_junto_postgrest_row_cap",
-            "hook": "admin COSTS showed identical numbers across timeframes + undercounted spend b/c route summed raw rows in JS (capped at 1000); fixed via admin_cost_summary RPC (mig 087, 71ffb26); audit DATA/TRADING tabs for same pattern"
+            "hook": "admin COSTS showed identical numbers across timeframes + undercounted spend b/c route summed raw rows in JS (capped at 1000); fixed via admin_cost_summary RPC (mig 087, 71ffb26); full audit + 5 HIGH fixes shipped (mig 088, 79591a3)"
+          },
+          {
+            "title": "Junto exit-signal double card",
+            "file": "reference_junto_exit_signal_double_card",
+            "hook": "one exit signal on a held ticker fired BOTH a BUY/HOLD proposal and a Close amendment in the same tick; fixed in decide.ts (exit signals → amendment engine only), junto main 176ae64"
           },
           {
             "title": "Project: Mindscape",
@@ -891,6 +902,10 @@
             },
             {
               "id": "reference_junto_content_pipeline",
+              "type": "reference"
+            },
+            {
+              "id": "reference_junto_exit_signal_double_card",
               "type": "reference"
             },
             {
@@ -1202,6 +1217,21 @@
             {
               "source": "reference_junto_content_pipeline",
               "target": "reference_ops_secrets",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_exit_signal_double_card",
+              "target": "reference_junto_trade_suggestion_collapse",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_approval_fill_path",
+              "target": "reference_junto_exit_signal_double_card",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_slice_model",
+              "target": "reference_junto_exit_signal_double_card",
               "weight": 1
             },
             {
@@ -1549,6 +1579,21 @@
         },
         "git": [
           {
+            "hash": "f238880",
+            "ts": 1787327760,
+            "subject": "add yumans.network concept mockup (static preview, noindex)"
+          },
+          {
+            "hash": "176ae64",
+            "ts": 1787324628,
+            "subject": "fix(trading): stop exit signals from generating contradictory BUY proposals"
+          },
+          {
+            "hash": "0237abf",
+            "ts": 1787320801,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "7c83ba8",
             "ts": 1787263202,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1607,21 +1652,6 @@
             "hash": "84e7c9a",
             "ts": 1786966764,
             "subject": "feat(mindscape): full observed Bob card + cron-pipeline panel (schema v1.1 converge)"
-          },
-          {
-            "hash": "7c641a1",
-            "ts": 1786937687,
-            "subject": "feat(mindscape): shared agent-object schema + prefilled Bob example for cross-feed"
-          },
-          {
-            "hash": "1a2d5d4",
-            "ts": 1786937376,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "8e61a92",
-            "ts": 1786937123,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
       },
