@@ -32,7 +32,11 @@ export async function decideTrades(ctx: DecisionContext): Promise<TradeDecision[
     : new Set(positions.map((p) => p.symbol.toUpperCase()));
   const candidates = signals.filter((s) => {
     if (s.direction === 'hold') return false;
-    if (s.direction === 'exit') return heldSymbols.has(s.ticker);
+    // Exit signals belong exclusively to the amendment engine (close/adjust an open
+    // position). Feeding an exit on a held ticker into the open-a-position engine made
+    // it argue "HOLD — do not exit" and render that as a contradictory BUY proposal
+    // right alongside the amendment engine's "Close at market" card. Never open on exit.
+    if (s.direction === 'exit') return false;
     if (mandate.allowed_tickers && !mandate.allowed_tickers.includes(s.ticker)) return false;
     if (mandate.blocked_tickers && mandate.blocked_tickers.includes(s.ticker)) return false;
     if (heldSymbols.has(s.ticker)) return false;
