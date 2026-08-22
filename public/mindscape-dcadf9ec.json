@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1787407202,
+  "generated_at": 1787436001,
   "generator": "benji",
   "agents": [
     {
@@ -19,7 +19,7 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 8182258,
+        "uptime_sec": 8211058,
         "load": [
           0,
           0,
@@ -27,12 +27,12 @@
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16666120192,
+          "used": 16667197440,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1097486336,
+          "used": 1096888320,
           "pct": 27
         }
       },
@@ -1559,6 +1559,11 @@
         },
         "git": [
           {
+            "hash": "65f2757",
+            "ts": 1787407202,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "4a8668e",
             "ts": 1787349602,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1627,11 +1632,6 @@
             "hash": "ce638dc",
             "ts": 1786980524,
             "subject": "feat(dispatch-ui): show send-window times in the viewer's saved timezone"
-          },
-          {
-            "hash": "252f6f7",
-            "ts": 1786975202,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
       },
