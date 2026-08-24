@@ -54,6 +54,7 @@
   code{font-family:var(--mono);background:#0b1224;border:1px solid var(--line);padding:2px 6px;border-radius:5px;font-size:12px;color:var(--cy)}
   .foot{margin-top:26px;font-size:11.5px;color:var(--faint);font-family:var(--mono);line-height:1.8;text-align:center}
   .formula{font-family:var(--mono);font-size:13px;color:var(--vi);background:#0b1224;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:4px;text-align:center}
+  .auditbox{font-family:var(--mono);font-size:12.5px;color:#bfe9ff;background:#08111f;border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow:auto;line-height:1.6;white-space:pre}
   .presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
   .presets button{background:#0c1428;border:1px solid var(--line2);color:var(--dim);font:600 12px var(--sans);padding:7px 11px;border-radius:8px;cursor:pointer}
   .presets button:hover{color:var(--ink);border-color:var(--cy)}
@@ -64,7 +65,7 @@
   <div class="brand">
     <div class="logo">🎯</div>
     <div><h1>Single-Sided LP Buyback Calculator</h1>
-      <div class="sub">concentrated liquidity · Base (Uniswap V3 / Aerodrome Slipstream)</div></div>
+      <div class="sub">single-sided concentrated liquidity · Uniswap V3 on Base</div></div>
   </div>
 
   <div class="cols">
@@ -116,6 +117,12 @@
   </div>
 
   <div class="card" style="margin-top:16px">
+    <h2>Audit block <button id="copyAudit" style="margin-left:auto;background:#0c1428;border:1px solid var(--line2);color:var(--dim);font:600 11px var(--sans);padding:5px 10px;border-radius:7px;cursor:pointer">copy</button></h2>
+    <pre id="audit" class="auditbox"></pre>
+    <div class="hint">Off-chain pre-flight. The keeper emits a matching block next to the tx params with realized ticks/prices — the <b>bottom price must agree</b>. Two independent computations = the audit.</div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
     <h2>The math</h2>
     <div style="font-size:13px;color:var(--dim);line-height:1.7">
       For a single-sided position with spot at the top, the average fill price equals the
@@ -164,12 +171,21 @@ function compute(){
   $('frac').textContent=(f*100).toFixed(1)+'%';
   $('rbBot').textContent='bottom '+fmtPrice(Pa);
   $('rbTop').textContent='spot ● '+fmtPrice(Pb);
+  const audit={
+    schema:"lp-buyback.audit.v1",
+    requested:{usdc:U,tokens_to_buyback:T,top_price:Pb},
+    derived:{bottom_price:Pa,avg_fill:avg,lp_fraction_f:f,liquidity_L:L,drawdown_pct:(1-Pa/Pb)*100},
+    formula:"P_bot = (usdc/tokens)^2 / top_price",
+    note:"off-chain pre-flight; keeper appends realized ticks/prices on-chain — bottom_price must match"
+  };
+  $('audit').textContent=JSON.stringify(audit,null,2);
   $('expl').innerHTML=`Seed <b>${fmtNum(U)} USDC</b> as single-sided liquidity in <code>[${fmtPrice(Pa)}, ${fmtPrice(Pb)}]</code>. `+
     `You sold ~${fmtNum(T)} tokens near ${fmtPrice(Pb)}; this position rebuys all ${fmtNum(T)} at an average of `+
     `<b>${fmtPrice(avg)}</b> (${((1-avg/Pb)*100).toFixed(1)}% below spot) if price round-trips to the bottom — `+
     `pocketing the spread and ending flat on tokens.`;
 }
-function blank(){['bottom','avg','drop','liq','frac'].forEach(i=>$(i).textContent='—');$('bottomAux').textContent='';$('expl').innerHTML='';}
+function blank(){['bottom','avg','drop','liq','frac'].forEach(i=>$(i).textContent='—');$('bottomAux').textContent='';$('expl').innerHTML='';$('audit').textContent='';}
+$('copyAudit').onclick=()=>{const t=$('audit').textContent;if(t){navigator.clipboard?.writeText(t);$('copyAudit').textContent='copied';setTimeout(()=>$('copyAudit').textContent='copy',1200);}};
 ['usdc','tokens','top'].forEach(id=>$(id).addEventListener('input',compute));
 document.querySelectorAll('.presets button').forEach(bn=>bn.onclick=()=>{
   $('usdc').value=bn.dataset.u;$('tokens').value=bn.dataset.t;$('top').value=bn.dataset.p;compute();});
