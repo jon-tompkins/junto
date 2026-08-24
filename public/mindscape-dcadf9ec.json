@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1787522402,
+  "generated_at": 1787580001,
   "generator": "benji",
   "agents": [
     {
@@ -19,34 +19,46 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 8297458,
+        "uptime_sec": 8355058,
         "load": [
-          0.02,
-          0.01,
+          0,
+          0,
           0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16672788480,
+          "used": 16734162944,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1097682944,
+          "used": 1104265216,
           "pct": 27
         }
       },
       "memory": {
-        "total_files": 64,
+        "total_files": 66,
         "by_type": {
-          "feedback": 16,
-          "project": 27,
+          "feedback": 17,
+          "project": 28,
           "reference": 19,
           "user": 2
         },
-        "hot_count": 52,
+        "hot_count": 54,
         "cold_count": 11,
         "items": [
+          {
+            "name": "project_lp_buyback",
+            "type": "project",
+            "mtime": 1787573368,
+            "desc": "DeFi single-sided LP buyback system on Base — sell a token but stretch half the proceeds into single-sided concentrated LP that rebuys all s"
+          },
+          {
+            "name": "feedback_discord_agent_mentions",
+            "type": "feedback",
+            "mtime": 1787570838,
+            "desc": "\"To make another agent (Bob) actually respond in a Discord channel, use a real mention token, not plain-text \\\"@Bob\\\"\""
+          },
           {
             "name": "reference_junto_exit_signal_double_card",
             "type": "reference",
@@ -692,6 +704,16 @@
             "title": "Project: Mindscape",
             "file": "project_mindscape",
             "hook": "agent-mind telemetry dashboard (memory/context/vitals/projects viz) live at myjunto.xyz/mindscape-dcadf9ec.html; static on junto Vercel, gen-minds.mjs feed, Bob feed = drop .bob.json"
+          },
+          {
+            "title": "Project: LP Buyback",
+            "file": "project_lp_buyback",
+            "hook": "DeFi on Base: single-sided concentrated LP that rebuys sold tokens at range bottom; P_bot=(U/T)²/P_top; calculator live at myjunto.xyz/lp-buyback-125cd220.html; Benji=math/UI, Bob=on-chain exec"
+          },
+          {
+            "title": "Feedback: Tag agents with real mention token",
+            "file": "feedback_discord_agent_mentions",
+            "hook": "plain-text \"@Bob\" does nothing; must use <@1526599095295279315> to actually trigger Bob in Discord"
           }
         ],
         "graph": {
@@ -714,6 +736,10 @@
             },
             {
               "id": "feedback_cwd_for_git",
+              "type": "feedback"
+            },
+            {
+              "id": "feedback_discord_agent_mentions",
               "type": "feedback"
             },
             {
@@ -822,6 +848,10 @@
             },
             {
               "id": "project_junto_webhook_source",
+              "type": "project"
+            },
+            {
+              "id": "project_lp_buyback",
               "type": "project"
             },
             {
@@ -970,6 +1000,16 @@
               "weight": 1
             },
             {
+              "source": "feedback_discord_agent_mentions",
+              "target": "reference_discord_theaidevs",
+              "weight": 1
+            },
+            {
+              "source": "feedback_discord_agent_mentions",
+              "target": "project_agent_bob",
+              "weight": 1
+            },
+            {
               "source": "feedback_discord_multiagent_etiquette",
               "target": "reference_discord_theaidevs",
               "weight": 1
@@ -1082,6 +1122,16 @@
             {
               "source": "project_junto_webhook_source",
               "target": "reference_junto_migrations",
+              "weight": 1
+            },
+            {
+              "source": "project_agent_bob",
+              "target": "project_lp_buyback",
+              "weight": 1
+            },
+            {
+              "source": "project_lp_buyback",
+              "target": "project_screeners",
               "weight": 1
             },
             {
@@ -1318,10 +1368,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 104,
-          "latest": "2026-08-23",
+          "count": 105,
+          "latest": "2026-08-24",
           "days": [
-            "2026-06-21",
             "2026-06-22",
             "2026-06-23",
             "2026-06-24",
@@ -1365,7 +1414,8 @@
             "2026-08-20",
             "2026-08-21",
             "2026-08-22",
-            "2026-08-23"
+            "2026-08-23",
+            "2026-08-24"
           ]
         }
       },
@@ -1501,6 +1551,12 @@
           "file": "project_mindscape",
           "hook": "agent-mind telemetry dashboard (memory/context/vitals/projects viz) live at myjunto.xyz/mindscape-dcadf9ec.html; static on junto Vercel, gen-minds.mjs feed, Bob feed = drop .bob.json",
           "status": "shipped"
+        },
+        {
+          "name": "LP Buyback",
+          "file": "project_lp_buyback",
+          "hook": "DeFi on Base: single-sided concentrated LP that rebuys sold tokens at range bottom; P_bot=(U/T)²/P_top; calculator live at myjunto.xyz/lp-buyback-125cd220.html; Benji=math/UI, Bob=on-chain exec",
+          "status": "shipped"
         }
       ],
       "blockers": [
@@ -1545,12 +1601,12 @@
         "junto_health": {
           "last_alert": 1785952802.776739,
           "redset": "",
-          "greenlight_day": "2026-08-23"
+          "greenlight_day": "2026-08-24"
         },
         "disk_health": {
           "state": "ok",
-          "pct": 70,
-          "ts": 1787472002
+          "pct": 71,
+          "ts": 1787558401
         },
         "tweet_queue": {
           "posted": 13,
@@ -1559,6 +1615,71 @@
         },
         "git": [
           {
+            "hash": "8cc21c7",
+            "ts": 1787573130,
+            "subject": "feat(lp): pin price-orientation (USDC/token) convention + pool-init/arb-fill note; realized-vs-clean snap delta"
+          },
+          {
+            "hash": "fc8c22c",
+            "ts": 1787573011,
+            "subject": "refactor(lp-calc): audit block cross-checks bottom_price only; note on-chain liquidity is Q96 (different units)"
+          },
+          {
+            "hash": "a4207b2",
+            "ts": 1787572851,
+            "subject": "feat(lp): target USDC/RATSPEAK 1% pool; hooks assessment + one-way-buyback (burn-on-fill) note"
+          },
+          {
+            "hash": "bf02b4c",
+            "ts": 1787572526,
+            "subject": "refactor(lp): venue → Uniswap V4 on Base (PoolKey, no-hook v1); math/calculator unchanged"
+          },
+          {
+            "hash": "bbeec98",
+            "ts": 1787572215,
+            "subject": "feat(lp-calc): pre-flight audit block (cross-checks keeper's on-chain block); Uni V3 label"
+          },
+          {
+            "hash": "94b9e39",
+            "ts": 1787572026,
+            "subject": "refactor(lp): v2-simple — Uniswap V3, single position, 3 actions, no emissions (audit-first per Jon)"
+          },
+          {
+            "hash": "a9c768a",
+            "ts": 1787571774,
+            "subject": "feat(lp): interface v1.3 — fill mode LIVE/SIMULATED, min_confirmations, tick_spacing≠fee, in/out convention"
+          },
+          {
+            "hash": "fc14887",
+            "ts": 1787571500,
+            "subject": "feat(lp): interface v1.2 — TOKEN asset, decimal-string amounts, per-leg roll, single-sided-safe snap (Bob's keeper feedback)"
+          },
+          {
+            "hash": "4f8faa4",
+            "ts": 1787571320,
+            "subject": "feat(lp): interface v1.1 — mint/burn/rerange/collect verbs, pool ref, nonce, Slipstream+AERO accounting"
+          },
+          {
+            "hash": "20e00df",
+            "ts": 1787571127,
+            "subject": "feat(lp): active-mgmt design sketch + rebalance-intent interface schema (Benji's half)"
+          },
+          {
+            "hash": "ee0f979",
+            "ts": 1787570608,
+            "subject": "feat(lp-calc): add LP-fraction f readout + f²·top intuition (Bob's generalization)"
+          },
+          {
+            "hash": "e4e0c84",
+            "ts": 1787570399,
+            "subject": "feat: single-sided LP buyback calculator (Base concentrated liquidity)"
+          },
+          {
+            "hash": "cf2ec43",
+            "ts": 1787522402,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "a4739bf",
             "ts": 1787493602,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1566,71 +1687,6 @@
           {
             "hash": "46f83ac",
             "ts": 1787436002,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "65f2757",
-            "ts": 1787407202,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "4a8668e",
-            "ts": 1787349602,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "f238880",
-            "ts": 1787327760,
-            "subject": "add yumans.network concept mockup (static preview, noindex)"
-          },
-          {
-            "hash": "176ae64",
-            "ts": 1787324628,
-            "subject": "fix(trading): stop exit signals from generating contradictory BUY proposals"
-          },
-          {
-            "hash": "0237abf",
-            "ts": 1787320801,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "7c83ba8",
-            "ts": 1787263202,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "f84c345",
-            "ts": 1787234402,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "d79d62d",
-            "ts": 1787176802,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "79591a3",
-            "ts": 1787155625,
-            "subject": "fix(data): eliminate PostgREST 1000-row cap undercounts across 5 read paths"
-          },
-          {
-            "hash": "9d6f85a",
-            "ts": 1787148002,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "0c892db",
-            "ts": 1787090402,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "71ffb26",
-            "ts": 1787076611,
-            "subject": "fix(admin/costs): aggregate spend in Postgres so time windows differ"
-          },
-          {
-            "hash": "121bb5f",
-            "ts": 1787061602,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
