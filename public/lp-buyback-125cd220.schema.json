@@ -51,9 +51,11 @@
   },
 
   "conventions": [
-    "Single-sided mint: deposit USDC only, range entirely below spot (P_top = spot). At the bottom it's 100% token = buyback done.",
+    "PRICE ORIENTATION (critical): ALL prices in intents, fill_reports, and audit blocks are USDC-per-RATSPEAK (human 'USDC/token', e.g. 0.01), regardless of on-chain currency0/1 sort. With USDC as currency0 the raw pool price is RATSPEAK-per-USDC (inverted) and the buyback is a range ABOVE the pool tick — the keeper handles that inversion and reports realized_P_top/P_bot back in USDC-per-token so the controller's geomean/avg-fill math stays correct. Never mix pool-orientation and human-orientation prices.",
+    "POOL INIT: a USDC/RATSPEAK 1% V4 pool likely doesn't exist yet → keeper calls PoolManager.initialize(poolKey, sqrtPriceX96) seeded at live market (read on-chain from RATSPEAK's deepest existing pool) before the first mint; a wrong seed price gifts an arb. Consequence: the fresh pool fills the buyback via cross-pool arbitrage from RATSPEAK's main venue, not direct flow — viable but thinner; confirm size makes that worthwhile.",
+    "Single-sided mint: deposit USDC only, range entirely below spot in USDC/token terms (P_top = spot). At the bottom it's 100% RATSPEAK = buyback done.",
     "in/out are wallet-perspective: usdc_in spent, token_out received. PnL reconstructed purely from fill_reports with integer/decimal math.",
-    "Controller trusts realized_P_bot/P_top from the keeper (v4 sorts currencies + resolves decimals on-chain) — does not recompute price from raw ticks.",
+    "Controller trusts realized_P_bot/P_top from the keeper (v4 sorts currencies + resolves 6-vs-18 decimals on-chain, reports back in USDC/token orientation) — does not recompute price from raw ticks. Realized bounds are WIDER than clean bounds by the tickSpacing snap (200 for the 1% pool) — e.g. 5k USDC recovers ~1.009M RATSPEAK vs a 1.000M clean target, avg 0.004955 vs 0.005. Expected, not a bug.",
     "Controller holds NO keys — keeper owns a dedicated isolated signer. v4 approvals go through Permit2 (keeper-internal). Flash-accounting settle/take handled inside the keeper's unlock callback.",
     "No emissions (Uni V4, no gauge): realized PnL = matched spread + LP fees − gas. No reward line.",
     "No rerange / roll / hooks in v1. If active laddering is added later, it reuses these same three actions in a loop; this contract does not change."
