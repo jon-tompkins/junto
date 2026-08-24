@@ -174,9 +174,10 @@ function compute(){
   const audit={
     schema:"lp-buyback.audit.v1",
     requested:{usdc:U,tokens_to_buyback:T,top_price:Pb},
-    derived:{bottom_price:Pa,avg_fill:avg,lp_fraction_f:f,liquidity_L:L,drawdown_pct:(1-Pa/Pb)*100},
+    derived:{bottom_price:Pa,avg_fill:avg,lp_fraction_f:f,drawdown_pct:(1-Pa/Pb)*100},
     formula:"P_bot = (usdc/tokens)^2 / top_price",
-    note:"off-chain pre-flight; keeper appends realized ticks/prices on-chain — bottom_price must match"
+    cross_check:"keeper's realized bottom_price (from realized ticks) must equal derived.bottom_price",
+    note:"human-price pre-flight. On-chain liquidity is a Q96 uint128 (different units) — reconcile on PRICE/TICKS, not the raw liquidity integer."
   };
   $('audit').textContent=JSON.stringify(audit,null,2);
   $('expl').innerHTML=`Seed <b>${fmtNum(U)} USDC</b> as single-sided liquidity in <code>[${fmtPrice(Pa)}, ${fmtPrice(Pb)}]</code>. `+
