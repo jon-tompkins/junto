@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1787580001,
+  "generated_at": 1787608802,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 8355058,
+        "uptime_sec": 8383858,
         "load": [
           0,
-          0,
+          0.01,
           0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16734162944,
+          "used": 16723144704,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1104265216,
-          "pct": 27
+          "used": 1130041344,
+          "pct": 28
         }
       },
       "memory": {
@@ -47,6 +47,12 @@
         "hot_count": 54,
         "cold_count": 11,
         "items": [
+          {
+            "name": "reference_discord_theaidevs",
+            "type": "reference",
+            "mtime": 1787587437,
+            "desc": "\"TheAIDevs Discord guild config, behavior rules, and channel details for Benji\""
+          },
           {
             "name": "project_lp_buyback",
             "type": "project",
@@ -190,12 +196,6 @@
             "type": "reference",
             "mtime": 1784076569,
             "desc": "\"Discord bot debug recipes — Message Content Intent OFF, config-reload disorientation\""
-          },
-          {
-            "name": "reference_discord_theaidevs",
-            "type": "reference",
-            "mtime": 1784076560,
-            "desc": "\"TheAIDevs Discord guild config, behavior rules, and channel details for Benji\""
           },
           {
             "name": "project_myjunto_steward",
@@ -638,7 +638,7 @@
           {
             "title": "Discord: TheAIDevs guild",
             "file": "reference_discord_theaidevs",
-            "hook": "friends-only guild (1526593351560724580); requireMention:false, all channels; MEMORY.md not auto-loaded in guild, use memory_search"
+            "hook": "friends-only guild (1526593351560724580); per-channel ALLOWLIST by name (general/myjunto-benji/ratspeak-bob/noodle-town) — NOT all-channels; a channel not listed = Benji silent there; MEMORY.md not auto-loaded in guild, use memory_search"
           },
           {
             "title": "Discord debug recipes",
@@ -1237,7 +1237,7 @@
             {
               "source": "reference_discord_debug",
               "target": "reference_discord_theaidevs",
-              "weight": 2
+              "weight": 3
             },
             {
               "source": "reference_junto_approval_fill_path",
@@ -1615,6 +1615,11 @@
         },
         "git": [
           {
+            "hash": "4ba5ffa",
+            "ts": 1787580002,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "8cc21c7",
             "ts": 1787573130,
             "subject": "feat(lp): pin price-orientation (USDC/token) convention + pool-init/arb-fill note; realized-vs-clean snap delta"
@@ -1682,11 +1687,6 @@
           {
             "hash": "a4739bf",
             "ts": 1787493602,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "46f83ac",
-            "ts": 1787436002,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
