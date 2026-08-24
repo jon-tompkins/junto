@@ -1,64 +1,82 @@
 {
-  "schema": "lp-buyback-mgmt.v1",
-  "purpose": "Interface contract between Benji's off-chain strategy controller (the policy brain) and Bob's on-chain keeper (the execution hands) for the active single-sided LP buyback system on Base. Controller emits INTENTS; keeper executes on Uni V3 / Aerodrome Slipstream and emits FILL_REPORTs + position STATE. Venue-neutral: clean price bounds in, keeper rounds to the pool's tick spacing.",
+  "schema": "lp-buyback-mgmt.v1.1",
+  "purpose": "Interface contract between Benji's off-chain strategy controller (policy brain) and Bob's on-chain keeper (execution). Controller emits INTENTs; keeper executes on Base and returns FILL_REPORTs + periodic POSITION_STATE. v1.1 aligns to Bob's execution verbs + Slipstream.",
+  "venue": {
+    "primary": "Aerodrome Slipstream (Base-native CL) — gauged pools pay AERO emissions on the parked position while it waits for the range to fill: free yield subsidizing the buyback during dead time.",
+    "fallback": "Uniswap V3 on Base via a config flag (NonfungiblePositionManager-style iface) — keeper handles the mapping; controller layer unchanged.",
+    "tick_spacing": "per-pool (Slipstream), e.g. 1 / 50 / 100 / 200. Controller sends clean price bounds; keeper snaps per `snap` policy. Optional explicit ticks supported."
+  },
 
   "rung_types": {
-    "buy": "single-sided USDC position placed BELOW spot; converts USDC→token as price falls. Sized so P_bot=(Q/T)^2/P_top. Fills = accumulated tokens.",
-    "sell": "single-sided TOKEN position placed ABOVE spot; converts token→USDC as price rises. Mirror of buy. Fills = realized USDC."
+    "buy": "single-sided USDC BELOW spot; converts USDC→token as price falls. Sized P_bot=(Q/T)^2/P_top; avg fill = geomean of bounds.",
+    "sell": "single-sided TOKEN ABOVE spot; converts token→USDC as price rises. The exit side."
   },
 
   "intent": {
     "_dir": "controller → keeper",
-    "intent_id": "string · idempotency key",
+    "intent_id": "string · IDEMPOTENCY key — keeper dedupes; a retried intent_id never double-executes",
+    "nonce": "int · monotonic per-controller sequence — orders intents, guards against races/reordering",
     "ts": "unix seconds",
-    "action": "\"open\" | \"close\" | \"roll\"  (roll = close ref_position_id then open the new rung atomically if possible)",
+    "action": "\"mint\" | \"burn\" | \"rerange\" | \"collect\"  (rerange = burn ref + mint new bounds, atomic if pool allows; collect = harvest fees + AERO)",
     "rung_type": "\"buy\" | \"sell\"",
-    "P_top": "number · upper price bound, USDC/token (clean; keeper snaps to tick)",
-    "P_bot": "number · lower price bound, USDC/token",
-    "amount": { "asset": "\"USDC\" | \"BASE\"", "value": "number · capital to deploy (USDC for buy rung, tokens for sell rung)" },
-    "ref_position_id": "string · optional; required for close/roll — the tokenId to act on",
-    "constraints": { "max_slippage_bps": "int", "deadline": "unix seconds", "min_out": "number · optional" }
+    "pool": {
+      "address": "string · pool address (preferred, unambiguous)",
+      "token0": "string · optional if address given", "token1": "string",
+      "tick_spacing": "int · optional if address given",
+      "venue": "\"slipstream\" | \"univ3\"  (default slipstream)"
+    },
+    "P_top": "number · upper price bound USDC/token (clean; keeper snaps)",
+    "P_bot": "number · lower price bound USDC/token",
+    "tick_lower": "int · OPTIONAL explicit tick (if controller pre-snaps); overrides P_bot when present",
+    "tick_upper": "int · OPTIONAL explicit tick; overrides P_top when present",
+    "snap": "\"nearest\" | \"inward\" | \"outward\"  · rounding direction when snapping prices→ticks (single-sided wants the range kept on the correct side of spot; default inward)",
+    "amount": { "asset": "\"USDC\" | \"BASE\"", "value": "number · USDC for buy rung, tokens for sell rung" },
+    "ref_position_id": "string · required for burn / rerange / collect — the tokenId to act on",
+    "constraints": { "max_slippage_bps": "int · REQUIRED", "deadline": "unix seconds · REQUIRED", "min_out": "number · optional" }
   },
 
   "fill_report": {
     "_dir": "keeper → controller",
-    "intent_id": "string · echoes the intent",
-    "position_id": "string · NFT tokenId of the CL position",
-    "status": "\"opened\" | \"converting\" | \"filled\" | \"closed\" | \"failed\"",
+    "intent_id": "string", "nonce": "int", "position_id": "string · NFT tokenId",
+    "status": "\"minted\" | \"converting\" | \"filled\" | \"burned\" | \"collected\" | \"failed\"",
     "tick_lower": "int", "tick_upper": "int", "liquidity": "string · uint128",
     "executed": {
       "usdc_in": "number", "token_in": "number", "usdc_out": "number", "token_out": "number",
-      "fees_usdc": "number", "fees_token": "number", "gas_usd": "number"
+      "fees_usdc": "number", "fees_token": "number",
+      "rewards_aero": "number", "rewards_usd": "number", "gas_usd": "number"
     },
-    "fill_pct": "0-100 · how much of the range has converted (for 'converting')",
-    "spot_at_exec": "number", "tx": "string · hash", "ts": "unix seconds",
-    "error": "string · present when status=failed"
+    "fill_pct": "0-100", "spot_at_exec": "number", "tx": "string", "ts": "unix seconds",
+    "error": "string · when status=failed"
   },
 
   "position_state": {
-    "_dir": "keeper → controller · periodic or event-driven, powers roll decisions + monitoring UI",
+    "_dir": "keeper → controller · event-driven or periodic; powers roll decisions + monitoring UI",
     "position_id": "string", "rung_type": "buy|sell",
     "state": "\"PLANNED\"|\"OPEN\"|\"CONVERTING\"|\"FILLED\"|\"ROLLED\"|\"HELD\"|\"CLOSED\"|\"CANCELLED\"|\"FAILED\"",
-    "tick_lower": "int", "tick_upper": "int",
+    "pool": "string · address", "tick_lower": "int", "tick_upper": "int",
     "P_top": "number", "P_bot": "number", "fill_pct": "0-100",
-    "token_bal": "number", "usdc_bal": "number", "fees_accrued_usd": "number",
+    "token_bal": "number", "usdc_bal": "number",
+    "fees_accrued_usd": "number", "rewards_aero_accrued": "number", "rewards_usd": "number",
     "spot": "number", "ts": "unix seconds"
   },
 
   "rung_lifecycle": [
-    "PLANNED   — controller decided a rung; intent emitted",
-    "OPEN      — keeper minted; single-sided, price outside band on the funded side",
-    "CONVERTING— spot inside [P_bot,P_top]; partial conversion underway (0<fill_pct<100)",
-    "FILLED    — spot crossed the far bound; 100% converted to the other asset",
-    "then controller picks one: ROLLED (open mirror rung across spot) | HELD (keep as inventory) | CLOSED (withdraw)",
-    "CANCELLED — controller closed an OPEN/CONVERTING rung early (e.g. re-range on spot drift)",
-    "FAILED    — tx/keeper error; controller retries or alerts"
+    "PLANNED → OPEN(mint) → CONVERTING → FILLED → { ROLLED(rerange) | HELD | CLOSED(burn) }",
+    "CANCELLED — controller burns an OPEN/CONVERTING rung early (re-range on spot drift)",
+    "collect — fee/AERO harvest, any time, non-destructive",
+    "FAILED — tx/keeper error; controller retries (same intent_id) or alerts"
   ],
 
+  "action_map": {
+    "controller_decision → keeper_action": {
+      "open rung": "mint", "close rung": "burn", "roll-up / re-range": "rerange", "harvest fees+AERO": "collect"
+    }
+  },
+
   "notes": [
-    "Idempotency: keeper must dedupe on intent_id (retries are safe).",
-    "The controller never signs or holds keys — it only emits intents; Bob's keeper owns the wallet/signer on the VPS.",
-    "Accounting: controller reconstructs inventory + PnL purely from fill_reports (usdc/token in-out + fees + gas). No trust in off-chain state.",
-    "Awaiting venue pick (Slipstream vs Uni V3) to bind tick_spacing; bounds stay venue-neutral until then."
+    "Idempotency: keeper dedupes on intent_id; nonce enforces ordering. Retries are safe, never double-mint.",
+    "Controller holds NO keys — Bob's keeper owns a DEDICATED, isolated LP signer/wallet (never the custodial tunnel hot wallet). New key, new systemd unit, forked from the proven bridge-daemon supervision.",
+    "PnL/accounting reconstructed purely from fill_reports + position_state (usdc/token in-out + fees + AERO rewards + gas). AERO emissions now flow into realized/unrealized yield — the Slipstream subsidy is tracked, not ignored.",
+    "Bounds stay venue-neutral; venue flag + tick_spacing come from `pool`."
   ]
 }

@@ -33,13 +33,13 @@ Target token band `[I_min, I_max]`; ladder biased so fills mean-revert inventory
 Trade-off: narrow = frequent small spread captures + more gas/rerolls; wide = fewer, larger. Params: `w` (tick-spacings, min = pool tick spacing), optional `w ∝ realized_vol`. Tuned per token liquidity.
 
 ## PnL / accounting
-Reconstructed **purely from keeper `fill_report`s** (no trust in off-chain state):
-- Realized = matched buy→sell spread + fees earned − gas
-- Unrealized = current inventory MTM at spot
+Reconstructed **purely from keeper `fill_report`s + `position_state`** (no trust in off-chain state):
+- Realized = matched buy→sell spread + LP fees + **AERO emissions** (Slipstream pays the parked position while it waits — subsidy during dead time) − gas
+- Unrealized = current inventory MTM at spot + accrued fees/AERO
 - Inventory lots via avg-cost (or FIFO). Surfaced in the monitoring UI (my frontend piece).
 
-## Interface
-Controller emits `intent {action, rung_type, P_top, P_bot, amount, constraints}`; keeper returns `fill_report` + periodic `position_state`. Controller holds **no keys** — Bob's keeper owns the signer. Full contract: `lp-buyback-125cd220.schema.json`.
+## Interface (v1.1)
+Controller emits `intent {action, rung_type, pool, P_top, P_bot, amount, constraints, intent_id, nonce}` where **action ∈ {mint, burn, rerange, collect}** (Bob's on-chain verbs); keeper returns `fill_report` + periodic `position_state` (incl. AERO rewards). Controller holds **no keys** — Bob's keeper owns a dedicated isolated LP signer. Full contract: `lp-buyback-125cd220.schema.json`.
 
-## Open (needs Bob)
-Venue pick (binds tick spacing) · keeper/signer pattern on the VPS · whether roll = atomic close+open or two txs.
+## Resolved
+Venue = **Aerodrome Slipstream** primary (AERO emissions subsidize the wait), Uni V3 a config flag · keeper = forked bridge-daemon scaffolding w/ isolated wallet · roll = `rerange` (atomic burn+mint where the pool allows).
