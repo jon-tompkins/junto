@@ -1,18 +1,27 @@
 {
-  "schema": "lp-buyback.v2-simple",
-  "purpose": "Minimal, auditable contract between Benji's controller and Bob's keeper for the single-sided LP buyback on Uniswap V3 (Base). One position, three actions. Active laddering is a deferred separate module — NOT here, to keep v1 small.",
-  "venue": "Uniswap V3 on Base — canonical NonfungiblePositionManager (no fork). Pool = (token0, token1, fee); fee ∈ {100,500,3000,10000} (tick spacing derives from fee).",
+  "schema": "lp-buyback.v2-univ4",
+  "purpose": "Minimal, auditable contract between Benji's controller and Bob's keeper for the single-sided LP buyback on Uniswap V4 (Base). One position, three actions. Active laddering is a deferred separate module — NOT here, to keep v1 small.",
+  "venue": "Uniswap V4 on Base — singleton PoolManager + v4-periphery PositionManager (ERC-721 position). Pool = PoolKey{currency0, currency1, fee, tickSpacing, hooks}. v1 pins hooks = 0x0000…0000 (NO-HOOK pool) so there is zero hook bytecode in the audit surface. Concentrated-liquidity tick math is identical to V3 — the buyback formula is unchanged.",
   "amounts": "All token/USDC quantities are DECIMAL STRINGS in human units (e.g. \"5000\", \"1000000\") — 18-dec supplies are not float-safe. Prices (P_top/P_bot/spot) are numbers for display; ticks are authoritative for on-chain math.",
 
   "intent": {
     "_dir": "controller → keeper",
     "id": "string · idempotency key — keeper dedupes; retries never double-execute",
-    "action": "\"mint\" | \"burn\" | \"collect\"",
-    "pool": { "address": "string (preferred)", "token0": "string?", "token1": "string?", "fee": "int? (100|500|3000|10000)" },
+    "action": "\"mint\" | \"burn\" | \"collect\"  (keeper encodes these as v4 PositionManager actions: MINT_POSITION / BURN_POSITION / DECREASE+TAKE for fee collect, inside the unlock callback)",
+    "pool": {
+      "position_manager": "string · v4-periphery PositionManager address (Base)",
+      "poolkey": {
+        "currency0": "string · lower-sorted token address (address(0) = native ETH)",
+        "currency1": "string",
+        "fee": "int · e.g. 500 | 3000 | 10000 (LP fee, or dynamic-fee flag)",
+        "tickSpacing": "int · EXPLICIT in v4 (not derived from fee)",
+        "hooks": "string · 0x0000000000000000000000000000000000000000 for v1 (no hook)"
+      }
+    },
     "P_top": "number · upper bound = current spot, USDC/token (mint only)",
     "P_bot": "number · lower bound, USDC/token (mint only)",
     "usdc": "decimal string · USDC to deposit (mint only)",
-    "position_id": "string · NFT tokenId (burn/collect)",
+    "position_id": "string · ERC-721 tokenId (burn/collect)",
     "max_slippage_bps": "int",
     "deadline": "unix seconds"
   },
@@ -23,7 +32,7 @@
     "id": "string · echoes the intent id",
     "action": "\"mint\" | \"burn\" | \"collect\"",
     "status": "\"minted\" | \"converting\" | \"filled\" | \"burned\" | \"collected\" | \"failed\"",
-    "position_id": "string · NFT tokenId (null when SIMULATED)",
+    "position_id": "string · ERC-721 tokenId (null when SIMULATED)",
     "tick_lower": "int", "tick_upper": "int",
     "realized_P_bot": "number", "realized_P_top": "number",
     "usdc_in": "decimal string", "usdc_out": "decimal string",
@@ -36,8 +45,9 @@
   "conventions": [
     "Single-sided mint: deposit USDC only, range entirely below spot (P_top = spot). At the bottom it's 100% token = buyback done.",
     "in/out are wallet-perspective: usdc_in spent, token_out received. PnL reconstructed purely from fill_reports with integer/decimal math.",
-    "Controller trusts realized_P_bot/P_top from the keeper (decimals + token0/1 ordering resolved on-chain) — does not recompute price from raw ticks.",
-    "Controller holds NO keys — keeper owns a dedicated isolated signer. Standard ERC-20 approve before mint (keeper-internal).",
-    "No rerange / roll / emissions in v1. If active laddering is added later, it reuses these same three actions in a loop; this contract does not change."
+    "Controller trusts realized_P_bot/P_top from the keeper (v4 sorts currencies + resolves decimals on-chain) — does not recompute price from raw ticks.",
+    "Controller holds NO keys — keeper owns a dedicated isolated signer. v4 approvals go through Permit2 (keeper-internal). Flash-accounting settle/take handled inside the keeper's unlock callback.",
+    "No emissions (Uni V4, no gauge): realized PnL = matched spread + LP fees − gas. No reward line.",
+    "No rerange / roll / hooks in v1. If active laddering is added later, it reuses these same three actions in a loop; this contract does not change."
   ]
 }

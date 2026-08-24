@@ -1,6 +1,6 @@
 # LP Buyback — v1 (simple, auditable)
 
-**Venue:** Uniswap V3 on Base — canonical `NonfungiblePositionManager` (no forks, widely audited). Pool = `(token0, token1, fee)`, fee ∈ {100, 500, 3000, 10000}.
+**Venue:** Uniswap V4 on Base — singleton `PoolManager` + v4-periphery `PositionManager`. Pool = `PoolKey{currency0, currency1, fee, tickSpacing, hooks}`. v1 uses a **no-hook pool** (`hooks = 0x0`) so there's no hook bytecode to audit. Concentrated-liquidity tick math is identical to V3 — **the buyback formula and calculator are unchanged**; only the on-chain execution layer differs (flash-accounting unlock/settle, Permit2 approvals).
 
 **Goal:** sell a token, park half the USDC as a **single-sided USDC** position in a range *below* spot that rebuys all the sold tokens if price falls to the bottom.
 
