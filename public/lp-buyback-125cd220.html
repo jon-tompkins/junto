@@ -101,7 +101,7 @@
         <div class="tile"><div class="lab">Avg buyback price</div><div class="val" id="avg">—</div></div>
         <div class="tile"><div class="lab">Range drop</div><div class="val" id="drop">—</div></div>
         <div class="tile"><div class="lab">Liquidity L</div><div class="val" id="liq">—</div></div>
-        <div class="tile"><div class="lab">Range width (top÷bot)</div><div class="val" id="width">—</div></div>
+        <div class="tile"><div class="lab">LP fraction f · bottom=f²·top</div><div class="val" id="frac">—</div></div>
       </div>
       <div class="rangebar">
         <div class="rb-track"><div class="rb-fill"></div>
@@ -122,6 +122,7 @@
       <b style="color:var(--ink)">geometric mean</b> of the range bounds — so buying <code>T</code> tokens with
       <code>U</code> USDC pins the bottom:
       <div class="formula">√(P_bottom · P_top) = U / T &nbsp;⟹&nbsp; P_bottom = (U / T)² / P_top</div>
+      <div style="margin-top:12px"><b style="color:var(--ink)">Intuition knob:</b> if you LP fraction <code>f</code> of the sale proceeds and want to rebuy 100% of what you sold, the bottom is simply <b style="color:var(--ink)">P_bottom = f² · P_top</b> — half the proceeds → quarter the price, 60% → 0.36×. (credit: Bob 🛸)</div>
       <div style="margin-top:12px">Liquidity <code>L = U / (√P_top − √P_bottom)</code>. At spot the position is 100% USDC; at the bottom it's
       100% token, having spent exactly <code>U</code> to accumulate exactly <code>T</code>. Feasible only when
       <code>T &gt; U / P_top</code> (i.e. avg fill below spot). Execution rounds bounds to the pool's tick spacing —
@@ -159,7 +160,8 @@ function compute(){
   $('avg').textContent=fmtPrice(avg);
   $('drop').textContent=((1-Pa/Pb)*100).toFixed(2)+'%';
   $('liq').textContent=fmtNum(L);
-  $('width').textContent=(Pb/Pa).toFixed(2)+'×';
+  const f=Math.sqrt(Pa/Pb); // implied LP-fraction-of-proceeds for a 100% buyback
+  $('frac').textContent=(f*100).toFixed(1)+'%';
   $('rbBot').textContent='bottom '+fmtPrice(Pa);
   $('rbTop').textContent='spot ● '+fmtPrice(Pb);
   $('expl').innerHTML=`Seed <b>${fmtNum(U)} USDC</b> as single-sided liquidity in <code>[${fmtPrice(Pa)}, ${fmtPrice(Pb)}]</code>. `+
@@ -167,7 +169,7 @@ function compute(){
     `<b>${fmtPrice(avg)}</b> (${((1-avg/Pb)*100).toFixed(1)}% below spot) if price round-trips to the bottom — `+
     `pocketing the spread and ending flat on tokens.`;
 }
-function blank(){['bottom','avg','drop','liq','width'].forEach(i=>$(i).textContent='—');$('bottomAux').textContent='';$('expl').innerHTML='';}
+function blank(){['bottom','avg','drop','liq','frac'].forEach(i=>$(i).textContent='—');$('bottomAux').textContent='';$('expl').innerHTML='';}
 ['usdc','tokens','top'].forEach(id=>$(id).addEventListener('input',compute));
 document.querySelectorAll('.presets button').forEach(bn=>bn.onclick=()=>{
   $('usdc').value=bn.dataset.u;$('tokens').value=bn.dataset.t;$('top').value=bn.dataset.p;compute();});
