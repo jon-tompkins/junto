@@ -1,45 +1,26 @@
-# Active LP Buyback Management — design sketch (v1)
+# LP Buyback — v1 (simple, auditable)
 
-Benji's half of the split. Off-chain **strategy controller** (policy brain) driving Bob's on-chain **keeper** (execution) via `lp-buyback-mgmt.v1` intents. Venue-neutral (Uni V3 / Aerodrome Slipstream on Base).
+**Venue:** Uniswap V3 on Base — canonical `NonfungiblePositionManager` (no forks, widely audited). Pool = `(token0, token1, fee)`, fee ∈ {100, 500, 3000, 10000}.
 
-## Primitive
-Two mirrored single-sided concentrated-liquidity rungs:
-- **BUY rung** — single-sided USDC *below* spot; converts USDC→token as price falls. Sized by `P_bot = (Q/T)² · 1/P_top`; avg fill = geometric mean of bounds.
-- **SELL rung** — single-sided token *above* spot; converts token→USDC as price rises. The exit side.
+**Goal:** sell a token, park half the USDC as a **single-sided USDC** position in a range *below* spot that rebuys all the sold tokens if price falls to the bottom.
 
-Buy low, sell high, on narrow ranges, while collecting LP fees. The "sell-then-rebuy" ask is just: open a SELL up high, and a matched BUY down low sized to reaccumulate exactly what you sold.
+**Math (the calculator):** `P_bot = (USDC / tokens)² / P_top`. Avg buyback = geometric mean of the bounds = USDC/tokens.
 
-## Ladder
-Maintain **N buy rungs below + M sell rungs above** spot, each width `w` (small — k tick-spacings, or vol-scaled). Capital allocation across rungs: uniform or geometric (heavier near spot). Total-deployed cap + USDC/token reserve enforced.
+## The whole flow — one position
+1. Compute bounds with the calculator (USDC, tokens, top price → bottom).
+2. **`mint`** a single-sided USDC position over `[P_bot, P_top]`, spot at the top → 100% USDC.
+3. **Monitor.** As price falls, USDC auto-converts to token; at the bottom it's 100% token = buyback complete.
+4. **`collect`** fees / **`burn`** to withdraw, any time.
 
-## State machine (per rung)
-```
-PLANNED → OPEN → CONVERTING → FILLED → { ROLLED | HELD | CLOSED }
-                     └─────────→ CANCELLED (early re-range)
-```
-- **FILLED** (spot crossed far bound → 100% converted) is the decision point.
+That's it. Three keeper actions, one position, no moving parts.
 
-## Roll-up logic (after a BUY fills)
-A filled BUY leaves you holding `T` tokens at avg `= geomean(P_bot,P_top)`. Controller opens a SELL rung above the *new* spot whose avg (again a geomean of its bounds) clears cost + margin + fee/gas buffer:
-```
-avg_sell ≥ avg_buy · (1 + target_margin + cost_buffer)
-```
-Simplest placement: reflect the filled buy rung across spot with a margin offset. Symmetric rule when a SELL fills → open a BUY below with the freed USDC. This is the grid's self-perpetuation.
+## Accounting
+USDC in, token out at fill, LP fees. Decimal-safe (amounts as strings, integer math). No emissions to track. PnL = (tokens reacquired × spot) − USDC spent + fees − gas.
 
-## Inventory control
-Target token band `[I_min, I_max]`; ladder biased so fills mean-revert inventory toward target. Guardrails: at `I_max` (price kept dumping) stop/​widen BUY rungs; at `I_min` (ran up, sold out) stop SELL rungs. Prevents unbounded bag-holding or selling to zero.
+## Keeper
+`mint | burn | collect` only. Dedicated **isolated signer** (never custodial funds). Standard ERC-20 approve + NFPM calls. No auto-roll, no bot loop in v1.
 
-## Range-width `w`
-Trade-off: narrow = frequent small spread captures + more gas/rerolls; wide = fewer, larger. Params: `w` (tick-spacings, min = pool tick spacing), optional `w ∝ realized_vol`. Tuned per token liquidity.
+## Later (optional, separate module — deliberately NOT in v1)
+Active laddering / auto-rerange on smaller ranges. Kept out of the core so v1 stays small and auditable. If/when we want it, it's an add-on that emits the same `mint/burn/collect` intents in a loop — the core contract doesn't change.
 
-## PnL / accounting
-Reconstructed **purely from keeper `fill_report`s + `position_state`** (no trust in off-chain state):
-- Realized = matched buy→sell spread + LP fees + **AERO emissions** (Slipstream pays the parked position while it waits — subsidy during dead time) − gas
-- Unrealized = current inventory MTM at spot + accrued fees/AERO
-- Inventory lots via avg-cost (or FIFO). Surfaced in the monitoring UI (my frontend piece).
-
-## Interface (v1.1)
-Controller emits `intent {action, rung_type, pool, P_top, P_bot, amount, constraints, intent_id, nonce}` where **action ∈ {mint, burn, rerange, collect}** (Bob's on-chain verbs); keeper returns `fill_report` + periodic `position_state` (incl. AERO rewards). Controller holds **no keys** — Bob's keeper owns a dedicated isolated LP signer. Full contract: `lp-buyback-125cd220.schema.json`.
-
-## Resolved
-Venue = **Aerodrome Slipstream** primary (AERO emissions subsidize the wait), Uni V3 a config flag · keeper = forked bridge-daemon scaffolding w/ isolated wallet · roll = `rerange` (atomic burn+mint where the pool allows).
+Contract: `lp-buyback-125cd220.schema.json` · Calculator: `lp-buyback-125cd220.html`

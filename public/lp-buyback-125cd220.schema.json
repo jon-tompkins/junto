@@ -1,88 +1,43 @@
 {
-  "schema": "lp-buyback-mgmt.v1.3",
-  "purpose": "Interface contract between Benji's off-chain strategy controller (policy brain) and Bob's on-chain keeper (execution) for the active single-sided LP buyback system on Base. Controller emits INTENTs; keeper executes on Slipstream (Uni V3 fallback flag) and returns FILL_REPORTs + periodic POSITION_STATE. Controller ingester + decimal PnL ledger prototyped in workspace/scripts/lp-controller.mjs.",
-  "changelog": {
-    "v1.3": "fill_report.mode (LIVE|SIMULATED) — controller books LIVE only, SIMULATED is dry-run; optional projected_full_fill on mint; constraints.min_confirmations (default 3 Base blocks); pool uses tick_spacing NOT fee (Slipstream); executed in/out convention pinned (wallet-perspective); status 'minted' canonical ('opened' accepted alias).",
-    "v1.2": "asset BASE→TOKEN; decimal-STRING amounts; per-leg roll (close_intent_id+open_intent_id, one fill_report per leg); single-sided-safe snap; realized ticks/bounds.",
-    "v1.1": "action verbs mint|burn|rerange|collect; pool ref; nonce; Slipstream+AERO accounting."
-  },
-  "conventions": {
-    "executed_signs": "executed.*_in = amount the WALLET put in; *_out = amount the wallet received. Buy-rung fill: token_out↑ / usdc_in spent. Sell-rung fill: token_in released / usdc_out↑. Controller books inventory from these.",
-    "realized_price_trust": "Controller uses the keeper's realized_P_top/realized_P_bot (decimals + token0/token1 ordering already resolved on-chain) as authoritative — it does NOT recompute price from raw ticks (naive 1.0001^tick is wrong once 6-dec USDC vs 18-dec token scaling enters).",
-    "approval": "ERC-20 allowance for the NFPM is a keeper-internal step (per-token), out of schema scope."
-  },
-  "venue": {
-    "primary": "Aerodrome Slipstream — gauged pools pay AERO emissions on the parked position during the wait (subsidy). tick_spacing bound at the keeper from the actual pool; controller bounds stay venue-neutral.",
-    "fallback": "Uniswap V3 on Base via config flag."
-  },
-
-  "amount_encoding": "ALL token/USDC quantities (amount.value, constraints.min_out, executed.*_in/out, fees_*, rewards_aero, position balances) are DECIMAL STRINGS in human units (e.g. \"1000000.0\"), not JSON numbers — 18-dec supplies are not float-safe and the controller sums them for PnL. Prices (P_top/P_bot/spot) stay numbers for display; ticks are authoritative for math. *_usd convenience fields may be numbers.",
-
-  "rung_types": {
-    "buy": "single-sided USDC BELOW spot; converts USDC→token as price falls. Sized P_bot=(Q/T)^2/P_top; avg fill = geomean of REALIZED bounds.",
-    "sell": "single-sided TOKEN ABOVE spot; converts token→USDC as price rises."
-  },
+  "schema": "lp-buyback.v2-simple",
+  "purpose": "Minimal, auditable contract between Benji's controller and Bob's keeper for the single-sided LP buyback on Uniswap V3 (Base). One position, three actions. Active laddering is a deferred separate module — NOT here, to keep v1 small.",
+  "venue": "Uniswap V3 on Base — canonical NonfungiblePositionManager (no fork). Pool = (token0, token1, fee); fee ∈ {100,500,3000,10000} (tick spacing derives from fee).",
+  "amounts": "All token/USDC quantities are DECIMAL STRINGS in human units (e.g. \"5000\", \"1000000\") — 18-dec supplies are not float-safe. Prices (P_top/P_bot/spot) are numbers for display; ticks are authoritative for on-chain math.",
 
   "intent": {
     "_dir": "controller → keeper",
-    "intent_id": "string · IDEMPOTENCY key; keeper dedupes, retries never double-execute",
-    "nonce": "int · monotonic per-controller ordering",
-    "ts": "unix seconds",
-    "action": "\"mint\" | \"burn\" | \"rerange\" | \"collect\"",
-    "rung_type": "\"buy\" | \"sell\"",
-    "pool": { "address": "string (preferred)", "token0": "string?", "token1": "string?", "tick_spacing": "int? · NOT `fee` — Slipstream mint takes tickSpacing; univ3 fee-tier is mapped to tick_spacing keeper-side", "venue": "\"slipstream\" | \"univ3\" (default slipstream)" },
-    "P_top": "number · upper price bound USDC/token (clean; keeper snaps)",
-    "P_bot": "number · lower price bound USDC/token",
-    "tick_lower": "int · OPTIONAL explicit tick (overrides P_bot)",
-    "tick_upper": "int · OPTIONAL explicit tick (overrides P_top)",
-    "snap": "\"single_sided_safe\" (default) | \"nearest\" — single_sided_safe: BUY snaps the spot-side bound (top) DOWN to ≤ spot; SELL snaps the spot-side bound (bottom) UP to ≥ spot, so the rung stays 100% single-sided. Keeper returns the realized ticks/bounds.",
-    "amount": { "asset": "\"USDC\" | \"TOKEN\"", "value": "decimal string · USDC for buy rung, TOKEN for sell rung" },
-    "ref_position_id": "string · required for burn / collect",
-    "close_intent_id": "string · rerange only — id for the close leg (its fill_report echoes this)",
-    "open_intent_id": "string · rerange only — id for the open leg",
-    "constraints": { "max_slippage_bps": "int · REQUIRED", "deadline": "unix seconds · REQUIRED", "min_out": "decimal string · optional", "min_confirmations": "int · optional, default 3 Base blocks; policy raises it for high-value rerolls before a status flips to filled" }
+    "id": "string · idempotency key — keeper dedupes; retries never double-execute",
+    "action": "\"mint\" | \"burn\" | \"collect\"",
+    "pool": { "address": "string (preferred)", "token0": "string?", "token1": "string?", "fee": "int? (100|500|3000|10000)" },
+    "P_top": "number · upper bound = current spot, USDC/token (mint only)",
+    "P_bot": "number · lower bound, USDC/token (mint only)",
+    "usdc": "decimal string · USDC to deposit (mint only)",
+    "position_id": "string · NFT tokenId (burn/collect)",
+    "max_slippage_bps": "int",
+    "deadline": "unix seconds"
   },
 
   "fill_report": {
-    "_dir": "keeper → controller · ONE PER LEG (a rerange emits two: the close leg, then the open leg)",
-    "mode": "\"LIVE\" | \"SIMULATED\" · REQUIRED — controller books inventory/PnL for LIVE only; SIMULATED is a computed dry-run for wiring/tests, never booked",
-    "intent_id": "string · the leg's id (= close_intent_id or open_intent_id for a rerange)",
-    "nonce": "int",
-    "leg": "\"close\" | \"open\" | null · null for standalone mint/burn/collect",
+    "_dir": "keeper → controller",
+    "mode": "\"LIVE\" | \"SIMULATED\" · controller books LIVE only; SIMULATED is a dry-run for wiring/tests",
+    "id": "string · echoes the intent id",
+    "action": "\"mint\" | \"burn\" | \"collect\"",
+    "status": "\"minted\" | \"converting\" | \"filled\" | \"burned\" | \"collected\" | \"failed\"",
     "position_id": "string · NFT tokenId (null when SIMULATED)",
-    "status": "\"minted\" | \"converting\" | \"filled\" | \"burned\" | \"collected\" | \"failed\"  ('opened' accepted as alias of 'minted')",
-    "projected_full_fill": "object · optional, on a mint: { tokens_out, at_price, avg_fill } — where the rung fully converts; for preview/UI, not booked",
-    "tick_lower": "int · REALIZED", "tick_upper": "int · REALIZED",
-    "realized_P_bot": "number · from realized ticks", "realized_P_top": "number",
-    "liquidity": "string · uint128",
-    "executed": {
-      "usdc_in": "decimal string", "token_in": "decimal string", "usdc_out": "decimal string", "token_out": "decimal string",
-      "fees_usdc": "decimal string", "fees_token": "decimal string",
-      "rewards_aero": "decimal string", "rewards_usd": "number", "gas_usd": "number"
-    },
-    "fill_pct": "0-100", "spot_at_exec": "number", "tx": "string", "ts": "unix seconds",
-    "error": "string · when status=failed (controller re-issues; on a half-landed roll where close succeeded but open failed, controller re-emits the open leg against the freed funds)"
+    "tick_lower": "int", "tick_upper": "int",
+    "realized_P_bot": "number", "realized_P_top": "number",
+    "usdc_in": "decimal string", "usdc_out": "decimal string",
+    "token_in": "decimal string", "token_out": "decimal string",
+    "fees_usd": "number", "gas_usd": "number",
+    "fill_pct": "0-100", "spot": "number", "tx": "string", "ts": "unix seconds",
+    "error": "string · when failed"
   },
 
-  "position_state": {
-    "_dir": "keeper → controller · event-driven or periodic",
-    "position_id": "string", "rung_type": "buy|sell", "pool": "string",
-    "state": "\"PLANNED\"|\"OPEN\"|\"CONVERTING\"|\"FILLED\"|\"ROLLED\"|\"HELD\"|\"CLOSED\"|\"CANCELLED\"|\"FAILED\"",
-    "tick_lower": "int", "tick_upper": "int", "P_top": "number", "P_bot": "number", "fill_pct": "0-100",
-    "token_bal": "decimal string", "usdc_bal": "decimal string",
-    "fees_accrued_usd": "number", "rewards_aero_accrued": "decimal string", "rewards_usd": "number",
-    "spot": "number", "ts": "unix seconds"
-  },
-
-  "rung_lifecycle": [
-    "PLANNED → OPEN(mint) → CONVERTING → FILLED → { ROLLED(rerange) | HELD | CLOSED(burn) }",
-    "rerange = burn(close leg) + mint(open leg); atomic via NFPM.multicall when the bundle is safe, else 2-tx with the controller reconciling per-leg fill_reports.",
-    "CANCELLED — early burn on spot drift · collect — non-destructive fee/AERO harvest · FAILED — retry same intent_id."
-  ],
-
-  "notes": [
-    "Controller holds NO keys — Bob's keeper owns a DEDICATED isolated LP signer (never the custodial tunnel wallet); new key + systemd unit forked from the bridge-daemon supervision.",
-    "PnL reconstructed purely from fill_reports + position_state using DECIMAL math (no floats) — token/USDC as decimal strings, AERO emissions tracked as yield.",
-    "Roll safety: two linked leg-ids + one fill_report per leg means a half-landed roll (close ok, open reverted) leaves inventory consistent — controller sees freed funds and re-emits the open leg."
+  "conventions": [
+    "Single-sided mint: deposit USDC only, range entirely below spot (P_top = spot). At the bottom it's 100% token = buyback done.",
+    "in/out are wallet-perspective: usdc_in spent, token_out received. PnL reconstructed purely from fill_reports with integer/decimal math.",
+    "Controller trusts realized_P_bot/P_top from the keeper (decimals + token0/1 ordering resolved on-chain) — does not recompute price from raw ticks.",
+    "Controller holds NO keys — keeper owns a dedicated isolated signer. Standard ERC-20 approve before mint (keeper-internal).",
+    "No rerange / roll / emissions in v1. If active laddering is added later, it reuses these same three actions in a loop; this contract does not change."
   ]
 }
