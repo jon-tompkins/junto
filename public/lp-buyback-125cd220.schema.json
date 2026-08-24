@@ -4,6 +4,14 @@
   "venue": "Uniswap V4 on Base — singleton PoolManager + v4-periphery PositionManager (ERC-721 position). Pool = PoolKey{currency0, currency1, fee, tickSpacing, hooks}. v1 pins hooks = 0x0000…0000 (NO-HOOK pool) so there is zero hook bytecode in the audit surface. Concentrated-liquidity tick math is identical to V3 — the buyback formula is unchanged.",
   "amounts": "All token/USDC quantities are DECIMAL STRINGS in human units (e.g. \"5000\", \"1000000\") — 18-dec supplies are not float-safe. Prices (P_top/P_bot/spot) are numbers for display; ticks are authoritative for on-chain math.",
 
+  "target_v1": {
+    "pair": "USDC / RATSPEAK on Uniswap V4 (Base)",
+    "ratspeak": "0xf1e9Baa65d418A9025e1851DD2D37f1AD208bba3",
+    "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "poolkey": { "currency0": "USDC (0x83… sorts first)", "currency1": "RATSPEAK (0xf1…)", "fee": 10000, "fee_pct": "1%", "tickSpacing": 200, "hooks": "0x0000000000000000000000000000000000000000" },
+    "verify_onchain": "pool exists + is RATSPEAK's real price-discovery venue (single-sided buyback only fills against real sell flow); exact tickSpacing for the 1% pool; currency sort order + decimals (USDC 6, RATSPEAK ?)."
+  },
+
   "intent": {
     "_dir": "controller → keeper",
     "id": "string · idempotency key — keeper dedupes; retries never double-execute",
