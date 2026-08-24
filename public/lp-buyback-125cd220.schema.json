@@ -1,9 +1,15 @@
 {
-  "schema": "lp-buyback-mgmt.v1.2",
-  "purpose": "Interface contract between Benji's off-chain strategy controller (policy brain) and Bob's on-chain keeper (execution) for the active single-sided LP buyback system on Base. Controller emits INTENTs; keeper executes on Slipstream (Uni V3 fallback flag) and returns FILL_REPORTs + periodic POSITION_STATE. v1.2 incorporates Bob's keeper-build feedback: TOKEN asset, decimal-string amounts, per-leg roll accounting, single-sided-safe snapping.",
+  "schema": "lp-buyback-mgmt.v1.3",
+  "purpose": "Interface contract between Benji's off-chain strategy controller (policy brain) and Bob's on-chain keeper (execution) for the active single-sided LP buyback system on Base. Controller emits INTENTs; keeper executes on Slipstream (Uni V3 fallback flag) and returns FILL_REPORTs + periodic POSITION_STATE. Controller ingester + decimal PnL ledger prototyped in workspace/scripts/lp-controller.mjs.",
   "changelog": {
-    "v1.2": "asset BASE→TOKEN; all on-chain token/USDC amounts are DECIMAL STRINGS (float-unsafe at 18 dec); roll carries close_intent_id+open_intent_id with one fill_report per leg; snap rule made asymmetric+single-sided-safe; keeper returns realized ticks+bounds.",
+    "v1.3": "fill_report.mode (LIVE|SIMULATED) — controller books LIVE only, SIMULATED is dry-run; optional projected_full_fill on mint; constraints.min_confirmations (default 3 Base blocks); pool uses tick_spacing NOT fee (Slipstream); executed in/out convention pinned (wallet-perspective); status 'minted' canonical ('opened' accepted alias).",
+    "v1.2": "asset BASE→TOKEN; decimal-STRING amounts; per-leg roll (close_intent_id+open_intent_id, one fill_report per leg); single-sided-safe snap; realized ticks/bounds.",
     "v1.1": "action verbs mint|burn|rerange|collect; pool ref; nonce; Slipstream+AERO accounting."
+  },
+  "conventions": {
+    "executed_signs": "executed.*_in = amount the WALLET put in; *_out = amount the wallet received. Buy-rung fill: token_out↑ / usdc_in spent. Sell-rung fill: token_in released / usdc_out↑. Controller books inventory from these.",
+    "realized_price_trust": "Controller uses the keeper's realized_P_top/realized_P_bot (decimals + token0/token1 ordering already resolved on-chain) as authoritative — it does NOT recompute price from raw ticks (naive 1.0001^tick is wrong once 6-dec USDC vs 18-dec token scaling enters).",
+    "approval": "ERC-20 allowance for the NFPM is a keeper-internal step (per-token), out of schema scope."
   },
   "venue": {
     "primary": "Aerodrome Slipstream — gauged pools pay AERO emissions on the parked position during the wait (subsidy). tick_spacing bound at the keeper from the actual pool; controller bounds stay venue-neutral.",
@@ -24,7 +30,7 @@
     "ts": "unix seconds",
     "action": "\"mint\" | \"burn\" | \"rerange\" | \"collect\"",
     "rung_type": "\"buy\" | \"sell\"",
-    "pool": { "address": "string (preferred)", "token0": "string?", "token1": "string?", "tick_spacing": "int?", "venue": "\"slipstream\" | \"univ3\" (default slipstream)" },
+    "pool": { "address": "string (preferred)", "token0": "string?", "token1": "string?", "tick_spacing": "int? · NOT `fee` — Slipstream mint takes tickSpacing; univ3 fee-tier is mapped to tick_spacing keeper-side", "venue": "\"slipstream\" | \"univ3\" (default slipstream)" },
     "P_top": "number · upper price bound USDC/token (clean; keeper snaps)",
     "P_bot": "number · lower price bound USDC/token",
     "tick_lower": "int · OPTIONAL explicit tick (overrides P_bot)",
@@ -34,16 +40,18 @@
     "ref_position_id": "string · required for burn / collect",
     "close_intent_id": "string · rerange only — id for the close leg (its fill_report echoes this)",
     "open_intent_id": "string · rerange only — id for the open leg",
-    "constraints": { "max_slippage_bps": "int · REQUIRED", "deadline": "unix seconds · REQUIRED", "min_out": "decimal string · optional" }
+    "constraints": { "max_slippage_bps": "int · REQUIRED", "deadline": "unix seconds · REQUIRED", "min_out": "decimal string · optional", "min_confirmations": "int · optional, default 3 Base blocks; policy raises it for high-value rerolls before a status flips to filled" }
   },
 
   "fill_report": {
     "_dir": "keeper → controller · ONE PER LEG (a rerange emits two: the close leg, then the open leg)",
+    "mode": "\"LIVE\" | \"SIMULATED\" · REQUIRED — controller books inventory/PnL for LIVE only; SIMULATED is a computed dry-run for wiring/tests, never booked",
     "intent_id": "string · the leg's id (= close_intent_id or open_intent_id for a rerange)",
     "nonce": "int",
     "leg": "\"close\" | \"open\" | null · null for standalone mint/burn/collect",
-    "position_id": "string · NFT tokenId",
-    "status": "\"minted\" | \"converting\" | \"filled\" | \"burned\" | \"collected\" | \"failed\"",
+    "position_id": "string · NFT tokenId (null when SIMULATED)",
+    "status": "\"minted\" | \"converting\" | \"filled\" | \"burned\" | \"collected\" | \"failed\"  ('opened' accepted as alias of 'minted')",
+    "projected_full_fill": "object · optional, on a mint: { tokens_out, at_price, avg_fill } — where the rung fully converts; for preview/UI, not booked",
     "tick_lower": "int · REALIZED", "tick_upper": "int · REALIZED",
     "realized_P_bot": "number · from realized ticks", "realized_P_top": "number",
     "liquidity": "string · uint128",
