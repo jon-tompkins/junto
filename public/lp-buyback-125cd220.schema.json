@@ -1,0 +1,64 @@
+{
+  "schema": "lp-buyback-mgmt.v1",
+  "purpose": "Interface contract between Benji's off-chain strategy controller (the policy brain) and Bob's on-chain keeper (the execution hands) for the active single-sided LP buyback system on Base. Controller emits INTENTS; keeper executes on Uni V3 / Aerodrome Slipstream and emits FILL_REPORTs + position STATE. Venue-neutral: clean price bounds in, keeper rounds to the pool's tick spacing.",
+
+  "rung_types": {
+    "buy": "single-sided USDC position placed BELOW spot; converts USDC→token as price falls. Sized so P_bot=(Q/T)^2/P_top. Fills = accumulated tokens.",
+    "sell": "single-sided TOKEN position placed ABOVE spot; converts token→USDC as price rises. Mirror of buy. Fills = realized USDC."
+  },
+
+  "intent": {
+    "_dir": "controller → keeper",
+    "intent_id": "string · idempotency key",
+    "ts": "unix seconds",
+    "action": "\"open\" | \"close\" | \"roll\"  (roll = close ref_position_id then open the new rung atomically if possible)",
+    "rung_type": "\"buy\" | \"sell\"",
+    "P_top": "number · upper price bound, USDC/token (clean; keeper snaps to tick)",
+    "P_bot": "number · lower price bound, USDC/token",
+    "amount": { "asset": "\"USDC\" | \"BASE\"", "value": "number · capital to deploy (USDC for buy rung, tokens for sell rung)" },
+    "ref_position_id": "string · optional; required for close/roll — the tokenId to act on",
+    "constraints": { "max_slippage_bps": "int", "deadline": "unix seconds", "min_out": "number · optional" }
+  },
+
+  "fill_report": {
+    "_dir": "keeper → controller",
+    "intent_id": "string · echoes the intent",
+    "position_id": "string · NFT tokenId of the CL position",
+    "status": "\"opened\" | \"converting\" | \"filled\" | \"closed\" | \"failed\"",
+    "tick_lower": "int", "tick_upper": "int", "liquidity": "string · uint128",
+    "executed": {
+      "usdc_in": "number", "token_in": "number", "usdc_out": "number", "token_out": "number",
+      "fees_usdc": "number", "fees_token": "number", "gas_usd": "number"
+    },
+    "fill_pct": "0-100 · how much of the range has converted (for 'converting')",
+    "spot_at_exec": "number", "tx": "string · hash", "ts": "unix seconds",
+    "error": "string · present when status=failed"
+  },
+
+  "position_state": {
+    "_dir": "keeper → controller · periodic or event-driven, powers roll decisions + monitoring UI",
+    "position_id": "string", "rung_type": "buy|sell",
+    "state": "\"PLANNED\"|\"OPEN\"|\"CONVERTING\"|\"FILLED\"|\"ROLLED\"|\"HELD\"|\"CLOSED\"|\"CANCELLED\"|\"FAILED\"",
+    "tick_lower": "int", "tick_upper": "int",
+    "P_top": "number", "P_bot": "number", "fill_pct": "0-100",
+    "token_bal": "number", "usdc_bal": "number", "fees_accrued_usd": "number",
+    "spot": "number", "ts": "unix seconds"
+  },
+
+  "rung_lifecycle": [
+    "PLANNED   — controller decided a rung; intent emitted",
+    "OPEN      — keeper minted; single-sided, price outside band on the funded side",
+    "CONVERTING— spot inside [P_bot,P_top]; partial conversion underway (0<fill_pct<100)",
+    "FILLED    — spot crossed the far bound; 100% converted to the other asset",
+    "then controller picks one: ROLLED (open mirror rung across spot) | HELD (keep as inventory) | CLOSED (withdraw)",
+    "CANCELLED — controller closed an OPEN/CONVERTING rung early (e.g. re-range on spot drift)",
+    "FAILED    — tx/keeper error; controller retries or alerts"
+  ],
+
+  "notes": [
+    "Idempotency: keeper must dedupe on intent_id (retries are safe).",
+    "The controller never signs or holds keys — it only emits intents; Bob's keeper owns the wallet/signer on the VPS.",
+    "Accounting: controller reconstructs inventory + PnL purely from fill_reports (usdc/token in-out + fees + gas). No trust in off-chain state.",
+    "Awaiting venue pick (Slipstream vs Uni V3) to bind tick_spacing; bounds stay venue-neutral until then."
+  ]
+}
