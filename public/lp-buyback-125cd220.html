@@ -77,33 +77,65 @@
     <div class="card">
       <h2>Inputs</h2>
 
-      <label style="margin-top:0">Quote denomination</label>
+      <label style="margin-top:0">Mode</label>
+      <div class="seg" id="modeSeg">
+        <button data-m="sell" class="on">Sell plan</button>
+        <button data-m="pos">LP position</button>
+      </div>
+      <div class="hint" id="modeHint">“I’m selling N tokens, keeping X% as cash” — the rest funds the buyback.</div>
+
+      <label>Quote denomination</label>
       <div class="seg" id="denomSeg">
         <button data-q="ETH" class="on">ETH (WETH)</button>
         <button data-q="USD">USD (USDC)</button>
       </div>
       <div class="hint">live pool is <b>RATSPEAK/WETH</b> — ETH-denominated. Switch to USD to reason in dollars; the math is identical, only units change.</div>
 
-      <label id="lblCap">WETH to add to LP</label>
-      <div class="ig"><span class="pre" id="preCap">Ξ</span><input id="cap" type="number" value="0.005" step="any"></div>
-      <div class="hint" id="hintCap">the quote-side capital seeded into the single-sided position <span id="capConv" style="color:var(--gr)"></span></div>
+      <!-- SELL-PLAN inputs -->
+      <div id="grpSell">
+        <label>Tokens you're selling</label>
+        <div class="ig"><span class="pre">#</span><input id="sellN" type="number" value="1000000000" step="any"></div>
+        <div class="hint">total tokens dumped into the market</div>
 
-      <label>Tokens to buy back</label>
-      <div class="ig"><span class="pre">#</span><input id="tokens" type="number" value="1000000" step="any"></div>
-      <div class="hint">how many tokens the position should fully accumulate at the bottom</div>
+        <label id="lblSellTop">Current price (WETH / token)</label>
+        <div class="ig"><span class="pre" id="preSellTop">P</span><input id="sellTop" type="number" value="0.00000001" step="any"></div>
+        <div class="hint">price you're selling at = top of the buyback range <span id="sellTopConv" style="color:var(--gr)"></span></div>
 
-      <label id="lblTop">Top price of range = current price (WETH / token)</label>
-      <div class="ig"><span class="pre" id="preTop">P</span><input id="top" type="number" value="0.00000001" step="any"></div>
-      <div class="hint">spot sits at the top; the range extends downward <span id="topConv" style="color:var(--gr)"></span></div>
+        <label>Keep as cash <span style="color:var(--faint)">— % of proceeds you pocket</span></label>
+        <div class="ig"><span class="pre">%</span><input id="keepPct" type="number" value="30" min="0" max="99.9" step="any"></div>
+        <div class="hint">the other <b id="deployPctLbl">70%</b> funds the buyback LP; you rebuy 100% of what you sold if price hits <code>f²·top</code></div>
+      </div>
+
+      <!-- LP-POSITION inputs -->
+      <div id="grpPos" style="display:none">
+        <label id="lblCap">WETH to add to LP</label>
+        <div class="ig"><span class="pre" id="preCap">Ξ</span><input id="cap" type="number" value="0.005" step="any"></div>
+        <div class="hint" id="hintCap">the quote-side capital seeded into the single-sided position <span id="capConv" style="color:var(--gr)"></span></div>
+
+        <label>Tokens to buy back</label>
+        <div class="ig"><span class="pre">#</span><input id="tokens" type="number" value="1000000" step="any"></div>
+        <div class="hint">how many tokens the position should fully accumulate at the bottom</div>
+
+        <label id="lblTop">Top price of range = current price (WETH / token)</label>
+        <div class="ig"><span class="pre" id="preTop">P</span><input id="top" type="number" value="0.00000001" step="any"></div>
+        <div class="hint">spot sits at the top; the range extends downward <span id="topConv" style="color:var(--gr)"></span></div>
+      </div>
+
+      <label>Pool fee tier <span style="color:var(--faint)">— configurable per pool</span></label>
+      <div class="seg" id="feeSeg">
+        <button data-f="10000" class="on">1%</button>
+        <button data-f="20000">2%</button>
+      </div>
+      <div class="hint">accrues on top of the position; tickSpacing is set on-chain by the keeper</div>
 
       <label id="lblEth">ETH / USD price <span style="color:var(--faint)">— for the ≈ cross-unit readouts only</span></label>
       <div class="ig"><span class="pre">$</span><input id="ethusd" type="number" value="4000" step="any"></div>
       <div class="hint">does not touch the core buyback math; only converts the “≈” display lines</div>
 
       <div class="presets">
-        <button data-q="ETH" data-u="0.005" data-t="1000000" data-p="0.00000001">RATSPEAK/WETH (real-ish)</button>
-        <button data-q="USD" data-u="5000" data-t="1000000" data-p="0.01">Jon's USD example</button>
-        <button data-q="USD" data-u="2500" data-t="1000000" data-p="0.01">tighter (½)</button>
+        <button data-m="sell" data-q="ETH" data-n="1000000000" data-p="0.00000001" data-k="30">1B RATSPEAK · keep 30%</button>
+        <button data-m="sell" data-q="ETH" data-n="1000000000" data-p="0.00000001" data-k="50">1B · keep 50%</button>
+        <button data-m="pos" data-q="ETH" data-u="0.005" data-t="1000000" data-p="0.00000001">position: real-ish</button>
       </div>
     </div>
 
@@ -116,11 +148,17 @@
         <div class="conv" id="bottomConv"></div>
         <div class="aux" id="bottomAux"></div>
       </div>
+      <div class="tiles" id="tilesSell" style="margin-bottom:11px;display:none">
+        <div class="tile"><div class="lab">Proceeds from sale</div><div class="val" id="proceeds">—</div><div class="sub" id="proceedsConv"></div></div>
+        <div class="tile"><div class="lab">Kept as cash</div><div class="val" id="kept">—</div><div class="sub" id="keptConv"></div></div>
+        <div class="tile"><div class="lab">Deployed to buyback LP</div><div class="val" id="deployed">—</div><div class="sub" id="deployedConv"></div></div>
+        <div class="tile"><div class="lab">Tokens rebought at bottom</div><div class="val" id="rebought">—</div></div>
+      </div>
       <div class="tiles">
         <div class="tile"><div class="lab">Avg buyback price</div><div class="val" id="avg">—</div><div class="sub" id="avgConv"></div></div>
         <div class="tile"><div class="lab">Range drop</div><div class="val" id="drop">—</div></div>
         <div class="tile"><div class="lab">Liquidity L</div><div class="val" id="liq">—</div></div>
-        <div class="tile"><div class="lab">LP fraction f · bottom=f²·top</div><div class="val" id="frac">—</div></div>
+        <div class="tile"><div class="lab">Deploy fraction f · bottom=f²·top</div><div class="val" id="frac">—</div></div>
       </div>
       <div class="rangebar">
         <div class="rb-track"><div class="rb-fill"></div>
@@ -162,6 +200,8 @@
 <script>
 const $=id=>document.getElementById(id);
 let quote='ETH';                                  // 'ETH' | 'USD'
+let mode='sell';                                  // 'sell' | 'pos'
+let feeBps=10000;                                 // pool fee in pip (10000 = 1%)
 const SYM={ETH:'Ξ',USD:'$'};
 const QNAME={ETH:'WETH',USD:'USDC'};
 const OTHER={ETH:'USD',USD:'ETH'};
@@ -187,21 +227,59 @@ function convStr(v,prefixWord){
 
 function applyDenom(){
   $('preCap').textContent=SYM[quote];
+  $('preSellTop').textContent=SYM[quote];
   $('lblCap').textContent=`${QNAME[quote]} to add to LP`;
   $('lblTop').textContent=`Top price of range = current price (${QNAME[quote]} / token)`;
+  $('lblSellTop').textContent=`Current price (${QNAME[quote]} / token)`;
   $('rbHint').textContent=`${QNAME[quote]} converts to tokens as price walks left (down) from spot to bottom`;
   document.querySelectorAll('#denomSeg button').forEach(b=>b.classList.toggle('on',b.dataset.q===quote));
 }
+function applyMode(){
+  $('grpSell').style.display = mode==='sell'?'':'none';
+  $('grpPos').style.display  = mode==='pos'?'':'none';
+  $('tilesSell').style.display = mode==='sell'?'':'none';
+  $('modeHint').innerHTML = mode==='sell'
+    ? '“I’m selling N tokens, keeping X% as cash” — the rest funds the buyback.'
+    : 'Raw position view: set the LP capital + tokens to accumulate directly.';
+  document.querySelectorAll('#modeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.m===mode));
+}
+
+// returns {U, T, Pb, extra} in current quote units, or null (after rendering a warning)
+function gatherInputs(){
+  const w=$('warn'), S=SYM[quote];
+  if(mode==='sell'){
+    const N=parseFloat($('sellN').value), Pb=parseFloat($('sellTop').value), keep=parseFloat($('keepPct').value);
+    if(!(N>0&&Pb>0&&keep>=0&&keep<100)){w.className='warn on';w.textContent='Enter positive tokens & price, and keep% between 0 and 100.';blank();return null;}
+    const f=(100-keep)/100;                 // deploy fraction of proceeds
+    $('deployPctLbl').textContent=(f*100).toFixed(1)+'%';
+    if(f<=0){w.className='warn on';w.textContent='Keep 100% means nothing is deployed — no buyback.';blank();return null;}
+    const proceeds=N*Pb, kept=proceeds*keep/100, U=proceeds*f, T=N;
+    return {U,T,Pb,extra:{N,keep,f,proceeds,kept}};
+  } else {
+    const U=parseFloat($('cap').value), T=parseFloat($('tokens').value), Pb=parseFloat($('top').value);
+    if(!(U>0&&T>0&&Pb>0)){w.className='warn on';w.textContent='Enter positive values for the three core inputs.';blank();return null;}
+    return {U,T,Pb,extra:null};
+  }
+}
 
 function compute(){
-  const U=parseFloat($('cap').value), T=parseFloat($('tokens').value), Pb=parseFloat($('top').value);
   const w=$('warn'), S=SYM[quote];
-  if(!(U>0&&T>0&&Pb>0)){w.className='warn on';w.textContent='Enter positive values for the three core inputs.';blank();return;}
+  const inp=gatherInputs();
+  if(!inp)return;
+  const {U,T,Pb,extra}=inp;
   const avg=U/T;
   if(avg>=Pb){w.className='warn on';
-    w.innerHTML=`Infeasible: average fill (${S}${fmtPrice(avg)}) must be below spot (${S}${fmtPrice(Pb)}). Buy back more than <b>${fmtNum(U/Pb)}</b> tokens, or add less ${QNAME[quote]}.`;
+    w.innerHTML=`Infeasible: average fill (${S}${fmtPrice(avg)}) must be below spot (${S}${fmtPrice(Pb)}). `+
+      (mode==='sell'?`Keep a smaller % (deploy more of the proceeds).`:`Buy back more than <b>${fmtNum(U/Pb)}</b> tokens, or add less ${QNAME[quote]}.`);
     blank();return;}
   w.className='warn';
+  // sell-plan tiles
+  if(extra){
+    $('proceeds').textContent=S+fmtPrice(extra.proceeds); $('proceedsConv').textContent=convStr(extra.proceeds);
+    $('kept').textContent=S+fmtPrice(extra.kept);         $('keptConv').textContent=convStr(extra.kept);
+    $('deployed').textContent=S+fmtPrice(U);              $('deployedConv').textContent=convStr(U);
+    $('rebought').textContent=fmtNum(T);
+  }
   const Pa=(avg*avg)/Pb;
   const a=Math.sqrt(Pa),b=Math.sqrt(Pb);
   const L=U/(b-a);
@@ -209,6 +287,7 @@ function compute(){
 
   $('capConv').textContent=convStr(U);
   $('topConv').textContent=convStr(Pb);
+  $('sellTopConv').textContent=convStr(Pb);
   $('bottom').textContent=S+fmtPrice(Pa);
   $('bottomConv').textContent=convStr(Pa);
   $('bottomAux').textContent=`if spot falls to ${S}${fmtPrice(Pa)}, the ${fmtNum(U)} ${QNAME[quote]} has fully become ${fmtNum(T)} tokens`;
@@ -223,32 +302,50 @@ function compute(){
   const e=parseFloat($('ethusd').value);
   const audit={
     schema:"lp-buyback.audit.v1",
+    mode: mode==='sell'?'sell_plan':'lp_position',
     denomination:quote,
     eth_usd: (e>0? e : null),
-    requested:{capital:U,capital_unit:QNAME[quote],tokens_to_buyback:T,top_price:Pb,price_unit:`${QNAME[quote]}/token`},
-    derived:{bottom_price:Pa,avg_fill:avg,lp_fraction_f:f,drawdown_pct:(1-Pa/Pb)*100},
-    formula:"P_bot = (capital/tokens)^2 / top_price",
+    pool:{pair:"RATSPEAK/WETH",fee_pct:feeBps/10000,fee_pip:feeBps,tickSpacing:"set_on_chain_by_keeper"},
+    requested: extra
+      ? {tokens_sold:extra.N,current_price:Pb,keep_pct:extra.keep,price_unit:`${QNAME[quote]}/token`}
+      : {capital:U,capital_unit:QNAME[quote],tokens_to_buyback:T,top_price:Pb,price_unit:`${QNAME[quote]}/token`},
+    derived: Object.assign(
+      {bottom_price:Pa,avg_fill:avg,deploy_fraction_f:f,drawdown_pct:(1-Pa/Pb)*100,capital_deployed:U,tokens_target:T},
+      extra?{proceeds:extra.proceeds,kept_cash:extra.kept}:{}),
+    formula: mode==='sell' ? "f=1-keep; P_bot=f^2*top; deploy=f*proceeds" : "P_bot=(capital/tokens)^2/top_price",
     cross_check:"keeper's realized bottom_price (from realized ticks, in pool/ETH units) must equal derived.bottom_price when denomination=ETH",
     note:"human-price pre-flight. On-chain liquidity is a Q96 uint128 (different units) — reconcile on PRICE/TICKS, not the raw liquidity integer."
   };
   $('audit').textContent=JSON.stringify(audit,null,2);
-  $('expl').innerHTML=`Seed <b>${fmtNum(U)} ${QNAME[quote]}</b> as single-sided liquidity in <code>[${S}${fmtPrice(Pa)}, ${S}${fmtPrice(Pb)}]</code>. `+
-    `You sold ~${fmtNum(T)} tokens near ${S}${fmtPrice(Pb)}; this position rebuys all ${fmtNum(T)} at an average of `+
-    `<b>${S}${fmtPrice(avg)}</b> (${((1-avg/Pb)*100).toFixed(1)}% below spot) if price round-trips to the bottom — `+
-    `pocketing the spread and ending flat on tokens.`;
+  if(extra){
+    $('expl').innerHTML=`Sell <b>${fmtNum(extra.N)}</b> tokens at ${S}${fmtPrice(Pb)} → <b>${S}${fmtPrice(extra.proceeds)}</b> proceeds. `+
+      `Keep <b>${extra.keep}%</b> (${S}${fmtPrice(extra.kept)}) as cash; deploy the other ${(f*100).toFixed(1)}% (${S}${fmtPrice(U)}) as single-sided LP in `+
+      `<code>[${S}${fmtPrice(Pa)}, ${S}${fmtPrice(Pb)}]</code>. If price round-trips to the bottom you rebuy <b>all ${fmtNum(extra.N)} tokens</b> at avg ${S}${fmtPrice(avg)} `+
+      `(${((1-avg/Pb)*100).toFixed(1)}% below) — ending flat on tokens <b>and</b> keeping the ${extra.keep}% as locked profit.`;
+  } else {
+    $('expl').innerHTML=`Seed <b>${fmtNum(U)} ${QNAME[quote]}</b> as single-sided liquidity in <code>[${S}${fmtPrice(Pa)}, ${S}${fmtPrice(Pb)}]</code>. `+
+      `You sold ~${fmtNum(T)} tokens near ${S}${fmtPrice(Pb)}; this position rebuys all ${fmtNum(T)} at an average of `+
+      `<b>${S}${fmtPrice(avg)}</b> (${((1-avg/Pb)*100).toFixed(1)}% below spot) if price round-trips to the bottom — `+
+      `pocketing the spread and ending flat on tokens.`;
+  }
 }
-function blank(){['bottom','avg','drop','liq','frac'].forEach(i=>$(i).textContent='—');
-  ['bottomAux','bottomConv','avgConv','capConv','topConv'].forEach(i=>$(i).textContent='');
+function blank(){['bottom','avg','drop','liq','frac','proceeds','kept','deployed','rebought'].forEach(i=>$(i).textContent='—');
+  ['bottomAux','bottomConv','avgConv','capConv','topConv','sellTopConv','proceedsConv','keptConv','deployedConv'].forEach(i=>$(i).textContent='');
   $('expl').innerHTML='';$('audit').textContent='';}
 
 $('copyAudit').onclick=()=>{const t=$('audit').textContent;if(t){navigator.clipboard?.writeText(t);$('copyAudit').textContent='copied';setTimeout(()=>$('copyAudit').textContent='copy',1200);}};
-['cap','tokens','top','ethusd'].forEach(id=>$(id).addEventListener('input',compute));
+['cap','tokens','top','ethusd','sellN','sellTop','keepPct'].forEach(id=>$(id).addEventListener('input',compute));
 document.querySelectorAll('#denomSeg button').forEach(b=>b.onclick=()=>{quote=b.dataset.q;applyDenom();compute();});
+document.querySelectorAll('#modeSeg button').forEach(b=>b.onclick=()=>{mode=b.dataset.m;applyMode();compute();});
+document.querySelectorAll('#feeSeg button').forEach(b=>b.onclick=()=>{feeBps=parseInt(b.dataset.f,10);
+  document.querySelectorAll('#feeSeg button').forEach(x=>x.classList.toggle('on',x===b));compute();});
 document.querySelectorAll('.presets button').forEach(bn=>bn.onclick=()=>{
-  quote=bn.dataset.q;applyDenom();
-  $('cap').value=bn.dataset.u;$('tokens').value=bn.dataset.t;$('top').value=bn.dataset.p;compute();});
+  mode=bn.dataset.m; quote=bn.dataset.q; applyMode(); applyDenom();
+  if(mode==='sell'){$('sellN').value=bn.dataset.n;$('sellTop').value=bn.dataset.p;$('keepPct').value=bn.dataset.k;}
+  else{$('cap').value=bn.dataset.u;$('tokens').value=bn.dataset.t;$('top').value=bn.dataset.p;}
+  compute();});
 
-applyDenom();compute();
+applyMode();applyDenom();compute();
 </script>
 </body>
 </html>
