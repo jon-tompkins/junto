@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1787666402,
+  "generated_at": 1787695202,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 8441458,
+        "uptime_sec": 8470258,
         "load": [
-          0.07,
           0.04,
-          0.01
+          0.06,
+          0.02
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16725716992,
+          "used": 16728072192,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1158455296,
+          "used": 1169260544,
           "pct": 29
         }
       },
@@ -1645,6 +1645,11 @@
         },
         "git": [
           {
+            "hash": "b431748",
+            "ts": 1787666402,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "c03778d",
             "ts": 1787664468,
             "subject": "feat(lp-calc): sell-plan mode (tokens sold + keep%) + configurable fee tier"
@@ -1713,11 +1718,6 @@
             "hash": "20e00df",
             "ts": 1787571127,
             "subject": "feat(lp): active-mgmt design sketch + rebalance-intent interface schema (Benji's half)"
-          },
-          {
-            "hash": "ee0f979",
-            "ts": 1787570608,
-            "subject": "feat(lp-calc): add LP-fraction f readout + f²·top intuition (Bob's generalization)"
           }
         ]
       },
