@@ -33,14 +33,19 @@
     font:600 17px/1 var(--mono);padding:13px 13px 13px 34px;outline:none;transition:.15s}
   input:focus{border-color:var(--cy);box-shadow:0 0 0 3px #39d3ff22}
   .hint{font-size:11px;color:var(--faint);margin-top:5px}
+  .seg{display:inline-flex;background:#0b1224;border:1px solid var(--line2);border-radius:10px;padding:3px;gap:3px}
+  .seg button{background:transparent;border:0;color:var(--dim);font:700 12.5px var(--sans);padding:8px 16px;border-radius:8px;cursor:pointer;transition:.15s}
+  .seg button.on{background:linear-gradient(135deg,#123049,#1a1f3f);color:var(--ink);box-shadow:0 0 0 1px var(--line2)}
   .out-hero{background:linear-gradient(135deg,#0c1c2e,#0e1424);border:1px solid #2b3f66;border-radius:14px;padding:18px 20px;margin-bottom:14px}
   .out-hero .lab{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--cy);font-weight:700}
   .out-hero .big{font-size:34px;font-weight:700;font-family:var(--mono);margin-top:6px;color:#fff;word-break:break-all}
+  .out-hero .conv{font-size:14px;color:var(--gr);font-family:var(--mono);margin-top:4px}
   .out-hero .aux{font-size:12.5px;color:var(--dim);margin-top:6px}
   .tiles{display:grid;grid-template-columns:1fr 1fr;gap:11px}
   .tile{background:#0b1224;border:1px solid var(--line);border-radius:11px;padding:13px}
   .tile .lab{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--faint);font-weight:700}
   .tile .val{font-size:19px;font-weight:660;margin-top:5px;font-family:var(--mono);word-break:break-all}
+  .tile .sub{font-size:11px;color:var(--gr);font-family:var(--mono);margin-top:3px}
   .rangebar{margin-top:16px}
   .rb-track{height:44px;border-radius:10px;background:linear-gradient(90deg,#37e0a633,#1a2740 60%);border:1px solid var(--line2);position:relative;overflow:hidden}
   .rb-fill{position:absolute;inset:0;background:linear-gradient(90deg,#39d3ff22,#8b7bff22)}
@@ -65,28 +70,40 @@
   <div class="brand">
     <div class="logo">🎯</div>
     <div><h1>Single-Sided LP Buyback Calculator</h1>
-      <div class="sub">single-sided concentrated liquidity · Uniswap V4 on Base</div></div>
+      <div class="sub">single-sided concentrated liquidity · Uniswap V4 on Base · RATSPEAK/WETH</div></div>
   </div>
 
   <div class="cols">
     <div class="card">
       <h2>Inputs</h2>
-      <label>USDC to add to LP</label>
-      <div class="ig"><span class="pre">$</span><input id="usdc" type="number" value="5000" step="any"></div>
-      <div class="hint">the quote-side capital seeded into the single-sided position</div>
+
+      <label style="margin-top:0">Quote denomination</label>
+      <div class="seg" id="denomSeg">
+        <button data-q="ETH" class="on">ETH (WETH)</button>
+        <button data-q="USD">USD (USDC)</button>
+      </div>
+      <div class="hint">live pool is <b>RATSPEAK/WETH</b> — ETH-denominated. Switch to USD to reason in dollars; the math is identical, only units change.</div>
+
+      <label id="lblCap">WETH to add to LP</label>
+      <div class="ig"><span class="pre" id="preCap">Ξ</span><input id="cap" type="number" value="0.005" step="any"></div>
+      <div class="hint" id="hintCap">the quote-side capital seeded into the single-sided position <span id="capConv" style="color:var(--gr)"></span></div>
 
       <label>Tokens to buy back</label>
       <div class="ig"><span class="pre">#</span><input id="tokens" type="number" value="1000000" step="any"></div>
       <div class="hint">how many tokens the position should fully accumulate at the bottom</div>
 
-      <label>Top price of range = current price (USDC / token)</label>
-      <div class="ig"><span class="pre">P</span><input id="top" type="number" value="0.01" step="any"></div>
-      <div class="hint">spot sits at the top; the range extends downward</div>
+      <label id="lblTop">Top price of range = current price (WETH / token)</label>
+      <div class="ig"><span class="pre" id="preTop">P</span><input id="top" type="number" value="0.00000001" step="any"></div>
+      <div class="hint">spot sits at the top; the range extends downward <span id="topConv" style="color:var(--gr)"></span></div>
+
+      <label id="lblEth">ETH / USD price <span style="color:var(--faint)">— for the ≈ cross-unit readouts only</span></label>
+      <div class="ig"><span class="pre">$</span><input id="ethusd" type="number" value="4000" step="any"></div>
+      <div class="hint">does not touch the core buyback math; only converts the “≈” display lines</div>
 
       <div class="presets">
-        <button data-u="5000" data-t="1000000" data-p="0.01">Jon's example</button>
-        <button data-u="2500" data-t="1000000" data-p="0.01">tighter (½ USDC)</button>
-        <button data-u="5000" data-t="2000000" data-p="0.01">2× buyback</button>
+        <button data-q="ETH" data-u="0.005" data-t="1000000" data-p="0.00000001">RATSPEAK/WETH (real-ish)</button>
+        <button data-q="USD" data-u="5000" data-t="1000000" data-p="0.01">Jon's USD example</button>
+        <button data-q="USD" data-u="2500" data-t="1000000" data-p="0.01">tighter (½)</button>
       </div>
     </div>
 
@@ -96,10 +113,11 @@
       <div class="out-hero">
         <div class="lab">Bottom price of range</div>
         <div class="big" id="bottom">—</div>
+        <div class="conv" id="bottomConv"></div>
         <div class="aux" id="bottomAux"></div>
       </div>
       <div class="tiles">
-        <div class="tile"><div class="lab">Avg buyback price</div><div class="val" id="avg">—</div></div>
+        <div class="tile"><div class="lab">Avg buyback price</div><div class="val" id="avg">—</div><div class="sub" id="avgConv"></div></div>
         <div class="tile"><div class="lab">Range drop</div><div class="val" id="drop">—</div></div>
         <div class="tile"><div class="lab">Liquidity L</div><div class="val" id="liq">—</div></div>
         <div class="tile"><div class="lab">LP fraction f · bottom=f²·top</div><div class="val" id="frac">—</div></div>
@@ -110,7 +128,7 @@
           <span class="rb-lab rb-bot" id="rbBot">bottom</span>
           <span class="rb-lab rb-top" id="rbTop">top ● spot</span>
         </div>
-        <div class="hint" style="margin-top:7px">USDC converts to tokens as price walks left (down) from spot to bottom</div>
+        <div class="hint" id="rbHint" style="margin-top:7px">WETH converts to tokens as price walks left (down) from spot to bottom</div>
       </div>
       <div class="expl" id="expl"></div>
     </div>
@@ -119,7 +137,7 @@
   <div class="card" style="margin-top:16px">
     <h2>Audit block <button id="copyAudit" style="margin-left:auto;background:#0c1428;border:1px solid var(--line2);color:var(--dim);font:600 11px var(--sans);padding:5px 10px;border-radius:7px;cursor:pointer">copy</button></h2>
     <pre id="audit" class="auditbox"></pre>
-    <div class="hint">Off-chain pre-flight. The keeper emits a matching block next to the tx params with realized ticks/prices — the <b>bottom price must agree</b>. Two independent computations = the audit.</div>
+    <div class="hint">Off-chain pre-flight. The keeper emits a matching block next to the tx params with realized ticks/prices — the <b>bottom price must agree</b> (in pool units). Two independent computations = the audit.</div>
   </div>
 
   <div class="card" style="margin-top:16px">
@@ -127,10 +145,11 @@
     <div style="font-size:13px;color:var(--dim);line-height:1.7">
       For a single-sided position with spot at the top, the average fill price equals the
       <b style="color:var(--ink)">geometric mean</b> of the range bounds — so buying <code>T</code> tokens with
-      <code>U</code> USDC pins the bottom:
+      <code>U</code> of quote (WETH or USDC) pins the bottom:
       <div class="formula">√(P_bottom · P_top) = U / T &nbsp;⟹&nbsp; P_bottom = (U / T)² / P_top</div>
       <div style="margin-top:12px"><b style="color:var(--ink)">Intuition knob:</b> if you LP fraction <code>f</code> of the sale proceeds and want to rebuy 100% of what you sold, the bottom is simply <b style="color:var(--ink)">P_bottom = f² · P_top</b> — half the proceeds → quarter the price, 60% → 0.36×. (credit: Bob 🛸)</div>
-      <div style="margin-top:12px">Liquidity <code>L = U / (√P_top − √P_bottom)</code>. At spot the position is 100% USDC; at the bottom it's
+      <div style="margin-top:12px"><b style="color:var(--ink)">Denomination:</b> the formula is unit-free — feed it all-ETH and the bottom is in ETH; all-USD and it's in USD. The pool trades RATSPEAK/WETH, so ETH is the native/auditable unit; USD mode just relabels and cross-displays via ETH/USD. Nothing about the on-chain position changes.</div>
+      <div style="margin-top:12px">Liquidity <code>L = U / (√P_top − √P_bottom)</code>. At spot the position is 100% quote; at the bottom it's
       100% token, having spent exactly <code>U</code> to accumulate exactly <code>T</code>. Feasible only when
       <code>T &gt; U / P_top</code> (i.e. avg fill below spot). Execution rounds bounds to the pool's tick spacing —
       that's handled in the on-chain layer, decimals-aware.</div>
@@ -142,55 +161,94 @@
 
 <script>
 const $=id=>document.getElementById(id);
+let quote='ETH';                                  // 'ETH' | 'USD'
+const SYM={ETH:'Ξ',USD:'$'};
+const QNAME={ETH:'WETH',USD:'USDC'};
+const OTHER={ETH:'USD',USD:'ETH'};
+
 function fmtPrice(p){
   if(!isFinite(p)||p<=0)return '—';
   if(p>=1)return p.toLocaleString('en-US',{maximumFractionDigits:6});
-  // adaptive precision for small prices
   const d=Math.min(18,Math.max(4,Math.ceil(-Math.log10(p))+4));
   return p.toFixed(d).replace(/0+$/,'').replace(/\.$/,'');
 }
 function fmtNum(n){if(!isFinite(n))return '—';return n.toLocaleString('en-US',{maximumFractionDigits:2});}
+// convert a value expressed in the CURRENT quote unit into the OTHER unit for the ≈ lines
+function toOther(v){
+  const e=parseFloat($('ethusd').value);
+  if(!(e>0)||!isFinite(v))return null;
+  return quote==='ETH' ? v*e : v/e;      // ETH→USD multiply, USD→ETH divide
+}
+function convStr(v,prefixWord){
+  const o=toOther(v);
+  if(o===null)return '';
+  return `${prefixWord||'≈'} ${SYM[OTHER[quote]]}${fmtPrice(o)}`;
+}
+
+function applyDenom(){
+  $('preCap').textContent=SYM[quote];
+  $('lblCap').textContent=`${QNAME[quote]} to add to LP`;
+  $('lblTop').textContent=`Top price of range = current price (${QNAME[quote]} / token)`;
+  $('rbHint').textContent=`${QNAME[quote]} converts to tokens as price walks left (down) from spot to bottom`;
+  document.querySelectorAll('#denomSeg button').forEach(b=>b.classList.toggle('on',b.dataset.q===quote));
+}
+
 function compute(){
-  const U=parseFloat($('usdc').value), T=parseFloat($('tokens').value), Pb=parseFloat($('top').value);
-  const w=$('warn');
-  if(!(U>0&&T>0&&Pb>0)){w.className='warn on';w.textContent='Enter positive values for all three inputs.';blank();return;}
+  const U=parseFloat($('cap').value), T=parseFloat($('tokens').value), Pb=parseFloat($('top').value);
+  const w=$('warn'), S=SYM[quote];
+  if(!(U>0&&T>0&&Pb>0)){w.className='warn on';w.textContent='Enter positive values for the three core inputs.';blank();return;}
   const avg=U/T;
   if(avg>=Pb){w.className='warn on';
-    w.innerHTML=`Infeasible: average fill ($${fmtPrice(avg)}) must be below spot ($${fmtPrice(Pb)}). Buy back more than <b>${fmtNum(U/Pb)}</b> tokens, or add less USDC.`;
+    w.innerHTML=`Infeasible: average fill (${S}${fmtPrice(avg)}) must be below spot (${S}${fmtPrice(Pb)}). Buy back more than <b>${fmtNum(U/Pb)}</b> tokens, or add less ${QNAME[quote]}.`;
     blank();return;}
   w.className='warn';
   const Pa=(avg*avg)/Pb;
   const a=Math.sqrt(Pa),b=Math.sqrt(Pb);
   const L=U/(b-a);
-  $('bottom').textContent=fmtPrice(Pa);
-  $('bottomAux').textContent=`if spot falls to ${fmtPrice(Pa)}, the ${fmtNum(U)} USDC has fully become ${fmtNum(T)} tokens`;
-  $('avg').textContent=fmtPrice(avg);
+  const f=Math.sqrt(Pa/Pb);
+
+  $('capConv').textContent=convStr(U);
+  $('topConv').textContent=convStr(Pb);
+  $('bottom').textContent=S+fmtPrice(Pa);
+  $('bottomConv').textContent=convStr(Pa);
+  $('bottomAux').textContent=`if spot falls to ${S}${fmtPrice(Pa)}, the ${fmtNum(U)} ${QNAME[quote]} has fully become ${fmtNum(T)} tokens`;
+  $('avg').textContent=S+fmtPrice(avg);
+  $('avgConv').textContent=convStr(avg);
   $('drop').textContent=((1-Pa/Pb)*100).toFixed(2)+'%';
   $('liq').textContent=fmtNum(L);
-  const f=Math.sqrt(Pa/Pb); // implied LP-fraction-of-proceeds for a 100% buyback
   $('frac').textContent=(f*100).toFixed(1)+'%';
-  $('rbBot').textContent='bottom '+fmtPrice(Pa);
-  $('rbTop').textContent='spot ● '+fmtPrice(Pb);
+  $('rbBot').textContent='bottom '+S+fmtPrice(Pa);
+  $('rbTop').textContent='spot ● '+S+fmtPrice(Pb);
+
+  const e=parseFloat($('ethusd').value);
   const audit={
     schema:"lp-buyback.audit.v1",
-    requested:{usdc:U,tokens_to_buyback:T,top_price:Pb},
+    denomination:quote,
+    eth_usd: (e>0? e : null),
+    requested:{capital:U,capital_unit:QNAME[quote],tokens_to_buyback:T,top_price:Pb,price_unit:`${QNAME[quote]}/token`},
     derived:{bottom_price:Pa,avg_fill:avg,lp_fraction_f:f,drawdown_pct:(1-Pa/Pb)*100},
-    formula:"P_bot = (usdc/tokens)^2 / top_price",
-    cross_check:"keeper's realized bottom_price (from realized ticks) must equal derived.bottom_price",
+    formula:"P_bot = (capital/tokens)^2 / top_price",
+    cross_check:"keeper's realized bottom_price (from realized ticks, in pool/ETH units) must equal derived.bottom_price when denomination=ETH",
     note:"human-price pre-flight. On-chain liquidity is a Q96 uint128 (different units) — reconcile on PRICE/TICKS, not the raw liquidity integer."
   };
   $('audit').textContent=JSON.stringify(audit,null,2);
-  $('expl').innerHTML=`Seed <b>${fmtNum(U)} USDC</b> as single-sided liquidity in <code>[${fmtPrice(Pa)}, ${fmtPrice(Pb)}]</code>. `+
-    `You sold ~${fmtNum(T)} tokens near ${fmtPrice(Pb)}; this position rebuys all ${fmtNum(T)} at an average of `+
-    `<b>${fmtPrice(avg)}</b> (${((1-avg/Pb)*100).toFixed(1)}% below spot) if price round-trips to the bottom — `+
+  $('expl').innerHTML=`Seed <b>${fmtNum(U)} ${QNAME[quote]}</b> as single-sided liquidity in <code>[${S}${fmtPrice(Pa)}, ${S}${fmtPrice(Pb)}]</code>. `+
+    `You sold ~${fmtNum(T)} tokens near ${S}${fmtPrice(Pb)}; this position rebuys all ${fmtNum(T)} at an average of `+
+    `<b>${S}${fmtPrice(avg)}</b> (${((1-avg/Pb)*100).toFixed(1)}% below spot) if price round-trips to the bottom — `+
     `pocketing the spread and ending flat on tokens.`;
 }
-function blank(){['bottom','avg','drop','liq','frac'].forEach(i=>$(i).textContent='—');$('bottomAux').textContent='';$('expl').innerHTML='';$('audit').textContent='';}
+function blank(){['bottom','avg','drop','liq','frac'].forEach(i=>$(i).textContent='—');
+  ['bottomAux','bottomConv','avgConv','capConv','topConv'].forEach(i=>$(i).textContent='');
+  $('expl').innerHTML='';$('audit').textContent='';}
+
 $('copyAudit').onclick=()=>{const t=$('audit').textContent;if(t){navigator.clipboard?.writeText(t);$('copyAudit').textContent='copied';setTimeout(()=>$('copyAudit').textContent='copy',1200);}};
-['usdc','tokens','top'].forEach(id=>$(id).addEventListener('input',compute));
+['cap','tokens','top','ethusd'].forEach(id=>$(id).addEventListener('input',compute));
+document.querySelectorAll('#denomSeg button').forEach(b=>b.onclick=()=>{quote=b.dataset.q;applyDenom();compute();});
 document.querySelectorAll('.presets button').forEach(bn=>bn.onclick=()=>{
-  $('usdc').value=bn.dataset.u;$('tokens').value=bn.dataset.t;$('top').value=bn.dataset.p;compute();});
-compute();
+  quote=bn.dataset.q;applyDenom();
+  $('cap').value=bn.dataset.u;$('tokens').value=bn.dataset.t;$('top').value=bn.dataset.p;compute();});
+
+applyDenom();compute();
 </script>
 </body>
 </html>
