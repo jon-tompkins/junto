@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1787695202,
+  "generated_at": 1787752801,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 8470258,
+        "uptime_sec": 8527858,
         "load": [
-          0.04,
-          0.06,
-          0.02
+          0,
+          0,
+          0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16728072192,
+          "used": 16741908480,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1169260544,
+          "used": 1167626240,
           "pct": 29
         }
       },
@@ -1398,10 +1398,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 106,
-          "latest": "2026-08-25",
+          "count": 107,
+          "latest": "2026-08-26",
           "days": [
-            "2026-06-23",
             "2026-06-24",
             "2026-06-25",
             "2026-06-29",
@@ -1445,7 +1444,8 @@
             "2026-08-22",
             "2026-08-23",
             "2026-08-24",
-            "2026-08-25"
+            "2026-08-25",
+            "2026-08-26"
           ]
         }
       },
@@ -1631,12 +1631,12 @@
         "junto_health": {
           "last_alert": 1785952802.776739,
           "redset": "",
-          "greenlight_day": "2026-08-25"
+          "greenlight_day": "2026-08-26"
         },
         "disk_health": {
           "state": "ok",
           "pct": 71,
-          "ts": 1787644801
+          "ts": 1787731202
         },
         "tweet_queue": {
           "posted": 13,
@@ -1644,6 +1644,11 @@
           "total": 14
         },
         "git": [
+          {
+            "hash": "7ab936f",
+            "ts": 1787695202,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "b431748",
             "ts": 1787666402,
@@ -1713,11 +1718,6 @@
             "hash": "4f8faa4",
             "ts": 1787571320,
             "subject": "feat(lp): interface v1.1 — mint/burn/rerange/collect verbs, pool ref, nonce, Slipstream+AERO accounting"
-          },
-          {
-            "hash": "20e00df",
-            "ts": 1787571127,
-            "subject": "feat(lp): active-mgmt design sketch + rebalance-intent interface schema (Benji's half)"
           }
         ]
       },
