@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1787752801,
+  "generated_at": 1787781602,
   "generator": "benji",
   "agents": [
     {
@@ -19,7 +19,7 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 8527858,
+        "uptime_sec": 8556658,
         "load": [
           0,
           0,
@@ -27,13 +27,13 @@
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16741908480,
+          "used": 16756125696,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1167626240,
-          "pct": 29
+          "used": 1135751168,
+          "pct": 28
         }
       },
       "memory": {
@@ -1589,44 +1589,7 @@
           "status": "shipped"
         }
       ],
-      "blockers": [
-        {
-          "title": "Dispatch `Unknown error` cluster",
-          "detail": "uninvestigated"
-        },
-        {
-          "title": "Entry-price backfill",
-          "detail": "broad `--apply` blocked on Jon review; build agent a488f6cf relaunched Jul-20"
-        },
-        {
-          "title": "`shared-account-slices` tweet",
-          "detail": "HTTP 500 since Jul 31"
-        },
-        {
-          "title": "`Crypto Daily Brief`",
-          "detail": "stuck at `generated`"
-        },
-        {
-          "title": "Junto slice model Phase 2",
-          "detail": "UNVALIDATED, needs live market + fresh paper keys"
-        },
-        {
-          "title": "Unshipped local changes",
-          "detail": "`src/app/trading/page.tsx` + `src/lib/trading/access.ts`"
-        },
-        {
-          "title": "Ailmanack `agents/orchestrator.md` spec drift",
-          "detail": "Step 3 (sessions_spawn) + Step 5 (ANTHROPIC_API_KEY) don't match env; patch pending Jon's go-ahead"
-        },
-        {
-          "title": "Junto podcast/audio outage",
-          "detail": "TTS step gated on OPENAI_API_KEY on myjunto deploy; silent since Jul 24; text dispatches unaffected. See [[reference_junto_podcast_audio_outage]]"
-        },
-        {
-          "title": "Junto watchlist pointer drift",
-          "detail": "structural fix pending (newsletters_v2.watchlist_id vs users.featured_watchlist_id unsynced). See [[reference_junto_watchlist_pointer_drift]]"
-        }
-      ],
+      "blockers": [],
       "ops": {
         "junto_health": {
           "last_alert": 1785952802.776739,
@@ -1644,6 +1607,11 @@
           "total": 14
         },
         "git": [
+          {
+            "hash": "da5d675",
+            "ts": 1787752802,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "7ab936f",
             "ts": 1787695202,
@@ -1713,11 +1681,6 @@
             "hash": "fc14887",
             "ts": 1787571500,
             "subject": "feat(lp): interface v1.2 — TOKEN asset, decimal-string amounts, per-leg roll, single-sided-safe snap (Bob's keeper feedback)"
-          },
-          {
-            "hash": "4f8faa4",
-            "ts": 1787571320,
-            "subject": "feat(lp): interface v1.1 — mint/burn/rerange/collect verbs, pool ref, nonce, Slipstream+AERO accounting"
           }
         ]
       },
