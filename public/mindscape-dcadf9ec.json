@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1787781602,
+  "generated_at": 1787839201,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 8556658,
+        "uptime_sec": 8614257,
         "load": [
-          0,
-          0,
-          0
+          0.03,
+          0.07,
+          0.01
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16756125696,
+          "used": 16729346048,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1135751168,
+          "used": 1136955392,
           "pct": 28
         }
       },
@@ -47,6 +47,18 @@
         "hot_count": 55,
         "cold_count": 11,
         "items": [
+          {
+            "name": "project_ailmanack",
+            "type": "project",
+            "mtime": 1787824909,
+            "desc": "Personal Hedge Fund — AI equity research platform with three-agent pipeline (Jeb/Ant/Pete) and report library"
+          },
+          {
+            "name": "reference_yahoo_crumb",
+            "type": "reference",
+            "mtime": 1787824888,
+            "desc": "Yahoo Finance is fully blocked from this host (Aug 2026); use api.nasdaq.com as replacement"
+          },
           {
             "name": "project_lp_buyback",
             "type": "project",
@@ -106,12 +118,6 @@
             "type": "reference",
             "mtime": 1786644534,
             "desc": "Daily dispatch watchlist and UI watchlist read different pointers that nothing syncs; stale tickers (e.g. SPIR) persist in dispatch"
-          },
-          {
-            "name": "project_ailmanack",
-            "type": "project",
-            "mtime": 1786620387,
-            "desc": "Personal Hedge Fund — AI equity research platform with three-agent pipeline (Jeb/Ant/Pete) and report library"
           },
           {
             "name": "reference_otc_thin_history",
@@ -244,12 +250,6 @@
             "type": "reference",
             "mtime": 1783179245,
             "desc": "\"Why source positions read stale despite recent tweets, and the 3-part fix (July 2026)\""
-          },
-          {
-            "name": "reference_yahoo_crumb",
-            "type": "reference",
-            "mtime": 1782937055,
-            "desc": "How to call Yahoo Finance quoteSummary (needs a crumb) for Ailmanack/research pipeline"
           },
           {
             "name": "project_junto_slice_model",
@@ -529,7 +529,7 @@
           {
             "title": "Project: Ailmanack",
             "file": "project_ailmanack",
-            "hook": "Personal Hedge Fund, AI equity research platform (Jeb/Ant/Pete agents + Haiku synthesis)"
+            "hook": "Personal Hedge Fund, AI equity research platform (Jeb/Ant/Pete agents + Haiku synthesis); URGENT: Scout Step 2 Yahoo→Nasdaq patch pending Jon go-ahead"
           },
           {
             "title": "Project: 50kfeet",
@@ -607,9 +607,9 @@
             "hook": "PRICING.md is source of truth; trading = flat $20/mo via Operator (not metered, ~$1/mo cost); supplier cost table is `supplier_costs`"
           },
           {
-            "title": "Yahoo Finance crumb flow",
+            "title": "Yahoo Finance → Nasdaq fallback",
             "file": "reference_yahoo_crumb",
-            "hook": "quoteSummary needs a crumb (cookie→getcrumb→&crumb=); chart endpoint doesn't"
+            "hook": "Yahoo fully blocked from this host (Aug 26, both query1/query2 429, crumb dead, Stooq dead); use api.nasdaq.com instead (endpoint map inside)"
           },
           {
             "title": "OTC tickers with thin history",
@@ -1075,6 +1075,11 @@
               "weight": 1
             },
             {
+              "source": "project_ailmanack",
+              "target": "reference_yahoo_crumb",
+              "weight": 2
+            },
+            {
               "source": "project_junto_entry_price_fix",
               "target": "reference_junto_supabase",
               "weight": 1
@@ -1388,20 +1393,14 @@
               "source": "project_myjunto_steward",
               "target": "reference_outbound_media_workspaceonly",
               "weight": 1
-            },
-            {
-              "source": "project_ailmanack",
-              "target": "reference_yahoo_crumb",
-              "weight": 1
             }
           ],
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 107,
-          "latest": "2026-08-26",
+          "count": 108,
+          "latest": "2026-08-27",
           "days": [
-            "2026-06-24",
             "2026-06-25",
             "2026-06-29",
             "2026-07-01",
@@ -1445,7 +1444,8 @@
             "2026-08-23",
             "2026-08-24",
             "2026-08-25",
-            "2026-08-26"
+            "2026-08-26",
+            "2026-08-27"
           ]
         }
       },
@@ -1483,7 +1483,7 @@
         {
           "name": "Ailmanack",
           "file": "project_ailmanack",
-          "hook": "Personal Hedge Fund, AI equity research platform (Jeb/Ant/Pete agents + Haiku synthesis)",
+          "hook": "Personal Hedge Fund, AI equity research platform (Jeb/Ant/Pete agents + Haiku synthesis); URGENT: Scout Step 2 Yahoo→Nasdaq patch pending Jon go-ahead",
           "status": "active"
         },
         {
@@ -1594,12 +1594,12 @@
         "junto_health": {
           "last_alert": 1785952802.776739,
           "redset": "",
-          "greenlight_day": "2026-08-26"
+          "greenlight_day": "2026-08-27"
         },
         "disk_health": {
           "state": "ok",
           "pct": 71,
-          "ts": 1787731202
+          "ts": 1787817602
         },
         "tweet_queue": {
           "posted": 13,
@@ -1607,6 +1607,11 @@
           "total": 14
         },
         "git": [
+          {
+            "hash": "5ab9c6a",
+            "ts": 1787781602,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "da5d675",
             "ts": 1787752802,
@@ -1676,11 +1681,6 @@
             "hash": "a9c768a",
             "ts": 1787571774,
             "subject": "feat(lp): interface v1.3 — fill mode LIVE/SIMULATED, min_confirmations, tick_spacing≠fee, in/out convention"
-          },
-          {
-            "hash": "fc14887",
-            "ts": 1787571500,
-            "subject": "feat(lp): interface v1.2 — TOKEN asset, decimal-string amounts, per-leg roll, single-sided-safe snap (Bob's keeper feedback)"
           }
         ]
       },
