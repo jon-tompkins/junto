@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1787839201,
+  "generated_at": 1787868002,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 8614257,
+        "uptime_sec": 8643058,
         "load": [
-          0.03,
-          0.07,
-          0.01
+          0,
+          0,
+          0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16729346048,
+          "used": 16730898432,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1136955392,
-          "pct": 28
+          "used": 1163112448,
+          "pct": 29
         }
       },
       "memory": {
@@ -1608,6 +1608,11 @@
         },
         "git": [
           {
+            "hash": "9c12b90",
+            "ts": 1787839202,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "5ab9c6a",
             "ts": 1787781602,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1676,11 +1681,6 @@
             "hash": "94b9e39",
             "ts": 1787572026,
             "subject": "refactor(lp): v2-simple — Uniswap V3, single position, 3 actions, no emissions (audit-first per Jon)"
-          },
-          {
-            "hash": "a9c768a",
-            "ts": 1787571774,
-            "subject": "feat(lp): interface v1.3 — fill mode LIVE/SIMULATED, min_confirmations, tick_spacing≠fee, in/out convention"
           }
         ]
       },
