@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1787925601,
+  "generated_at": 1787954401,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 8700657,
+        "uptime_sec": 8729458,
         "load": [
-          0,
-          0,
+          0.01,
+          0.01,
           0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16760766464,
+          "used": 16736567296,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1272315904,
+          "used": 1269383168,
           "pct": 32
         }
       },
@@ -1608,6 +1608,11 @@
         },
         "git": [
           {
+            "hash": "55c3ec3",
+            "ts": 1787925601,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "77afd07",
             "ts": 1787868002,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1676,11 +1681,6 @@
             "hash": "bf02b4c",
             "ts": 1787572526,
             "subject": "refactor(lp): venue → Uniswap V4 on Base (PoolKey, no-hook v1); math/calculator unchanged"
-          },
-          {
-            "hash": "bbeec98",
-            "ts": 1787572215,
-            "subject": "feat(lp-calc): pre-flight audit block (cross-checks keeper's on-chain block); Uni V3 label"
           }
         ]
       },
