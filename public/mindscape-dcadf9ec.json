@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1787868002,
+  "generated_at": 1787925601,
   "generator": "benji",
   "agents": [
     {
@@ -19,7 +19,7 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 8643058,
+        "uptime_sec": 8700657,
         "load": [
           0,
           0,
@@ -27,13 +27,13 @@
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16730898432,
+          "used": 16760766464,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1163112448,
-          "pct": 29
+          "used": 1272315904,
+          "pct": 32
         }
       },
       "memory": {
@@ -1594,12 +1594,12 @@
         "junto_health": {
           "last_alert": 1785952802.776739,
           "redset": "",
-          "greenlight_day": "2026-08-27"
+          "greenlight_day": "2026-08-28"
         },
         "disk_health": {
           "state": "ok",
           "pct": 71,
-          "ts": 1787817602
+          "ts": 1787904002
         },
         "tweet_queue": {
           "posted": 13,
@@ -1607,6 +1607,11 @@
           "total": 14
         },
         "git": [
+          {
+            "hash": "77afd07",
+            "ts": 1787868002,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "9c12b90",
             "ts": 1787839202,
@@ -1676,11 +1681,6 @@
             "hash": "bbeec98",
             "ts": 1787572215,
             "subject": "feat(lp-calc): pre-flight audit block (cross-checks keeper's on-chain block); Uni V3 label"
-          },
-          {
-            "hash": "94b9e39",
-            "ts": 1787572026,
-            "subject": "refactor(lp): v2-simple — Uniswap V3, single position, 3 actions, no emissions (audit-first per Jon)"
           }
         ]
       },
