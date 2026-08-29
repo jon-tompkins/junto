@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1788012002,
+  "generated_at": 1788040802,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 8787058,
+        "uptime_sec": 8815858,
         "load": [
-          0,
-          0,
-          0
+          0.64,
+          0.16,
+          0.04
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16750403584,
+          "used": 16758947840,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1296039936,
+          "used": 1288265728,
           "pct": 32
         }
       },
@@ -1608,6 +1608,11 @@
         },
         "git": [
           {
+            "hash": "90904a4",
+            "ts": 1788012002,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "0dd8408",
             "ts": 1787954402,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1676,11 +1681,6 @@
             "hash": "fc8c22c",
             "ts": 1787573011,
             "subject": "refactor(lp-calc): audit block cross-checks bottom_price only; note on-chain liquidity is Q96 (different units)"
-          },
-          {
-            "hash": "a4207b2",
-            "ts": 1787572851,
-            "subject": "feat(lp): target USDC/RATSPEAK 1% pool; hooks assessment + one-way-buyback (burn-on-fill) note"
           }
         ]
       },
