@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1788098402,
+  "generated_at": 1788127201,
   "generator": "benji",
   "agents": [
     {
@@ -19,7 +19,7 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 8873458,
+        "uptime_sec": 8902257,
         "load": [
           0,
           0,
@@ -27,12 +27,12 @@
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16767037440,
+          "used": 16767442944,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1295597568,
+          "used": 1294905344,
           "pct": 32
         }
       },
@@ -1608,6 +1608,11 @@
         },
         "git": [
           {
+            "hash": "60914bb",
+            "ts": 1788098402,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "b009433",
             "ts": 1788040802,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1676,11 +1681,6 @@
             "hash": "4ba5ffa",
             "ts": 1787580002,
             "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "8cc21c7",
-            "ts": 1787573130,
-            "subject": "feat(lp): pin price-orientation (USDC/token) convention + pool-init/arb-fill note; realized-vs-clean snap delta"
           }
         ]
       },
