@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1788184802,
+  "generated_at": 1788213602,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 8959858,
+        "uptime_sec": 8988658,
         "load": [
-          0,
-          0,
+          0.05,
+          0.02,
           0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16773361664,
+          "used": 16777162752,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1298288640,
+          "used": 1294200832,
           "pct": 32
         }
       },
@@ -1608,6 +1608,11 @@
         },
         "git": [
           {
+            "hash": "b2b73fc",
+            "ts": 1788184802,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "8c3c676",
             "ts": 1788127201,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1676,11 +1681,6 @@
             "hash": "b950897",
             "ts": 1787660909,
             "subject": "feat(lp-calc): USD⇄ETH denomination toggle; default RATSPEAK/WETH (ETH)"
-          },
-          {
-            "hash": "cd072f8",
-            "ts": 1787608802,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
       },
