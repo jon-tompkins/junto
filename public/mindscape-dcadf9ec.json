@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1788271201,
+  "generated_at": 1788300002,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 9046257,
+        "uptime_sec": 9075058,
         "load": [
           0,
-          0.01,
+          0,
           0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16796360704,
+          "used": 16804093952,
           "pct": 70
         },
         "mem": {
           "total": 4020396032,
-          "used": 1268191232,
+          "used": 1267818496,
           "pct": 32
         }
       },
@@ -1608,6 +1608,11 @@
         },
         "git": [
           {
+            "hash": "1675712",
+            "ts": 1788271201,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "6b10316",
             "ts": 1788213602,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1676,11 +1681,6 @@
             "hash": "b431748",
             "ts": 1787666402,
             "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "c03778d",
-            "ts": 1787664468,
-            "subject": "feat(lp-calc): sell-plan mode (tokens sold + keep%) + configurable fee tier"
           }
         ]
       },
