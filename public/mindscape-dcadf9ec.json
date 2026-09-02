@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1788300002,
+  "generated_at": 1788357602,
   "generator": "benji",
   "agents": [
     {
@@ -19,7 +19,7 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 9075058,
+        "uptime_sec": 9132658,
         "load": [
           0,
           0,
@@ -27,12 +27,12 @@
         ],
         "disk": {
           "total": 23843045376,
-          "used": 16804093952,
-          "pct": 70
+          "used": 16822202368,
+          "pct": 71
         },
         "mem": {
           "total": 4020396032,
-          "used": 1267818496,
+          "used": 1289764864,
           "pct": 32
         }
       },
@@ -1599,7 +1599,7 @@
         "disk_health": {
           "state": "ok",
           "pct": 71,
-          "ts": 1788249601
+          "ts": 1788336002
         },
         "tweet_queue": {
           "posted": 13,
@@ -1607,6 +1607,11 @@
           "total": 14
         },
         "git": [
+          {
+            "hash": "c707ed5",
+            "ts": 1788300002,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "1675712",
             "ts": 1788271201,
@@ -1675,11 +1680,6 @@
           {
             "hash": "7ab936f",
             "ts": 1787695202,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "b431748",
-            "ts": 1787666402,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
