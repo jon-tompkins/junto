@@ -1,18 +1,20 @@
 {
   "schema": "lp-buyback.v2-univ4",
-  "revision": "2026-09-04 — RATSPEAK/WETH venue + per-tranche exit-policy tree",
+  "revision": "2026-09-04b — real deep pool is HOOKED (Bankr dynamic-fee); dropped the no-hook/static-fee pin (Bob recon). Option (A): LP into the real pool, verify its hook can't touch our position.",
   "purpose": "Minimal, auditable contract between Benji's controller and Bob's keeper for the single-sided LP buyback on Uniswap V4 (Base). One parent tranche, three on-chain actions (mint/burn/collect) + one realize (swap) for redistribute. Per-tranche EXIT POLICY decides what happens on full fill; redistribute spawns exactly ONE terminal child (one re-range hop max).",
-  "venue": "Uniswap V4 on Base — singleton PoolManager + v4-periphery PositionManager (ERC-721 position). Pool = PoolKey{currency0, currency1, fee, tickSpacing, hooks}. v1 pins hooks = 0x0000…0000 (NO-HOOK pool) so there is zero hook bytecode in the audit surface. Concentrated-liquidity tick math is identical to V3 — the buyback formula is unchanged.",
+  "venue": "Uniswap V4 on Base — singleton PoolManager + v4-periphery PositionManager (ERC-721 position). Pool = PoolKey{currency0, currency1, fee, tickSpacing, hooks} READ FROM THE TARGET POOL (not pinned). We never CALL a hook; but the deepest pool may HAVE one (the v1 RATSPEAK/WETH pool is a Bankr dynamic-fee hooked pool). Auditability goal is therefore 'prove the pool's hook cannot touch our LP' (no before/after add/remove-liquidity permissions, no delta-skim), NOT 'zero hook bytecode'. Concentrated-liquidity tick math is identical to V3 — the buyback formula is unchanged.",
   "denomination": "WETH-native. The pool is RATSPEAK/WETH so the QUOTE side is WETH (18-dec). All capital/proceeds amounts are WETH; all prices are WETH-per-RATSPEAK. USD is display-only in the calculator (converted via an ETH/USD price) and NEVER appears in intents/fills.",
   "amounts": "All token/WETH quantities are DECIMAL STRINGS in human units (e.g. \"0.005\", \"1000000000\") — 18-dec supplies are not float-safe. Prices (P_top/P_bot/spot) are numbers for display; ticks are authoritative for on-chain math.",
 
   "target_v1": {
     "pair": "RATSPEAK / WETH on Uniswap V4 (Base)",
-    "ratspeak": "0xf1e9Baa65d418A9025e1851DD2D37f1AD208bba3  (PREFIX ONLY — CONFIRM full address before any live tx)",
+    "ratspeak": "0xf1e9Baa65d418A9025e1851DD2D37f1AD208bba3  (full address — CONFIRMED by Bob recon)",
     "weth": "0x4200000000000000000000000000000000000006",
-    "poolkey": { "currency0": "WETH (0x42… sorts first)", "currency1": "RATSPEAK (0xf1…)", "fee": "CONFIRM — inherit the deep ~$596k pool's actual tier (1% = 10000 or 2% = 20000)", "tickSpacing": "CONFIRM on-chain (paired with the real fee tier)", "hooks": "0x0000000000000000000000000000000000000000" },
-    "blockers": ["full RATSPEAK address", "real pool fee tier + tickSpacing", "isolated signer + funding"],
-    "verify_onchain": "use the EXISTING deep RATSPEAK/WETH pool (~$596k liq) — its real fee tier + tickSpacing; a different tier = a separate thin pool with a bad reference price. Confirm currency sort order (WETH first) + decimals (WETH 18, RATSPEAK 18)."
+    "poolkey": { "currency0": "WETH 0x4200000000000000000000000000000000000006 (sorts first)", "currency1": "RATSPEAK 0xf1e9Baa65d418A9025e1851DD2D37f1AD208bba3", "fee": "0x800000 (DYNAMIC — hook-controlled; not our 1%/2% selector)", "tickSpacing": 200, "hooks": "0xBDF938149ac6a781F94FAa0ed45E6A0e984c6544 (Bankr dynamic-fee hook)" },
+    "hook_safety": "Bob recon: the Bankr hook has NO before/after add/remove-liquidity permissions and NO delta-skim — it cannot block, seize, or tax our LP position. Auditor #1 task: re-verify these hook permission flags on-chain before the first live mint.",
+    "liquidity_note": "~$349k at recon (drifted down from ~$596k) — still the deep venue; re-check depth at mint time to size the position sensibly.",
+    "blockers": ["isolated signer + funding (ONLY remaining blocker — address + pool params now resolved)"],
+    "verify_onchain": "use the EXISTING deep RATSPEAK/WETH pool — poolKey above is the real on-chain pool (hooked, dynamic fee, tickSpacing 200). Confirm currency sort (WETH first) + decimals (both 18) + re-verify hook permission flags."
   },
 
   "trigger": {
@@ -56,9 +58,9 @@
       "poolkey": {
         "currency0": "string · lower-sorted token address = WETH 0x4200…0006 (address(0) if native ETH is used instead)",
         "currency1": "string · RATSPEAK",
-        "fee": "int · inherit the real pool's tier (10000 = 1% | 20000 = 2%)",
-        "tickSpacing": "int · EXPLICIT in v4 (paired with the real fee tier)",
-        "hooks": "string · 0x0000000000000000000000000000000000000000 for v1 (no hook)"
+        "fee": "int · READ from the target pool — may be a static tier (10000=1% | 20000=2%) OR the dynamic-fee flag 0x800000 (RATSPEAK/WETH is dynamic). The keeper does NOT set it; it inherits the pool's.",
+        "tickSpacing": "int · EXPLICIT in v4, read from the pool (RATSPEAK/WETH = 200)",
+        "hooks": "string · READ from the target pool — may be non-zero (RATSPEAK/WETH = 0xBDF9…6544 Bankr). We never call it; verify it can't touch LP (see hook_safety)."
       }
     },
     "P_top": "number · upper bound = current spot, WETH/token (mint only)",
