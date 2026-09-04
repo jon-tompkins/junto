@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1788530401,
+  "generated_at": 1788559202,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 9305458,
+        "uptime_sec": 9334258,
         "load": [
-          0.03,
-          0.07,
-          0.08
+          0,
+          0.01,
+          0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 17088704512,
+          "used": 17094545408,
           "pct": 72
         },
         "mem": {
           "total": 4020396032,
-          "used": 1544548352,
-          "pct": 38
+          "used": 1378922496,
+          "pct": 34
         }
       },
       "memory": {
@@ -50,7 +50,7 @@
           {
             "name": "project_lp_buyback",
             "type": "project",
-            "mtime": 1788530320,
+            "mtime": 1788542387,
             "desc": "DeFi single-sided LP buyback system on Base — sell a token but stretch half the proceeds into single-sided concentrated LP that rebuys all s"
           },
           {
@@ -1608,6 +1608,26 @@
         },
         "git": [
           {
+            "hash": "1aebf38",
+            "ts": 1788542372,
+            "subject": "fix(lp-schema): real deep pool is hooked — drop no-hook/static-fee pin (option A)"
+          },
+          {
+            "hash": "f361b18",
+            "ts": 1788535531,
+            "subject": "chore(lp): consolidate to canonical calculator at rattools.xyz/sell-to-lp"
+          },
+          {
+            "hash": "8e51bbe",
+            "ts": 1788532209,
+            "subject": "chore(lp-calc): review cleanup — dead construct, denom-consistent prefixes, any-asset copy"
+          },
+          {
+            "hash": "82b75fa",
+            "ts": 1788530402,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "7f680eb",
             "ts": 1788530301,
             "subject": "feat(lp): CoW limit-sell checkbox + N-rung buyback ladder"
@@ -1660,26 +1680,6 @@
           {
             "hash": "6b10316",
             "ts": 1788213602,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "b2b73fc",
-            "ts": 1788184802,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "8c3c676",
-            "ts": 1788127201,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "60914bb",
-            "ts": 1788098402,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "b009433",
-            "ts": 1788040802,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
