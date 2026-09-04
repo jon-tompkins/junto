@@ -38,6 +38,13 @@
   .seg button.on{background:linear-gradient(135deg,#123049,#1a1f3f);color:var(--ink);box-shadow:0 0 0 1px var(--line2)}
   .seg.col{display:flex;flex-direction:column;align-items:stretch}
   .seg.col button{text-align:left}
+  .chk{display:flex;align-items:center;gap:10px;background:#0b1224;border:1px solid var(--line2);border-radius:10px;padding:12px 13px;cursor:pointer;font-size:13px;color:var(--ink);font-weight:600}
+  .chk input{width:18px;height:18px;accent-color:var(--cy);cursor:pointer;padding:0;flex:0 0 auto}
+  .rungtbl{width:100%;border-collapse:collapse;margin-top:10px;font-family:var(--mono);font-size:11.5px}
+  .rungtbl th{color:var(--faint);text-align:right;font-weight:700;padding:4px 8px;border-bottom:1px solid var(--line);text-transform:uppercase;font-size:9.5px;letter-spacing:.4px}
+  .rungtbl th:first-child,.rungtbl td:first-child{text-align:left}
+  .rungtbl td{padding:4px 8px;border-bottom:1px solid #131a2c;color:var(--ink);text-align:right}
+  .rungtbl tr:last-child td{border-bottom:0}
   .nextbox{background:#0b1a14;border:1px solid #1d4736;border-radius:12px;padding:14px 16px;margin-top:16px}
   .nextbox .lab{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--gr);font-weight:700}
   .nextbox .row{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:13px;margin-top:8px;color:var(--ink)}
@@ -83,12 +90,9 @@
     <div class="card">
       <h2>Inputs</h2>
 
-      <label style="margin-top:0">Mode</label>
-      <div class="seg" id="modeSeg">
-        <button data-m="sell" class="on">Sell plan</button>
-        <button data-m="pos">LP position</button>
-      </div>
-      <div class="hint" id="modeHint">“I’m selling N tokens, keeping X% as cash” — the rest funds the buyback.</div>
+      <label style="margin-top:0">Order type</label>
+      <label class="chk"><input type="checkbox" id="cowChk" checked> Place a CoW&nbsp;Swap limit sell first</label>
+      <div class="hint" id="modeHint">Checked: you still hold the tokens — a CoW limit sell executes, then the proceeds fund the buyback. Uncheck if you’ve <b>already sold</b> and just want to ladder a buyback of a set size across a price range.</div>
 
       <label>Quote denomination</label>
       <div class="seg" id="denomSeg">
@@ -126,6 +130,10 @@
         <div class="ig"><span class="pre" id="preTop">P</span><input id="top" type="number" value="0.00000001" step="any"></div>
         <div class="hint">spot sits at the top; the range extends downward <span id="topConv" style="color:var(--gr)"></span></div>
       </div>
+
+      <label>Buyback rungs <span style="color:var(--faint)">— split the range into N staged positions</span></label>
+      <div class="ig"><span class="pre">≣</span><input id="rungs" type="number" value="1" min="1" max="50" step="1"></div>
+      <div class="hint">1 = a single position. N = a ladder of N single-sided rungs tiling the range; each fills as price descends and carries its own exit policy.</div>
 
       <label>When price passes through the range <span style="color:var(--faint)">— per-tranche exit policy</span></label>
       <div class="seg col" id="exitSeg">
@@ -201,6 +209,12 @@
         <div class="row" id="nrChildRow"><span>Outcome</span><span id="nrChild">—</span></div>
         <div class="hint" id="nrNote" style="margin-top:9px">re-centers at the new price with the same range width; keeper realizes the tranche before re-seeding. The child tranche is terminal — options ① / ② only.</div>
       </div>
+      <div id="rungCard" style="display:none;margin-top:16px">
+        <div class="lab" style="font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--faint);font-weight:700">Rung ladder <span id="rungCount" style="color:var(--dim)"></span></div>
+        <table class="rungtbl"><thead><tr><th>Rung</th><th>Band (hi→lo)</th><th>Capital</th><th>Tokens</th><th>Avg</th></tr></thead>
+          <tbody id="rungBody"></tbody></table>
+        <div class="hint" id="rungNote" style="margin-top:8px">equal-liquidity tiling — sums to the totals above; each rung is its own position (own tokenId + exit policy).</div>
+      </div>
     </div>
   </div>
 
@@ -235,6 +249,8 @@ let quote='ETH';                                  // 'ETH' | 'USD'
 let mode='sell';                                  // 'sell' | 'pos'
 let exit='keep';                                  // 'hold' | 'keep' | 'redist'
 let exit2='keep';                                 // child (subsequent) tranche policy: 'hold' | 'keep' only
+let cow=true;                                     // true = CoW limit sell first; false = already sold, direct buyback
+let rungs=1;                                       // number of buyback rungs tiling the range
 let feeBps=10000;                                 // pool fee in pip (10000 = 1%)
 const SYM={ETH:'Ξ',USD:'$'};
 const QNAME={ETH:'WETH',USD:'USDC'};
@@ -264,18 +280,20 @@ function applyDenom(){
   $('preSellTop').textContent=SYM[quote];
   $('lblCap').textContent=`${QNAME[quote]} to add to LP`;
   $('lblTop').textContent=`Top price of range = current price (${QNAME[quote]} / token)`;
-  $('lblSellTop').textContent=`Current price (${QNAME[quote]} / token)`;
+  $('lblSellTop').textContent=`${cow?'Limit sell price':'Current price'} (${QNAME[quote]} / token)`;
   $('rbHint').textContent=`${QNAME[quote]} converts to tokens as price walks left (down) from spot to bottom`;
   document.querySelectorAll('#denomSeg button').forEach(b=>b.classList.toggle('on',b.dataset.q===quote));
 }
 function applyMode(){
+  cow = (mode==='sell');
+  $('cowChk').checked = cow;
   $('grpSell').style.display = mode==='sell'?'':'none';
   $('grpPos').style.display  = mode==='pos'?'':'none';
   $('tilesSell').style.display = mode==='sell'?'':'none';
   $('modeHint').innerHTML = mode==='sell'
-    ? '“I’m selling N tokens, keeping X% as cash” — the rest funds the buyback.'
-    : 'Raw position view: set the LP capital + tokens to accumulate directly.';
-  document.querySelectorAll('#modeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.m===mode));
+    ? 'Checked: you still hold the tokens — a CoW limit sell executes, then the proceeds fund the buyback.'
+    : 'Unchecked: you’ve <b>already sold</b> — set the buyback capital + amount + range directly, laddered over the rungs below.';
+  $('lblSellTop').textContent=`${cow?'Limit sell price':'Current price'} (${QNAME[quote]} / token)`;
 }
 const EXIT_HINT={
   hold:'⚠️ Not a one-way buyback — a plain LP oscillates: it buys at the bottom, then <b>re-sells</b> those tokens if price climbs back through the range. Passive market-making, not a lock.',
@@ -287,6 +305,26 @@ function applyExit(){
   $('redistGrp').style.display = exit==='redist'?'':'none';
   $('nextRound').style.display = exit==='redist'?'':'none';
   document.querySelectorAll('#exitSeg button').forEach(b=>b.classList.toggle('on',b.dataset.x===exit));
+}
+// equal-liquidity tiling of [Pbot,Ptop] into N geometric sub-bands — sums to (U,T) exactly
+function rungLadder(U,Ptop,Pbot,N){
+  const st=Math.sqrt(Ptop), sb=Math.sqrt(Pbot), L=U/(st-sb), r=Math.pow(Pbot/Ptop,1/N);
+  const rows=[]; let hi=Ptop;
+  for(let j=0;j<N;j++){ const lo=hi*r, shi=Math.sqrt(hi), slo=Math.sqrt(lo);
+    rows.push({hi,lo,cap:L*(shi-slo),tok:L*(1/slo-1/shi),avg:Math.sqrt(hi*lo)}); hi=lo; }
+  return rows;
+}
+function renderRungs(rows,S){
+  const N=rows.length; $('rungCard').style.display = N>1?'':'none';
+  if(N<=1){$('rungBody').innerHTML='';return;}
+  $('rungCount').textContent=`· ${N} positions`;
+  const row=(o,i)=>`<tr><td>${i+1}</td><td>${S}${fmtPrice(o.hi)} → ${S}${fmtPrice(o.lo)}</td><td>${S}${fmtPrice(o.cap)}</td><td>${fmtNum(o.tok)}</td><td>${S}${fmtPrice(o.avg)}</td></tr>`;
+  let html;
+  if(N<=10){ html=rows.map(row).join(''); }
+  else { html=rows.slice(0,4).map(row).join('')
+    +`<tr><td>⋯</td><td colspan="4" style="text-align:center;color:var(--faint)">${N-5} more rungs</td></tr>`
+    +row(rows[N-1],N-1); }
+  $('rungBody').innerHTML=html;
 }
 
 // returns {U, T, Pb, extra} in current quote units, or null (after rendering a warning)
@@ -368,9 +406,19 @@ function compute(){
       child:{exit_policy:(exit2==='keep'?'burn_and_hold':'hold_as_lp'), capital:U2, avg_fill:avg2, tokens_target:T2, terminal:true}};
   }
 
+  // rung ladder (tile the [Pa,Pb] range into N staged positions)
+  const N=Math.max(1,Math.min(50,Math.round(parseFloat($('rungs').value)||1)));
+  const ladder = N>1 ? rungLadder(U,Pb,Pa,N) : null;
+  renderRungs(ladder||[{}].slice(0,0), S);
+
   const e=parseFloat($('ethusd').value);
+  const trigger = cow
+    ? {provider:"cowswap", type:"limit_sell", limit_price:Pb, sell_amount:(extra?extra.N:T), on_fill:"proceeds seed the buyback rungs"}
+    : {provider:null, type:"already_sold", note:"capital already on hand; deploy directly into the rungs"};
   const audit={
     schema:"lp-buyback.audit.v1",
+    order:trigger,
+    rungs:N,
     mode: mode==='sell'?'sell_plan':'lp_position',
     exit_policy: EXIT_LABEL[exit],
     denomination:quote,
@@ -407,12 +455,12 @@ function compute(){
 }
 function blank(){['bottom','avg','drop','liq','frac','proceeds','kept','deployed','rebought'].forEach(i=>$(i).textContent='—');
   ['bottomAux','bottomConv','avgConv','capConv','topConv','sellTopConv','proceedsConv','keptConv','deployedConv'].forEach(i=>$(i).textContent='');
-  $('expl').innerHTML='';$('audit').textContent='';}
+  $('expl').innerHTML='';$('audit').textContent='';$('rungCard').style.display='none';$('rungBody').innerHTML='';}
 
 $('copyAudit').onclick=()=>{const t=$('audit').textContent;if(t){navigator.clipboard?.writeText(t);$('copyAudit').textContent='copied';setTimeout(()=>$('copyAudit').textContent='copy',1200);}};
-['cap','tokens','top','ethusd','sellN','sellTop','keepPct','redistPct'].forEach(id=>$(id).addEventListener('input',compute));
+['cap','tokens','top','ethusd','sellN','sellTop','keepPct','redistPct','rungs'].forEach(id=>$(id).addEventListener('input',compute));
+$('cowChk').addEventListener('change',e=>{mode=e.target.checked?'sell':'pos';applyMode();compute();});
 document.querySelectorAll('#denomSeg button').forEach(b=>b.onclick=()=>{quote=b.dataset.q;applyDenom();compute();});
-document.querySelectorAll('#modeSeg button').forEach(b=>b.onclick=()=>{mode=b.dataset.m;applyMode();compute();});
 document.querySelectorAll('#exitSeg button').forEach(b=>b.onclick=()=>{exit=b.dataset.x;applyExit();compute();});
 document.querySelectorAll('#exit2Seg button').forEach(b=>b.onclick=()=>{exit2=b.dataset.x;compute();});
 document.querySelectorAll('#feeSeg button').forEach(b=>b.onclick=()=>{feeBps=parseInt(b.dataset.f,10);

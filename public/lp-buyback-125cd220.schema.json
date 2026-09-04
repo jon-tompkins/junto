@@ -15,8 +15,24 @@
     "verify_onchain": "use the EXISTING deep RATSPEAK/WETH pool (~$596k liq) — its real fee tier + tickSpacing; a different tier = a separate thin pool with a bad reference price. Confirm currency sort order (WETH first) + decimals (WETH 18, RATSPEAK 18)."
   },
 
+  "trigger": {
+    "_dir": "controller → keeper, optional front-leg",
+    "_purpose": "Front the buyback with a limit sell via a 3rd-party (CoW Swap). On fill, the sale proceeds (quote) seed the buyback rungs. If absent, the user has already sold and provides the quote capital directly.",
+    "provider": "\"cowswap\" · limit orders + solver routing (MEV-protected). Order routing/matching is NOT built in-house.",
+    "type": "\"limit_sell\" | \"already_sold\"",
+    "limit_price": "number · WETH/token — the sell limit = top of the buyback range",
+    "sell_amount": "decimal string · tokens to sell",
+    "on_fill": "how the seed happens — TBD by the CoW-capability spike: (a) CoW post-settlement Hook seeds atomically, or (b) keeper watches the fill and then mints. Pick during the spike.",
+    "_open": "verify CoW Hooks support on Base + whether a hook can seed our v4 LP atomically or we watch-fill-then-seed."
+  },
+  "rungs": {
+    "_dir": "controller → keeper",
+    "n": "int 1-50 · split the buyback range [P_bot, P_top] into N single-sided positions (equal-liquidity geometric tiling — the N caps/tokens sum EXACTLY to the single-position U and T).",
+    "per_rung": "each rung is its own ERC-721 position with its own tokenId AND its own exit_policy — they fill independently as price descends. N=1 = today's single position.",
+    "band_j": "rung j covers [p_j, p_{j-1}] with p_k = P_top·(P_bot/P_top)^(k/N); avg_j = geomean(band) = √(p_j·p_{j-1})."
+  },
   "exit_policy": {
-    "_dir": "controller → keeper, per tranche",
+    "_dir": "controller → keeper, per tranche (per RUNG when N>1)",
     "_options": {
       "hold": "leave the LP in place on full fill. WARNING: a plain single-sided LP OSCILLATES — it buys at the bottom then RE-SELLS on a bounce. Passive market-making, NOT a locked buyback.",
       "keep": "burn-on-full-fill: pull the position once it is 100% RATSPEAK and hold the tokens. This is the clean one-way buyback (fill-and-stop). DEFAULT.",
