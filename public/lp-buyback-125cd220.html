@@ -83,7 +83,7 @@
   <div class="brand">
     <div class="logo">🎯</div>
     <div><h1>Single-Sided LP Buyback Calculator</h1>
-      <div class="sub">single-sided concentrated liquidity · Uniswap V4 on Base · RATSPEAK/WETH</div></div>
+      <div class="sub">single-sided concentrated liquidity · Uniswap V4 on Base · any pair with liquidity (v1: RATSPEAK/WETH)</div></div>
   </div>
 
   <div class="cols">
@@ -99,7 +99,7 @@
         <button data-q="ETH" class="on">ETH (WETH)</button>
         <button data-q="USD">USD (USDC)</button>
       </div>
-      <div class="hint">live pool is <b>RATSPEAK/WETH</b> — ETH-denominated. Switch to USD to reason in dollars; the math is identical, only units change.</div>
+      <div class="hint">quote side follows the pool (ETH for a WETH-paired pool like the v1 <b>RATSPEAK/WETH</b>). Switch to USD to reason in dollars; the math is identical, only units change.</div>
 
       <!-- SELL-PLAN inputs -->
       <div id="grpSell">
@@ -232,7 +232,7 @@
       <code>U</code> of quote (WETH or USDC) pins the bottom:
       <div class="formula">√(P_bottom · P_top) = U / T &nbsp;⟹&nbsp; P_bottom = (U / T)² / P_top</div>
       <div style="margin-top:12px"><b style="color:var(--ink)">Intuition knob:</b> if you LP fraction <code>f</code> of the sale proceeds and want to rebuy 100% of what you sold, the bottom is simply <b style="color:var(--ink)">P_bottom = f² · P_top</b> — half the proceeds → quarter the price, 60% → 0.36×. (credit: Bob 🛸)</div>
-      <div style="margin-top:12px"><b style="color:var(--ink)">Denomination:</b> the formula is unit-free — feed it all-ETH and the bottom is in ETH; all-USD and it's in USD. The pool trades RATSPEAK/WETH, so ETH is the native/auditable unit; USD mode just relabels and cross-displays via ETH/USD. Nothing about the on-chain position changes.</div>
+      <div style="margin-top:12px"><b style="color:var(--ink)">Denomination:</b> the formula is unit-free — feed it all-ETH and the bottom is in ETH; all-USD and it's in USD. the quote side is whatever the chosen pool pairs against (WETH for RATSPEAK/WETH), so that unit is the native/auditable one; USD mode just relabels and cross-displays via ETH/USD. Nothing about the on-chain position changes.</div>
       <div style="margin-top:12px">Liquidity <code>L = U / (√P_top − √P_bottom)</code>. At spot the position is 100% quote; at the bottom it's
       100% token, having spent exactly <code>U</code> to accumulate exactly <code>T</code>. Feasible only when
       <code>T &gt; U / P_top</code> (i.e. avg fill below spot). Execution rounds bounds to the pool's tick spacing —
@@ -278,8 +278,9 @@ function convStr(v,prefixWord){
 function applyDenom(){
   $('preCap').textContent=SYM[quote];
   $('preSellTop').textContent=SYM[quote];
+  $('preTop').textContent=SYM[quote];
   $('lblCap').textContent=`${QNAME[quote]} to add to LP`;
-  $('lblTop').textContent=`Top price of range = current price (${QNAME[quote]} / token)`;
+  $('lblTop').textContent=`Top of range = current price (${QNAME[quote]} / token)`;
   $('lblSellTop').textContent=`${cow?'Limit sell price':'Current price'} (${QNAME[quote]} / token)`;
   $('rbHint').textContent=`${QNAME[quote]} converts to tokens as price walks left (down) from spot to bottom`;
   document.querySelectorAll('#denomSeg button').forEach(b=>b.classList.toggle('on',b.dataset.q===quote));
@@ -409,7 +410,7 @@ function compute(){
   // rung ladder (tile the [Pa,Pb] range into N staged positions)
   const N=Math.max(1,Math.min(50,Math.round(parseFloat($('rungs').value)||1)));
   const ladder = N>1 ? rungLadder(U,Pb,Pa,N) : null;
-  renderRungs(ladder||[{}].slice(0,0), S);
+  renderRungs(ladder||[], S);
 
   const e=parseFloat($('ethusd').value);
   const trigger = cow
