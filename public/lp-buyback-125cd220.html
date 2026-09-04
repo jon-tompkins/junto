@@ -193,7 +193,13 @@
         <div class="row"><span>New range (top → bottom)</span><span id="nrRange">—</span></div>
         <div class="row"><span>Rolled forward</span><span id="nrRoll">—</span></div>
         <div class="row"><span>Banked this round</span><span id="nrBank">—</span></div>
-        <div class="hint" id="nrNote" style="margin-top:9px">re-centers at the new price with the same range width; keeper realizes the tranche before re-seeding</div>
+        <div style="margin-top:12px"><div class="lab" style="margin-bottom:7px">Subsequent tranche · terminal (no further re-range)</div>
+          <div class="seg" id="exit2Seg">
+            <button data-x="hold">① Hold as LP</button>
+            <button data-x="keep" class="on">② Keep tokens</button>
+          </div></div>
+        <div class="row" id="nrChildRow"><span>Outcome</span><span id="nrChild">—</span></div>
+        <div class="hint" id="nrNote" style="margin-top:9px">re-centers at the new price with the same range width; keeper realizes the tranche before re-seeding. The child tranche is terminal — options ① / ② only.</div>
       </div>
     </div>
   </div>
@@ -228,6 +234,7 @@ const $=id=>document.getElementById(id);
 let quote='ETH';                                  // 'ETH' | 'USD'
 let mode='sell';                                  // 'sell' | 'pos'
 let exit='keep';                                  // 'hold' | 'keep' | 'redist'
+let exit2='keep';                                 // child (subsequent) tranche policy: 'hold' | 'keep' only
 let feeBps=10000;                                 // pool fee in pip (10000 = 1%)
 const SYM={ETH:'Ξ',USD:'$'};
 const QNAME={ETH:'WETH',USD:'USDC'};
@@ -345,11 +352,20 @@ function compute(){
     const posVal=U*f;                       // WETH-equiv of the filled tranche at the bottom (= T·Pa)
     const rolled=posVal*rr, banked=posVal*(1-rr);
     const nTop=Pa, nBot=f*f*Pa;             // re-center at fill price, same width factor f
-    nextRound={redistribute_pct:rr*100, position_value_at_fill:posVal, rolled, banked, new_top:nTop, new_bottom:nBot};
     const amt=v=>v>0?fmtPrice(v):'0';
     $('nrRange').textContent=`${S}${fmtPrice(nTop)} → ${S}${fmtPrice(nBot)}`;
     $('nrRoll').textContent=`${(rr*100).toFixed(1)}%  (${S}${amt(rolled)})`;
     $('nrBank').textContent=`${((1-rr)*100).toFixed(1)}%  (${S}${amt(banked)})`;
+    // child (terminal) tranche: deploy the rolled WETH into [nBot, nTop], same width f — options ①/② only
+    const U2=rolled, avg2=f*nTop, T2=avg2>0?U2/avg2:0;
+    document.querySelectorAll('#exit2Seg button').forEach(b=>b.classList.toggle('on',b.dataset.x===exit2));
+    $('nrChild').textContent = rolled<=0
+      ? 'nothing rolled — no child tranche'
+      : (exit2==='keep'
+          ? `rebuys ${fmtNum(T2)} tokens at avg ${S}${fmtPrice(avg2)}, then holds`
+          : `LP in range — oscillates (buys ${fmtNum(T2)}, may re-sell on a bounce)`);
+    nextRound={redistribute_pct:rr*100, position_value_at_fill:posVal, rolled, banked, new_top:nTop, new_bottom:nBot,
+      child:{exit_policy:(exit2==='keep'?'burn_and_hold':'hold_as_lp'), capital:U2, avg_fill:avg2, tokens_target:T2, terminal:true}};
   }
 
   const e=parseFloat($('ethusd').value);
@@ -398,6 +414,7 @@ $('copyAudit').onclick=()=>{const t=$('audit').textContent;if(t){navigator.clipb
 document.querySelectorAll('#denomSeg button').forEach(b=>b.onclick=()=>{quote=b.dataset.q;applyDenom();compute();});
 document.querySelectorAll('#modeSeg button').forEach(b=>b.onclick=()=>{mode=b.dataset.m;applyMode();compute();});
 document.querySelectorAll('#exitSeg button').forEach(b=>b.onclick=()=>{exit=b.dataset.x;applyExit();compute();});
+document.querySelectorAll('#exit2Seg button').forEach(b=>b.onclick=()=>{exit2=b.dataset.x;compute();});
 document.querySelectorAll('#feeSeg button').forEach(b=>b.onclick=()=>{feeBps=parseInt(b.dataset.f,10);
   document.querySelectorAll('#feeSeg button').forEach(x=>x.classList.toggle('on',x===b));compute();});
 document.querySelectorAll('.presets button').forEach(bn=>bn.onclick=()=>{
