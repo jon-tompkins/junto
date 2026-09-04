@@ -1,35 +1,54 @@
 {
   "schema": "lp-buyback.v2-univ4",
-  "purpose": "Minimal, auditable contract between Benji's controller and Bob's keeper for the single-sided LP buyback on Uniswap V4 (Base). One position, three actions. Active laddering is a deferred separate module — NOT here, to keep v1 small.",
+  "revision": "2026-09-04 — RATSPEAK/WETH venue + per-tranche exit-policy tree",
+  "purpose": "Minimal, auditable contract between Benji's controller and Bob's keeper for the single-sided LP buyback on Uniswap V4 (Base). One parent tranche, three on-chain actions (mint/burn/collect) + one realize (swap) for redistribute. Per-tranche EXIT POLICY decides what happens on full fill; redistribute spawns exactly ONE terminal child (one re-range hop max).",
   "venue": "Uniswap V4 on Base — singleton PoolManager + v4-periphery PositionManager (ERC-721 position). Pool = PoolKey{currency0, currency1, fee, tickSpacing, hooks}. v1 pins hooks = 0x0000…0000 (NO-HOOK pool) so there is zero hook bytecode in the audit surface. Concentrated-liquidity tick math is identical to V3 — the buyback formula is unchanged.",
-  "amounts": "All token/USDC quantities are DECIMAL STRINGS in human units (e.g. \"5000\", \"1000000\") — 18-dec supplies are not float-safe. Prices (P_top/P_bot/spot) are numbers for display; ticks are authoritative for on-chain math.",
+  "denomination": "WETH-native. The pool is RATSPEAK/WETH so the QUOTE side is WETH (18-dec). All capital/proceeds amounts are WETH; all prices are WETH-per-RATSPEAK. USD is display-only in the calculator (converted via an ETH/USD price) and NEVER appears in intents/fills.",
+  "amounts": "All token/WETH quantities are DECIMAL STRINGS in human units (e.g. \"0.005\", \"1000000000\") — 18-dec supplies are not float-safe. Prices (P_top/P_bot/spot) are numbers for display; ticks are authoritative for on-chain math.",
 
   "target_v1": {
-    "pair": "USDC / RATSPEAK on Uniswap V4 (Base)",
-    "ratspeak": "0xf1e9Baa65d418A9025e1851DD2D37f1AD208bba3",
-    "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    "poolkey": { "currency0": "USDC (0x83… sorts first)", "currency1": "RATSPEAK (0xf1…)", "fee": 10000, "fee_pct": "1%", "tickSpacing": 200, "hooks": "0x0000000000000000000000000000000000000000" },
-    "verify_onchain": "pool exists + is RATSPEAK's real price-discovery venue (single-sided buyback only fills against real sell flow); exact tickSpacing for the 1% pool; currency sort order + decimals (USDC 6, RATSPEAK ?)."
+    "pair": "RATSPEAK / WETH on Uniswap V4 (Base)",
+    "ratspeak": "0xf1e9Baa65d418A9025e1851DD2D37f1AD208bba3  (PREFIX ONLY — CONFIRM full address before any live tx)",
+    "weth": "0x4200000000000000000000000000000000000006",
+    "poolkey": { "currency0": "WETH (0x42… sorts first)", "currency1": "RATSPEAK (0xf1…)", "fee": "CONFIRM — inherit the deep ~$596k pool's actual tier (1% = 10000 or 2% = 20000)", "tickSpacing": "CONFIRM on-chain (paired with the real fee tier)", "hooks": "0x0000000000000000000000000000000000000000" },
+    "blockers": ["full RATSPEAK address", "real pool fee tier + tickSpacing", "isolated signer + funding"],
+    "verify_onchain": "use the EXISTING deep RATSPEAK/WETH pool (~$596k liq) — its real fee tier + tickSpacing; a different tier = a separate thin pool with a bad reference price. Confirm currency sort order (WETH first) + decimals (WETH 18, RATSPEAK 18)."
+  },
+
+  "exit_policy": {
+    "_dir": "controller → keeper, per tranche",
+    "_options": {
+      "hold": "leave the LP in place on full fill. WARNING: a plain single-sided LP OSCILLATES — it buys at the bottom then RE-SELLS on a bounce. Passive market-making, NOT a locked buyback.",
+      "keep": "burn-on-full-fill: pull the position once it is 100% RATSPEAK and hold the tokens. This is the clean one-way buyback (fill-and-stop). DEFAULT.",
+      "redistribute": "on full fill: burn → realize (swap tokens→WETH) → re-mint ONE child tranche re-centered at the fill price with the same width factor f. See `redistribute`."
+    },
+    "redistribute": {
+      "_when": "exit_policy = redistribute only",
+      "roll_pct": "number 0-100 — % of the realized tranche value (WETH) rolled into the child; the rest is BANKED as WETH.",
+      "child_exit_policy": "\"hold\" | \"keep\" — TERMINAL. The child CANNOT redistribute again (one re-range hop max). child.new_top = parent fill price; child.new_bot = f^2 * child.new_top."
+    }
   },
 
   "intent": {
     "_dir": "controller → keeper",
     "id": "string · idempotency key — keeper dedupes; retries never double-execute",
-    "action": "\"mint\" | \"burn\" | \"collect\"  (keeper encodes these as v4 PositionManager actions: MINT_POSITION / BURN_POSITION / DECREASE+TAKE for fee collect, inside the unlock callback)",
+    "action": "\"mint\" | \"burn\" | \"collect\" | \"realize\"  (keeper encodes mint/burn/collect as v4 PositionManager actions inside the unlock callback; `realize` = swap the filled tranche's RATSPEAK→WETH, only used by redistribute before the child mint)",
+    "exit_policy": "\"hold\" | \"keep\" | \"redistribute\" · attached to a mint — tells the keeper what to do when THIS position fully fills",
+    "redistribute": "object · present iff exit_policy = redistribute → { roll_pct, child_exit_policy }",
     "pool": {
       "position_manager": "string · v4-periphery PositionManager address (Base)",
       "poolkey": {
-        "currency0": "string · lower-sorted token address (address(0) = native ETH)",
-        "currency1": "string",
-        "fee": "int · e.g. 500 | 3000 | 10000 (LP fee, or dynamic-fee flag)",
-        "tickSpacing": "int · EXPLICIT in v4 (not derived from fee)",
+        "currency0": "string · lower-sorted token address = WETH 0x4200…0006 (address(0) if native ETH is used instead)",
+        "currency1": "string · RATSPEAK",
+        "fee": "int · inherit the real pool's tier (10000 = 1% | 20000 = 2%)",
+        "tickSpacing": "int · EXPLICIT in v4 (paired with the real fee tier)",
         "hooks": "string · 0x0000000000000000000000000000000000000000 for v1 (no hook)"
       }
     },
-    "P_top": "number · upper bound = current spot, USDC/token (mint only)",
-    "P_bot": "number · lower bound, USDC/token (mint only)",
-    "usdc": "decimal string · USDC to deposit (mint only)",
-    "position_id": "string · ERC-721 tokenId (burn/collect)",
+    "P_top": "number · upper bound = current spot, WETH/token (mint only)",
+    "P_bot": "number · lower bound, WETH/token (mint only)",
+    "weth": "decimal string · WETH to deposit (mint only)",
+    "position_id": "string · ERC-721 tokenId (burn/collect/realize)",
     "max_slippage_bps": "int",
     "deadline": "unix seconds"
   },
@@ -38,26 +57,33 @@
     "_dir": "keeper → controller",
     "mode": "\"LIVE\" | \"SIMULATED\" · controller books LIVE only; SIMULATED is a dry-run for wiring/tests",
     "id": "string · echoes the intent id",
-    "action": "\"mint\" | \"burn\" | \"collect\"",
-    "status": "\"minted\" | \"converting\" | \"filled\" | \"burned\" | \"collected\" | \"failed\"",
+    "action": "\"mint\" | \"burn\" | \"collect\" | \"realize\"",
+    "status": "\"minted\" | \"converting\" | \"filled\" | \"burned\" | \"collected\" | \"realized\" | \"rerolled\" | \"held\" | \"failed\"",
+    "exit_policy": "\"hold\" | \"keep\" | \"redistribute\" · echoes which policy is executing",
     "position_id": "string · ERC-721 tokenId (null when SIMULATED)",
+    "child_position_id": "string · tokenId of the child tranche (rerolled only)",
     "tick_lower": "int", "tick_upper": "int",
     "realized_P_bot": "number", "realized_P_top": "number",
-    "usdc_in": "decimal string", "usdc_out": "decimal string",
+    "weth_in": "decimal string", "weth_out": "decimal string",
     "token_in": "decimal string", "token_out": "decimal string",
-    "fees_usd": "number", "gas_usd": "number",
+    "rolled_weth": "decimal string · WETH re-deployed into the child (rerolled only)",
+    "banked_weth": "decimal string · WETH kept out (rerolled only)",
+    "fees_weth": "number", "gas_weth": "number",
     "fill_pct": "0-100", "spot": "number", "tx": "string", "ts": "unix seconds",
     "error": "string · when failed"
   },
 
+  "state_graph": "PLANNED → OPEN(minted) → CONVERTING → FILLED(100% RATSPEAK) → { keep: HELD | hold: LP(oscillating) | redistribute: REALIZED → REROLLED → child FILLED → { keep: HELD | hold: LP } }. Terminal states: HELD, LP. The child never re-enters REROLLED (one hop).",
+
   "conventions": [
-    "PRICE ORIENTATION (critical): ALL prices in intents, fill_reports, and audit blocks are USDC-per-RATSPEAK (human 'USDC/token', e.g. 0.01), regardless of on-chain currency0/1 sort. With USDC as currency0 the raw pool price is RATSPEAK-per-USDC (inverted) and the buyback is a range ABOVE the pool tick — the keeper handles that inversion and reports realized_P_top/P_bot back in USDC-per-token so the controller's geomean/avg-fill math stays correct. Never mix pool-orientation and human-orientation prices.",
-    "POOL INIT: a USDC/RATSPEAK 1% V4 pool likely doesn't exist yet → keeper calls PoolManager.initialize(poolKey, sqrtPriceX96) seeded at live market (read on-chain from RATSPEAK's deepest existing pool) before the first mint; a wrong seed price gifts an arb. Consequence: the fresh pool fills the buyback via cross-pool arbitrage from RATSPEAK's main venue, not direct flow — viable but thinner; confirm size makes that worthwhile.",
-    "Single-sided mint: deposit USDC only, range entirely below spot in USDC/token terms (P_top = spot). At the bottom it's 100% RATSPEAK = buyback done.",
-    "in/out are wallet-perspective: usdc_in spent, token_out received. PnL reconstructed purely from fill_reports with integer/decimal math.",
-    "Controller trusts realized_P_bot/P_top from the keeper (v4 sorts currencies + resolves 6-vs-18 decimals on-chain, reports back in USDC/token orientation) — does not recompute price from raw ticks. Realized bounds are WIDER than clean bounds by the tickSpacing snap (200 for the 1% pool) — e.g. 5k USDC recovers ~1.009M RATSPEAK vs a 1.000M clean target, avg 0.004955 vs 0.005. Expected, not a bug.",
+    "PRICE ORIENTATION (critical): ALL prices in intents, fill_reports, and audit blocks are WETH-per-RATSPEAK (human 'WETH/token', e.g. 0.00000001), regardless of on-chain currency0/1 sort. With WETH as currency0 the raw pool price is RATSPEAK-per-WETH (inverted) and the buyback is a range ABOVE the pool tick — the keeper handles that inversion and reports realized_P_top/P_bot back in WETH-per-token so the controller's geomean/avg-fill math stays correct. Never mix pool-orientation and human-orientation prices.",
+    "USE THE EXISTING DEEP POOL: mint into the real ~$596k RATSPEAK/WETH pool at its actual fee tier. Do NOT initialize a fresh 1%/2% pool — that fragments liquidity into a thin venue with a bad reference price. Fee tier is configurable for productization, but round one INHERITS the live pool's tier.",
+    "Single-sided mint: deposit WETH only, range entirely below spot in WETH/token terms (P_top = spot). At the bottom it's 100% RATSPEAK = buyback filled.",
+    "REDISTRIBUTE needs a REALIZE step: after a fill the tranche is 100% RATSPEAK, not WETH. To re-range you must first swap RATSPEAK→WETH (`realize`), then mint the child with rolled_weth. This is the ONE keeper primitive beyond v1's mint/burn/collect. banked_weth = realized − rolled.",
+    "in/out are wallet-perspective: weth_in spent, token_out received. PnL reconstructed purely from fill_reports with integer/decimal math.",
+    "Controller trusts realized_P_bot/P_top from the keeper (v4 sorts currencies + resolves decimals on-chain, reports back in WETH/token orientation) — does not recompute price from raw ticks. Realized bounds are WIDER than clean bounds by the tickSpacing snap. Expected, not a bug.",
     "Controller holds NO keys — keeper owns a dedicated isolated signer. v4 approvals go through Permit2 (keeper-internal). Flash-accounting settle/take handled inside the keeper's unlock callback.",
-    "No emissions (Uni V4, no gauge): realized PnL = matched spread + LP fees − gas. No reward line.",
-    "No rerange / roll / hooks in v1. If active laddering is added later, it reuses these same three actions in a loop; this contract does not change."
+    "No emissions (Uni V4, no gauge): realized PnL = matched spread + LP fees − gas, all in WETH. Optional USD view = PnL_weth × ETH/USD (display only).",
+    "One re-range hop MAX in v1.5: exit_policy=redistribute yields a child whose policy ∈ {hold, keep} only. Deeper ladders are a later multi-tranche module and would extend — not change — this contract."
   ]
 }
