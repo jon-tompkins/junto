@@ -36,6 +36,12 @@
   .seg{display:inline-flex;background:#0b1224;border:1px solid var(--line2);border-radius:10px;padding:3px;gap:3px}
   .seg button{background:transparent;border:0;color:var(--dim);font:700 12.5px var(--sans);padding:8px 16px;border-radius:8px;cursor:pointer;transition:.15s}
   .seg button.on{background:linear-gradient(135deg,#123049,#1a1f3f);color:var(--ink);box-shadow:0 0 0 1px var(--line2)}
+  .seg.col{display:flex;flex-direction:column;align-items:stretch}
+  .seg.col button{text-align:left}
+  .nextbox{background:#0b1a14;border:1px solid #1d4736;border-radius:12px;padding:14px 16px;margin-top:16px}
+  .nextbox .lab{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--gr);font-weight:700}
+  .nextbox .row{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:13px;margin-top:8px;color:var(--ink)}
+  .nextbox .row span:first-child{color:var(--dim)}
   .out-hero{background:linear-gradient(135deg,#0c1c2e,#0e1424);border:1px solid #2b3f66;border-radius:14px;padding:18px 20px;margin-bottom:14px}
   .out-hero .lab{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--cy);font-weight:700}
   .out-hero .big{font-size:34px;font-weight:700;font-family:var(--mono);margin-top:6px;color:#fff;word-break:break-all}
@@ -121,6 +127,19 @@
         <div class="hint">spot sits at the top; the range extends downward <span id="topConv" style="color:var(--gr)"></span></div>
       </div>
 
+      <label>When price passes through the range <span style="color:var(--faint)">— per-tranche exit policy</span></label>
+      <div class="seg col" id="exitSeg">
+        <button data-x="hold">① Nothing — leave it as LP</button>
+        <button data-x="keep" class="on">② Pull &amp; keep the tokens (one-way buyback)</button>
+        <button data-x="redist">③ Pull &amp; redistribute (re-range)</button>
+      </div>
+      <div class="hint" id="exitHint"></div>
+      <div id="redistGrp" style="display:none">
+        <label>Redistribute into next round <span style="color:var(--faint)">— % of the tranche rolled forward</span></label>
+        <div class="ig"><span class="pre">%</span><input id="redistPct" type="number" value="100" min="0" max="100" step="any"></div>
+        <div class="hint">the rest is banked; range width (f) carries into the next round at the new price</div>
+      </div>
+
       <label>Pool fee tier <span style="color:var(--faint)">— configurable per pool</span></label>
       <div class="seg" id="feeSeg">
         <button data-f="10000" class="on">1%</button>
@@ -169,6 +188,13 @@
         <div class="hint" id="rbHint" style="margin-top:7px">WETH converts to tokens as price walks left (down) from spot to bottom</div>
       </div>
       <div class="expl" id="expl"></div>
+      <div class="nextbox" id="nextRound" style="display:none">
+        <div class="lab">Next round · after one redistribute</div>
+        <div class="row"><span>New range (top → bottom)</span><span id="nrRange">—</span></div>
+        <div class="row"><span>Rolled forward</span><span id="nrRoll">—</span></div>
+        <div class="row"><span>Banked this round</span><span id="nrBank">—</span></div>
+        <div class="hint" id="nrNote" style="margin-top:9px">re-centers at the new price with the same range width; keeper realizes the tranche before re-seeding</div>
+      </div>
     </div>
   </div>
 
@@ -201,6 +227,7 @@
 const $=id=>document.getElementById(id);
 let quote='ETH';                                  // 'ETH' | 'USD'
 let mode='sell';                                  // 'sell' | 'pos'
+let exit='keep';                                  // 'hold' | 'keep' | 'redist'
 let feeBps=10000;                                 // pool fee in pip (10000 = 1%)
 const SYM={ETH:'Ξ',USD:'$'};
 const QNAME={ETH:'WETH',USD:'USDC'};
@@ -242,6 +269,17 @@ function applyMode(){
     ? '“I’m selling N tokens, keeping X% as cash” — the rest funds the buyback.'
     : 'Raw position view: set the LP capital + tokens to accumulate directly.';
   document.querySelectorAll('#modeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.m===mode));
+}
+const EXIT_HINT={
+  hold:'⚠️ Not a one-way buyback — a plain LP oscillates: it buys at the bottom, then <b>re-sells</b> those tokens if price climbs back through the range. Passive market-making, not a lock.',
+  keep:'Burn-on-full-fill: once the position is 100% tokens, pull it and hold. This is the clean one-way buyback (fill-and-stop).',
+  redist:'On full fill, pull and re-range at the new price to keep laddering. Use the slider to set how much of the tranche rolls into the next round vs. gets banked.'
+};
+function applyExit(){
+  $('exitHint').innerHTML=EXIT_HINT[exit];
+  $('redistGrp').style.display = exit==='redist'?'':'none';
+  $('nextRound').style.display = exit==='redist'?'':'none';
+  document.querySelectorAll('#exitSeg button').forEach(b=>b.classList.toggle('on',b.dataset.x===exit));
 }
 
 // returns {U, T, Pb, extra} in current quote units, or null (after rendering a warning)
@@ -299,10 +337,26 @@ function compute(){
   $('rbBot').textContent='bottom '+S+fmtPrice(Pa);
   $('rbTop').textContent='spot ● '+S+fmtPrice(Pb);
 
+  // ── exit policy: next-round preview (redistribute) ──
+  const EXIT_LABEL={hold:'hold_as_lp',keep:'burn_and_hold',redist:'pull_and_redistribute'};
+  let nextRound=null;
+  if(exit==='redist'){
+    const rr=Math.min(1,Math.max(0,(parseFloat($('redistPct').value)||0)/100));
+    const posVal=U*f;                       // WETH-equiv of the filled tranche at the bottom (= T·Pa)
+    const rolled=posVal*rr, banked=posVal*(1-rr);
+    const nTop=Pa, nBot=f*f*Pa;             // re-center at fill price, same width factor f
+    nextRound={redistribute_pct:rr*100, position_value_at_fill:posVal, rolled, banked, new_top:nTop, new_bottom:nBot};
+    const amt=v=>v>0?fmtPrice(v):'0';
+    $('nrRange').textContent=`${S}${fmtPrice(nTop)} → ${S}${fmtPrice(nBot)}`;
+    $('nrRoll').textContent=`${(rr*100).toFixed(1)}%  (${S}${amt(rolled)})`;
+    $('nrBank').textContent=`${((1-rr)*100).toFixed(1)}%  (${S}${amt(banked)})`;
+  }
+
   const e=parseFloat($('ethusd').value);
   const audit={
     schema:"lp-buyback.audit.v1",
     mode: mode==='sell'?'sell_plan':'lp_position',
+    exit_policy: EXIT_LABEL[exit],
     denomination:quote,
     eth_usd: (e>0? e : null),
     pool:{pair:"RATSPEAK/WETH",fee_pct:feeBps/10000,fee_pip:feeBps,tickSpacing:"set_on_chain_by_keeper"},
@@ -311,22 +365,28 @@ function compute(){
       : {capital:U,capital_unit:QNAME[quote],tokens_to_buyback:T,top_price:Pb,price_unit:`${QNAME[quote]}/token`},
     derived: Object.assign(
       {bottom_price:Pa,avg_fill:avg,deploy_fraction_f:f,drawdown_pct:(1-Pa/Pb)*100,capital_deployed:U,tokens_target:T},
-      extra?{proceeds:extra.proceeds,kept_cash:extra.kept}:{}),
+      extra?{proceeds:extra.proceeds,kept_cash:extra.kept}:{},
+      nextRound?{next_round:nextRound}:{}),
     formula: mode==='sell' ? "f=1-keep; P_bot=f^2*top; deploy=f*proceeds" : "P_bot=(capital/tokens)^2/top_price",
     cross_check:"keeper's realized bottom_price (from realized ticks, in pool/ETH units) must equal derived.bottom_price when denomination=ETH",
     note:"human-price pre-flight. On-chain liquidity is a Q96 uint128 (different units) — reconcile on PRICE/TICKS, not the raw liquidity integer."
   };
   $('audit').textContent=JSON.stringify(audit,null,2);
+  const EXIT_TAIL={
+    hold:` <b style="color:var(--am)">Exit = hold as LP:</b> if price climbs back through, the position re-sells the tokens — it oscillates rather than locking the buyback.`,
+    keep:` <b style="color:var(--gr)">Exit = burn &amp; keep:</b> pull on full fill and hold the tokens — the buyback is locked.`,
+    redist:` <b style="color:var(--cy)">Exit = redistribute:</b> pull on full fill and re-range at ${S}${fmtPrice(Pa)} (see next round).`
+  };
   if(extra){
     $('expl').innerHTML=`Sell <b>${fmtNum(extra.N)}</b> tokens at ${S}${fmtPrice(Pb)} → <b>${S}${fmtPrice(extra.proceeds)}</b> proceeds. `+
       `Keep <b>${extra.keep}%</b> (${S}${fmtPrice(extra.kept)}) as cash; deploy the other ${(f*100).toFixed(1)}% (${S}${fmtPrice(U)}) as single-sided LP in `+
       `<code>[${S}${fmtPrice(Pa)}, ${S}${fmtPrice(Pb)}]</code>. If price round-trips to the bottom you rebuy <b>all ${fmtNum(extra.N)} tokens</b> at avg ${S}${fmtPrice(avg)} `+
-      `(${((1-avg/Pb)*100).toFixed(1)}% below) — ending flat on tokens <b>and</b> keeping the ${extra.keep}% as locked profit.`;
+      `(${((1-avg/Pb)*100).toFixed(1)}% below) — ending flat on tokens <b>and</b> keeping the ${extra.keep}% as locked profit.`+EXIT_TAIL[exit];
   } else {
     $('expl').innerHTML=`Seed <b>${fmtNum(U)} ${QNAME[quote]}</b> as single-sided liquidity in <code>[${S}${fmtPrice(Pa)}, ${S}${fmtPrice(Pb)}]</code>. `+
       `You sold ~${fmtNum(T)} tokens near ${S}${fmtPrice(Pb)}; this position rebuys all ${fmtNum(T)} at an average of `+
       `<b>${S}${fmtPrice(avg)}</b> (${((1-avg/Pb)*100).toFixed(1)}% below spot) if price round-trips to the bottom — `+
-      `pocketing the spread and ending flat on tokens.`;
+      `pocketing the spread and ending flat on tokens.`+EXIT_TAIL[exit];
   }
 }
 function blank(){['bottom','avg','drop','liq','frac','proceeds','kept','deployed','rebought'].forEach(i=>$(i).textContent='—');
@@ -334,9 +394,10 @@ function blank(){['bottom','avg','drop','liq','frac','proceeds','kept','deployed
   $('expl').innerHTML='';$('audit').textContent='';}
 
 $('copyAudit').onclick=()=>{const t=$('audit').textContent;if(t){navigator.clipboard?.writeText(t);$('copyAudit').textContent='copied';setTimeout(()=>$('copyAudit').textContent='copy',1200);}};
-['cap','tokens','top','ethusd','sellN','sellTop','keepPct'].forEach(id=>$(id).addEventListener('input',compute));
+['cap','tokens','top','ethusd','sellN','sellTop','keepPct','redistPct'].forEach(id=>$(id).addEventListener('input',compute));
 document.querySelectorAll('#denomSeg button').forEach(b=>b.onclick=()=>{quote=b.dataset.q;applyDenom();compute();});
 document.querySelectorAll('#modeSeg button').forEach(b=>b.onclick=()=>{mode=b.dataset.m;applyMode();compute();});
+document.querySelectorAll('#exitSeg button').forEach(b=>b.onclick=()=>{exit=b.dataset.x;applyExit();compute();});
 document.querySelectorAll('#feeSeg button').forEach(b=>b.onclick=()=>{feeBps=parseInt(b.dataset.f,10);
   document.querySelectorAll('#feeSeg button').forEach(x=>x.classList.toggle('on',x===b));compute();});
 document.querySelectorAll('.presets button').forEach(bn=>bn.onclick=()=>{
@@ -345,7 +406,7 @@ document.querySelectorAll('.presets button').forEach(bn=>bn.onclick=()=>{
   else{$('cap').value=bn.dataset.u;$('tokens').value=bn.dataset.t;$('top').value=bn.dataset.p;}
   compute();});
 
-applyMode();applyDenom();compute();
+applyMode();applyExit();applyDenom();compute();
 </script>
 </body>
 </html>
