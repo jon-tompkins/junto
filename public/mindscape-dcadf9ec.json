@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1788559202,
+  "generated_at": 1788616802,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 9334258,
+        "uptime_sec": 9391858,
         "load": [
           0,
-          0.01,
+          0,
           0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 17094545408,
-          "pct": 72
+          "used": 17725841408,
+          "pct": 74
         },
         "mem": {
           "total": 4020396032,
-          "used": 1378922496,
+          "used": 1372676096,
           "pct": 34
         }
       },
@@ -44,26 +44,26 @@
           "reference": 20,
           "user": 2
         },
-        "hot_count": 55,
-        "cold_count": 11,
+        "hot_count": 54,
+        "cold_count": 12,
         "items": [
-          {
-            "name": "project_lp_buyback",
-            "type": "project",
-            "mtime": 1788542387,
-            "desc": "DeFi single-sided LP buyback system on Base — sell a token but stretch half the proceeds into single-sided concentrated LP that rebuys all s"
-          },
           {
             "name": "project_ailmanack",
             "type": "project",
-            "mtime": 1787824909,
+            "mtime": 1788576945,
             "desc": "Personal Hedge Fund — AI equity research platform with three-agent pipeline (Jeb/Ant/Pete) and report library"
           },
           {
             "name": "reference_yahoo_crumb",
             "type": "reference",
-            "mtime": 1787824888,
+            "mtime": 1788576937,
             "desc": "Yahoo Finance is fully blocked from this host (Aug 2026); use api.nasdaq.com as replacement"
+          },
+          {
+            "name": "project_lp_buyback",
+            "type": "project",
+            "mtime": 1788542387,
+            "desc": "DeFi single-sided LP buyback system on Base — sell a token but stretch half the proceeds into single-sided concentrated LP that rebuys all s"
           },
           {
             "name": "reference_myjunto_session_cookie_expired",
@@ -529,7 +529,7 @@
           {
             "title": "Project: Ailmanack",
             "file": "project_ailmanack",
-            "hook": "Personal Hedge Fund, AI equity research platform (Jeb/Ant/Pete agents + Haiku synthesis); URGENT: Scout Step 2 Yahoo→Nasdaq patch pending Jon go-ahead"
+            "hook": "Personal Hedge Fund, AI equity research platform (Jeb/Ant/Pete agents + Haiku synthesis); Scout patch shipped Sep 5 (Yahoo→Nasdaq fallback, idempotent billing, stale-processing recovery, .gitignore)"
           },
           {
             "title": "Project: 50kfeet",
@@ -685,11 +685,6 @@
             "title": "Junto source starring + portfolio view + Best Trades",
             "file": "project_junto_source_portfolio",
             "hook": "star→featured junto; portfolio tab; /trades page (Jul 17, 821fcb1) — filterable position browser w/ /api/prices/batch (conc-16, 4s timeout); Feature 3 (portfolio-style mandate) held for Jon"
-          },
-          {
-            "title": "Junto entry-price fix",
-            "file": "project_junto_entry_price_fix",
-            "hook": "next-session OPEN via Yahoo daily bars; chunked/resumable backfill (DRY-RUN default); build agent a488f6cf relaunched Jul-20, outcome pending"
           },
           {
             "title": "Outbound media workspaceOnly",
@@ -1077,7 +1072,7 @@
             {
               "source": "project_ailmanack",
               "target": "reference_yahoo_crumb",
-              "weight": 2
+              "weight": 3
             },
             {
               "source": "project_junto_entry_price_fix",
@@ -1398,10 +1393,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 108,
-          "latest": "2026-08-27",
+          "count": 109,
+          "latest": "2026-09-05",
           "days": [
-            "2026-06-25",
             "2026-06-29",
             "2026-07-01",
             "2026-07-04",
@@ -1445,7 +1439,8 @@
             "2026-08-24",
             "2026-08-25",
             "2026-08-26",
-            "2026-08-27"
+            "2026-08-27",
+            "2026-09-05"
           ]
         }
       },
@@ -1483,8 +1478,8 @@
         {
           "name": "Ailmanack",
           "file": "project_ailmanack",
-          "hook": "Personal Hedge Fund, AI equity research platform (Jeb/Ant/Pete agents + Haiku synthesis); URGENT: Scout Step 2 Yahoo→Nasdaq patch pending Jon go-ahead",
-          "status": "active"
+          "hook": "Personal Hedge Fund, AI equity research platform (Jeb/Ant/Pete agents + Haiku synthesis); Scout patch shipped Sep 5 (Yahoo→Nasdaq fallback, idempotent billing, stale-processing recovery, .gitignore)",
+          "status": "shipped"
         },
         {
           "name": "50kfeet",
@@ -1571,12 +1566,6 @@
           "status": "parked"
         },
         {
-          "name": "Junto entry-price fix",
-          "file": "project_junto_entry_price_fix",
-          "hook": "next-session OPEN via Yahoo daily bars; chunked/resumable backfill (DRY-RUN default); build agent a488f6cf relaunched Jul-20, outcome pending",
-          "status": "active"
-        },
-        {
           "name": "Mindscape",
           "file": "project_mindscape",
           "hook": "agent-mind telemetry dashboard (memory/context/vitals/projects viz) live at myjunto.xyz/mindscape-dcadf9ec.html; static on junto Vercel, gen-minds.mjs feed, Bob feed = drop .bob.json",
@@ -1589,17 +1578,38 @@
           "status": "shipped"
         }
       ],
-      "blockers": [],
+      "blockers": [
+        {
+          "title": "MYJUNTO_SESSION_COOKIE",
+          "detail": "expired Aug 24; authed steward screenshots bounce to sign-in until Jon refreshes."
+        },
+        {
+          "title": "Junto podcast/audio outage",
+          "detail": "TTS step gated on OPENAI_API_KEY on myjunto deploy (silent since Jul 24)."
+        },
+        {
+          "title": "Junto entry-price backfill `--apply`",
+          "detail": "blocked on Jon review (build agent a488f6cf, Jul-20). [cold archive]"
+        },
+        {
+          "title": "Junto slice model Phase 2",
+          "detail": "UNVALIDATED (needs live market + fresh paper keys)."
+        },
+        {
+          "title": "Junto watchlist pointer drift",
+          "detail": "structural fix pending."
+        }
+      ],
       "ops": {
         "junto_health": {
           "last_alert": 1785952802.776739,
           "redset": "",
-          "greenlight_day": "2026-09-04"
+          "greenlight_day": "2026-09-05"
         },
         "disk_health": {
           "state": "ok",
-          "pct": 71,
-          "ts": 1788508801
+          "pct": 76,
+          "ts": 1788595202
         },
         "tweet_queue": {
           "posted": 13,
@@ -1607,6 +1617,11 @@
           "total": 14
         },
         "git": [
+          {
+            "hash": "aa9b4a9",
+            "ts": 1788559202,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "1aebf38",
             "ts": 1788542372,
@@ -1675,11 +1690,6 @@
           {
             "hash": "1675712",
             "ts": 1788271201,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "6b10316",
-            "ts": 1788213602,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
