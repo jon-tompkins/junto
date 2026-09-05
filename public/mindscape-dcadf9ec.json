@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1788616802,
+  "generated_at": 1788645601,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 9391858,
+        "uptime_sec": 9420658,
         "load": [
-          0,
-          0,
-          0
+          0.15,
+          0.03,
+          0.01
         ],
         "disk": {
           "total": 23843045376,
-          "used": 17725841408,
+          "used": 17727721472,
           "pct": 74
         },
         "mem": {
           "total": 4020396032,
-          "used": 1372676096,
+          "used": 1375440896,
           "pct": 34
         }
       },
@@ -1618,6 +1618,21 @@
         },
         "git": [
           {
+            "hash": "c3ca896",
+            "ts": 1788638944,
+            "subject": "feat(lp-positions): multi-range visualization + demo + calc link"
+          },
+          {
+            "hash": "b8f912b",
+            "ts": 1788638328,
+            "subject": "feat(lp): positions view — live wallet reads + per-position buyback read-out"
+          },
+          {
+            "hash": "673658c",
+            "ts": 1788616802,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "aa9b4a9",
             "ts": 1788559202,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1675,21 +1690,6 @@
           {
             "hash": "d989f25",
             "ts": 1788386402,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "ecabad3",
-            "ts": 1788357602,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "c707ed5",
-            "ts": 1788300002,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "1675712",
-            "ts": 1788271201,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
