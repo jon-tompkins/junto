@@ -55,14 +55,21 @@
 <div class="wrap">
   <div class="brand">
     <div class="logo">📊</div>
-    <div><h1>LP Buyback — Positions</h1>
+    <div style="flex:1"><h1>LP Buyback — Positions</h1>
       <div class="sub"><span class="live"></span>single-sided buyback positions · Uniswap V4 · Base</div></div>
+    <a href="https://rattools.xyz/sell-to-lp" style="font-size:12px;font-family:var(--mono);text-decoration:none;border:1px solid var(--line2);padding:8px 12px;border-radius:9px;color:var(--dim);white-space:nowrap">＋ new buyback →</a>
   </div>
 
   <div class="addr">
     <input id="addr" spellcheck="false" placeholder="0x… wallet address">
     <button id="load">View</button>
   </div>
+
+  <div id="demoBanner" style="display:none;margin-top:14px;background:#1a1430;border:1px solid #3a2d5c;color:#c9b8ff;font-size:12px;font-family:var(--mono);padding:10px 13px;border-radius:10px">
+    demo mode — illustrative positions showing resting / converting / filled together. <a href="?address=0x6D88564892789E830c3831C7cF59c91F8C1D1F7c">← back to live</a>
+  </div>
+
+  <div id="viz"></div>
 
   <div class="card">
     <h2>Wallet</h2>
@@ -114,8 +121,9 @@ const tickToWpt=t=>1/Math.pow(1.0001,t);   // pool token1/token0 = RATSPEAK/WETH
 
 // mirror of controller positionReadout()
 function readout(p){
-  const a=tickToWpt(p.tick_lower), b=tickToWpt(p.tick_upper);
-  const top=Math.max(a,b), bot=Math.min(a,b);
+  let top,bot;
+  if(p.top_price&&p.bottom_price){ top=+p.top_price; bot=+p.bottom_price; }
+  else { const a=tickToWpt(p.tick_lower), b=tickToWpt(p.tick_upper); top=Math.max(a,b); bot=Math.min(a,b); }
   const dep=+p.weth_deployed, rem=+p.weth_remaining, tok=+p.token_acquired;
   const converted=dep-rem, fill=dep>0?converted/dep*100:0;
   const avgGeo=Math.sqrt(top*bot), tokensFull=avgGeo>0?dep/avgGeo:0;
@@ -126,9 +134,48 @@ function readout(p){
 }
 
 function usd(weth,ethUsd){ return '$'+fmt(weth*ethUsd,2); }
+function niceUsd(p,ethUsd){ const u=p*ethUsd; if(u>=1)return '$'+u.toFixed(2);
+  const d=Math.min(12,Math.max(2,Math.ceil(-Math.log10(u))+2)); return '$'+u.toFixed(d).replace(/0+$/,'').replace(/\.$/,''); }
 
-function renderPositions(addr){
-  const list=KNOWN[addr.toLowerCase()]||[];
+// illustrative multi-position set (?demo=1) — shows resting + converting + filled together
+const DEMO_SPOT=3.0e-9;
+const DEMO_POSITIONS=[
+  {tokenId:'A', top_price:4.9e-9, bottom_price:2.47e-9, weth_deployed:'0.006', weth_remaining:'0.0024', token_acquired:'900000', spot:DEMO_SPOT, exit_policy:'keep', pair:'RATSPEAK/WETH', ethUsd:2500, tx:'0x0'},
+  {tokenId:'B', top_price:6.0e-9, bottom_price:5.0e-9, weth_deployed:'0.004', weth_remaining:'0',      token_acquired:'720000', spot:DEMO_SPOT, exit_policy:'keep', pair:'RATSPEAK/WETH', ethUsd:2500, tx:'0x0'},
+  {tokenId:'C', top_price:2.4e-9, bottom_price:1.5e-9, weth_deployed:'0.005', weth_remaining:'0.005',  token_acquired:'0',      spot:DEMO_SPOT, exit_policy:'keep', pair:'RATSPEAK/WETH', ethUsd:2500, tx:'0x0'},
+];
+
+// multi-range visualization: log price axis, spot line, one band per position, colored + fill-shaded
+function renderViz(list, spot, ethUsd){
+  const host=$('viz');
+  if(!list.length){ host.innerHTML=''; return; }
+  const R=list.map(p=>readout(p));
+  const hi=Math.max(spot,...R.map(r=>r.top))*1.10, lo=Math.min(...R.map(r=>r.bot))*0.90;
+  const W=1000,H=340,xL=64,xR=980,yT=30,yB=298,plotH=yB-yT,Ln=Math.log;
+  const y=v=>yT+(Ln(hi)-Ln(v))/(Ln(hi)-Ln(lo))*plotH;
+  const n=R.length,laneW=(xR-xL)/n;
+  const COL={resting:'#ffca57',converting:'#39d3ff',filled:'#37e0a6'};
+  let g='';
+  R.forEach((r,i)=>{
+    const cx=xL+i*laneW+laneW/2, bw=Math.min(120,laneW*0.46);
+    const yt=y(r.top), yb=y(r.bot), c=COL[r.state], fh=(yb-yt)*Math.min(1,r.fill/100);
+    g+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${yt.toFixed(1)}" width="${bw.toFixed(1)}" height="${(yb-yt).toFixed(1)}" rx="6" fill="${c}18" stroke="${c}" stroke-width="1.5"/>`;
+    if(r.fill>0) g+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${yt.toFixed(1)}" width="${bw.toFixed(1)}" height="${fh.toFixed(1)}" rx="6" fill="${c}55"/>`;
+    g+=`<text x="${cx}" y="${(yt-9).toFixed(1)}" fill="#e8edf7" font-size="12.5" font-weight="700" text-anchor="middle">#${r.tokenId||list[i].tokenId}</text>`;
+    g+=`<text x="${cx}" y="${(yb+16).toFixed(1)}" fill="${c}" font-size="10.5" text-anchor="middle">${r.state} · ${r.fill.toFixed(0)}%</text>`;
+    g+=`<text x="${(cx+bw/2+5).toFixed(1)}" y="${(yt+4).toFixed(1)}" fill="#8a97b4" font-size="9.5">${niceUsd(r.top,ethUsd)}</text>`;
+    g+=`<text x="${(cx+bw/2+5).toFixed(1)}" y="${(yb+3).toFixed(1)}" fill="#586179" font-size="9.5">${niceUsd(r.bot,ethUsd)}</text>`;
+  });
+  const ys=y(spot);
+  const spotG=`<line x1="${xL}" y1="${ys.toFixed(1)}" x2="${xR}" y2="${ys.toFixed(1)}" stroke="#fff" stroke-width="1" stroke-dasharray="5 4" opacity=".65"/>`+
+    `<text x="${xL-6}" y="${(ys+3).toFixed(1)}" fill="#fff" font-size="10.5" text-anchor="end" font-weight="700">spot</text>`+
+    `<text x="${xR}" y="${(ys-6).toFixed(1)}" fill="#fff" font-size="10" text-anchor="end">${niceUsd(spot,ethUsd)}</text>`;
+  host.innerHTML=`<div class="card"><h2>Ranges vs. spot</h2>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">${spotG}${g}</svg>
+    <div class="note">Each band is a buyback position (floor → top-line). <b style="color:var(--gr)">Shaded</b> = bought back so far; hollow = still waiting. A band <b>below</b> the dashed spot line is a dormant buy wall; the spot sitting <b>inside</b> a band means it's actively converting; <b style="color:var(--gr)">fully shaded</b> = filled.</div></div>`;
+}
+
+function renderPositions(list){
   const host=$('positions');
   if(!list.length){ host.innerHTML='<div class="card"><div class="empty">No buyback positions found for this address.</div></div>'; return; }
   host.innerHTML=list.map(p=>{
@@ -181,9 +228,15 @@ async function loadWallet(addr){
 async function load(addr){
   addr=addr.trim();
   if(!/^0x[0-9a-fA-F]{40}$/.test(addr)){ $('walletNote').textContent='Enter a valid 0x… address.'; return; }
-  history.replaceState(null,'','?address='+addr);
+  const demo=qs.get('demo');
+  const list = demo ? DEMO_POSITIONS : (KNOWN[addr.toLowerCase()]||[]);
+  const spot = demo ? DEMO_SPOT : (list[0]?.spot||6.2e-9);
+  const ethUsd = list[0]?.ethUsd||2500;
+  history.replaceState(null,'',(demo?'?demo=1&':'?')+'address='+addr);
   $('addr').value=addr;
-  renderPositions(addr);
+  $('demoBanner').style.display = demo ? '' : 'none';
+  renderViz(list, spot, ethUsd);
+  renderPositions(list);
   loadWallet(addr);
 }
 
