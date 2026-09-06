@@ -49,6 +49,9 @@
   a{color:var(--cy)}
   .empty{color:var(--dim);font-size:13px;text-align:center;padding:26px}
   .live{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gr);box-shadow:0 0 8px var(--gr);margin-right:6px;vertical-align:middle}
+  .useg{display:inline-flex;background:#0b1224;border:1px solid var(--line2);border-radius:10px;padding:3px}
+  .useg button{background:transparent;border:0;color:var(--dim);font:700 12.5px var(--mono);padding:8px 14px;border-radius:8px;cursor:pointer}
+  .useg button.on{background:linear-gradient(135deg,#123049,#1a1f3f);color:var(--ink);box-shadow:0 0 0 1px var(--line2)}
 </style>
 </head>
 <body>
@@ -63,6 +66,10 @@
   <div class="addr">
     <input id="addr" spellcheck="false" placeholder="0x… wallet address">
     <button id="load">View</button>
+    <div class="useg" id="unitSeg">
+      <button data-u="usd" class="on">$</button>
+      <button data-u="weth">Ξ</button>
+    </div>
   </div>
 
   <div id="demoBanner" style="display:none;margin-top:14px;background:#1a1430;border:1px solid #3a2d5c;color:#c9b8ff;font-size:12px;font-family:var(--mono);padding:10px 13px;border-radius:10px">
@@ -97,6 +104,8 @@ const WETH='0x4200000000000000000000000000000000000006';
 const $=id=>document.getElementById(id);
 const qs=new URLSearchParams(location.search);
 const TEST_ADDR='0x6D88564892789E830c3831C7cF59c91F8C1D1F7c';
+let unit='usd';            // 'usd' | 'weth' — price/amount display toggle
+let CUR={list:[],spot:6.2e-9,ethUsd:2500};   // last-rendered state, for re-render on toggle
 
 // ---- known positions per address (until keeper exposes a discovery endpoint) ----
 // verified on-chain: tx 0xb272…8dc0, position #3011821
@@ -136,6 +145,13 @@ function readout(p){
 function usd(weth,ethUsd){ return '$'+fmt(weth*ethUsd,2); }
 function niceUsd(p,ethUsd){ const u=p*ethUsd; if(u>=1)return '$'+u.toFixed(2);
   const d=Math.min(12,Math.max(2,Math.ceil(-Math.log10(u))+2)); return '$'+u.toFixed(d).replace(/0+$/,'').replace(/\.$/,''); }
+// per-token PRICE in the active unit (+ the other unit for the secondary)
+const priceStr=(w,e)=> unit==='usd' ? niceUsd(w,e) : 'Ξ'+fmtP(w);
+const priceAlt=(w,e)=> unit==='usd' ? 'Ξ'+fmtP(w) : niceUsd(w,e);
+// WETH AMOUNT in the active unit (+ the other)
+const amtStr=(w,e)=> unit==='usd' ? '$'+fmt(w*e,2) : 'Ξ'+fmt(w);
+const amtAlt=(w,e)=> unit==='usd' ? 'Ξ'+fmt(w) : '$'+fmt(w*e,2);
+const ktok=n=>{ n=+n; return Math.abs(n)>=1e6 ? (n/1e6).toFixed(2)+'M' : Math.abs(n)>=1e3 ? (n/1e3).toFixed(0)+'k' : fmt(n,0); };
 
 // illustrative multi-position set (?demo=1) — shows resting + converting + filled together
 const DEMO_SPOT=3.0e-9;
@@ -161,15 +177,16 @@ function renderViz(list, spot, ethUsd){
     const yt=y(r.top), yb=y(r.bot), c=COL[r.state], fh=(yb-yt)*Math.min(1,r.fill/100);
     g+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${yt.toFixed(1)}" width="${bw.toFixed(1)}" height="${(yb-yt).toFixed(1)}" rx="6" fill="${c}18" stroke="${c}" stroke-width="1.5"/>`;
     if(r.fill>0) g+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${yt.toFixed(1)}" width="${bw.toFixed(1)}" height="${fh.toFixed(1)}" rx="6" fill="${c}55"/>`;
-    g+=`<text x="${cx}" y="${(yt-9).toFixed(1)}" fill="#e8edf7" font-size="12.5" font-weight="700" text-anchor="middle">#${r.tokenId||list[i].tokenId}</text>`;
+    g+=`<text x="${cx}" y="${(yt-24).toFixed(1)}" fill="#e8edf7" font-size="12.5" font-weight="700" text-anchor="middle">#${r.tokenId||list[i].tokenId}</text>`;
+    g+=`<text x="${cx}" y="${(yt-10).toFixed(1)}" fill="${c}" font-size="10" text-anchor="middle">${ktok(r.tok)} / ${ktok(r.tokensFull)} tok</text>`;
     g+=`<text x="${cx}" y="${(yb+16).toFixed(1)}" fill="${c}" font-size="10.5" text-anchor="middle">${r.state} · ${r.fill.toFixed(0)}%</text>`;
-    g+=`<text x="${(cx+bw/2+5).toFixed(1)}" y="${(yt+4).toFixed(1)}" fill="#8a97b4" font-size="9.5">${niceUsd(r.top,ethUsd)}</text>`;
-    g+=`<text x="${(cx+bw/2+5).toFixed(1)}" y="${(yb+3).toFixed(1)}" fill="#586179" font-size="9.5">${niceUsd(r.bot,ethUsd)}</text>`;
+    g+=`<text x="${(cx+bw/2+5).toFixed(1)}" y="${(yt+4).toFixed(1)}" fill="#8a97b4" font-size="9.5">${priceStr(r.top,ethUsd)}</text>`;
+    g+=`<text x="${(cx+bw/2+5).toFixed(1)}" y="${(yb+3).toFixed(1)}" fill="#586179" font-size="9.5">${priceStr(r.bot,ethUsd)}</text>`;
   });
   const ys=y(spot);
   const spotG=`<line x1="${xL}" y1="${ys.toFixed(1)}" x2="${xR}" y2="${ys.toFixed(1)}" stroke="#fff" stroke-width="1" stroke-dasharray="5 4" opacity=".65"/>`+
     `<text x="${xL-6}" y="${(ys+3).toFixed(1)}" fill="#fff" font-size="10.5" text-anchor="end" font-weight="700">spot</text>`+
-    `<text x="${xR}" y="${(ys-6).toFixed(1)}" fill="#fff" font-size="10" text-anchor="end">${niceUsd(spot,ethUsd)}</text>`;
+    `<text x="${xR}" y="${(ys-6).toFixed(1)}" fill="#fff" font-size="10" text-anchor="end">${priceStr(spot,ethUsd)}</text>`;
   host.innerHTML=`<div class="card"><h2>Ranges vs. spot</h2>
     <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">${spotG}${g}</svg>
     <div class="note">Each band is a buyback position (floor → top-line). <b style="color:var(--gr)">Shaded</b> = bought back so far; hollow = still waiting. A band <b>below</b> the dashed spot line is a dormant buy wall; the spot sitting <b>inside</b> a band means it's actively converting; <b style="color:var(--gr)">fully shaded</b> = filled.</div></div>`;
@@ -190,16 +207,16 @@ function renderPositions(list){
       <div class="bar"><div class="bar-fill" style="width:${Math.max(2,r.fill).toFixed(1)}%"></div>
         <div class="bar-lab">${r.fill.toFixed(1)}% bought back</div></div>
       <div class="kv">
-        <div class="row"><span>Rebuy starts (top)</span><b>Ξ${fmtP(r.top)} <span style="color:var(--faint)">(${usd(r.top,p.ethUsd)})</span></b></div>
-        <div class="row"><span>Floor (bottom)</span><b>Ξ${fmtP(r.bot)} <span style="color:var(--faint)">(${usd(r.bot,p.ethUsd)})</span></b></div>
+        <div class="row"><span>Rebuy starts (top)</span><b>${priceStr(r.top,p.ethUsd)} <span style="color:var(--faint)">(${priceAlt(r.top,p.ethUsd)})</span></b></div>
+        <div class="row"><span>Floor (bottom)</span><b>${priceStr(r.bot,p.ethUsd)} <span style="color:var(--faint)">(${priceAlt(r.bot,p.ethUsd)})</span></b></div>
         <div class="row"><span>Starts vs spot</span><b>${r.topVsSpot.toFixed(1)}% ${r.topVsSpot<0?'below':'above'}</b></div>
         <div class="row"><span>Exit policy</span><b>${p.exit_policy}</b></div>
-        <div class="row"><span>WETH deployed</span><b>Ξ${fmt(r.dep)} <span style="color:var(--faint)">(${usd(r.dep,p.ethUsd)})</span></b></div>
-        <div class="row"><span>Tokens acquired</span><b>${fmt(r.tok,0)}</b></div>
+        <div class="row"><span>Deployed</span><b>${amtStr(r.dep,p.ethUsd)} <span style="color:var(--faint)">(${amtAlt(r.dep,p.ethUsd)})</span></b></div>
+        <div class="row"><span>Tokens acquired</span><b style="color:${r.tok>0?'var(--gr)':'var(--ink)'}">${fmt(r.tok,0)}</b></div>
         <div class="row"><span>Tokens at full fill</span><b>~${fmt(Math.round(r.tokensFull),0)}</b></div>
-        <div class="row"><span>Burn-now value</span><b>Ξ${fmt(r.mtm)} <span style="color:var(--faint)">(${usd(r.mtm,p.ethUsd)})</span></b></div>
-        <div class="row"><span>Unrealized PnL</span><b style="color:${r.pnl>=0?'var(--gr)':'var(--rd)'}">${r.pnl>=0?'+':''}Ξ${fmt(r.pnl)}</b></div>
-        <div class="row"><span>Recoverable</span><b>burn anytime → Ξ${fmt(r.mtm)}</b></div>
+        <div class="row"><span>Burn-now value</span><b>${amtStr(r.mtm,p.ethUsd)} <span style="color:var(--faint)">(${amtAlt(r.mtm,p.ethUsd)})</span></b></div>
+        <div class="row"><span>Unrealized PnL</span><b style="color:${r.pnl>=0?'var(--gr)':'var(--rd)'}">${r.pnl>=0?'+':''}${amtStr(r.pnl,p.ethUsd)}</b></div>
+        <div class="row"><span>Recoverable</span><b>burn anytime → ${amtStr(r.mtm,p.ethUsd)}</b></div>
       </div>
       <div class="note">Single-sided WETH position resting entirely below spot — it converts WETH→tokens only if price dips into
         <code>[Ξ${fmtP(r.bot)}, Ξ${fmtP(r.top)}]</code>. Mint tx: <a href="https://basescan.org/tx/${p.tx}" target="_blank">${p.tx.slice(0,10)}…${p.tx.slice(-6)}</a>
@@ -235,13 +252,16 @@ async function load(addr){
   history.replaceState(null,'',(demo?'?demo=1&':'?')+'address='+addr);
   $('addr').value=addr;
   $('demoBanner').style.display = demo ? '' : 'none';
-  renderViz(list, spot, ethUsd);
-  renderPositions(list);
+  CUR={list,spot,ethUsd};
+  rerender();
   loadWallet(addr);
 }
+function rerender(){ renderViz(CUR.list,CUR.spot,CUR.ethUsd); renderPositions(CUR.list); }
 
 $('load').onclick=()=>load($('addr').value);
 $('addr').addEventListener('keydown',e=>{if(e.key==='Enter')load($('addr').value);});
+document.querySelectorAll('#unitSeg button').forEach(b=>b.onclick=()=>{
+  unit=b.dataset.u; document.querySelectorAll('#unitSeg button').forEach(x=>x.classList.toggle('on',x===b)); rerender();});
 load(qs.get('address')||TEST_ADDR);
 </script>
 </body>
