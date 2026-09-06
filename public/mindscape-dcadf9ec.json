@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1788703202,
+  "generated_at": 1788732001,
   "generator": "benji",
   "agents": [
     {
@@ -19,7 +19,7 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 9478258,
+        "uptime_sec": 9507058,
         "load": [
           0,
           0,
@@ -27,12 +27,12 @@
         ],
         "disk": {
           "total": 23843045376,
-          "used": 17725116416,
+          "used": 17726181376,
           "pct": 74
         },
         "mem": {
           "total": 4020396032,
-          "used": 1386975232,
+          "used": 1376251904,
           "pct": 34
         }
       },
@@ -1618,6 +1618,21 @@
         },
         "git": [
           {
+            "hash": "d744c64",
+            "ts": 1788704712,
+            "subject": "chore(lp): retire myjunto positions page -> redirect to rattools canonical"
+          },
+          {
+            "hash": "edb41e6",
+            "ts": 1788704440,
+            "subject": "feat(lp-positions): tokens-acquired per band + $/pair currency toggle"
+          },
+          {
+            "hash": "332800a",
+            "ts": 1788703202,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "a66adf5",
             "ts": 1788645602,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1676,21 +1691,6 @@
             "hash": "9c0c661",
             "ts": 1788526093,
             "subject": "feat(lp-calc): subsequent tranche is terminal (options 1/2 only)"
-          },
-          {
-            "hash": "099f022",
-            "ts": 1788525974,
-            "subject": "feat(lp-calc): per-tranche exit policy (hold / burn-and-keep / redistribute)"
-          },
-          {
-            "hash": "98546ee",
-            "ts": 1788472802,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "0e392cb",
-            "ts": 1788444002,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
       },
