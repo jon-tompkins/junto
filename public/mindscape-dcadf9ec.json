@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1788789601,
+  "generated_at": 1788818402,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 9564658,
+        "uptime_sec": 9593458,
         "load": [
-          0.27,
-          0.11,
-          0.04
+          0,
+          0.05,
+          0.03
         ],
         "disk": {
           "total": 23843045376,
-          "used": 17777655808,
+          "used": 17787494400,
           "pct": 75
         },
         "mem": {
           "total": 4020396032,
-          "used": 1387712512,
+          "used": 1387171840,
           "pct": 35
         }
       },
@@ -1618,6 +1618,11 @@
         },
         "git": [
           {
+            "hash": "5db7eb0",
+            "ts": 1788789602,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "026547e",
             "ts": 1788732002,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1686,11 +1691,6 @@
             "hash": "7f680eb",
             "ts": 1788530301,
             "subject": "feat(lp): CoW limit-sell checkbox + N-rung buyback ladder"
-          },
-          {
-            "hash": "0d54813",
-            "ts": 1788528968,
-            "subject": "feat(lp-schema): RATSPEAK/WETH venue + exit-policy state graph"
           }
         ]
       },
