@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1788876002,
+  "generated_at": 1788904802,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 9651058,
+        "uptime_sec": 9679859,
         "load": [
-          0,
-          0,
+          0.01,
+          0.01,
           0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 17738174464,
+          "used": 17742749696,
           "pct": 74
         },
         "mem": {
           "total": 4020396032,
-          "used": 1368961024,
-          "pct": 34
+          "used": 1453789184,
+          "pct": 36
         }
       },
       "memory": {
@@ -47,6 +47,12 @@
         "hot_count": 54,
         "cold_count": 12,
         "items": [
+          {
+            "name": "reference_myjunto_session_cookie_expired",
+            "type": "reference",
+            "mtime": 1788894120,
+            "desc": "MYJUNTO_SESSION_COOKIE in ops secrets is stale — authed pages bounce to /login"
+          },
           {
             "name": "reference_junto_content_pipeline",
             "type": "reference",
@@ -70,12 +76,6 @@
             "type": "project",
             "mtime": 1788542387,
             "desc": "DeFi single-sided LP buyback system on Base — sell a token but stretch half the proceeds into single-sided concentrated LP that rebuys all s"
-          },
-          {
-            "name": "reference_myjunto_session_cookie_expired",
-            "type": "reference",
-            "mtime": 1787612558,
-            "desc": "MYJUNTO_SESSION_COOKIE in ops secrets expired ~Aug 24 2026 — authed steward screenshots bounce to sign-in until Jon refreshes it"
           },
           {
             "name": "reference_discord_theaidevs",
@@ -1365,11 +1365,6 @@
               "weight": 1
             },
             {
-              "source": "reference_myjunto_session_cookie_expired",
-              "target": "reference_ops_secrets",
-              "weight": 1
-            },
-            {
               "source": "project_agent_bob",
               "target": "reference_openclaw_update_node_lock",
               "weight": 1
@@ -1618,6 +1613,16 @@
         },
         "git": [
           {
+            "hash": "cd64da0",
+            "ts": 1788887289,
+            "subject": "feat(portfolio): Long only filter + fix crypto misclassification (ANSEM/HYPE)"
+          },
+          {
+            "hash": "bed1d1d",
+            "ts": 1788876002,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "ff80702",
             "ts": 1788818402,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1681,16 +1686,6 @@
             "hash": "f361b18",
             "ts": 1788535531,
             "subject": "chore(lp): consolidate to canonical calculator at rattools.xyz/sell-to-lp"
-          },
-          {
-            "hash": "8e51bbe",
-            "ts": 1788532209,
-            "subject": "chore(lp-calc): review cleanup — dead construct, denom-consistent prefixes, any-asset copy"
-          },
-          {
-            "hash": "82b75fa",
-            "ts": 1788530402,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
       },
