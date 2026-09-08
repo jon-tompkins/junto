@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1788818402,
+  "generated_at": 1788876002,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 9593458,
+        "uptime_sec": 9651058,
         "load": [
           0,
-          0.05,
-          0.03
+          0,
+          0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 17787494400,
-          "pct": 75
+          "used": 17738174464,
+          "pct": 74
         },
         "mem": {
           "total": 4020396032,
-          "used": 1387171840,
-          "pct": 35
+          "used": 1368961024,
+          "pct": 34
         }
       },
       "memory": {
@@ -47,6 +47,12 @@
         "hot_count": 54,
         "cold_count": 12,
         "items": [
+          {
+            "name": "reference_junto_content_pipeline",
+            "type": "reference",
+            "mtime": 1788861688,
+            "desc": "\"How junto's content→newsletter dispatch pipeline works and how to debug \\\"no dispatches\\\" outages\""
+          },
           {
             "name": "project_ailmanack",
             "type": "project",
@@ -148,12 +154,6 @@
             "type": "project",
             "mtime": 1784800866,
             "desc": "\"Junto /trades entry-price bug fix — next-session OPEN from Yahoo daily bars; chunked backfill plan; Jon's Jul-20 decisions\""
-          },
-          {
-            "name": "reference_junto_content_pipeline",
-            "type": "reference",
-            "mtime": 1784714461,
-            "desc": "\"How junto's content→newsletter dispatch pipeline works and how to debug \\\"no dispatches\\\" outages\""
           },
           {
             "name": "feedback_discord_multiagent_etiquette",
@@ -1393,10 +1393,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 111,
-          "latest": "2026-09-07",
+          "count": 112,
+          "latest": "2026-09-08",
           "days": [
-            "2026-07-04",
             "2026-07-08",
             "2026-07-14",
             "2026-07-15",
@@ -1440,7 +1439,8 @@
             "2026-08-27",
             "2026-09-05",
             "2026-09-06",
-            "2026-09-07"
+            "2026-09-07",
+            "2026-09-08"
           ]
         }
       },
@@ -1593,7 +1593,7 @@
         },
         {
           "title": "Junto slice model Phase 2",
-          "detail": "UNVALIDATED (needs live market + fresh paper keys)."
+          "detail": "UNVALIDATED; markets reopen Sep 8 (Labor Day cleared), still needs fresh Alpaca paper keys from Jon."
         },
         {
           "title": "Junto watchlist pointer drift",
@@ -1604,12 +1604,12 @@
         "junto_health": {
           "last_alert": 1785952802.776739,
           "redset": "",
-          "greenlight_day": "2026-09-07"
+          "greenlight_day": "2026-09-08"
         },
         "disk_health": {
           "state": "ok",
           "pct": 75,
-          "ts": 1788768001
+          "ts": 1788854402
         },
         "tweet_queue": {
           "posted": 13,
@@ -1617,6 +1617,11 @@
           "total": 14
         },
         "git": [
+          {
+            "hash": "ff80702",
+            "ts": 1788818402,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "5db7eb0",
             "ts": 1788789602,
@@ -1686,11 +1691,6 @@
             "hash": "82b75fa",
             "ts": 1788530402,
             "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "7f680eb",
-            "ts": 1788530301,
-            "subject": "feat(lp): CoW limit-sell checkbox + N-rung buyback ladder"
           }
         ]
       },
