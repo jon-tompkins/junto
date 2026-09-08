@@ -52,12 +52,15 @@ export function PortfolioView({
   const [asset, setAsset] = useState<AssetFilter>('all');
   const [minConv, setMinConv] = useState(0);
   const [maxN, setMaxN] = useState(12);
+  const [longOnly, setLongOnly] = useState(false);
 
   // Apply filters, then rank by conviction weight, cut to top N, and only then
   // normalize to % — so the shown book always sums to 100%.
   const filtered = positions.filter((p) => {
     if (asset !== 'all' && (p.asset_class || 'equity') !== asset) return false;
     if (minConv > 0 && !(typeof p.conviction === 'number' && p.conviction >= minConv)) return false;
+    // Long only hides shorts — matches the long/short split convention (long = not bearish).
+    if (longOnly && p.stance === 'bearish') return false;
     return true;
   });
   const ranked = [...filtered].sort((a, b) => weightOf(b) - weightOf(a));
@@ -115,6 +118,14 @@ export function PortfolioView({
             <option value={0}>All</option>
           </select>
         </label>
+        <button
+          type="button"
+          onClick={() => setLongOnly((v) => !v)}
+          className={`${pillBase} ${longOnly ? on : off}`}
+          title="Hide short / bearish positions"
+        >
+          Long only
+        </button>
       </div>
 
       {rows.length === 0 ? (

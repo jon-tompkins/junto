@@ -15,7 +15,7 @@ const CRYPTO_BASES = new Set([
   'DOGE', 'LTC', 'BCH', 'ATOM', 'FIL', 'TRX', 'ETC', 'NEAR', 'ICP', 'APT', 'ARB',
   'OP', 'PEPE', 'SHIB', 'AAVE', 'CRV', 'MKR', 'SUSHI', 'DYDX', 'SUI', 'TIA',
   'WIF', 'BONK', 'RENDER', 'FET', 'GRT', 'LDO', 'STX', 'IMX', 'INJ', 'SEI',
-  'USDC', 'USDT', 'DAI',
+  'USDC', 'USDT', 'DAI', 'ANSEM', 'HYPE',
 ]);
 
 // Strip quote currency + separators so "ETH/USD", "ETHUSD", and "ETH" all

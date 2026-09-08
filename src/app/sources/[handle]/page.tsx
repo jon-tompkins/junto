@@ -7,6 +7,7 @@ import { TopNav } from '@/components/top-nav';
 import { SourceChat } from '@/components/source-chat';
 import { StarSourceButton } from '@/components/star-source-button';
 import { PortfolioView } from '@/components/portfolio-view';
+import { isCryptoTicker } from '@/lib/trading/asset';
 
 interface PositionEntry {
   stance: 'bullish' | 'bearish' | 'neutral' | 'cautious';
@@ -520,7 +521,10 @@ export default function SourceProfilePage() {
                   ticker,
                   stance: pos.stance,
                   conviction: pos.conviction,
-                  asset_class: pos.asset_class,
+                  // Known crypto tickers are authoritative — the profile LLM sometimes
+                  // mislabels them as equity (e.g. ANSEM, HYPE). Only ever promote to
+                  // crypto, never demote, so real equities are untouched.
+                  asset_class: isCryptoTicker(ticker) ? 'crypto' : pos.asset_class,
                   note: pos.note,
                   heldDays: daysHeld(pos.since),
                   returnPct,
