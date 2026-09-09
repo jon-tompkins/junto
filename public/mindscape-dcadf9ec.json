@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1788962402,
+  "generated_at": 1788991202,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 9737458,
+        "uptime_sec": 9766258,
         "load": [
-          0,
-          0,
-          0
+          0.24,
+          0.06,
+          0.02
         ],
         "disk": {
           "total": 23843045376,
-          "used": 17727754240,
+          "used": 17729310720,
           "pct": 74
         },
         "mem": {
           "total": 4020396032,
-          "used": 1464975360,
+          "used": 1463721984,
           "pct": 36
         }
       },
@@ -1613,6 +1613,11 @@
         },
         "git": [
           {
+            "hash": "6188a32",
+            "ts": 1788962402,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "0f58f49",
             "ts": 1788904802,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1681,11 +1686,6 @@
             "hash": "aa9b4a9",
             "ts": 1788559202,
             "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "1aebf38",
-            "ts": 1788542372,
-            "subject": "fix(lp-schema): real deep pool is hooked — drop no-hook/static-fee pin (option A)"
           }
         ]
       },
