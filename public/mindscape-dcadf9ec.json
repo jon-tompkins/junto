@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1789048801,
+  "generated_at": 1789077602,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 9823858,
+        "uptime_sec": 9852658,
         "load": [
-          0,
-          0.02,
-          0
+          0.19,
+          0.11,
+          0.06
         ],
         "disk": {
           "total": 23843045376,
-          "used": 17735643136,
+          "used": 17718149120,
           "pct": 74
         },
         "mem": {
           "total": 4020396032,
-          "used": 1467084800,
+          "used": 1459900416,
           "pct": 36
         }
       },
@@ -1613,6 +1613,11 @@
         },
         "git": [
           {
+            "hash": "721070e",
+            "ts": 1789048802,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "a5c3a1c",
             "ts": 1788991202,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1681,11 +1686,6 @@
             "hash": "b8f912b",
             "ts": 1788638328,
             "subject": "feat(lp): positions view — live wallet reads + per-position buyback read-out"
-          },
-          {
-            "hash": "673658c",
-            "ts": 1788616802,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
       },
