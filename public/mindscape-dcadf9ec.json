@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1789135201,
+  "generated_at": 1789164002,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 9910258,
+        "uptime_sec": 9939058,
         "load": [
-          0.01,
-          0.13,
-          0.1
+          0.56,
+          0.14,
+          0.04
         ],
         "disk": {
           "total": 23843045376,
-          "used": 17730740224,
+          "used": 17730220032,
           "pct": 74
         },
         "mem": {
           "total": 4020396032,
-          "used": 1466376192,
+          "used": 1452945408,
           "pct": 36
         }
       },
@@ -47,6 +47,12 @@
         "hot_count": 55,
         "cold_count": 12,
         "items": [
+          {
+            "name": "project_ailmanack",
+            "type": "project",
+            "mtime": 1789139717,
+            "desc": "Personal Hedge Fund — AI equity research platform with three-agent pipeline (Jeb/Ant/Pete) and report library"
+          },
           {
             "name": "reference_dispatch_tweet_step",
             "type": "reference",
@@ -64,12 +70,6 @@
             "type": "reference",
             "mtime": 1788861688,
             "desc": "\"How junto's content→newsletter dispatch pipeline works and how to debug \\\"no dispatches\\\" outages\""
-          },
-          {
-            "name": "project_ailmanack",
-            "type": "project",
-            "mtime": 1788576945,
-            "desc": "Personal Hedge Fund — AI equity research platform with three-agent pipeline (Jeb/Ant/Pete) and report library"
           },
           {
             "name": "reference_yahoo_crumb",
@@ -1608,32 +1608,11 @@
           "status": "shipped"
         }
       ],
-      "blockers": [
-        {
-          "title": "MYJUNTO_SESSION_COOKIE",
-          "detail": "expired Aug 24; authed steward screenshots bounce to sign-in until Jon refreshes."
-        },
-        {
-          "title": "Junto podcast/audio outage",
-          "detail": "TTS step gated on OPENAI_API_KEY on myjunto deploy (silent since Jul 24)."
-        },
-        {
-          "title": "Junto entry-price backfill `--apply`",
-          "detail": "blocked on Jon review (build agent a488f6cf, Jul-20). [cold archive]"
-        },
-        {
-          "title": "Junto slice model Phase 2",
-          "detail": "UNVALIDATED; markets open (Sep 8+), still needs fresh Alpaca paper keys from Jon to run validation harness."
-        },
-        {
-          "title": "Junto watchlist pointer drift",
-          "detail": "structural fix pending."
-        }
-      ],
+      "blockers": [],
       "ops": {
         "junto_health": {
-          "last_alert": 1785952802.776739,
-          "redset": "",
+          "last_alert": 1789149602.05086,
+          "redset": "inference",
           "greenlight_day": "2026-09-11"
         },
         "disk_health": {
@@ -1647,6 +1626,11 @@
           "total": 15
         },
         "git": [
+          {
+            "hash": "688ed80",
+            "ts": 1789135202,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "fb54bd5",
             "ts": 1789134982,
@@ -1716,11 +1700,6 @@
             "hash": "edb41e6",
             "ts": 1788704440,
             "subject": "feat(lp-positions): tokens-acquired per band + $/pair currency toggle"
-          },
-          {
-            "hash": "332800a",
-            "ts": 1788703202,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
       },
