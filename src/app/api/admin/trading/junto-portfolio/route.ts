@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdminSession } from '@/lib/admin';
 import { getSupabase } from '@/lib/db/client';
+import { isCryptoTicker } from '@/lib/trading/asset';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,14 +55,14 @@ export async function GET(req: NextRequest) {
     supabase.from('juntos').select('id, name').eq('id', juntoId).maybeSingle(),
     supabase
       .from('junto_sources')
-      .select('source:sources(id, handle_or_url, display_name)')
+      .select('source:sources(id, handle_or_url, display_name, avatar_url)')
       .eq('junto_id', juntoId),
   ]);
   if (!junto) return NextResponse.json({ error: 'Junto not found' }, { status: 404 });
 
   const sources = (links || [])
     .map((l: any) => l.source)
-    .filter(Boolean) as { id: string; handle_or_url: string; display_name: string | null }[];
+    .filter(Boolean) as { id: string; handle_or_url: string; display_name: string | null; avatar_url: string | null }[];
   const sourceById = new Map(sources.map((s) => [s.id, s]));
 
   const { data: profiles } = sources.length
@@ -79,9 +80,11 @@ export async function GET(req: NextRequest) {
     gross: number; // |conviction| sum, for transparency
     longC: number;
     shortC: number;
-    backers: { handle: string; stance: string; conviction: number }[];
+    classes: Record<string, number>; // asset_class votes among contributors
+    backers: { handle: string; display_name: string | null; avatar_url: string | null; stance: string; conviction: number }[];
   }
   const byTicker = new Map<string, Agg>();
+  const mode = (r: Record<string, number>) => Object.entries(r).sort(([, a], [, b]) => b - a)[0]?.[0];
 
   for (const prof of (profiles as any[]) || []) {
     const src = sourceById.get(prof.source_id);
@@ -94,11 +97,12 @@ export async function GET(req: NextRequest) {
       const conv = Math.max(1, Math.min(5, pos.conviction ?? 1));
       const dir = pos.stance === 'bullish' ? 1 : pos.stance === 'bearish' ? -1 : 0;
       if (dir === 0) continue; // neutral/cautious: no directional weight in v1
-      const agg = byTicker.get(ticker) || { ticker, net: 0, gross: 0, longC: 0, shortC: 0, backers: [] };
+      const agg = byTicker.get(ticker) || { ticker, net: 0, gross: 0, longC: 0, shortC: 0, classes: {}, backers: [] };
       agg.net += dir * conv;
       agg.gross += conv;
       if (dir > 0) agg.longC += conv; else agg.shortC += conv;
-      agg.backers.push({ handle: src.handle_or_url, stance: pos.stance, conviction: conv });
+      if (pos.asset_class) agg.classes[pos.asset_class] = (agg.classes[pos.asset_class] ?? 0) + 1;
+      agg.backers.push({ handle: src.handle_or_url, display_name: src.display_name, avatar_url: src.avatar_url, stance: pos.stance, conviction: conv });
       byTicker.set(ticker, agg);
     }
   }
@@ -116,9 +120,12 @@ export async function GET(req: NextRequest) {
   const holdings = aggs
     .map((a) => {
       const weight = totalAbs ? Math.abs(a.net) / totalAbs : 0;
+      // Known crypto tickers are authoritative; else majority vote of contributors' tags, default equity.
+      const asset_class = isCryptoTicker(a.ticker) ? 'crypto' : (mode(a.classes) || 'equity');
       return {
         ticker: a.ticker,
         direction: a.net > 0 ? ('long' as const) : ('short' as const),
+        asset_class,
         net_conviction: a.net,
         weight_pct: weight * 100,
         target_usd: weight * value,

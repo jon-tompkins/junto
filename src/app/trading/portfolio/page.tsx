@@ -1,19 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { TopNav } from '@/components/top-nav';
 
-interface Backer { handle: string; stance: string; conviction: number }
+interface Backer { handle: string; display_name?: string | null; avatar_url?: string | null; stance: string; conviction: number }
 interface Holding {
   ticker: string;
   direction: 'long' | 'short';
+  asset_class?: string;
   net_conviction: number;
   weight_pct: number;
   target_usd: number;
   backer_count: number;
   backers: Backer[];
 }
+type AssetF = 'all' | 'equity' | 'crypto';
+type SideF = 'all' | 'long' | 'short';
 interface Result {
   junto: { id: string; name: string };
   portfolio_value: number;
@@ -38,6 +41,9 @@ export default function JuntoPortfolioPage() {
   const [result, setResult] = useState<Result | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [assetF, setAssetF] = useState<AssetF>('all');
+  const [sideF, setSideF] = useState<SideF>('all');
+  const [openTicker, setOpenTicker] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/juntos/public')
@@ -71,6 +77,14 @@ export default function JuntoPortfolioPage() {
       </main>
     );
   }
+
+  const filteredHoldings = (result?.holdings || []).filter(
+    (h) => (assetF === 'all' || (h.asset_class || 'equity') === assetF) && (sideF === 'all' || h.direction === sideF),
+  );
+  const pillBase = 'text-[11px] px-2 py-0.5 rounded border transition';
+  const pillOn = 'border-brass text-brass bg-brass/10';
+  const pillOff = 'border-brass/20 text-parchment/60 hover:text-parchment/70';
+  const STANCE_TXT: Record<string, string> = { bullish: 'text-bull', bearish: 'text-bear', cautious: 'text-amber-400', neutral: 'text-parchment/60' };
 
   return (
     <main className="min-h-screen bg-ink text-parchment">
@@ -136,8 +150,30 @@ export default function JuntoPortfolioPage() {
               </span>
               <span>value {fmtUsd(result.portfolio_value)}</span>
             </div>
+            {/* Filters: asset class + long/short */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] uppercase tracking-wider text-parchment/45 mr-1">Asset</span>
+                {(['all', 'equity', 'crypto'] as AssetF[]).map((a) => (
+                  <button key={a} type="button" onClick={() => setAssetF(a)} className={`${pillBase} ${assetF === a ? pillOn : pillOff}`}>
+                    {a === 'all' ? 'All' : a === 'equity' ? 'Equities' : 'Crypto'}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] uppercase tracking-wider text-parchment/45 mr-1">Side</span>
+                {(['all', 'long', 'short'] as SideF[]).map((s) => (
+                  <button key={s} type="button" onClick={() => setSideF(s)} className={`${pillBase} ${sideF === s ? pillOn : pillOff}`}>
+                    {s === 'all' ? 'All' : s === 'long' ? 'Long' : 'Short'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {result.holdings.length === 0 ? (
               <p className="text-sm text-parchment/55">No fresh directional positions in this junto right now.</p>
+            ) : filteredHoldings.length === 0 ? (
+              <p className="text-sm text-parchment/55">No positions match these filters.</p>
             ) : (
               <div className="overflow-x-auto rounded border border-[rgb(var(--t-brass) / 0.2)]">
                 <table className="w-full text-sm min-w-[560px]">
@@ -148,33 +184,72 @@ export default function JuntoPortfolioPage() {
                       <th className="px-3 py-3 text-right">Weight</th>
                       <th className="px-3 py-3 text-right">Target $</th>
                       <th className="px-3 py-3 text-right">Net conv.</th>
-                      <th className="px-4 py-3">Backers</th>
+                      <th className="px-4 py-3">Members</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {result.holdings.map((h) => (
-                      <tr key={h.ticker} className="border-b border-[rgb(var(--t-brass) / 0.08)] last:border-0">
-                        <td className="px-4 py-3 font-mono font-bold">{h.ticker}</td>
-                        <td className="px-3 py-3">
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${h.direction === 'long' ? 'bg-bull/15 text-bull' : 'bg-bear/15 text-bear'}`}>
-                            {h.direction === 'long' ? 'LONG' : 'SHORT'}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3 text-right font-mono">
-                          <div className="flex items-center justify-end gap-2">
-                            <span className="w-14 text-right">{h.weight_pct.toFixed(1)}%</span>
-                            <span className="hidden sm:block h-1.5 w-16 rounded bg-parchment/10 overflow-hidden">
-                              <span className="block h-full bg-brass" style={{ width: `${Math.min(100, h.weight_pct)}%` }} />
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-3 text-right font-mono text-parchment/80">{fmtUsd(h.target_usd)}</td>
-                        <td className="px-3 py-3 text-right font-mono text-parchment/50">{h.net_conviction}</td>
-                        <td className="px-4 py-3 text-xs text-parchment/50" title={h.backers.map((b) => `@${b.handle} ${b.stance} ${b.conviction}/5`).join('\n')}>
-                          {h.backer_count} · {h.backers.slice(0, 3).map((b) => `@${b.handle}`).join(', ')}{h.backers.length > 3 ? '…' : ''}
-                        </td>
-                      </tr>
-                    ))}
+                    {filteredHoldings.map((h) => {
+                      const isOpen = openTicker === h.ticker;
+                      return (
+                        <Fragment key={h.ticker}>
+                          <tr
+                            className="border-b border-[rgb(var(--t-brass) / 0.08)] cursor-pointer hover:bg-surface/40 transition"
+                            onClick={() => setOpenTicker(isOpen ? null : h.ticker)}
+                            title={`${h.backer_count} member${h.backer_count === 1 ? '' : 's'} — click to ${isOpen ? 'hide' : 'show'}`}
+                          >
+                            <td className="px-4 py-3 font-mono font-bold whitespace-nowrap">
+                              <span className={`inline-block mr-1.5 text-parchment/40 text-[8px] transition-transform ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+                              {h.ticker}
+                            </td>
+                            <td className="px-3 py-3">
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${h.direction === 'long' ? 'bg-bull/15 text-bull' : 'bg-bear/15 text-bear'}`}>
+                                {h.direction === 'long' ? 'LONG' : 'SHORT'}
+                              </span>
+                            </td>
+                            <td className="px-3 py-3 text-right font-mono">
+                              <div className="flex items-center justify-end gap-2">
+                                <span className="w-14 text-right">{h.weight_pct.toFixed(1)}%</span>
+                                <span className="hidden sm:block h-1.5 w-16 rounded bg-parchment/10 overflow-hidden">
+                                  <span className="block h-full bg-brass" style={{ width: `${Math.min(100, h.weight_pct)}%` }} />
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-3 py-3 text-right font-mono text-parchment/80">{fmtUsd(h.target_usd)}</td>
+                            <td className="px-3 py-3 text-right font-mono text-parchment/50">{h.net_conviction}</td>
+                            <td className="px-4 py-3 text-xs text-parchment/50 whitespace-nowrap">
+                              {h.backer_count} member{h.backer_count === 1 ? '' : 's'}
+                            </td>
+                          </tr>
+                          {isOpen && (
+                            <tr className="border-b border-[rgb(var(--t-brass) / 0.08)] bg-surface/30">
+                              <td colSpan={6} className="px-4 py-3">
+                                <div className="text-[10px] uppercase tracking-wider text-parchment/45 mb-2">Junto members on ${h.ticker}</div>
+                                <div className="flex flex-wrap gap-2">
+                                  {h.backers.map((b) => (
+                                    <a
+                                      key={b.handle}
+                                      href={`/sources/${encodeURIComponent(b.handle)}`}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="flex items-center gap-1.5 bg-raised rounded px-2 py-1 border border-transparent hover:border-brass transition"
+                                    >
+                                      {b.avatar_url ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={b.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
+                                      ) : (
+                                        <span className="w-4 h-4 rounded-full bg-parchment/10 inline-block shrink-0" />
+                                      )}
+                                      <span className="font-mono text-[11px] text-parchment/85">@{b.handle}</span>
+                                      <span className={`text-[9px] uppercase tracking-wide ${STANCE_TXT[b.stance] ?? 'text-parchment/60'}`}>{b.stance.slice(0, 4)}</span>
+                                      <span className="text-[10px] text-parchment/40 font-mono">c{b.conviction}</span>
+                                    </a>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
