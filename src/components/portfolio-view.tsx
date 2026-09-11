@@ -9,6 +9,16 @@ import Link from 'next/link';
 // allocation, Spotify-wrapped style. Filters (asset class, min conviction, max
 // positions) let a dense 100-name profile collapse to a legible top slice.
 
+// A junto member (source) holding a view on this ticker. Powers the drill-down
+// that reveals WHO in the junto is behind a consensus position.
+export interface PortfolioMember {
+  handle: string;
+  display_name?: string | null;
+  avatar_url?: string | null;
+  stance: string;
+  conviction?: number;
+}
+
 export interface PortfolioPosition {
   ticker: string;
   stance: 'bullish' | 'bearish' | 'neutral' | 'cautious' | string;
@@ -17,7 +27,10 @@ export interface PortfolioPosition {
   heldDays?: number;        // days since the view was first taken
   returnPct?: number | null; // stance-adjusted return since entry (null if no quote)
   note?: string;
+  members?: PortfolioMember[]; // junto members holding a view on this ticker (junto view only)
 }
+
+type SideFilter = 'all' | 'long' | 'short';
 
 const STANCE_BAR: Record<string, string> = {
   bullish: 'bg-bull',
@@ -52,15 +65,17 @@ export function PortfolioView({
   const [asset, setAsset] = useState<AssetFilter>('all');
   const [minConv, setMinConv] = useState(0);
   const [maxN, setMaxN] = useState(12);
-  const [longOnly, setLongOnly] = useState(false);
+  const [side, setSide] = useState<SideFilter>('all');
+  const [expanded, setExpanded] = useState<string | null>(null); // ticker whose members are shown
 
   // Apply filters, then rank by conviction weight, cut to top N, and only then
   // normalize to % — so the shown book always sums to 100%.
   const filtered = positions.filter((p) => {
     if (asset !== 'all' && (p.asset_class || 'equity') !== asset) return false;
     if (minConv > 0 && !(typeof p.conviction === 'number' && p.conviction >= minConv)) return false;
-    // Long only hides shorts — matches the long/short split convention (long = not bearish).
-    if (longOnly && p.stance === 'bearish') return false;
+    // Side filter — long = not bearish, short = bearish (matches the long/short split convention).
+    if (side === 'long' && p.stance === 'bearish') return false;
+    if (side === 'short' && p.stance !== 'bearish') return false;
     return true;
   });
   const ranked = [...filtered].sort((a, b) => weightOf(b) - weightOf(a));
@@ -118,14 +133,14 @@ export function PortfolioView({
             <option value={0}>All</option>
           </select>
         </label>
-        <button
-          type="button"
-          onClick={() => setLongOnly((v) => !v)}
-          className={`${pillBase} ${longOnly ? on : off}`}
-          title="Hide short / bearish positions"
-        >
-          Long only
-        </button>
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] uppercase tracking-wider text-parchment/45 mr-1">Side</span>
+          {(['all', 'long', 'short'] as SideFilter[]).map((s) => (
+            <button key={s} type="button" onClick={() => setSide(s)} className={`${pillBase} ${side === s ? on : off}`}>
+              {s === 'all' ? 'All' : s === 'long' ? 'Long' : 'Short'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {rows.length === 0 ? (
@@ -152,34 +167,75 @@ export function PortfolioView({
               ) : (
                 <span className="font-mono font-bold text-parchment">{r.ticker}</span>
               );
+              const members = r.members || [];
+              const hasMembers = members.length > 0;
+              const isOpen = expanded === r.ticker;
               return (
-                <div key={r.ticker} className="flex items-center gap-3">
-                  <div className="w-24 shrink-0 flex items-center gap-2">
-                    {tickerEl}
-                    <span className={`text-[9px] uppercase tracking-wide ${txt}`}>{r.stance.slice(0, 4)}</span>
+                <div key={r.ticker}>
+                  <div
+                    className={`flex items-center gap-3 ${hasMembers ? 'cursor-pointer' : ''}`}
+                    onClick={hasMembers ? () => setExpanded(isOpen ? null : r.ticker) : undefined}
+                    title={hasMembers ? `${members.length} member${members.length === 1 ? '' : 's'} — click to ${isOpen ? 'hide' : 'show'}` : undefined}
+                  >
+                    <div className="w-24 shrink-0 flex items-center gap-1.5">
+                      {hasMembers && (
+                        <span className={`text-parchment/40 text-[8px] transition-transform ${isOpen ? 'rotate-90' : ''}`}>▶</span>
+                      )}
+                      <span onClick={(e) => e.stopPropagation()}>{tickerEl}</span>
+                      <span className={`text-[9px] uppercase tracking-wide ${txt}`}>{r.stance.slice(0, 4)}</span>
+                    </div>
+                    <div className="flex-1 h-5 bg-raised rounded-sm overflow-hidden" title={r.note || undefined}>
+                      <div className={`h-full ${bar} transition-all`} style={{ width: `${Math.max(r.pct, 1.5)}%` }} />
+                    </div>
+                    {/* held duration + return since entry */}
+                    <div className="w-16 shrink-0 text-right font-mono text-[11px] leading-tight">
+                      {typeof r.returnPct === 'number' ? (
+                        <span className={r.returnPct >= 0 ? 'text-bull' : 'text-bear'}>
+                          {r.returnPct >= 0 ? '+' : ''}{r.returnPct.toFixed(1)}%
+                        </span>
+                      ) : (
+                        <span className="text-parchment/30">—</span>
+                      )}
+                      {typeof r.heldDays === 'number' && (
+                        <div className="text-parchment/40">{r.heldDays}d</div>
+                      )}
+                    </div>
+                    <div className="w-16 shrink-0 text-right font-mono text-xs text-parchment/80">
+                      {r.pct.toFixed(1)}%
+                      {typeof r.conviction === 'number' && r.conviction > 0 && (
+                        <span className="text-parchment/40"> · c{r.conviction}</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 h-5 bg-raised rounded-sm overflow-hidden" title={r.note || undefined}>
-                    <div className={`h-full ${bar} transition-all`} style={{ width: `${Math.max(r.pct, 1.5)}%` }} />
-                  </div>
-                  {/* held duration + return since entry */}
-                  <div className="w-16 shrink-0 text-right font-mono text-[11px] leading-tight">
-                    {typeof r.returnPct === 'number' ? (
-                      <span className={r.returnPct >= 0 ? 'text-bull' : 'text-bear'}>
-                        {r.returnPct >= 0 ? '+' : ''}{r.returnPct.toFixed(1)}%
-                      </span>
-                    ) : (
-                      <span className="text-parchment/30">—</span>
-                    )}
-                    {typeof r.heldDays === 'number' && (
-                      <div className="text-parchment/40">{r.heldDays}d</div>
-                    )}
-                  </div>
-                  <div className="w-16 shrink-0 text-right font-mono text-xs text-parchment/80">
-                    {r.pct.toFixed(1)}%
-                    {typeof r.conviction === 'number' && r.conviction > 0 && (
-                      <span className="text-parchment/40"> · c{r.conviction}</span>
-                    )}
-                  </div>
+
+                  {/* Junto members behind this position */}
+                  {hasMembers && isOpen && (
+                    <div className="mt-1.5 mb-2 ml-6 pl-3 border-l border-[rgb(var(--t-brass)/0.2)] space-y-1">
+                      {members.map((m) => (
+                        <div key={m.handle} className="flex items-center gap-2 text-[11px]">
+                          {m.avatar_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={m.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
+                          ) : (
+                            <span className="w-4 h-4 rounded-full bg-raised inline-block shrink-0" />
+                          )}
+                          <Link
+                            href={`/sources/${encodeURIComponent(m.handle)}`}
+                            className="font-mono text-parchment/80 hover:text-brass transition"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            @{m.handle}
+                          </Link>
+                          <span className={`text-[9px] uppercase tracking-wide ${STANCE_TEXT[m.stance] ?? STANCE_TEXT.neutral}`}>
+                            {m.stance.slice(0, 4)}
+                          </span>
+                          {typeof m.conviction === 'number' && m.conviction > 0 && (
+                            <span className="text-parchment/40 font-mono text-[10px]">c{m.conviction}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}

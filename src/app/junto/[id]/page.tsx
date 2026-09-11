@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 import { PositionsHeatmap, HeatmapPosition } from '@/components/positions-heatmap';
-import { PortfolioView, PortfolioPosition } from '@/components/portfolio-view';
+import { PortfolioView, PortfolioPosition, PortfolioMember } from '@/components/portfolio-view';
 import { JuntoChat } from '@/components/junto-chat';
 
 interface PositionEntry {
@@ -148,19 +148,32 @@ function buildConsensus(
     classes: Record<string, number>;
     sinces: string[];
     entries: number[];
+    members: PortfolioMember[];
   }>();
   for (const js of sources) {
     const positions = js.source?.profile?.positions || {};
+    const handle = js.source?.handle_or_url;
     for (const [ticker, pos] of Object.entries(positions)) {
-      const e = map.get(ticker) || { stances: {}, convs: [], classes: {}, sinces: [], entries: [] };
+      const e = map.get(ticker) || { stances: {}, convs: [], classes: {}, sinces: [], entries: [], members: [] };
       e.stances[pos.stance] = (e.stances[pos.stance] ?? 0) + 1;
       if (typeof pos.conviction === 'number') e.convs.push(pos.conviction);
       if (pos.asset_class) e.classes[pos.asset_class] = (e.classes[pos.asset_class] ?? 0) + 1;
       if (pos.since) e.sinces.push(pos.since);
       if (typeof pos.entry_price === 'number') e.entries.push(pos.entry_price);
+      if (handle) {
+        e.members.push({
+          handle,
+          display_name: js.source?.display_name,
+          avatar_url: js.source?.avatar_url,
+          stance: pos.stance,
+          conviction: typeof pos.conviction === 'number' ? pos.conviction : undefined,
+        });
+      }
       map.set(ticker, e);
     }
   }
+  // stance rank for ordering members: agreement (bullish) first, dissent (bearish) last
+  const stanceRank: Record<string, number> = { bullish: 0, cautious: 1, neutral: 2, bearish: 3 };
   const mode = (r: Record<string, number>) => Object.entries(r).sort(([, a], [, b]) => b - a)[0]?.[0];
   const rows: PortfolioPosition[] = [];
   for (const [ticker, e] of map.entries()) {
@@ -173,7 +186,10 @@ function buildConsensus(
     const price = quotes[ticker]?.price;
     const sign = stance === 'bearish' ? -1 : 1;
     const returnPct = price != null && avgEntry ? ((price - avgEntry) / avgEntry) * 100 * sign : null;
-    rows.push({ ticker, stance, conviction, asset_class, heldDays, returnPct });
+    const members = e.members.sort(
+      (a, b) => (stanceRank[a.stance] ?? 2) - (stanceRank[b.stance] ?? 2) || (b.conviction ?? 0) - (a.conviction ?? 0),
+    );
+    rows.push({ ticker, stance, conviction, asset_class, heldDays, returnPct, members });
   }
   return rows;
 }
