@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1789077602,
+  "generated_at": 1789135201,
   "generator": "benji",
   "agents": [
     {
@@ -19,34 +19,40 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 9852658,
+        "uptime_sec": 9910258,
         "load": [
-          0.19,
-          0.11,
-          0.06
+          0.01,
+          0.13,
+          0.1
         ],
         "disk": {
           "total": 23843045376,
-          "used": 17718149120,
+          "used": 17730740224,
           "pct": 74
         },
         "mem": {
           "total": 4020396032,
-          "used": 1459900416,
+          "used": 1466376192,
           "pct": 36
         }
       },
       "memory": {
-        "total_files": 67,
+        "total_files": 68,
         "by_type": {
           "feedback": 17,
           "project": 28,
-          "reference": 20,
+          "reference": 21,
           "user": 2
         },
-        "hot_count": 54,
+        "hot_count": 55,
         "cold_count": 12,
         "items": [
+          {
+            "name": "reference_dispatch_tweet_step",
+            "type": "reference",
+            "mtime": 1789125596,
+            "desc": "scripts/dispatch-tweet.mjs turns a featured myjunto dispatch into an approval-gated @myjunto_xyz tweet"
+          },
           {
             "name": "reference_myjunto_session_cookie_expired",
             "type": "reference",
@@ -720,6 +726,11 @@
             "title": "Feedback: Tag agents with real mention token",
             "file": "feedback_discord_agent_mentions",
             "hook": "plain-text \"@Bob\" does nothing; must use <@1526599095295279315> to actually trigger Bob in Discord"
+          },
+          {
+            "title": "Dispatch→tweet step",
+            "file": "reference_dispatch_tweet_step",
+            "hook": "scripts/dispatch-tweet.mjs drafts approval-gated @myjunto_xyz tweets from featured dispatches (featured list in state/featured-newsletters.json); tweet-scheduler skips approved:false; built Sep 11 (23380c3)"
           }
         ],
         "graph": {
@@ -910,6 +921,10 @@
             },
             {
               "id": "reference_discord_theaidevs",
+              "type": "reference"
+            },
+            {
+              "id": "reference_dispatch_tweet_step",
               "type": "reference"
             },
             {
@@ -1255,6 +1270,26 @@
               "weight": 3
             },
             {
+              "source": "feedback_ship_autonomy",
+              "target": "reference_dispatch_tweet_step",
+              "weight": 1
+            },
+            {
+              "source": "feedback_social_strategy",
+              "target": "reference_dispatch_tweet_step",
+              "weight": 1
+            },
+            {
+              "source": "project_myjunto_growth_seo",
+              "target": "reference_dispatch_tweet_step",
+              "weight": 1
+            },
+            {
+              "source": "project_myjunto_steward",
+              "target": "reference_dispatch_tweet_step",
+              "weight": 1
+            },
+            {
               "source": "reference_junto_approval_fill_path",
               "target": "reference_junto_trade_suggestion_collapse",
               "weight": 1
@@ -1388,10 +1423,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 114,
-          "latest": "2026-09-10",
+          "count": 115,
+          "latest": "2026-09-11",
           "days": [
-            "2026-07-15",
             "2026-07-16",
             "2026-07-17",
             "2026-07-18",
@@ -1435,7 +1469,8 @@
             "2026-09-07",
             "2026-09-08",
             "2026-09-09",
-            "2026-09-10"
+            "2026-09-10",
+            "2026-09-11"
           ]
         }
       },
@@ -1599,19 +1634,34 @@
         "junto_health": {
           "last_alert": 1785952802.776739,
           "redset": "",
-          "greenlight_day": "2026-09-10"
+          "greenlight_day": "2026-09-11"
         },
         "disk_health": {
           "state": "ok",
           "pct": 75,
-          "ts": 1789027201
+          "ts": 1789113602
         },
         "tweet_queue": {
           "posted": 13,
-          "pending": 1,
-          "total": 14
+          "pending": 2,
+          "total": 15
         },
         "git": [
+          {
+            "hash": "fb54bd5",
+            "ts": 1789134982,
+            "subject": "feat(portfolio-tool): asset class + long/short filters and member drill-down"
+          },
+          {
+            "hash": "4cca4ac",
+            "ts": 1789134690,
+            "subject": "feat(portfolio): Long/Short selector + drill into junto members per position"
+          },
+          {
+            "hash": "3a3edf9",
+            "ts": 1789077602,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "721070e",
             "ts": 1789048802,
@@ -1671,21 +1721,6 @@
             "hash": "332800a",
             "ts": 1788703202,
             "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "a66adf5",
-            "ts": 1788645602,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "c3ca896",
-            "ts": 1788638944,
-            "subject": "feat(lp-positions): multi-range visualization + demo + calc link"
-          },
-          {
-            "hash": "b8f912b",
-            "ts": 1788638328,
-            "subject": "feat(lp): positions view — live wallet reads + per-position buyback read-out"
           }
         ]
       },
