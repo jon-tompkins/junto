@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1789221602,
+  "generated_at": 1789250401,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 9996658,
+        "uptime_sec": 10025458,
         "load": [
-          0,
+          0.03,
           0.01,
-          0.01
+          0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 17743962112,
+          "used": 17729536000,
           "pct": 74
         },
         "mem": {
           "total": 4020396032,
-          "used": 1463476224,
+          "used": 1458823168,
           "pct": 36
         }
       },
@@ -1627,6 +1627,11 @@
         },
         "git": [
           {
+            "hash": "7cc127d",
+            "ts": 1789221602,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "858171c",
             "ts": 1789164002,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1695,11 +1700,6 @@
             "hash": "026547e",
             "ts": 1788732002,
             "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "d744c64",
-            "ts": 1788704712,
-            "subject": "chore(lp): retire myjunto positions page -> redirect to rattools canonical"
           }
         ]
       },
