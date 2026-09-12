@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1789164002,
+  "generated_at": 1789221602,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 9939058,
+        "uptime_sec": 9996658,
         "load": [
-          0.56,
-          0.14,
-          0.04
+          0,
+          0.01,
+          0.01
         ],
         "disk": {
           "total": 23843045376,
-          "used": 17730220032,
+          "used": 17743962112,
           "pct": 74
         },
         "mem": {
           "total": 4020396032,
-          "used": 1452945408,
+          "used": 1463476224,
           "pct": 36
         }
       },
@@ -47,6 +47,12 @@
         "hot_count": 55,
         "cold_count": 12,
         "items": [
+          {
+            "name": "project_lp_buyback",
+            "type": "project",
+            "mtime": 1789207262,
+            "desc": "DeFi single-sided LP buyback system on Base — sell a token but stretch half the proceeds into single-sided concentrated LP that rebuys all s"
+          },
           {
             "name": "project_ailmanack",
             "type": "project",
@@ -76,12 +82,6 @@
             "type": "reference",
             "mtime": 1788576937,
             "desc": "Yahoo Finance is fully blocked from this host (Aug 2026); use api.nasdaq.com as replacement"
-          },
-          {
-            "name": "project_lp_buyback",
-            "type": "project",
-            "mtime": 1788542387,
-            "desc": "DeFi single-sided LP buyback system on Base — sell a token but stretch half the proceeds into single-sided concentrated LP that rebuys all s"
           },
           {
             "name": "reference_discord_theaidevs",
@@ -1423,10 +1423,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 115,
-          "latest": "2026-09-11",
+          "count": 116,
+          "latest": "2026-09-12",
           "days": [
-            "2026-07-16",
             "2026-07-17",
             "2026-07-18",
             "2026-07-19",
@@ -1470,7 +1469,8 @@
             "2026-09-08",
             "2026-09-09",
             "2026-09-10",
-            "2026-09-11"
+            "2026-09-11",
+            "2026-09-12"
           ]
         }
       },
@@ -1611,14 +1611,14 @@
       "blockers": [],
       "ops": {
         "junto_health": {
-          "last_alert": 1789149602.05086,
+          "last_alert": 1789214403.350763,
           "redset": "inference",
           "greenlight_day": "2026-09-11"
         },
         "disk_health": {
           "state": "ok",
           "pct": 75,
-          "ts": 1789113602
+          "ts": 1789200001
         },
         "tweet_queue": {
           "posted": 13,
@@ -1626,6 +1626,11 @@
           "total": 15
         },
         "git": [
+          {
+            "hash": "858171c",
+            "ts": 1789164002,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "688ed80",
             "ts": 1789135202,
@@ -1695,11 +1700,6 @@
             "hash": "d744c64",
             "ts": 1788704712,
             "subject": "chore(lp): retire myjunto positions page -> redirect to rattools canonical"
-          },
-          {
-            "hash": "edb41e6",
-            "ts": 1788704440,
-            "subject": "feat(lp-positions): tokens-acquired per band + $/pair currency toggle"
           }
         ]
       },
