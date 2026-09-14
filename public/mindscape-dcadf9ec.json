@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1789394401,
+  "generated_at": 1789423201,
   "generator": "benji",
   "agents": [
     {
@@ -19,34 +19,46 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 10169458,
+        "uptime_sec": 10198258,
         "load": [
-          0.25,
-          0.16,
-          0.08
+          0,
+          0,
+          0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 17737375744,
-          "pct": 74
+          "used": 18945257472,
+          "pct": 79
         },
         "mem": {
           "total": 4020396032,
-          "used": 1435725824,
-          "pct": 36
+          "used": 1145896960,
+          "pct": 29
         }
       },
       "memory": {
-        "total_files": 68,
+        "total_files": 69,
         "by_type": {
           "feedback": 17,
-          "project": 28,
+          "project": 29,
           "reference": 21,
           "user": 2
         },
-        "hot_count": 55,
+        "hot_count": 56,
         "cold_count": 12,
         "items": [
+          {
+            "name": "project_bookbud",
+            "type": "project",
+            "mtime": 1789418953,
+            "desc": "\"BookBud — AI book-suggesting app; ingest reading history, rate/note, ask for recs, visualize reading history. Benji picking up Sep 14.\""
+          },
+          {
+            "name": "reference_discord_theaidevs",
+            "type": "reference",
+            "mtime": 1789406846,
+            "desc": "\"TheAIDevs Discord guild config, behavior rules, and channel details for Benji\""
+          },
           {
             "name": "project_lp_buyback",
             "type": "project",
@@ -82,12 +94,6 @@
             "type": "reference",
             "mtime": 1788576937,
             "desc": "Yahoo Finance is fully blocked from this host (Aug 2026); use api.nasdaq.com as replacement"
-          },
-          {
-            "name": "reference_discord_theaidevs",
-            "type": "reference",
-            "mtime": 1787587437,
-            "desc": "\"TheAIDevs Discord guild config, behavior rules, and channel details for Benji\""
           },
           {
             "name": "feedback_discord_agent_mentions",
@@ -731,6 +737,11 @@
             "title": "Dispatch→tweet step",
             "file": "reference_dispatch_tweet_step",
             "hook": "scripts/dispatch-tweet.mjs drafts approval-gated @myjunto_xyz tweets from featured dispatches (featured list in state/featured-newsletters.json); tweet-scheduler skips approved:false; built Sep 11 (23380c3)"
+          },
+          {
+            "title": "Project: BookBud",
+            "file": "project_bookbud",
+            "hook": "AI book-rec app (github.com/jon-tompkins/BookBud, bookbud.xyz); ingest history (Goodreads/Amazon/shelf-photo)+rate→AI recs+reading-history visuals; Phase 1 built (Next15/Supabase); collab w/Bob in #bookbud; open Q: personal-wedge vs full-vision"
           }
         ],
         "graph": {
@@ -813,6 +824,10 @@
             },
             {
               "id": "project_ailmanack",
+              "type": "project"
+            },
+            {
+              "id": "project_bookbud",
               "type": "project"
             },
             {
@@ -1088,6 +1103,26 @@
               "source": "project_ailmanack",
               "target": "reference_yahoo_crumb",
               "weight": 3
+            },
+            {
+              "source": "feedback_discord_multiagent_etiquette",
+              "target": "project_bookbud",
+              "weight": 1
+            },
+            {
+              "source": "project_agent_bob",
+              "target": "project_bookbud",
+              "weight": 1
+            },
+            {
+              "source": "project_bookbud",
+              "target": "project_screeners",
+              "weight": 1
+            },
+            {
+              "source": "project_bookbud",
+              "target": "reference_discord_theaidevs",
+              "weight": 1
             },
             {
               "source": "project_junto_entry_price_fix",
@@ -1606,13 +1641,19 @@
           "file": "project_lp_buyback",
           "hook": "DeFi on Base: single-sided concentrated LP that rebuys sold tokens at range bottom; P_bot=(U/T)²/P_top; calculator live at myjunto.xyz/lp-buyback-125cd220.html; Benji=math/UI, Bob=on-chain exec",
           "status": "shipped"
+        },
+        {
+          "name": "BookBud",
+          "file": "project_bookbud",
+          "hook": "AI book-rec app (github.com/jon-tompkins/BookBud, bookbud.xyz); ingest history (Goodreads/Amazon/shelf-photo)+rate→AI recs+reading-history visuals; Phase 1 built (Next15/Supabase); collab w/Bob in #bookbud; open Q: personal-wedge vs full-vision",
+          "status": "active"
         }
       ],
       "blockers": [],
       "ops": {
         "junto_health": {
-          "last_alert": 1789344003.158529,
-          "redset": "inference,tweets",
+          "last_alert": 1789408802.010855,
+          "redset": "inference",
           "greenlight_day": "2026-09-11"
         },
         "disk_health": {
@@ -1626,6 +1667,11 @@
           "total": 15
         },
         "git": [
+          {
+            "hash": "446cd57",
+            "ts": 1789394402,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "08be29f",
             "ts": 1789336803,
@@ -1695,11 +1741,6 @@
             "hash": "cd64da0",
             "ts": 1788887289,
             "subject": "feat(portfolio): Long only filter + fix crypto misclassification (ANSEM/HYPE)"
-          },
-          {
-            "hash": "bed1d1d",
-            "ts": 1788876002,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
       },
