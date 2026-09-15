@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1789423201,
+  "generated_at": 1789480801,
   "generator": "benji",
   "agents": [
     {
@@ -19,34 +19,52 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 10198258,
+        "uptime_sec": 10255857,
         "load": [
-          0,
-          0,
-          0
+          0.06,
+          0.16,
+          0.08
         ],
         "disk": {
           "total": 23843045376,
-          "used": 18945257472,
-          "pct": 79
+          "used": 18957762560,
+          "pct": 80
         },
         "mem": {
           "total": 4020396032,
-          "used": 1145896960,
-          "pct": 29
+          "used": 1263226880,
+          "pct": 31
         }
       },
       "memory": {
-        "total_files": 69,
+        "total_files": 71,
         "by_type": {
-          "feedback": 17,
-          "project": 29,
+          "feedback": 18,
+          "project": 30,
           "reference": 21,
           "user": 2
         },
-        "hot_count": 56,
+        "hot_count": 58,
         "cold_count": 12,
         "items": [
+          {
+            "name": "feedback_tweet_name_dispatch",
+            "type": "feedback",
+            "mtime": 1789480654,
+            "desc": "myjunto marketing tweets/threads should always include the dispatch (newsletter) name somewhere"
+          },
+          {
+            "name": "reference_dispatch_tweet_step",
+            "type": "reference",
+            "mtime": 1789479733,
+            "desc": "scripts/dispatch-tweet.mjs turns a featured myjunto dispatch into an approval-gated @myjunto_xyz tweet"
+          },
+          {
+            "name": "project_alpha_nyc_hub",
+            "type": "project",
+            "mtime": 1789476563,
+            "desc": "Alpha School NYC parent hub — static quick-links site Jon requested Sep 14"
+          },
           {
             "name": "project_bookbud",
             "type": "project",
@@ -70,12 +88,6 @@
             "type": "project",
             "mtime": 1789139717,
             "desc": "Personal Hedge Fund — AI equity research platform with three-agent pipeline (Jeb/Ant/Pete) and report library"
-          },
-          {
-            "name": "reference_dispatch_tweet_step",
-            "type": "reference",
-            "mtime": 1789125596,
-            "desc": "scripts/dispatch-tweet.mjs turns a featured myjunto dispatch into an approval-gated @myjunto_xyz tweet"
           },
           {
             "name": "reference_myjunto_session_cookie_expired",
@@ -736,12 +748,22 @@
           {
             "title": "Dispatch→tweet step",
             "file": "reference_dispatch_tweet_step",
-            "hook": "scripts/dispatch-tweet.mjs drafts approval-gated @myjunto_xyz tweets from featured dispatches (featured list in state/featured-newsletters.json); tweet-scheduler skips approved:false; built Sep 11 (23380c3)"
+            "hook": "scripts/dispatch-tweet.mjs drafts approval-gated @myjunto_xyz tweets from featured dispatches (featured list in state/featured-newsletters.json); tweet-scheduler skips approved:false; built Sep 11 (23380c3); + Typefully v2 draft integration (needs TYPEFULLY_API_KEY)"
+          },
+          {
+            "title": "Feedback: Name the dispatch in tweets",
+            "file": "feedback_tweet_name_dispatch",
+            "hook": "myjunto tweets/threads must include the dispatch name (CTA \"Full <Name> 👇\"); baked into compose() 646a5f9"
           },
           {
             "title": "Project: BookBud",
             "file": "project_bookbud",
             "hook": "AI book-rec app (github.com/jon-tompkins/BookBud, bookbud.xyz); ingest history (Goodreads/Amazon/shelf-photo)+rate→AI recs+reading-history visuals; Phase 1 built (Next15/Supabase); collab w/Bob in #bookbud; open Q: personal-wedge vs full-vision"
+          },
+          {
+            "title": "Project: Alpha School NYC hub",
+            "file": "project_alpha_nyc_hub",
+            "hook": "static parent quick-links site (Alpha-branded); LIVE via GitHub Pages https://jon-tompkins.github.io/alpha-school-nyc/ (repo now PUBLIC); links (incl. Lunch/greentop) inline in index.html"
           }
         ],
         "graph": {
@@ -815,6 +837,10 @@
               "type": "feedback"
             },
             {
+              "id": "feedback_tweet_name_dispatch",
+              "type": "feedback"
+            },
+            {
               "id": "project_50kfeet",
               "type": "project"
             },
@@ -824,6 +850,10 @@
             },
             {
               "id": "project_ailmanack",
+              "type": "project"
+            },
+            {
+              "id": "project_alpha_nyc_hub",
               "type": "project"
             },
             {
@@ -1092,6 +1122,11 @@
             {
               "source": "feedback_timezone",
               "target": "user_jon",
+              "weight": 1
+            },
+            {
+              "source": "feedback_tweet_name_dispatch",
+              "target": "reference_dispatch_tweet_step",
               "weight": 1
             },
             {
@@ -1458,10 +1493,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 118,
-          "latest": "2026-09-14",
+          "count": 119,
+          "latest": "2026-09-15",
           "days": [
-            "2026-07-19",
             "2026-07-20",
             "2026-07-21",
             "2026-07-22",
@@ -1505,7 +1539,8 @@
             "2026-09-11",
             "2026-09-12",
             "2026-09-13",
-            "2026-09-14"
+            "2026-09-14",
+            "2026-09-15"
           ]
         }
       },
@@ -1647,26 +1682,37 @@
           "file": "project_bookbud",
           "hook": "AI book-rec app (github.com/jon-tompkins/BookBud, bookbud.xyz); ingest history (Goodreads/Amazon/shelf-photo)+rate→AI recs+reading-history visuals; Phase 1 built (Next15/Supabase); collab w/Bob in #bookbud; open Q: personal-wedge vs full-vision",
           "status": "active"
+        },
+        {
+          "name": "Alpha School NYC hub",
+          "file": "project_alpha_nyc_hub",
+          "hook": "static parent quick-links site (Alpha-branded); LIVE via GitHub Pages https://jon-tompkins.github.io/alpha-school-nyc/ (repo now PUBLIC); links (incl. Lunch/greentop) inline in index.html",
+          "status": "shipped"
         }
       ],
       "blockers": [],
       "ops": {
         "junto_health": {
-          "last_alert": 1789408802.010855,
-          "redset": "inference",
+          "last_alert": 1789452003.176039,
+          "redset": "",
           "greenlight_day": "2026-09-11"
         },
         "disk_health": {
           "state": "ok",
-          "pct": 75,
-          "ts": 1789372801
+          "pct": 80,
+          "ts": 1789459202
         },
         "tweet_queue": {
-          "posted": 13,
-          "pending": 2,
-          "total": 15
+          "posted": 14,
+          "pending": 3,
+          "total": 17
         },
         "git": [
+          {
+            "hash": "3de3c43",
+            "ts": 1789423202,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "446cd57",
             "ts": 1789394402,
@@ -1736,11 +1782,6 @@
             "hash": "0f58f49",
             "ts": 1788904802,
             "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "cd64da0",
-            "ts": 1788887289,
-            "subject": "feat(portfolio): Long only filter + fix crypto misclassification (ANSEM/HYPE)"
           }
         ]
       },
