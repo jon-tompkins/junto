@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1789480801,
+  "generated_at": 1789509602,
   "generator": "benji",
   "agents": [
     {
@@ -19,34 +19,52 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 10255857,
+        "uptime_sec": 10284658,
         "load": [
-          0.06,
-          0.16,
-          0.08
+          0,
+          0,
+          0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 18957762560,
+          "used": 18965049344,
           "pct": 80
         },
         "mem": {
           "total": 4020396032,
-          "used": 1263226880,
+          "used": 1236557824,
           "pct": 31
         }
       },
       "memory": {
-        "total_files": 71,
+        "total_files": 72,
         "by_type": {
           "feedback": 18,
           "project": 30,
-          "reference": 21,
+          "reference": 22,
           "user": 2
         },
-        "hot_count": 58,
+        "hot_count": 59,
         "cold_count": 12,
         "items": [
+          {
+            "name": "reference_myjunto_session_cookie_expired",
+            "type": "reference",
+            "mtime": 1789498908,
+            "desc": "MYJUNTO_SESSION_COOKIE in ops secrets is stale — authed pages bounce to /login"
+          },
+          {
+            "name": "reference_junto_collection_outage_sep12",
+            "type": "reference",
+            "mtime": 1789496945,
+            "desc": "\"Platform-wide content-pull cron stall starved dispatches of source tweets; \\\"No recent tweets from featured junto sources\\\" symptom\""
+          },
+          {
+            "name": "project_alpha_nyc_hub",
+            "type": "project",
+            "mtime": 1789487292,
+            "desc": "Alpha School NYC parent hub — static quick-links site Jon requested Sep 14"
+          },
           {
             "name": "feedback_tweet_name_dispatch",
             "type": "feedback",
@@ -58,12 +76,6 @@
             "type": "reference",
             "mtime": 1789479733,
             "desc": "scripts/dispatch-tweet.mjs turns a featured myjunto dispatch into an approval-gated @myjunto_xyz tweet"
-          },
-          {
-            "name": "project_alpha_nyc_hub",
-            "type": "project",
-            "mtime": 1789476563,
-            "desc": "Alpha School NYC parent hub — static quick-links site Jon requested Sep 14"
           },
           {
             "name": "project_bookbud",
@@ -88,12 +100,6 @@
             "type": "project",
             "mtime": 1789139717,
             "desc": "Personal Hedge Fund — AI equity research platform with three-agent pipeline (Jeb/Ant/Pete) and report library"
-          },
-          {
-            "name": "reference_myjunto_session_cookie_expired",
-            "type": "reference",
-            "mtime": 1788894120,
-            "desc": "MYJUNTO_SESSION_COOKIE in ops secrets is stale — authed pages bounce to /login"
           },
           {
             "name": "reference_junto_content_pipeline",
@@ -756,6 +762,11 @@
             "hook": "myjunto tweets/threads must include the dispatch name (CTA \"Full <Name> 👇\"); baked into compose() 646a5f9"
           },
           {
+            "title": "Junto content-collection outage Sep 12-13",
+            "file": "reference_junto_collection_outage_sep12",
+            "hook": "pull cron stalled (0 Apify runs 9/13) → dispatches showed \"No recent tweets from sources\"; diagnose via fetched_at/posted_at per-day + apify_pending_runs started/day; recovered 9/14; monitor offered"
+          },
+          {
             "title": "Project: BookBud",
             "file": "project_bookbud",
             "hook": "AI book-rec app (github.com/jon-tompkins/BookBud, bookbud.xyz); ingest history (Goodreads/Amazon/shelf-photo)+rate→AI recs+reading-history visuals; Phase 1 built (Next15/Supabase); collab w/Bob in #bookbud; open Q: personal-wedge vs full-vision"
@@ -974,6 +985,10 @@
             },
             {
               "id": "reference_junto_approval_fill_path",
+              "type": "reference"
+            },
+            {
+              "id": "reference_junto_collection_outage_sep12",
               "type": "reference"
             },
             {
@@ -1365,6 +1380,21 @@
               "weight": 1
             },
             {
+              "source": "reference_junto_collection_outage_sep12",
+              "target": "reference_junto_supabase",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_collection_outage_sep12",
+              "target": "reference_junto_content_pipeline",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_collection_outage_sep12",
+              "target": "reference_junto_podcast_audio_outage",
+              "weight": 1
+            },
+            {
               "source": "reference_junto_content_pipeline",
               "target": "reference_ops_secrets",
               "weight": 1
@@ -1709,6 +1739,11 @@
         },
         "git": [
           {
+            "hash": "054eddc",
+            "ts": 1789480801,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "3de3c43",
             "ts": 1789423202,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1776,11 +1811,6 @@
           {
             "hash": "6188a32",
             "ts": 1788962402,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "0f58f49",
-            "ts": 1788904802,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
