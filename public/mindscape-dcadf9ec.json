@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1789567202,
+  "generated_at": 1789596002,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 10342259,
+        "uptime_sec": 10371058,
         "load": [
-          0.64,
-          0.13,
-          0.04
+          0,
+          0,
+          0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 18986045440,
+          "used": 18985385984,
           "pct": 80
         },
         "mem": {
           "total": 4020396032,
-          "used": 1273700352,
+          "used": 1302216704,
           "pct": 32
         }
       },
@@ -47,6 +47,12 @@
         "hot_count": 59,
         "cold_count": 12,
         "items": [
+          {
+            "name": "reference_dispatch_tweet_step",
+            "type": "reference",
+            "mtime": 1789592120,
+            "desc": "scripts/dispatch-tweet.mjs turns a featured myjunto dispatch into an approval-gated @myjunto_xyz tweet"
+          },
           {
             "name": "project_alpha_nyc_hub",
             "type": "project",
@@ -70,12 +76,6 @@
             "type": "feedback",
             "mtime": 1789480654,
             "desc": "myjunto marketing tweets/threads should always include the dispatch (newsletter) name somewhere"
-          },
-          {
-            "name": "reference_dispatch_tweet_step",
-            "type": "reference",
-            "mtime": 1789479733,
-            "desc": "scripts/dispatch-tweet.mjs turns a featured myjunto dispatch into an approval-gated @myjunto_xyz tweet"
           },
           {
             "name": "project_bookbud",
@@ -1733,11 +1733,21 @@
           "ts": 1789545602
         },
         "tweet_queue": {
-          "posted": 14,
+          "posted": 15,
           "pending": 3,
-          "total": 17
+          "total": 18
         },
         "git": [
+          {
+            "hash": "c3edb8b",
+            "ts": 1789592027,
+            "subject": "fix(og): per-issue social card for dispatch permalinks"
+          },
+          {
+            "hash": "3336b55",
+            "ts": 1789567203,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "d865ab2",
             "ts": 1789509602,
@@ -1801,16 +1811,6 @@
           {
             "hash": "3a3edf9",
             "ts": 1789077602,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "721070e",
-            "ts": 1789048802,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "a5c3a1c",
-            "ts": 1788991202,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
