@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1789653602,
+  "generated_at": 1789682401,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 10428658,
+        "uptime_sec": 10457458,
         "load": [
-          0.02,
+          0.01,
           0.01,
           0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 19165380608,
+          "used": 19168088064,
           "pct": 80
         },
         "mem": {
           "total": 4020396032,
-          "used": 1055326208,
-          "pct": 26
+          "used": 1077297152,
+          "pct": 27
         }
       },
       "memory": {
@@ -1733,11 +1733,16 @@
           "ts": 1789632001
         },
         "tweet_queue": {
-          "posted": 15,
+          "posted": 16,
           "pending": 3,
-          "total": 18
+          "total": 19
         },
         "git": [
+          {
+            "hash": "1bb92f9",
+            "ts": 1789653603,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "d2f69fc",
             "ts": 1789596002,
@@ -1807,11 +1812,6 @@
             "hash": "fb54bd5",
             "ts": 1789134982,
             "subject": "feat(portfolio-tool): asset class + long/short filters and member drill-down"
-          },
-          {
-            "hash": "4cca4ac",
-            "ts": 1789134690,
-            "subject": "feat(portfolio): Long/Short selector + drill into junto members per position"
           }
         ]
       },
