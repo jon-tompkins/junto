@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1789596002,
+  "generated_at": 1789653602,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 10371058,
+        "uptime_sec": 10428658,
         "load": [
-          0,
-          0,
+          0.02,
+          0.01,
           0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 18985385984,
+          "used": 19165380608,
           "pct": 80
         },
         "mem": {
           "total": 4020396032,
-          "used": 1302216704,
-          "pct": 32
+          "used": 1055326208,
+          "pct": 26
         }
       },
       "memory": {
@@ -48,16 +48,22 @@
         "cold_count": 12,
         "items": [
           {
-            "name": "reference_dispatch_tweet_step",
-            "type": "reference",
-            "mtime": 1789592120,
-            "desc": "scripts/dispatch-tweet.mjs turns a featured myjunto dispatch into an approval-gated @myjunto_xyz tweet"
+            "name": "project_bookbud",
+            "type": "project",
+            "mtime": 1789650589,
+            "desc": "\"BookBud — AI book-suggesting app; ingest reading history, rate/note, ask for recs, visualize reading history. Benji picking up Sep 14.\""
           },
           {
             "name": "project_alpha_nyc_hub",
             "type": "project",
-            "mtime": 1789521158,
+            "mtime": 1789639232,
             "desc": "Alpha School NYC parent hub — static quick-links site Jon requested Sep 14"
+          },
+          {
+            "name": "reference_dispatch_tweet_step",
+            "type": "reference",
+            "mtime": 1789592120,
+            "desc": "scripts/dispatch-tweet.mjs turns a featured myjunto dispatch into an approval-gated @myjunto_xyz tweet"
           },
           {
             "name": "reference_myjunto_session_cookie_expired",
@@ -76,12 +82,6 @@
             "type": "feedback",
             "mtime": 1789480654,
             "desc": "myjunto marketing tweets/threads should always include the dispatch (newsletter) name somewhere"
-          },
-          {
-            "name": "project_bookbud",
-            "type": "project",
-            "mtime": 1789418953,
-            "desc": "\"BookBud — AI book-suggesting app; ingest reading history, rate/note, ask for recs, visualize reading history. Benji picking up Sep 14.\""
           },
           {
             "name": "reference_discord_theaidevs",
@@ -1523,10 +1523,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 120,
-          "latest": "2026-09-16",
+          "count": 121,
+          "latest": "2026-09-17",
           "days": [
-            "2026-07-21",
             "2026-07-22",
             "2026-07-23",
             "2026-07-24",
@@ -1570,7 +1569,8 @@
             "2026-09-13",
             "2026-09-14",
             "2026-09-15",
-            "2026-09-16"
+            "2026-09-16",
+            "2026-09-17"
           ]
         }
       },
@@ -1725,12 +1725,12 @@
         "junto_health": {
           "last_alert": 1789452003.176039,
           "redset": "",
-          "greenlight_day": "2026-09-16"
+          "greenlight_day": "2026-09-17"
         },
         "disk_health": {
           "state": "ok",
           "pct": 80,
-          "ts": 1789545602
+          "ts": 1789632001
         },
         "tweet_queue": {
           "posted": 15,
@@ -1738,6 +1738,11 @@
           "total": 18
         },
         "git": [
+          {
+            "hash": "d2f69fc",
+            "ts": 1789596002,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "c3edb8b",
             "ts": 1789592027,
@@ -1807,11 +1812,6 @@
             "hash": "4cca4ac",
             "ts": 1789134690,
             "subject": "feat(portfolio): Long/Short selector + drill into junto members per position"
-          },
-          {
-            "hash": "3a3edf9",
-            "ts": 1789077602,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
       },
