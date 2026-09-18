@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1789740002,
+  "generated_at": 1789768802,
   "generator": "benji",
   "agents": [
     {
@@ -19,34 +19,46 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 10515058,
+        "uptime_sec": 10543858,
         "load": [
-          1.41,
-          0.73,
-          0.32
+          0,
+          0,
+          0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 19179143168,
-          "pct": 80
+          "used": 20069986304,
+          "pct": 84
         },
         "mem": {
           "total": 4020396032,
-          "used": 1106825216,
-          "pct": 28
+          "used": 1234616320,
+          "pct": 31
         }
       },
       "memory": {
-        "total_files": 72,
+        "total_files": 74,
         "by_type": {
           "feedback": 18,
-          "project": 30,
+          "project": 32,
           "reference": 22,
           "user": 2
         },
-        "hot_count": 59,
+        "hot_count": 61,
         "cold_count": 12,
         "items": [
+          {
+            "name": "project_gb_tearaway",
+            "type": "project",
+            "mtime": 1789760681,
+            "desc": "\"Tearaway — parent web app that prints a daily kid \\\"newspaper\\\" strip; Next 16 MVP, deterministic slot-based content engine\""
+          },
+          {
+            "name": "project_myjunto_signal_trade_split",
+            "type": "project",
+            "mtime": 1789741229,
+            "desc": "\"Splitting myjunto into two products — Signal (intelligence/dispatches) + Trade (discover traders → mandates) — one app, one domain, tier-ga"
+          },
           {
             "name": "project_bookbud",
             "type": "project",
@@ -772,6 +784,16 @@
             "hook": "AI book-rec app (github.com/jon-tompkins/BookBud, bookbud.xyz); ingest history (Goodreads/Amazon/shelf-photo)+rate→AI recs+reading-history visuals; Phase 1 built (Next15/Supabase); collab w/Bob in #bookbud; open Q: personal-wedge vs full-vision"
           },
           {
+            "title": "myjunto Signal/Trade split",
+            "file": "project_myjunto_signal_trade_split",
+            "hook": "splitting into Signal (dispatches/intelligence) + Trade (discover traders→mandates); one app/domain, path-based, tier-gated (Operator=Trade); Phase 1 nav switcher + /trade hub shipped b91c54b"
+          },
+          {
+            "title": "Project: Tearaway (gb-tearaway)",
+            "file": "project_gb_tearaway",
+            "hook": "parent web app printing a daily kid \"newspaper\" strip on 58mm thermal; Next16 MVP, deterministic slot/module engine, cloned at repos/gb-tearaway"
+          },
+          {
             "title": "Project: Alpha School NYC hub",
             "file": "project_alpha_nyc_hub",
             "hook": "static parent quick-links site (Alpha-branded); LIVE via GitHub Pages https://jon-tompkins.github.io/alpha-school-nyc/ (repo now PUBLIC); links (incl. Lunch/greentop) inline in index.html"
@@ -872,6 +894,10 @@
               "type": "project"
             },
             {
+              "id": "project_gb_tearaway",
+              "type": "project"
+            },
+            {
               "id": "project_jai_dashboard_agent_viz",
               "type": "project"
             },
@@ -953,6 +979,10 @@
             },
             {
               "id": "project_myjunto_real_money_risks",
+              "type": "project"
+            },
+            {
+              "id": "project_myjunto_signal_trade_split",
               "type": "project"
             },
             {
@@ -1175,6 +1205,16 @@
               "weight": 1
             },
             {
+              "source": "project_alpha_nyc_hub",
+              "target": "project_gb_tearaway",
+              "weight": 1
+            },
+            {
+              "source": "project_bookbud",
+              "target": "project_gb_tearaway",
+              "weight": 1
+            },
+            {
               "source": "project_junto_entry_price_fix",
               "target": "reference_junto_supabase",
               "weight": 1
@@ -1307,6 +1347,26 @@
             {
               "source": "project_junto_hyperliquid_vault",
               "target": "project_myjunto_real_money_risks",
+              "weight": 1
+            },
+            {
+              "source": "project_myjunto_growth_seo",
+              "target": "project_myjunto_signal_trade_split",
+              "weight": 1
+            },
+            {
+              "source": "project_junto_intelligence_direction",
+              "target": "project_myjunto_signal_trade_split",
+              "weight": 1
+            },
+            {
+              "source": "project_myjunto_signal_trade_split",
+              "target": "reference_junto_pricing_canonical",
+              "weight": 1
+            },
+            {
+              "source": "project_myjunto_real_money_risks",
+              "target": "project_myjunto_signal_trade_split",
               "weight": 1
             },
             {
@@ -1714,6 +1774,18 @@
           "status": "active"
         },
         {
+          "name": "myjunto Signal/Trade split",
+          "file": "project_myjunto_signal_trade_split",
+          "hook": "splitting into Signal (dispatches/intelligence) + Trade (discover traders→mandates); one app/domain, path-based, tier-gated (Operator=Trade); Phase 1 nav switcher + /trade hub shipped b91c54b",
+          "status": "shipped"
+        },
+        {
+          "name": "Tearaway (gb-tearaway)",
+          "file": "project_gb_tearaway",
+          "hook": "parent web app printing a daily kid \"newspaper\" strip on 58mm thermal; Next16 MVP, deterministic slot/module engine, cloned at repos/gb-tearaway",
+          "status": "active"
+        },
+        {
           "name": "Alpha School NYC hub",
           "file": "project_alpha_nyc_hub",
           "hook": "static parent quick-links site (Alpha-branded); LIVE via GitHub Pages https://jon-tompkins.github.io/alpha-school-nyc/ (repo now PUBLIC); links (incl. Lunch/greentop) inline in index.html",
@@ -1733,11 +1805,21 @@
           "ts": 1789718402
         },
         "tweet_queue": {
-          "posted": 16,
+          "posted": 17,
           "pending": 3,
-          "total": 19
+          "total": 20
         },
         "git": [
+          {
+            "hash": "7314165",
+            "ts": 1789741218,
+            "subject": "feat(ia): root splash — choose Signal or Trade"
+          },
+          {
+            "hash": "5431349",
+            "ts": 1789740002,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "b91c54b",
             "ts": 1789739983,
@@ -1801,16 +1883,6 @@
           {
             "hash": "5e86fb4",
             "ts": 1789250402,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "7cc127d",
-            "ts": 1789221602,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "858171c",
-            "ts": 1789164002,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
