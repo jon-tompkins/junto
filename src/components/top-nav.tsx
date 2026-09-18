@@ -3,8 +3,17 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { ThemeToggle } from './theme-toggle';
+
+// Two products under one roof: Signal (intelligence/dispatches) and Trade
+// (discover traders + mandates). The nav swaps its links by product and a
+// switcher toggles between them. Backend/account/billing are shared.
+type Product = 'signal' | 'trade';
+interface NavItem { href: string; label: string; locked?: boolean }
+
+// A route belongs to Trade if it starts with one of these; everything else is Signal.
+const TRADE_PREFIXES = ['/trade', '/trading', '/leaderboard', '/positions', '/trades'];
 
 export function TopNav() {
   const { data: session } = useSession();
@@ -13,8 +22,6 @@ export function TopNav() {
   const [tier, setTier] = useState<'free' | 'pro' | 'operator' | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const detailRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (session?.user) {
@@ -28,19 +35,28 @@ export function TopNav() {
     }
   }, [session]);
 
-  // Close detail dropdown on outside click
-  useEffect(() => {
-    if (!detailOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (detailRef.current && !detailRef.current.contains(e.target as Node)) {
-        setDetailOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [detailOpen]);
-
   const tradingUnlocked = tier === 'operator';
+
+  const isActive = (path: string) => pathname === path || pathname?.startsWith(path + '/');
+
+  const product: Product = TRADE_PREFIXES.some((p) => isActive(p)) ? 'trade' : 'signal';
+  const signalHome = session?.user ? '/dashboard' : '/explore';
+
+  const signalNav: NavItem[] = [
+    ...(session?.user ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
+    { href: '/explore', label: 'Dispatches' },
+    { href: '/sources', label: 'Sources' },
+    { href: '/juntos', label: 'Juntos' },
+    { href: '/docs', label: 'Docs' },
+  ];
+  const tradeNav: NavItem[] = [
+    { href: '/trade', label: 'Overview' },
+    { href: '/leaderboard', label: 'Discover' },
+    { href: '/trades', label: 'Best Trades' },
+    { href: '/positions', label: 'Positions' },
+    { href: tradingUnlocked ? '/trading' : '/pricing', label: 'Mandates', locked: !tradingUnlocked },
+  ];
+  const navLinks = product === 'trade' ? tradeNav : signalNav;
 
   const creditColor =
     creditBalance !== null && creditBalance <= 50
@@ -49,127 +65,73 @@ export function TopNav() {
         ? 'rgb(var(--t-brass))'
         : 'rgb(var(--t-bull))';
 
-  const isActive = (path: string) =>
-    pathname === path || pathname?.startsWith(path + '/');
+  const LockIcon = ({ cls }: { cls: string }) => (
+    <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c1.105 0 2 .895 2 2s-.895 2-2 2-2-.895-2-2 .895-2 2-2zm6-3V6a6 6 0 10-12 0v2a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2zM8 8V6a4 4 0 118 0v2H8z" />
+    </svg>
+  );
 
-  const isDetailActive = isActive('/juntos') || isActive('/sources') || isActive('/leaderboard') || isActive('/positions') || isActive('/trades');
-
-  return (
-    <nav className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
-      {/* Logo */}
-      <Link href="/" className="text-2xl font-bold tracking-tight shrink-0" style={{ fontFamily: 'var(--font-oswald)' }}>
-        <span style={{ color: 'rgb(var(--t-parchment))' }}>my</span>
-        <span style={{ color: 'rgb(var(--t-brass))' }}>junto</span>
-      </Link>
-
-      {/* Center nav links — desktop */}
-      <div className="hidden md:flex items-center gap-6">
-        {[
-          ...(session?.user ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
-          { href: '/explore', label: 'Dispatches' },
-        ].map(({ href, label }) => (
+  // Signal ⇄ Trade segmented switcher.
+  const Switcher = ({ full = false }: { full?: boolean }) => (
+    <div
+      className={`flex items-center rounded-sm p-0.5 ${full ? 'w-full' : ''}`}
+      style={{ background: 'rgb(var(--t-raised))', border: '1px solid rgb(var(--t-brass) / 0.28)' }}
+    >
+      {([
+        { key: 'signal' as Product, label: 'Signal', href: signalHome },
+        { key: 'trade' as Product, label: 'Trade', href: '/trade' },
+      ]).map(({ key, label, href }) => {
+        const on = product === key;
+        return (
           <Link
-            key={href}
+            key={key}
             href={href}
-            className="text-sm transition"
+            onClick={() => setMobileOpen(false)}
+            className={`text-[13px] rounded-sm text-center transition ${full ? 'flex-1 py-1.5' : 'px-3 py-1'}`}
             style={{
-              color: isActive(href) ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.5)',
-              fontWeight: isActive(href) ? 500 : undefined,
+              fontFamily: 'var(--font-oswald)',
+              color: on ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.6)',
+              background: on ? 'rgb(var(--t-brass))' : 'transparent',
+              fontWeight: on ? 600 : 400,
             }}
           >
             {label}
           </Link>
-        ))}
+        );
+      })}
+    </div>
+  );
 
-        {/* Detail dropdown */}
-        <div className="relative" ref={detailRef}>
-          <button
-            onClick={() => setDetailOpen(o => !o)}
-            className="text-sm transition flex items-center gap-1"
+  return (
+    <nav className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
+      {/* Logo + product switcher */}
+      <div className="flex items-center gap-4 shrink-0">
+        <Link href="/" className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-oswald)' }}>
+          <span style={{ color: 'rgb(var(--t-parchment))' }}>my</span>
+          <span style={{ color: 'rgb(var(--t-brass))' }}>junto</span>
+        </Link>
+        <div className="hidden md:block"><Switcher /></div>
+      </div>
+
+      {/* Center nav links — desktop, per active product */}
+      <div className="hidden md:flex items-center gap-6">
+        {navLinks.map(({ href, label, locked }) => (
+          <Link
+            key={href}
+            href={href}
+            title={locked ? 'Upgrade to Operator to unlock' : undefined}
+            className="text-sm transition flex items-center gap-1.5"
             style={{
-              color: isDetailActive ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.5)',
-              fontWeight: isDetailActive ? 500 : undefined,
+              color: locked
+                ? 'rgb(var(--t-parchment) / 0.3)'
+                : isActive(href) ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.5)',
+              fontWeight: isActive(href) && !locked ? 500 : undefined,
             }}
           >
-            Detail
-            <svg className={`w-3 h-3 transition-transform ${detailOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          {detailOpen && (
-            <div
-              className="absolute left-0 mt-2 w-36 rounded-sm shadow-xl z-50 py-1"
-              style={{ background: 'rgb(var(--t-surface))', border: '1px solid rgb(var(--t-brass) / 0.28)' }}
-            >
-              {[
-                { href: '/juntos', label: 'Juntos' },
-                { href: '/sources', label: 'Sources' },
-                { href: '/leaderboard', label: 'Leaderboard' },
-                { href: '/positions', label: 'Positions' },
-                { href: '/trades', label: 'Best Trades' },
-              ].map(({ href, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setDetailOpen(false)}
-                  className="block px-3 py-2 text-sm transition hover:opacity-80"
-                  style={{ color: isActive(href) ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.6)' }}
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <Link
-          href="/docs"
-          className="text-sm transition"
-          style={{
-            color: isActive('/docs') ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.5)',
-            fontWeight: isActive('/docs') ? 500 : undefined,
-          }}
-        >
-          Docs
-        </Link>
-
-        <Link
-          href="/demos"
-          className="text-sm transition"
-          style={{
-            color: isActive('/demos') ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.5)',
-            fontWeight: isActive('/demos') ? 500 : undefined,
-          }}
-        >
-          Demo
-        </Link>
-
-        {session?.user && (
-          tradingUnlocked ? (
-            <Link
-              href="/trading"
-              className="text-sm transition"
-              style={{
-                color: isActive('/trading') ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.5)',
-                fontWeight: isActive('/trading') ? 500 : undefined,
-              }}
-            >
-              Trading
-            </Link>
-          ) : (
-            <Link
-              href="/pricing"
-              title="Upgrade to Operator to unlock trading"
-              className="text-sm transition flex items-center gap-1.5"
-              style={{ color: 'rgb(var(--t-parchment) / 0.3)' }}
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c1.105 0 2 .895 2 2s-.895 2-2 2-2-.895-2-2 .895-2 2-2zm6-3V6a6 6 0 10-12 0v2a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2zM8 8V6a4 4 0 118 0v2H8z" />
-              </svg>
-              Trading
-            </Link>
-          )
-        )}
+            {locked && <LockIcon cls="w-3 h-3" />}
+            {label}
+          </Link>
+        ))}
       </div>
 
       {/* Right side: account */}
@@ -186,7 +148,6 @@ export function TopNav() {
                 {creditBalance.toLocaleString()} credits
               </Link>
             )}
-            {/* Account dropdown */}
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
@@ -279,64 +240,30 @@ export function TopNav() {
       {/* Mobile nav — full-screen overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-[100] md:hidden">
-          {/* Backdrop */}
           <div className="absolute inset-0" style={{ background: 'rgb(var(--t-ink) / 0.85)', backdropFilter: 'blur(8px)' }} onClick={() => setMobileOpen(false)} />
-
-          {/* Sheet */}
-          <div
-            className="absolute top-0 right-0 bottom-0 w-full max-w-xs z-10 flex flex-col"
-            style={{ background: 'rgb(var(--t-surface))', borderLeft: '1px solid rgb(var(--t-brass) / 0.2)' }}
-          >
-            {/* Sheet header */}
+          <div className="absolute top-0 right-0 bottom-0 w-full max-w-xs z-10 flex flex-col" style={{ background: 'rgb(var(--t-surface))', borderLeft: '1px solid rgb(var(--t-brass) / 0.2)' }}>
             <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgb(var(--t-brass) / 0.12)' }}>
               <Link href="/" onClick={() => setMobileOpen(false)} className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-oswald)' }}>
                 <span style={{ color: 'rgb(var(--t-parchment))' }}>my</span>
                 <span style={{ color: 'rgb(var(--t-brass))' }}>junto</span>
               </Link>
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="p-1 transition"
-                style={{ color: 'rgb(var(--t-parchment) / 0.4)' }}
-                aria-label="Close"
-              >
+              <button onClick={() => setMobileOpen(false)} className="p-1 transition" style={{ color: 'rgb(var(--t-parchment) / 0.4)' }} aria-label="Close">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            {/* Nav links */}
             <nav className="flex-1 overflow-y-auto px-2 py-3">
-              {/* Main nav */}
-              <div className="space-y-0.5">
-                {session?.user && (
-                  <MobileNavLink href="/dashboard" label="Dashboard" active={isActive('/dashboard')} onClick={() => setMobileOpen(false)} />
-                )}
-                <MobileNavLink href="/explore" label="Dispatches" active={isActive('/explore')} onClick={() => setMobileOpen(false)} />
-              </div>
+              {/* Product switcher */}
+              <div className="px-1 pb-3"><Switcher full /></div>
 
-              {/* Detail group */}
-              <div className="mt-4 mb-1 px-3">
-                <span className="text-[10px] uppercase tracking-widest font-[var(--font-oswald)]" style={{ color: 'rgb(var(--t-parchment) / 0.3)' }}>Detail</span>
-              </div>
+              {/* Active product's links */}
               <div className="space-y-0.5">
-                <MobileNavLink href="/juntos" label="Juntos" active={isActive('/juntos')} onClick={() => setMobileOpen(false)} indent />
-                <MobileNavLink href="/sources" label="Sources" active={isActive('/sources')} onClick={() => setMobileOpen(false)} indent />
-                <MobileNavLink href="/leaderboard" label="Leaderboard" active={isActive('/leaderboard')} onClick={() => setMobileOpen(false)} indent />
-                <MobileNavLink href="/positions" label="Positions" active={isActive('/positions')} onClick={() => setMobileOpen(false)} indent />
-              </div>
-
-              {/* Rest */}
-              <div className="mt-4 space-y-0.5">
-                <MobileNavLink href="/docs" label="Docs" active={isActive('/docs')} onClick={() => setMobileOpen(false)} />
+                {navLinks.map(({ href, label, locked }) => (
+                  <MobileNavLink key={href} href={href} label={label} active={isActive(href) && !locked} onClick={() => setMobileOpen(false)} locked={locked} />
+                ))}
                 <MobileNavLink href="/demos" label="Demo" active={isActive('/demos')} onClick={() => setMobileOpen(false)} />
-                {session?.user && (
-                  tradingUnlocked ? (
-                    <MobileNavLink href="/trading" label="Trading" active={isActive('/trading')} onClick={() => setMobileOpen(false)} />
-                  ) : (
-                    <MobileNavLink href="/pricing" label="Trading" active={false} onClick={() => setMobileOpen(false)} locked />
-                  )
-                )}
               </div>
 
               {/* Account section */}
@@ -351,14 +278,9 @@ export function TopNav() {
               )}
             </nav>
 
-            {/* Sheet footer */}
             {session?.user && (
               <div className="px-5 py-4" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.12)' }}>
-                <button
-                  onClick={() => { setMobileOpen(false); signOut({ callbackUrl: '/' }); }}
-                  className="text-sm transition"
-                  style={{ color: 'rgb(var(--t-parchment) / 0.35)' }}
-                >
+                <button onClick={() => { setMobileOpen(false); signOut({ callbackUrl: '/' }); }} className="text-sm transition" style={{ color: 'rgb(var(--t-parchment) / 0.35)' }}>
                   Sign Out
                 </button>
               </div>
@@ -371,21 +293,10 @@ export function TopNav() {
 }
 
 function MobileNavLink({
-  href,
-  label,
-  active,
-  onClick,
-  indent,
-  muted,
-  locked,
+  href, label, active, onClick, indent, muted, locked,
 }: {
-  href: string;
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  indent?: boolean;
-  muted?: boolean;
-  locked?: boolean;
+  href: string; label: string; active: boolean; onClick: () => void;
+  indent?: boolean; muted?: boolean; locked?: boolean;
 }) {
   return (
     <Link
@@ -393,7 +304,7 @@ function MobileNavLink({
       onClick={onClick}
       className="flex items-center gap-2 px-3 py-2.5 rounded-sm text-sm transition"
       style={{
-        color: active ? 'rgb(var(--t-parchment))' : muted ? 'rgb(var(--t-parchment) / 0.4)' : 'rgb(var(--t-parchment) / 0.65)',
+        color: active ? 'rgb(var(--t-parchment))' : muted || locked ? 'rgb(var(--t-parchment) / 0.4)' : 'rgb(var(--t-parchment) / 0.65)',
         background: active ? 'rgb(var(--t-brass) / 0.1)' : undefined,
         paddingLeft: indent ? '1.25rem' : undefined,
       }}
