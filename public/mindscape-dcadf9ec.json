@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1789826401,
+  "generated_at": 1789855201,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 10601458,
+        "uptime_sec": 10630258,
         "load": [
-          0.02,
-          0.01,
+          0,
+          0,
           0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 20074037248,
+          "used": 20080680960,
           "pct": 84
         },
         "mem": {
           "total": 4020396032,
-          "used": 1215893504,
+          "used": 1200615424,
           "pct": 30
         }
       },
@@ -47,6 +47,12 @@
         "hot_count": 61,
         "cold_count": 12,
         "items": [
+          {
+            "name": "project_alpha_nyc_hub",
+            "type": "project",
+            "mtime": 1789841759,
+            "desc": "Alpha School NYC parent hub — static quick-links site Jon requested Sep 14"
+          },
           {
             "name": "project_gb_tearaway",
             "type": "project",
@@ -64,12 +70,6 @@
             "type": "project",
             "mtime": 1789650589,
             "desc": "\"BookBud — AI book-suggesting app; ingest reading history, rate/note, ask for recs, visualize reading history. Benji picking up Sep 14.\""
-          },
-          {
-            "name": "project_alpha_nyc_hub",
-            "type": "project",
-            "mtime": 1789639232,
-            "desc": "Alpha School NYC parent hub — static quick-links site Jon requested Sep 14"
           },
           {
             "name": "reference_dispatch_tweet_step",
@@ -1185,6 +1185,11 @@
               "weight": 3
             },
             {
+              "source": "feedback_public_name_privacy",
+              "target": "project_alpha_nyc_hub",
+              "weight": 1
+            },
+            {
               "source": "feedback_discord_multiagent_etiquette",
               "target": "project_bookbud",
               "weight": 1
@@ -1811,6 +1816,21 @@
         },
         "git": [
           {
+            "hash": "253ec8d",
+            "ts": 1789840838,
+            "subject": "feat(api): clubs/chess endpoint handles ?club=chess|debate|robotics"
+          },
+          {
+            "hash": "b069bf8",
+            "ts": 1789839025,
+            "subject": "feat(api): add clubs/chess KV endpoint for Alpha NYC chess interest form"
+          },
+          {
+            "hash": "31d08dc",
+            "ts": 1789826402,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "fb72c44",
             "ts": 1789768802,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1868,21 +1888,6 @@
           {
             "hash": "3de3c43",
             "ts": 1789423202,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "446cd57",
-            "ts": 1789394402,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "08be29f",
-            "ts": 1789336803,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "7393797",
-            "ts": 1789308002,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
