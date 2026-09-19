@@ -9,7 +9,11 @@ import { getSupabase } from '@/lib/db/client';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const KEY = 'alpha_chess_interest';
+const ALLOWED_CLUBS = new Set(['chess', 'debate', 'robotics']);
+function keyFor(req: NextRequest): string {
+  const club = new URL(req.url).searchParams.get('club') || 'chess';
+  return `alpha_${ALLOWED_CLUBS.has(club) ? club : 'chess'}_interest`;
+}
 const ALLOWED = new Set([
   'https://alphanycparents.xyz',
   'https://www.alphanycparents.xyz',
@@ -57,7 +61,7 @@ export async function GET(req: NextRequest) {
     const { data, error } = await supabase
       .from('app_kv')
       .select('value')
-      .eq('key', KEY)
+      .eq('key', keyFor(req))
       .maybeSingle();
     if (error) throw error;
     const value = (data?.value as { responses?: unknown } | null) ?? { responses: [] };
@@ -76,7 +80,7 @@ export async function PUT(req: NextRequest) {
     const supabase = getSupabase();
     const { error } = await supabase
       .from('app_kv')
-      .upsert({ key: KEY, value: { responses }, updated_at: new Date().toISOString() });
+      .upsert({ key: keyFor(req), value: { responses }, updated_at: new Date().toISOString() });
     if (error) throw error;
     return NextResponse.json({ responses }, { headers });
   } catch (e) {
