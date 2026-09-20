@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1789855201,
+  "generated_at": 1789912803,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 10630258,
+        "uptime_sec": 10687859,
         "load": [
-          0,
-          0,
-          0
+          0.08,
+          0.02,
+          0.01
         ],
         "disk": {
           "total": 23843045376,
-          "used": 20080680960,
+          "used": 20083527680,
           "pct": 84
         },
         "mem": {
           "total": 4020396032,
-          "used": 1200615424,
+          "used": 1207496704,
           "pct": 30
         }
       },
@@ -1588,10 +1588,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 123,
-          "latest": "2026-09-19",
+          "count": 124,
+          "latest": "2026-09-20",
           "days": [
-            "2026-07-24",
             "2026-07-30",
             "2026-07-31",
             "2026-08-01",
@@ -1635,7 +1634,8 @@
             "2026-09-16",
             "2026-09-17",
             "2026-09-18",
-            "2026-09-19"
+            "2026-09-19",
+            "2026-09-20"
           ]
         }
       },
@@ -1802,12 +1802,12 @@
         "junto_health": {
           "last_alert": 1789452003.176039,
           "redset": "",
-          "greenlight_day": "2026-09-19"
+          "greenlight_day": "2026-09-20"
         },
         "disk_health": {
           "state": "alert",
           "pct": 85,
-          "ts": 1789804802
+          "ts": 1789891201
         },
         "tweet_queue": {
           "posted": 17,
@@ -1815,6 +1815,11 @@
           "total": 20
         },
         "git": [
+          {
+            "hash": "d3e26f8",
+            "ts": 1789855202,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "253ec8d",
             "ts": 1789840838,
@@ -1883,11 +1888,6 @@
           {
             "hash": "054eddc",
             "ts": 1789480801,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "3de3c43",
-            "ts": 1789423202,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
