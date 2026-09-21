@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1789941601,
+  "generated_at": 1789999202,
   "generator": "benji",
   "agents": [
     {
@@ -19,34 +19,40 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 10716658,
+        "uptime_sec": 10774258,
         "load": [
           0,
-          0.03,
+          0,
           0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 20080140288,
-          "pct": 84
+          "used": 20573995008,
+          "pct": 86
         },
         "mem": {
           "total": 4020396032,
-          "used": 1213960192,
+          "used": 1220030464,
           "pct": 30
         }
       },
       "memory": {
-        "total_files": 74,
+        "total_files": 75,
         "by_type": {
           "feedback": 18,
-          "project": 32,
+          "project": 33,
           "reference": 22,
           "user": 2
         },
-        "hot_count": 61,
+        "hot_count": 62,
         "cold_count": 12,
         "items": [
+          {
+            "name": "project_agent_dashboard",
+            "type": "project",
+            "mtime": 1789959571,
+            "desc": "Local read-only Next.js dashboard showing live Bob/Benji activity + memory/project state; repo jon-tompkins/agent-dashboard"
+          },
           {
             "name": "project_alpha_nyc_hub",
             "type": "project",
@@ -794,6 +800,11 @@
             "hook": "parent web app printing a daily kid \"newspaper\" strip on 58mm thermal; Next16 MVP, deterministic slot/module engine, cloned at repos/gb-tearaway"
           },
           {
+            "title": "Project: Agent Dashboard",
+            "file": "project_agent_dashboard",
+            "hook": "local read-only Next.js dash (jon-tompkins/agent-dashboard, port 4317) showing live Bob/Benji activity + memory state; Benji live from local sessions, Bob via published feed (run publish-feed.mjs on his box)"
+          },
+          {
             "title": "Project: Alpha School NYC hub",
             "file": "project_alpha_nyc_hub",
             "hook": "static parent quick-links site (Alpha-branded); LIVE via GitHub Pages https://jon-tompkins.github.io/alpha-school-nyc/ (repo now PUBLIC); links (incl. Lunch/greentop) inline in index.html"
@@ -879,6 +890,10 @@
             },
             {
               "id": "project_agent_bob",
+              "type": "project"
+            },
+            {
+              "id": "project_agent_dashboard",
               "type": "project"
             },
             {
@@ -1177,6 +1192,11 @@
             {
               "source": "feedback_response_style",
               "target": "project_agent_bob",
+              "weight": 1
+            },
+            {
+              "source": "project_agent_dashboard",
+              "target": "project_mindscape",
               "weight": 1
             },
             {
@@ -1588,10 +1608,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 124,
-          "latest": "2026-09-20",
+          "count": 125,
+          "latest": "2026-09-21",
           "days": [
-            "2026-07-30",
             "2026-07-31",
             "2026-08-01",
             "2026-08-02",
@@ -1635,7 +1654,8 @@
             "2026-09-17",
             "2026-09-18",
             "2026-09-19",
-            "2026-09-20"
+            "2026-09-20",
+            "2026-09-21"
           ]
         }
       },
@@ -1791,6 +1811,12 @@
           "status": "active"
         },
         {
+          "name": "Agent Dashboard",
+          "file": "project_agent_dashboard",
+          "hook": "local read-only Next.js dash (jon-tompkins/agent-dashboard, port 4317) showing live Bob/Benji activity + memory state; Benji live from local sessions, Bob via published feed (run publish-feed.mjs on his box)",
+          "status": "shipped"
+        },
+        {
           "name": "Alpha School NYC hub",
           "file": "project_alpha_nyc_hub",
           "hook": "static parent quick-links site (Alpha-branded); LIVE via GitHub Pages https://jon-tompkins.github.io/alpha-school-nyc/ (repo now PUBLIC); links (incl. Lunch/greentop) inline in index.html",
@@ -1802,12 +1828,12 @@
         "junto_health": {
           "last_alert": 1789452003.176039,
           "redset": "",
-          "greenlight_day": "2026-09-20"
+          "greenlight_day": "2026-09-21"
         },
         "disk_health": {
           "state": "alert",
-          "pct": 85,
-          "ts": 1789891201
+          "pct": 87,
+          "ts": 1789977602
         },
         "tweet_queue": {
           "posted": 17,
@@ -1815,6 +1841,11 @@
           "total": 20
         },
         "git": [
+          {
+            "hash": "74b9907",
+            "ts": 1789941602,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "505d4f8",
             "ts": 1789912803,
@@ -1883,11 +1914,6 @@
           {
             "hash": "3336b55",
             "ts": 1789567203,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "d865ab2",
-            "ts": 1789509602,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
