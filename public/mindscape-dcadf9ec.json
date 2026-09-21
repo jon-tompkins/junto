@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1789999202,
+  "generated_at": 1790028002,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 10774258,
+        "uptime_sec": 10803058,
         "load": [
-          0,
-          0,
-          0
+          0.02,
+          0.04,
+          0.01
         ],
         "disk": {
           "total": 23843045376,
-          "used": 20573995008,
+          "used": 20579340288,
           "pct": 86
         },
         "mem": {
           "total": 4020396032,
-          "used": 1220030464,
-          "pct": 30
+          "used": 1228517376,
+          "pct": 31
         }
       },
       "memory": {
@@ -1836,11 +1836,16 @@
           "ts": 1789977602
         },
         "tweet_queue": {
-          "posted": 17,
+          "posted": 18,
           "pending": 3,
-          "total": 20
+          "total": 21
         },
         "git": [
+          {
+            "hash": "c7c5776",
+            "ts": 1789999202,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "74b9907",
             "ts": 1789941602,
@@ -1910,11 +1915,6 @@
             "hash": "c3edb8b",
             "ts": 1789592027,
             "subject": "fix(og): per-issue social card for dispatch permalinks"
-          },
-          {
-            "hash": "3336b55",
-            "ts": 1789567203,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
       },
