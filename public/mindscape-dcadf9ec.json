@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1790028002,
+  "generated_at": 1790085602,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 10803058,
+        "uptime_sec": 10860658,
         "load": [
-          0.02,
-          0.04,
-          0.01
+          0,
+          0,
+          0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 20579340288,
+          "used": 20584771584,
           "pct": 86
         },
         "mem": {
           "total": 4020396032,
-          "used": 1228517376,
-          "pct": 31
+          "used": 1213243392,
+          "pct": 30
         }
       },
       "memory": {
@@ -44,8 +44,8 @@
           "reference": 22,
           "user": 2
         },
-        "hot_count": 62,
-        "cold_count": 12,
+        "hot_count": 61,
+        "cold_count": 13,
         "items": [
           {
             "name": "project_agent_dashboard",
@@ -778,11 +778,6 @@
             "title": "Feedback: Name the dispatch in tweets",
             "file": "feedback_tweet_name_dispatch",
             "hook": "myjunto tweets/threads must include the dispatch name (CTA \"Full <Name> 👇\"); baked into compose() 646a5f9"
-          },
-          {
-            "title": "Junto content-collection outage Sep 12-13",
-            "file": "reference_junto_collection_outage_sep12",
-            "hook": "pull cron stalled (0 Apify runs 9/13) → dispatches showed \"No recent tweets from sources\"; diagnose via fetched_at/posted_at per-day + apify_pending_runs started/day; recovered 9/14; monitor offered"
           },
           {
             "title": "Project: BookBud",
@@ -1608,10 +1603,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 125,
-          "latest": "2026-09-21",
+          "count": 126,
+          "latest": "2026-09-22",
           "days": [
-            "2026-07-31",
             "2026-08-01",
             "2026-08-02",
             "2026-08-03",
@@ -1655,7 +1649,8 @@
             "2026-09-18",
             "2026-09-19",
             "2026-09-20",
-            "2026-09-21"
+            "2026-09-21",
+            "2026-09-22"
           ]
         }
       },
@@ -1828,12 +1823,12 @@
         "junto_health": {
           "last_alert": 1789452003.176039,
           "redset": "",
-          "greenlight_day": "2026-09-21"
+          "greenlight_day": "2026-09-22"
         },
         "disk_health": {
           "state": "alert",
           "pct": 87,
-          "ts": 1789977602
+          "ts": 1790064001
         },
         "tweet_queue": {
           "posted": 18,
@@ -1841,6 +1836,11 @@
           "total": 21
         },
         "git": [
+          {
+            "hash": "82a534b",
+            "ts": 1790028002,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "c7c5776",
             "ts": 1789999202,
@@ -1910,11 +1910,6 @@
             "hash": "d2f69fc",
             "ts": 1789596002,
             "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "c3edb8b",
-            "ts": 1789592027,
-            "subject": "fix(og): per-issue social card for dispatch permalinks"
           }
         ]
       },
