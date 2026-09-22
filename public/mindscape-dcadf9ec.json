@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1790085602,
+  "generated_at": 1790114402,
   "generator": "benji",
   "agents": [
     {
@@ -19,7 +19,7 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 10860658,
+        "uptime_sec": 10889459,
         "load": [
           0,
           0,
@@ -27,12 +27,12 @@
         ],
         "disk": {
           "total": 23843045376,
-          "used": 20584771584,
+          "used": 20588912640,
           "pct": 86
         },
         "mem": {
           "total": 4020396032,
-          "used": 1213243392,
+          "used": 1218785280,
           "pct": 30
         }
       },
@@ -47,6 +47,12 @@
         "hot_count": 61,
         "cold_count": 13,
         "items": [
+          {
+            "name": "reference_dispatch_tweet_step",
+            "type": "reference",
+            "mtime": 1790097617,
+            "desc": "scripts/dispatch-tweet.mjs turns a featured myjunto dispatch into an approval-gated @myjunto_xyz tweet"
+          },
           {
             "name": "project_agent_dashboard",
             "type": "project",
@@ -76,12 +82,6 @@
             "type": "project",
             "mtime": 1789650589,
             "desc": "\"BookBud — AI book-suggesting app; ingest reading history, rate/note, ask for recs, visualize reading history. Benji picking up Sep 14.\""
-          },
-          {
-            "name": "reference_dispatch_tweet_step",
-            "type": "reference",
-            "mtime": 1789592120,
-            "desc": "scripts/dispatch-tweet.mjs turns a featured myjunto dispatch into an approval-gated @myjunto_xyz tweet"
           },
           {
             "name": "reference_myjunto_session_cookie_expired",
@@ -1831,11 +1831,16 @@
           "ts": 1790064001
         },
         "tweet_queue": {
-          "posted": 18,
+          "posted": 19,
           "pending": 3,
-          "total": 21
+          "total": 22
         },
         "git": [
+          {
+            "hash": "ea3d0bb",
+            "ts": 1790085602,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "82a534b",
             "ts": 1790028002,
@@ -1904,11 +1909,6 @@
           {
             "hash": "1bb92f9",
             "ts": 1789653603,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "d2f69fc",
-            "ts": 1789596002,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
