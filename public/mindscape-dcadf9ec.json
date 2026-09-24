@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1790200802,
+  "generated_at": 1790258402,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 10975858,
+        "uptime_sec": 11033458,
         "load": [
-          0.05,
-          0.03,
-          0.06
+          0.16,
+          0.2,
+          0.14
         ],
         "disk": {
           "total": 23843045376,
-          "used": 20786446336,
-          "pct": 87
+          "used": 20885704704,
+          "pct": 88
         },
         "mem": {
           "total": 4020396032,
-          "used": 1349849088,
-          "pct": 34
+          "used": 1336152064,
+          "pct": 33
         }
       },
       "memory": {
@@ -50,8 +50,14 @@
           {
             "name": "project_gb_tearaway",
             "type": "project",
-            "mtime": 1790200011,
+            "mtime": 1790257806,
             "desc": "\"Tearaway — parent web app that prints a daily kid \\\"newspaper\\\" strip; Next 16 MVP, deterministic slot-based content engine\""
+          },
+          {
+            "name": "reference_myjunto_session_cookie_expired",
+            "type": "reference",
+            "mtime": 1790204511,
+            "desc": "MYJUNTO_SESSION_COOKIE in ops secrets is stale — authed pages bounce to /login"
           },
           {
             "name": "reference_junto_cron_monitor",
@@ -88,12 +94,6 @@
             "type": "project",
             "mtime": 1789650589,
             "desc": "\"BookBud — AI book-suggesting app; ingest reading history, rate/note, ask for recs, visualize reading history. Benji picking up Sep 14.\""
-          },
-          {
-            "name": "reference_myjunto_session_cookie_expired",
-            "type": "reference",
-            "mtime": 1789498908,
-            "desc": "MYJUNTO_SESSION_COOKIE in ops secrets is stale — authed pages bounce to /login"
           },
           {
             "name": "reference_junto_collection_outage_sep12",
@@ -1628,10 +1628,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 127,
-          "latest": "2026-09-23",
+          "count": 128,
+          "latest": "2026-09-24",
           "days": [
-            "2026-08-02",
             "2026-08-03",
             "2026-08-04",
             "2026-08-05",
@@ -1675,7 +1674,8 @@
             "2026-09-20",
             "2026-09-21",
             "2026-09-22",
-            "2026-09-23"
+            "2026-09-23",
+            "2026-09-24"
           ]
         }
       },
@@ -1848,12 +1848,12 @@
         "junto_health": {
           "last_alert": 1789452003.176039,
           "redset": "",
-          "greenlight_day": "2026-09-23"
+          "greenlight_day": "2026-09-24"
         },
         "disk_health": {
           "state": "alert",
-          "pct": 87,
-          "ts": 1790150402
+          "pct": 88,
+          "ts": 1790236801
         },
         "tweet_queue": {
           "posted": 20,
@@ -1861,6 +1861,11 @@
           "total": 23
         },
         "git": [
+          {
+            "hash": "66a4539",
+            "ts": 1790200803,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "9359441",
             "ts": 1790172002,
@@ -1930,11 +1935,6 @@
             "hash": "5431349",
             "ts": 1789740002,
             "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "b91c54b",
-            "ts": 1789739983,
-            "subject": "feat(ia): split into Signal + Trade products with a nav switcher"
           }
         ]
       },
