@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1790258402,
+  "generated_at": 1790287202,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 11033458,
+        "uptime_sec": 11062258,
         "load": [
-          0.16,
-          0.2,
-          0.14
+          0,
+          0,
+          0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 20885704704,
+          "used": 20997013504,
           "pct": 88
         },
         "mem": {
           "total": 4020396032,
-          "used": 1336152064,
-          "pct": 33
+          "used": 1131814912,
+          "pct": 28
         }
       },
       "memory": {
@@ -50,7 +50,7 @@
           {
             "name": "project_gb_tearaway",
             "type": "project",
-            "mtime": 1790257806,
+            "mtime": 1790281972,
             "desc": "\"Tearaway — parent web app that prints a daily kid \\\"newspaper\\\" strip; Next 16 MVP, deterministic slot-based content engine\""
           },
           {
@@ -1856,11 +1856,16 @@
           "ts": 1790236801
         },
         "tweet_queue": {
-          "posted": 20,
+          "posted": 21,
           "pending": 3,
-          "total": 23
+          "total": 24
         },
         "git": [
+          {
+            "hash": "8502764",
+            "ts": 1790258402,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "66a4539",
             "ts": 1790200803,
@@ -1930,11 +1935,6 @@
             "hash": "7314165",
             "ts": 1789741218,
             "subject": "feat(ia): root splash — choose Signal or Trade"
-          },
-          {
-            "hash": "5431349",
-            "ts": 1789740002,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
       },
