@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1790344802,
+  "generated_at": 1790373602,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 11119859,
+        "uptime_sec": 11148658,
         "load": [
           0,
-          0.06,
-          0.09
+          0,
+          0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 21214855168,
-          "pct": 89
+          "used": 21342834688,
+          "pct": 90
         },
         "mem": {
           "total": 4020396032,
-          "used": 1141166080,
-          "pct": 28
+          "used": 1399631872,
+          "pct": 35
         }
       },
       "memory": {
@@ -50,13 +50,13 @@
           {
             "name": "project_gb_tearaway",
             "type": "project",
-            "mtime": 1790342063,
+            "mtime": 1790365341,
             "desc": "\"Tearaway — parent web app that prints a daily kid \\\"newspaper\\\" strip; Next 16 MVP, deterministic slot-based content engine\""
           },
           {
             "name": "reference_myjunto_session_cookie_expired",
             "type": "reference",
-            "mtime": 1790204511,
+            "mtime": 1790362915,
             "desc": "MYJUNTO_SESSION_COOKIE in ops secrets is stale — authed pages bounce to /login"
           },
           {
@@ -1856,11 +1856,16 @@
           "ts": 1790323202
         },
         "tweet_queue": {
-          "posted": 21,
+          "posted": 22,
           "pending": 3,
-          "total": 24
+          "total": 25
         },
         "git": [
+          {
+            "hash": "3210537",
+            "ts": 1790344803,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "126e138",
             "ts": 1790287203,
@@ -1929,11 +1934,6 @@
           {
             "hash": "31d08dc",
             "ts": 1789826402,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "fb72c44",
-            "ts": 1789768802,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
