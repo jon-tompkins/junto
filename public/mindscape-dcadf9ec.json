@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1790287202,
+  "generated_at": 1790344802,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 11062258,
+        "uptime_sec": 11119859,
         "load": [
           0,
-          0,
-          0
+          0.06,
+          0.09
         ],
         "disk": {
           "total": 23843045376,
-          "used": 20997013504,
-          "pct": 88
+          "used": 21214855168,
+          "pct": 89
         },
         "mem": {
           "total": 4020396032,
-          "used": 1131814912,
+          "used": 1141166080,
           "pct": 28
         }
       },
@@ -50,7 +50,7 @@
           {
             "name": "project_gb_tearaway",
             "type": "project",
-            "mtime": 1790281972,
+            "mtime": 1790342063,
             "desc": "\"Tearaway — parent web app that prints a daily kid \\\"newspaper\\\" strip; Next 16 MVP, deterministic slot-based content engine\""
           },
           {
@@ -1628,10 +1628,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 128,
-          "latest": "2026-09-24",
+          "count": 129,
+          "latest": "2026-09-25",
           "days": [
-            "2026-08-03",
             "2026-08-04",
             "2026-08-05",
             "2026-08-06",
@@ -1675,7 +1674,8 @@
             "2026-09-21",
             "2026-09-22",
             "2026-09-23",
-            "2026-09-24"
+            "2026-09-24",
+            "2026-09-25"
           ]
         }
       },
@@ -1848,12 +1848,12 @@
         "junto_health": {
           "last_alert": 1789452003.176039,
           "redset": "",
-          "greenlight_day": "2026-09-24"
+          "greenlight_day": "2026-09-25"
         },
         "disk_health": {
           "state": "alert",
-          "pct": 88,
-          "ts": 1790236801
+          "pct": 89,
+          "ts": 1790323202
         },
         "tweet_queue": {
           "posted": 21,
@@ -1861,6 +1861,11 @@
           "total": 24
         },
         "git": [
+          {
+            "hash": "126e138",
+            "ts": 1790287203,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "8502764",
             "ts": 1790258402,
@@ -1930,11 +1935,6 @@
             "hash": "fb72c44",
             "ts": 1789768802,
             "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "7314165",
-            "ts": 1789741218,
-            "subject": "feat(ia): root splash — choose Signal or Trade"
           }
         ]
       },
