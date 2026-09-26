@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1790431201,
+  "generated_at": 1790460002,
   "generator": "benji",
   "agents": [
     {
@@ -19,20 +19,20 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 11206257,
+        "uptime_sec": 11235059,
         "load": [
           0,
-          0,
+          0.03,
           0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 21356126208,
+          "used": 21377871872,
           "pct": 90
         },
         "mem": {
           "total": 4020396032,
-          "used": 1345159168,
+          "used": 1343094784,
           "pct": 33
         }
       },
@@ -1862,6 +1862,11 @@
         },
         "git": [
           {
+            "hash": "9bdafdc",
+            "ts": 1790431202,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
+          {
             "hash": "e909956",
             "ts": 1790373603,
             "subject": "chore(mindscape): refresh telemetry snapshot"
@@ -1930,11 +1935,6 @@
             "hash": "253ec8d",
             "ts": 1789840838,
             "subject": "feat(api): clubs/chess endpoint handles ?club=chess|debate|robotics"
-          },
-          {
-            "hash": "b069bf8",
-            "ts": 1789839025,
-            "subject": "feat(api): add clubs/chess KV endpoint for Alpha NYC chess interest form"
           }
         ]
       },
