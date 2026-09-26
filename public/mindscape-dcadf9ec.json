@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1790373602,
+  "generated_at": 1790431201,
   "generator": "benji",
   "agents": [
     {
@@ -19,7 +19,7 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 11148658,
+        "uptime_sec": 11206257,
         "load": [
           0,
           0,
@@ -27,13 +27,13 @@
         ],
         "disk": {
           "total": 23843045376,
-          "used": 21342834688,
+          "used": 21356126208,
           "pct": 90
         },
         "mem": {
           "total": 4020396032,
-          "used": 1399631872,
-          "pct": 35
+          "used": 1345159168,
+          "pct": 33
         }
       },
       "memory": {
@@ -50,7 +50,7 @@
           {
             "name": "project_gb_tearaway",
             "type": "project",
-            "mtime": 1790365341,
+            "mtime": 1790427754,
             "desc": "\"Tearaway — parent web app that prints a daily kid \\\"newspaper\\\" strip; Next 16 MVP, deterministic slot-based content engine\""
           },
           {
@@ -1628,10 +1628,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 129,
-          "latest": "2026-09-25",
+          "count": 130,
+          "latest": "2026-09-26",
           "days": [
-            "2026-08-04",
             "2026-08-05",
             "2026-08-06",
             "2026-08-07",
@@ -1675,7 +1674,8 @@
             "2026-09-22",
             "2026-09-23",
             "2026-09-24",
-            "2026-09-25"
+            "2026-09-25",
+            "2026-09-26"
           ]
         }
       },
@@ -1848,12 +1848,12 @@
         "junto_health": {
           "last_alert": 1789452003.176039,
           "redset": "",
-          "greenlight_day": "2026-09-25"
+          "greenlight_day": "2026-09-26"
         },
         "disk_health": {
           "state": "alert",
-          "pct": 89,
-          "ts": 1790323202
+          "pct": 90,
+          "ts": 1790409602
         },
         "tweet_queue": {
           "posted": 22,
@@ -1861,6 +1861,11 @@
           "total": 25
         },
         "git": [
+          {
+            "hash": "e909956",
+            "ts": 1790373603,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "3210537",
             "ts": 1790344803,
@@ -1930,11 +1935,6 @@
             "hash": "b069bf8",
             "ts": 1789839025,
             "subject": "feat(api): add clubs/chess KV endpoint for Alpha NYC chess interest form"
-          },
-          {
-            "hash": "31d08dc",
-            "ts": 1789826402,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
       },
