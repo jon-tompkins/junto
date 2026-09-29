@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1790632802,
+  "generated_at": 1790690402,
   "generator": "benji",
   "agents": [
     {
@@ -19,7 +19,7 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 11407858,
+        "uptime_sec": 11465458,
         "load": [
           0,
           0,
@@ -27,12 +27,12 @@
         ],
         "disk": {
           "total": 23843045376,
-          "used": 21437534208,
+          "used": 21439270912,
           "pct": 90
         },
         "mem": {
           "total": 4020396032,
-          "used": 1375043584,
+          "used": 1385881600,
           "pct": 34
         }
       },
@@ -47,6 +47,12 @@
         "hot_count": 62,
         "cold_count": 13,
         "items": [
+          {
+            "name": "reference_ops_secrets",
+            "type": "reference",
+            "mtime": 1790681056,
+            "desc": "Local secrets file auto-sourced by ~/.bashrc — holds CRON_SECRET and any future ops keys for myjunto endpoints"
+          },
           {
             "name": "project_gb_tearaway",
             "type": "project",
@@ -406,12 +412,6 @@
             "type": "feedback",
             "mtime": 1781025729,
             "desc": "Every X post coming from automation should end with the robot emoji so the feed clearly distinguishes agent posts from human ones"
-          },
-          {
-            "name": "reference_ops_secrets",
-            "type": "reference",
-            "mtime": 1781025600,
-            "desc": "Local secrets file auto-sourced by ~/.bashrc — holds CRON_SECRET and any future ops keys for myjunto endpoints"
           },
           {
             "name": "project_junto_trackers_idea",
@@ -1610,6 +1610,11 @@
               "weight": 1
             },
             {
+              "source": "project_gb_tearaway",
+              "target": "reference_ops_secrets",
+              "weight": 1
+            },
+            {
               "source": "project_ailmanack",
               "target": "reference_otc_thin_history",
               "weight": 1
@@ -1628,10 +1633,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 132,
-          "latest": "2026-09-28",
+          "count": 133,
+          "latest": "2026-09-29",
           "days": [
-            "2026-08-07",
             "2026-08-08",
             "2026-08-09",
             "2026-08-10",
@@ -1675,7 +1679,8 @@
             "2026-09-25",
             "2026-09-26",
             "2026-09-27",
-            "2026-09-28"
+            "2026-09-28",
+            "2026-09-29"
           ]
         }
       },
@@ -1848,12 +1853,12 @@
         "junto_health": {
           "last_alert": 1790575202.888639,
           "redset": "",
-          "greenlight_day": "2026-09-27"
+          "greenlight_day": "2026-09-29"
         },
         "disk_health": {
           "state": "alert",
           "pct": 90,
-          "ts": 1790582402
+          "ts": 1790668802
         },
         "tweet_queue": {
           "posted": 23,
@@ -1861,6 +1866,11 @@
           "total": 26
         },
         "git": [
+          {
+            "hash": "81c727b",
+            "ts": 1790632802,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "ad4474c",
             "ts": 1790604002,
@@ -1929,11 +1939,6 @@
           {
             "hash": "82a534b",
             "ts": 1790028002,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "c7c5776",
-            "ts": 1789999202,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
