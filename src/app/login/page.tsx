@@ -9,7 +9,14 @@ export default function LoginPage() {
   const start = (provider: 'twitter' | 'google') => {
     if (loading) return;
     setLoading(provider);
-    signIn(provider, { callbackUrl: '/dashboard' });
+    // Honor an intended destination (e.g. /signal's "Get started" → /onboarding);
+    // fall back to /dashboard. Only allow same-site relative paths.
+    let dest = '/dashboard';
+    try {
+      const cb = new URLSearchParams(window.location.search).get('callbackUrl');
+      if (cb && cb.startsWith('/')) dest = cb;
+    } catch { /* no-op */ }
+    signIn(provider, { callbackUrl: dest });
   };
   return (
     <main className="min-h-screen bg-ink text-parchment flex flex-col">

@@ -168,7 +168,7 @@ export default function WelcomePage() {
   );
 
   const submit = async () => {
-    if (!selectedJuntoId) return;
+    // juntoId may be null when no preset matched — the API falls back to Featured.
     if (!disclaimerAccepted) {
       setError('Please confirm you understand myjunto is not financial advice.');
       return;
@@ -186,7 +186,7 @@ export default function WelcomePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           interests,
-          juntoId: selectedJuntoId,
+          juntoId: selectedJuntoId || undefined,
           tickers,
           dispatchEmail,
           deliveryEmail: deliveryEmail.trim() || undefined,
@@ -201,7 +201,7 @@ export default function WelcomePage() {
         setSubmitting(false);
         return;
       }
-      router.push('/today?welcome=1');
+      router.push('/dashboard?welcome=1');
     } catch (e: any) {
       setError(e?.message || 'Setup failed');
       setSubmitting(false);
@@ -288,8 +288,9 @@ export default function WelcomePage() {
 
             {!loadingPresets && presets.length === 0 && (
               <div className="p-5 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface text-sm text-parchment/65">
-                No curated juntos for that combination yet.{' '}
-                <Link href="/explore" className="text-brass hover:underline">Browse all public juntos →</Link>
+                No curated juntos for that combination yet — continue and we&apos;ll start you on our{' '}
+                <span className="text-brass">Featured</span> junto, or{' '}
+                <Link href="/explore" className="text-brass hover:underline">browse all public juntos →</Link>
               </div>
             )}
 
@@ -331,7 +332,7 @@ export default function WelcomePage() {
               <button onClick={() => setStep(1)} className="text-sm text-parchment/55 hover:text-parchment">← Back</button>
               <button
                 onClick={() => setStep(3)}
-                disabled={!selectedJuntoId}
+                disabled={presets.length > 0 && !selectedJuntoId}
                 className="bg-brass disabled:opacity-30 text-ink px-5 py-2 rounded text-sm font-semibold uppercase tracking-wide font-[var(--font-oswald)]"
               >
                 Next →

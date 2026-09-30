@@ -44,20 +44,26 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
     const body: WizardPayload = await req.json();
-    if (!body.juntoId) return NextResponse.json({ error: 'juntoId required' }, { status: 400 });
 
     const supabase = getSupabase();
 
-    // Verify the chosen junto is public — the wizard only offers public ones,
-    // but defend against tampering.
-    const { data: junto } = await supabase
-      .from('juntos')
-      .select('id, is_public, name')
-      .eq('id', body.juntoId)
-      .single();
-    if (!junto || !junto.is_public) {
-      return NextResponse.json({ error: 'Junto not available' }, { status: 403 });
+    // Resolve the junto. Normally the wizard sends a chosen preset; if none matched
+    // the user's interests (no dead end), fall back to the public "Featured" junto.
+    let junto: { id: string; is_public: boolean; name: string } | null = null;
+    if (body.juntoId) {
+      const { data } = await supabase
+        .from('juntos').select('id, is_public, name').eq('id', body.juntoId).single();
+      junto = data;
     }
+    if (!junto) {
+      const { data } = await supabase
+        .from('juntos').select('id, is_public, name').ilike('name', 'featured').eq('is_public', true).maybeSingle();
+      junto = data;
+    }
+    if (!junto || !junto.is_public) {
+      return NextResponse.json({ error: 'No junto available to start with' }, { status: 400 });
+    }
+    body.juntoId = junto.id;
 
     // ── 1. Set featured junto + delivery prefs on the user row ─────────
     const updates: Record<string, any> = {

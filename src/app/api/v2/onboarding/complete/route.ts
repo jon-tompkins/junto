@@ -85,6 +85,12 @@ export async function POST(req: NextRequest) {
         if (src?.id && !sourceIds.includes(src.id)) sourceIds.push(src.id);
       }
 
+      // Don't finish onboarding with an empty junto — it produces a permanently
+      // empty dispatch. Require at least one source.
+      if (sourceIds.length === 0) {
+        return NextResponse.json({ error: 'Pick at least one source to start your junto.' }, { status: 400 });
+      }
+
       // Create the junto.
       const label = body.name?.trim()
         || (user.twitter_handle ? `${user.twitter_handle}'s Junto` : 'My Junto');

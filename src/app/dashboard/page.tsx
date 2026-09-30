@@ -10,6 +10,67 @@ import { formatSendWindowLabel } from '@/lib/utils/date';
 import { PositionsHeatmap } from '@/components/positions-heatmap';
 import { JuntoChat } from '@/components/junto-chat';
 
+// First-run activation: instead of "your dispatch arrives tomorrow", let a new user
+// generate a real sample dispatch from their junto's sources right now (quick-dispatch).
+function FirstDispatchCTA() {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ subject: string; content: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function generate() {
+    setLoading(true);
+    setError(null);
+    try {
+      const pj = await fetch('/api/v2/primary-junto').then((r) => (r.ok ? r.json() : null));
+      const sourceIds = ((pj?.junto_sources) || [])
+        .map((js: any) => js.source_id)
+        .filter(Boolean)
+        .slice(0, 5);
+      if (sourceIds.length === 0) {
+        setError('Add a few sources to your junto first, then try again.');
+        return;
+      }
+      const res = await fetch('/api/quick-dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceIds }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Could not generate a dispatch right now.'); return; }
+      setResult({ subject: data.subject, content: data.content });
+    } catch {
+      setError('Could not generate a dispatch right now.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (result) {
+    return (
+      <div className="p-4 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface">
+        <div className="text-[10px] uppercase tracking-wider text-brass/70 mb-2 font-[var(--font-oswald)]">Your first dispatch</div>
+        <h3 className="font-semibold text-parchment mb-2">{result.subject}</h3>
+        <div className="text-sm text-parchment/80 space-y-2" dangerouslySetInnerHTML={{ __html: markdownToHtml(result.content) }} />
+        <p className="text-xs text-parchment/45 mt-3">This one&apos;s a live sample — your full dispatch runs automatically every morning.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface">
+      <p className="text-sm text-parchment/70 mb-3">Your first scheduled dispatch arrives tomorrow morning — or see one right now from your sources.</p>
+      <button
+        onClick={generate}
+        disabled={loading}
+        className="bg-brass disabled:opacity-40 text-ink px-4 py-2 rounded text-sm font-semibold uppercase tracking-wide font-[var(--font-oswald)]"
+      >
+        {loading ? 'Generating…' : 'Generate my first dispatch now →'}
+      </button>
+      {error && <p className="text-sm text-bear mt-2">{error}</p>}
+    </div>
+  );
+}
+
 // ─── Share Button ─────────────────────────────────────
 
 function DashboardShareButton() {
@@ -253,11 +314,11 @@ function LatestDispatchCard() {
   }
 
   if (!payload?.latest || history.length === 0) {
-    return (
+    return payload?.has_featured_junto ? (
+      <FirstDispatchCTA />
+    ) : (
       <div className="p-4 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface text-sm text-parchment/55">
-        {payload?.has_featured_junto
-          ? 'No dispatch yet — your first will arrive at the next cron run.'
-          : 'Pick a primary junto below to start receiving a daily personal dispatch.'}
+        Pick a primary junto below to start receiving a daily personal dispatch.
       </div>
     );
   }
