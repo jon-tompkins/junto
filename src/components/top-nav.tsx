@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { ThemeToggle } from './theme-toggle';
+import { SearchBar } from './search-bar';
 
 // Two products under one roof: Signal (intelligence/dispatches) and Trade
 // (discover traders + mandates). The nav swaps its links by product and a
@@ -134,8 +135,9 @@ export function TopNav() {
         ))}
       </div>
 
-      {/* Right side: account */}
+      {/* Right side: search + account */}
       <div className="flex items-center gap-3">
+        <SearchBar className="hidden lg:block w-56" />
         <ThemeToggle />
         {session?.user ? (
           <>
@@ -255,6 +257,8 @@ export function TopNav() {
             </div>
 
             <nav className="flex-1 overflow-y-auto px-2 py-3">
+              {/* Search */}
+              <div className="px-1 pb-3"><SearchBar onNavigate={() => setMobileOpen(false)} /></div>
               {/* Product switcher */}
               <div className="px-1 pb-3"><Switcher full /></div>
 
