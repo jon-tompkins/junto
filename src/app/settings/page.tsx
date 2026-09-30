@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { TopNav } from '@/components/top-nav';
+import { TradingViewSync } from '@/components/tradingview-sync';
 
 const COMMON_TIMEZONES = [
   { value: 'America/New_York', label: 'Eastern Time (ET)' },
@@ -445,6 +446,9 @@ export default function SettingsPage() {
             {saving ? 'Saving...' : 'Save Settings'}
           </button>
         </div>
+
+        {/* TradingView watchlist sync */}
+        <TradingViewSync />
 
         {/* Telegram Section */}
         <div className="mb-8 p-6 bg-surface rounded border border-[rgb(var(--t-brass) / 0.28)] space-y-4">
