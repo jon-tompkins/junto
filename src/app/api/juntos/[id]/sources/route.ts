@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getSupabase } from '@/lib/db/client';
 import { getJunto, addSourceToJunto, removeSourceFromJunto } from '@/lib/db/juntos';
+import { getOrCreateSource } from '@/lib/db/sources';
 
 async function resolveUserId(session: any): Promise<string | null> {
   const supabase = getSupabase();
@@ -40,9 +41,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if ('error' in auth) return auth.error;
 
     const body = await req.json();
-    const { source_id } = body;
-    if (!source_id) {
-      return NextResponse.json({ error: 'source_id required' }, { status: 400 });
+    // Accept either a source_id or a raw @handle (resolve/create the source for inline add).
+    let sourceId: string | undefined = body.source_id;
+    let source = null;
+    if (!sourceId && typeof body.handle === 'string') {
+      const clean = body.handle.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?(x|twitter)\.com\//i, '').split(/[/?]/)[0];
+      if (!clean) return NextResponse.json({ error: 'Enter an X handle' }, { status: 400 });
+      source = await getOrCreateSource({ type: 'twitter', handle_or_url: clean });
+      sourceId = source.id;
+    }
+    if (!sourceId) {
+      return NextResponse.json({ error: 'source_id or handle required' }, { status: 400 });
     }
 
     // Enforce 20-source cap per junto
@@ -55,8 +64,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Junto is at the 20-source limit' }, { status: 422 });
     }
 
-    await addSourceToJunto(id, source_id);
-    return NextResponse.json({ success: true });
+    await addSourceToJunto(id, sourceId);
+    return NextResponse.json({ success: true, source });
   } catch (error) {
     console.error('[POST /api/juntos/[id]/sources]', error);
     return NextResponse.json({ error: 'Failed to add source' }, { status: 500 });

@@ -280,6 +280,9 @@ export default function JuntoViewPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
+  const [addHandle, setAddHandle] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -362,6 +365,41 @@ export default function JuntoViewPage() {
   const isOwner = junto.is_owner === true;
   const consensus = buildConsensus(sources, quotes);
 
+  async function handleAddSource() {
+    const handle = addHandle.trim();
+    if (!handle || adding) return;
+    setAdding(true);
+    setAddError(null);
+    try {
+      const res = await fetch(`/api/juntos/${id}/sources`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handle }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.source) {
+        setAddError(data.error || 'Could not add that account.');
+        return;
+      }
+      const src = data.source;
+      setJunto((prev) => {
+        if (!prev) return prev;
+        if (prev.junto_sources.some((js) => js.source_id === src.id)) return prev; // already a member
+        const added = {
+          id: `new-${src.id}`,
+          source_id: src.id,
+          source: { id: src.id, handle_or_url: src.handle_or_url, display_name: src.display_name, avatar_url: src.avatar_url, type: src.type, profile: null },
+        } as unknown as JuntoSourceWithProfile;
+        return { ...prev, junto_sources: [...prev.junto_sources, added] };
+      });
+      setAddHandle('');
+    } catch {
+      setAddError('Could not add that account.');
+    } finally {
+      setAdding(false);
+    }
+  }
+
   async function handleRemoveSource(sourceId: string) {
     setRemovingIds((prev) => new Set(prev).add(sourceId));
     try {
@@ -406,6 +444,9 @@ export default function JuntoViewPage() {
               <p className="text-sm text-parchment/60">
                 {sources.length} {sources.length === 1 ? 'member' : 'members'}
                 {junto.is_public && <span className="ml-3">· Public</span>}
+                {isOwner && (
+                  <span className="ml-3 text-[11px] uppercase tracking-wide text-brass border border-brass/40 rounded px-1.5 py-0.5">You own this</span>
+                )}
               </p>
             </div>
             <div className="flex items-center gap-3 shrink-0">
@@ -438,6 +479,29 @@ export default function JuntoViewPage() {
         {/* Members section */}
         <section className="mb-10">
           <h2 className="text-xs font-semibold text-parchment/60 uppercase tracking-wider mb-4 font-[var(--font-oswald)]">Members</h2>
+          {isOwner && (
+            <div className="mb-4">
+              <div className="flex items-center gap-2">
+                <input
+                  value={addHandle}
+                  onChange={(e) => { setAddHandle(e.target.value); setAddError(null); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddSource(); }}
+                  placeholder="Add an X account — @handle"
+                  disabled={adding || sources.length >= 20}
+                  className="flex-1 max-w-xs bg-raised border border-[rgb(var(--t-brass) / 0.28)] rounded px-3 py-2 text-sm text-parchment placeholder:text-parchment/35 focus:outline-none focus:border-brass disabled:opacity-50"
+                />
+                <button
+                  onClick={handleAddSource}
+                  disabled={adding || !addHandle.trim() || sources.length >= 20}
+                  className="bg-brass hover:bg-brass/80 disabled:opacity-40 text-ink rounded px-4 py-2 text-sm font-semibold uppercase tracking-wide font-[var(--font-oswald)] transition"
+                >
+                  {adding ? 'Adding…' : 'Add'}
+                </button>
+              </div>
+              {addError && <p className="text-xs text-bear mt-1.5">{addError}</p>}
+              {sources.length >= 20 && <p className="text-xs text-parchment/45 mt-1.5">Junto is at the 20-source limit.</p>}
+            </div>
+          )}
           {sources.length === 0 ? (
             <p className="text-parchment/60 text-sm">No sources yet.</p>
           ) : (
