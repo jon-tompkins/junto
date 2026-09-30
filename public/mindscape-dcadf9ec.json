@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1790776802,
+  "generated_at": 1790805602,
   "generator": "benji",
   "agents": [
     {
@@ -19,7 +19,7 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 11551859,
+        "uptime_sec": 11580658,
         "load": [
           0,
           0,
@@ -27,26 +27,50 @@
         ],
         "disk": {
           "total": 23843045376,
-          "used": 21454270464,
+          "used": 21466058752,
           "pct": 90
         },
         "mem": {
           "total": 4020396032,
-          "used": 1319124992,
-          "pct": 33
+          "used": 1215692800,
+          "pct": 30
         }
       },
       "memory": {
-        "total_files": 76,
+        "total_files": 78,
         "by_type": {
           "feedback": 18,
-          "project": 33,
-          "reference": 23,
+          "project": 34,
+          "reference": 24,
           "user": 2
         },
-        "hot_count": 62,
+        "hot_count": 65,
         "cold_count": 13,
         "items": [
+          {
+            "name": "reference_dispatch_tweet_step",
+            "type": "reference",
+            "mtime": 1790793087,
+            "desc": "scripts/dispatch-tweet.mjs turns a featured myjunto dispatch into an approval-gated @myjunto_xyz tweet"
+          },
+          {
+            "name": "reference_junto_tradingview_sync",
+            "type": "reference",
+            "mtime": 1790789404,
+            "desc": "\"Link a public TradingView shared watchlist → mirror into myjunto watchlist, daily auto-sync\""
+          },
+          {
+            "name": "project_myjunto_signal_trade_split",
+            "type": "project",
+            "mtime": 1790786547,
+            "desc": "\"Splitting myjunto into two products — Signal (intelligence/dispatches) + Trade (discover traders → mandates) — one app, one domain, tier-ga"
+          },
+          {
+            "name": "project_myjunto_onboarding_audit",
+            "type": "project",
+            "mtime": 1790785138,
+            "desc": "Findings + prioritized fixes for the myjunto new-user onboarding flow"
+          },
           {
             "name": "reference_ops_secrets",
             "type": "reference",
@@ -72,12 +96,6 @@
             "desc": "\"Junto cron-outage detector that alerts #myjunto-benji when crons stall\""
           },
           {
-            "name": "reference_dispatch_tweet_step",
-            "type": "reference",
-            "mtime": 1790097617,
-            "desc": "scripts/dispatch-tweet.mjs turns a featured myjunto dispatch into an approval-gated @myjunto_xyz tweet"
-          },
-          {
             "name": "project_agent_dashboard",
             "type": "project",
             "mtime": 1789959571,
@@ -88,12 +106,6 @@
             "type": "project",
             "mtime": 1789841759,
             "desc": "Alpha School NYC parent hub — static quick-links site Jon requested Sep 14"
-          },
-          {
-            "name": "project_myjunto_signal_trade_split",
-            "type": "project",
-            "mtime": 1789741229,
-            "desc": "\"Splitting myjunto into two products — Signal (intelligence/dispatches) + Trade (discover traders → mandates) — one app, one domain, tier-ga"
           },
           {
             "name": "project_bookbud",
@@ -796,6 +808,21 @@
             "hook": "AI book-rec app (github.com/jon-tompkins/BookBud, bookbud.xyz); ingest history (Goodreads/Amazon/shelf-photo)+rate→AI recs+reading-history visuals; Phase 1 built (Next15/Supabase); collab w/Bob in #bookbud; open Q: personal-wedge vs full-vision"
           },
           {
+            "title": "Junto TradingView watchlist sync",
+            "file": "reference_junto_tradingview_sync",
+            "hook": "link a PUBLIC TradingView shared watchlist (only accessible kind) → mirror into myjunto watchlist, daily cron 12:30 UTC; parser in lib/tradingview.ts; settings UI; shipped 43d4a21"
+          },
+          {
+            "title": "myjunto onboarding audit",
+            "file": "project_myjunto_onboarding_audit",
+            "hook": "Sep 30 audit: 3 conflicting flows (/welcome live, /onboarding orphaned/broken, /setup dead \"Joonto\"); killer = zero time-to-value (quick-dispatch API unwired); P0 bugs + P1 sample-dispatch fix list"
+          },
+          {
+            "title": "Junto weekly traffic snapshot",
+            "file": "reference_junto_cron_monitor",
+            "hook": "scripts/junto-traffic-report.mjs posts weekly (Mon 16:00 UTC) views/uniques/t.co/WoW to #myjunto-benji (7e73e55); sibling of the cron-outage monitor"
+          },
+          {
             "title": "myjunto Signal/Trade split",
             "file": "project_myjunto_signal_trade_split",
             "hook": "splitting into Signal (dispatches/intelligence) + Trade (discover traders→mandates); one app/domain, path-based, tier-gated (Operator=Trade); Phase 1 nav switcher + /trade hub shipped b91c54b"
@@ -999,6 +1026,10 @@
               "type": "project"
             },
             {
+              "id": "project_myjunto_onboarding_audit",
+              "type": "project"
+            },
+            {
               "id": "project_myjunto_real_money_risks",
               "type": "project"
             },
@@ -1080,6 +1111,10 @@
             },
             {
               "id": "reference_junto_trade_suggestion_collapse",
+              "type": "reference"
+            },
+            {
+              "id": "reference_junto_tradingview_sync",
               "type": "reference"
             },
             {
@@ -1380,6 +1415,21 @@
               "weight": 1
             },
             {
+              "source": "project_myjunto_onboarding_audit",
+              "target": "project_myjunto_signal_trade_split",
+              "weight": 1
+            },
+            {
+              "source": "project_myjunto_growth_seo",
+              "target": "project_myjunto_onboarding_audit",
+              "weight": 1
+            },
+            {
+              "source": "project_myjunto_frontend_backlog",
+              "target": "project_myjunto_onboarding_audit",
+              "weight": 1
+            },
+            {
               "source": "project_junto_hyperliquid_vault",
               "target": "project_myjunto_real_money_risks",
               "weight": 1
@@ -1582,6 +1632,16 @@
             {
               "source": "project_junto_slice_model",
               "target": "reference_junto_trade_suggestion_collapse",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_tradingview_sync",
+              "target": "reference_junto_watchlist_pointer_drift",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_supabase",
+              "target": "reference_junto_tradingview_sync",
               "weight": 1
             },
             {
@@ -1824,6 +1884,12 @@
           "status": "active"
         },
         {
+          "name": "myjunto onboarding audit",
+          "file": "project_myjunto_onboarding_audit",
+          "hook": "Sep 30 audit: 3 conflicting flows (/welcome live, /onboarding orphaned/broken, /setup dead \"Joonto\"); killer = zero time-to-value (quick-dispatch API unwired); P0 bugs + P1 sample-dispatch fix list",
+          "status": "blocked"
+        },
+        {
           "name": "myjunto Signal/Trade split",
           "file": "project_myjunto_signal_trade_split",
           "hook": "splitting into Signal (dispatches/intelligence) + Trade (discover traders→mandates); one app/domain, path-based, tier-gated (Operator=Trade); Phase 1 nav switcher + /trade hub shipped b91c54b",
@@ -1861,11 +1927,46 @@
           "ts": 1790755202
         },
         "tweet_queue": {
-          "posted": 24,
+          "posted": 25,
           "pending": 3,
-          "total": 27
+          "total": 28
         },
         "git": [
+          {
+            "hash": "86c8c40",
+            "ts": 1790794524,
+            "subject": "fix(search): ticker results link to /positions/[ticker] (asset positions page)"
+          },
+          {
+            "hash": "365cffd",
+            "ts": 1790793793,
+            "subject": "feat(junto): owners add accounts inline + owner badge"
+          },
+          {
+            "hash": "43d4a21",
+            "ts": 1790789366,
+            "subject": "feat(watchlist): link a public TradingView watchlist, daily auto-sync"
+          },
+          {
+            "hash": "8075481",
+            "ts": 1790786526,
+            "subject": "feat(search): universal ticker + profile search in the nav"
+          },
+          {
+            "hash": "4e59295",
+            "ts": 1790786526,
+            "subject": "revert(ia): drop splash chooser — apex lands on content again"
+          },
+          {
+            "hash": "510316c",
+            "ts": 1790785119,
+            "subject": "fix(onboarding): P0 bugs + first-dispatch activation (P1)"
+          },
+          {
+            "hash": "89a5eb4",
+            "ts": 1790776803,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "12e2542",
             "ts": 1790719203,
@@ -1904,41 +2005,6 @@
           {
             "hash": "9bdafdc",
             "ts": 1790431202,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "e909956",
-            "ts": 1790373603,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "3210537",
-            "ts": 1790344803,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "126e138",
-            "ts": 1790287203,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "8502764",
-            "ts": 1790258402,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "66a4539",
-            "ts": 1790200803,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "9359441",
-            "ts": 1790172002,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "be729f6",
-            "ts": 1790114403,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
