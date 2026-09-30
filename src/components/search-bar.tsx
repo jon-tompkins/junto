@@ -8,7 +8,7 @@ interface SearchResult {
   tickers: string[];
 }
 
-// Universal search — tickers ($AAPL → /tickers/AAPL) and profiles (@handle → /sources/handle).
+// Universal search — tickers ($AAPL → /positions/AAPL) and profiles (@handle → /sources/handle).
 export function SearchBar({ className = '', onNavigate }: { className?: string; onNavigate?: () => void }) {
   const router = useRouter();
   const [q, setQ] = useState('');
@@ -45,7 +45,7 @@ export function SearchBar({ className = '', onNavigate }: { className?: string; 
         onKeyDown={(e) => {
           if (e.key === 'Escape') setOpen(false);
           if (e.key === 'Enter') {
-            if (res.tickers[0]) go(`/tickers/${encodeURIComponent(res.tickers[0])}`);
+            if (res.tickers[0]) go(`/positions/${encodeURIComponent(res.tickers[0])}`);
             else if (res.sources[0]) go(`/sources/${encodeURIComponent(res.sources[0].handle)}`);
           }
         }}
@@ -62,7 +62,7 @@ export function SearchBar({ className = '', onNavigate }: { className?: string; 
             <div className="px-3 pt-1.5 pb-1 text-[10px] uppercase tracking-wider text-parchment/40 font-[var(--font-oswald)]">Tickers</div>
           )}
           {res.tickers.map((t) => (
-            <button key={t} onClick={() => go(`/tickers/${encodeURIComponent(t)}`)} className="w-full text-left px-3 py-1.5 text-sm font-mono text-parchment/85 hover:bg-raised transition">
+            <button key={t} onClick={() => go(`/positions/${encodeURIComponent(t)}`)} className="w-full text-left px-3 py-1.5 text-sm font-mono text-parchment/85 hover:bg-raised transition">
               ${t}
             </button>
           ))}
