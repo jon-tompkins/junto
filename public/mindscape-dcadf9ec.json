@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1790805602,
+  "generated_at": 1790863202,
   "generator": "benji",
   "agents": [
     {
@@ -19,34 +19,52 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 11580658,
+        "uptime_sec": 11638258,
         "load": [
-          0,
-          0,
-          0
+          0.48,
+          0.1,
+          0.03
         ],
         "disk": {
           "total": 23843045376,
-          "used": 21466058752,
+          "used": 21464846336,
           "pct": 90
         },
         "mem": {
           "total": 4020396032,
-          "used": 1215692800,
+          "used": 1202003968,
           "pct": 30
         }
       },
       "memory": {
-        "total_files": 78,
+        "total_files": 79,
         "by_type": {
           "feedback": 18,
           "project": 34,
-          "reference": 24,
+          "reference": 25,
           "user": 2
         },
         "hot_count": 65,
         "cold_count": 13,
         "items": [
+          {
+            "name": "reference_junto_entry_price_close",
+            "type": "reference",
+            "mtime": 1790858964,
+            "desc": "\"Track-record entry price now anchors to the signal-day CLOSE not OPEN, so reaction tweets don't get credited for pre-tweet moves\""
+          },
+          {
+            "name": "project_gb_tearaway",
+            "type": "project",
+            "mtime": 1790853915,
+            "desc": "\"Tearaway — parent web app that prints a daily kid \\\"newspaper\\\" strip; Next 16 MVP, deterministic slot-based content engine\""
+          },
+          {
+            "name": "reference_junto_cron_monitor",
+            "type": "reference",
+            "mtime": 1790848833,
+            "desc": "\"Junto cron-outage detector that alerts #myjunto-benji when crons stall\""
+          },
           {
             "name": "reference_dispatch_tweet_step",
             "type": "reference",
@@ -78,22 +96,10 @@
             "desc": "Local secrets file auto-sourced by ~/.bashrc — holds CRON_SECRET and any future ops keys for myjunto endpoints"
           },
           {
-            "name": "project_gb_tearaway",
-            "type": "project",
-            "mtime": 1790427754,
-            "desc": "\"Tearaway — parent web app that prints a daily kid \\\"newspaper\\\" strip; Next 16 MVP, deterministic slot-based content engine\""
-          },
-          {
             "name": "reference_myjunto_session_cookie_expired",
             "type": "reference",
             "mtime": 1790362915,
             "desc": "MYJUNTO_SESSION_COOKIE in ops secrets is stale — authed pages bounce to /login"
-          },
-          {
-            "name": "reference_junto_cron_monitor",
-            "type": "reference",
-            "mtime": 1790157650,
-            "desc": "\"Junto cron-outage detector that alerts #myjunto-benji when crons stall\""
           },
           {
             "name": "project_agent_dashboard",
@@ -793,9 +799,9 @@
             "hook": "scripts/dispatch-tweet.mjs; auto-threads Crypto Daily Brief daily @ 15:14 UTC (live 81f4626); approval gate for others; Typefully v2 draft integration needs TYPEFULLY_API_KEY"
           },
           {
-            "title": "Junto cron-outage monitor",
+            "title": "Junto cron monitor + weekly traffic",
             "file": "reference_junto_cron_monitor",
-            "hook": "89179b5 background monitor alerts #myjunto-benji when junto crons stall; state in state/junto-cron-monitor-state.json"
+            "hook": "outage monitor (89179b5) alerts #myjunto-benji when crons stall; weekly traffic report (7e73e55) posts views/uniques/t.co WoW Mon 16:00 UTC"
           },
           {
             "title": "Feedback: Name the dispatch in tweets",
@@ -813,14 +819,14 @@
             "hook": "link a PUBLIC TradingView shared watchlist (only accessible kind) → mirror into myjunto watchlist, daily cron 12:30 UTC; parser in lib/tradingview.ts; settings UI; shipped 43d4a21"
           },
           {
+            "title": "Junto entry-price = session close",
+            "file": "reference_junto_entry_price_close",
+            "hook": "track-record entry anchors to signal-day CLOSE not OPEN so reaction tweets aren't credited for pre-tweet moves (539714d); returns stored in source_call_outcomes; backfill script reprice-call-outcomes"
+          },
+          {
             "title": "myjunto onboarding audit",
             "file": "project_myjunto_onboarding_audit",
             "hook": "Sep 30 audit: 3 conflicting flows (/welcome live, /onboarding orphaned/broken, /setup dead \"Joonto\"); killer = zero time-to-value (quick-dispatch API unwired); P0 bugs + P1 sample-dispatch fix list"
-          },
-          {
-            "title": "Junto weekly traffic snapshot",
-            "file": "reference_junto_cron_monitor",
-            "hook": "scripts/junto-traffic-report.mjs posts weekly (Mon 16:00 UTC) views/uniques/t.co/WoW to #myjunto-benji (7e73e55); sibling of the cron-outage monitor"
           },
           {
             "title": "myjunto Signal/Trade split",
@@ -1082,6 +1088,10 @@
               "type": "reference"
             },
             {
+              "id": "reference_junto_entry_price_close",
+              "type": "reference"
+            },
+            {
               "id": "reference_junto_exit_signal_double_card",
               "type": "reference"
             },
@@ -1283,6 +1293,11 @@
               "source": "project_bookbud",
               "target": "project_gb_tearaway",
               "weight": 1
+            },
+            {
+              "source": "project_gb_tearaway",
+              "target": "reference_ops_secrets",
+              "weight": 2
             },
             {
               "source": "project_junto_entry_price_fix",
@@ -1555,6 +1570,16 @@
               "weight": 1
             },
             {
+              "source": "reference_junto_entry_price_close",
+              "target": "reference_yahoo_crumb",
+              "weight": 1
+            },
+            {
+              "source": "reference_junto_entry_price_close",
+              "target": "reference_junto_supabase",
+              "weight": 1
+            },
+            {
               "source": "reference_junto_exit_signal_double_card",
               "target": "reference_junto_trade_suggestion_collapse",
               "weight": 1
@@ -1670,11 +1695,6 @@
               "weight": 1
             },
             {
-              "source": "project_gb_tearaway",
-              "target": "reference_ops_secrets",
-              "weight": 1
-            },
-            {
               "source": "project_ailmanack",
               "target": "reference_otc_thin_history",
               "weight": 1
@@ -1693,10 +1713,9 @@
           "unresolved": 3
         },
         "daily_notes": {
-          "count": 134,
-          "latest": "2026-09-30",
+          "count": 135,
+          "latest": "2026-10-01",
           "days": [
-            "2026-08-09",
             "2026-08-10",
             "2026-08-11",
             "2026-08-12",
@@ -1740,7 +1759,8 @@
             "2026-09-27",
             "2026-09-28",
             "2026-09-29",
-            "2026-09-30"
+            "2026-09-30",
+            "2026-10-01"
           ]
         }
       },
@@ -1919,12 +1939,12 @@
         "junto_health": {
           "last_alert": 1790575202.888639,
           "redset": "",
-          "greenlight_day": "2026-09-30"
+          "greenlight_day": "2026-10-01"
         },
         "disk_health": {
           "state": "alert",
           "pct": 91,
-          "ts": 1790755202
+          "ts": 1790841602
         },
         "tweet_queue": {
           "posted": 25,
@@ -1932,6 +1952,21 @@
           "total": 28
         },
         "git": [
+          {
+            "hash": "830bbb4",
+            "ts": 1790858917,
+            "subject": "chore(track-record): reprice-call-outcomes backfill (open→close entry)"
+          },
+          {
+            "hash": "539714d",
+            "ts": 1790858546,
+            "subject": "fix(track-record): price entry off session CLOSE, not open (kill reaction credit)"
+          },
+          {
+            "hash": "eb13dbe",
+            "ts": 1790805603,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "86c8c40",
             "ts": 1790794524,
@@ -1990,21 +2025,6 @@
           {
             "hash": "e3e5607",
             "ts": 1790546402,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "5323d92",
-            "ts": 1790517603,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "bcde246",
-            "ts": 1790460002,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "9bdafdc",
-            "ts": 1790431202,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
