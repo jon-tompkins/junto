@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1790863202,
+  "generated_at": 1790892001,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 11638258,
+        "uptime_sec": 11667058,
         "load": [
-          0.48,
-          0.1,
-          0.03
+          0.56,
+          0.16,
+          0.07
         ],
         "disk": {
           "total": 23843045376,
-          "used": 21464846336,
+          "used": 21463121920,
           "pct": 90
         },
         "mem": {
           "total": 4020396032,
-          "used": 1202003968,
-          "pct": 30
+          "used": 1360965632,
+          "pct": 34
         }
       },
       "memory": {
@@ -47,6 +47,12 @@
         "hot_count": 65,
         "cold_count": 13,
         "items": [
+          {
+            "name": "reference_myjunto_session_cookie_expired",
+            "type": "reference",
+            "mtime": 1790881322,
+            "desc": "MYJUNTO_SESSION_COOKIE in ops secrets is stale — authed pages bounce to /login"
+          },
           {
             "name": "reference_junto_entry_price_close",
             "type": "reference",
@@ -94,12 +100,6 @@
             "type": "reference",
             "mtime": 1790681056,
             "desc": "Local secrets file auto-sourced by ~/.bashrc — holds CRON_SECRET and any future ops keys for myjunto endpoints"
-          },
-          {
-            "name": "reference_myjunto_session_cookie_expired",
-            "type": "reference",
-            "mtime": 1790362915,
-            "desc": "MYJUNTO_SESSION_COOKIE in ops secrets is stale — authed pages bounce to /login"
           },
           {
             "name": "project_agent_dashboard",
@@ -1947,11 +1947,16 @@
           "ts": 1790841602
         },
         "tweet_queue": {
-          "posted": 25,
+          "posted": 26,
           "pending": 3,
-          "total": 28
+          "total": 29
         },
         "git": [
+          {
+            "hash": "aa2701b",
+            "ts": 1790863203,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "830bbb4",
             "ts": 1790858917,
@@ -2020,11 +2025,6 @@
           {
             "hash": "ad4474c",
             "ts": 1790604002,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "e3e5607",
-            "ts": 1790546402,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
