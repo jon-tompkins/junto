@@ -44,14 +44,29 @@ export async function fetchCurrentPrice(ticker: string): Promise<number | null> 
   return yahooPrice(ticker);
 }
 
-// First tradable price AT OR AFTER a signal timestamp, from Yahoo DAILY bars.
-// This is the "entry price" definition Jon settled on: the first price you could
-// actually have filled at once the call was posted — the next session's OPEN for
-// equities, or the open of the first daily bar at-or-after ts for crypto.
-// Daily bars are used uniformly across all of history because Yahoo caps intraday
-// depth (1m ~7d, 1h ~2y), and you can't fill after-hours anyway. The chart
-// endpoint needs no crumb. Returns null if no bar exists (e.g. ticker delisted,
-// or ts is in the future). Caller falls back to fetchCurrentPrice.
+// 16:00 America/New_York (regular-session close) on the ET calendar day of `d`,
+// as unix seconds. DST-aware via the zone short name (EST=UTC-5, EDT=UTC-4).
+function etSessionCloseSec(d: Date): number {
+  const name = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'short' })
+    .formatToParts(d).find((p) => p.type === 'timeZoneName')?.value || 'EST';
+  const offsetH = name === 'EDT' ? 4 : 5;
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d);
+  const y = Number(parts.find((p) => p.type === 'year')?.value);
+  const m = Number(parts.find((p) => p.type === 'month')?.value);
+  const day = Number(parts.find((p) => p.type === 'day')?.value);
+  return Math.floor(Date.UTC(y, m - 1, day, 16 + offsetH, 0, 0) / 1000);
+}
+
+// Entry price for a call: the CLOSE of the first session that closes AT OR AFTER
+// the tweet, from Yahoo DAILY bars. Rationale (Jon, Oct 2026): pricing off the
+// session's OPEN let a *reaction* tweet (posted intraday after a move already
+// happened) get credited for that pre-tweet move. Using the session close means a
+// reaction enters at the already-moved price and only forward moves count. For
+// equities a call posted after the 4pm ET close rolls to the next session (you
+// couldn't have filled that day). Crypto (24/7) uses the tweet day's daily close.
+// Daily bars are used across all history (Yahoo caps intraday depth). Returns null
+// if no closed session exists yet (e.g. a call earlier today) — caller falls back
+// to fetchCurrentPrice (a post-tweet price, which is also reaction-safe).
 export async function fetchPriceAtOrAfter(
   ticker: string,
   ts: string | number | Date,
@@ -62,11 +77,18 @@ export async function fetchPriceAtOrAfter(
 
   const start = new Date(ts);
   if (Number.isNaN(start.getTime())) return null;
-  // Window: from one day before the signal (guards TZ/DST edges) to +10 calendar
-  // days after, so we always capture the next tradable session even across long
-  // weekends/holidays. period1/period2 are unix seconds.
-  const period1 = Math.floor(start.getTime() / 1000) - 86_400;
-  const period2 = Math.floor(start.getTime() / 1000) + 10 * 86_400;
+
+  const signalSec = Math.floor(start.getTime() / 1000);
+  // Roll equity calls posted after the session close to the next session.
+  let effSec = signalSec;
+  if (type !== 'crypto') {
+    const closeSec = etSessionCloseSec(start);
+    if (signalSec > closeSec) effSec = closeSec + 86_400; // after close → next session
+  }
+
+  // Window guards TZ/DST edges and spans long weekends/holidays. Unix seconds.
+  const period1 = signalSec - 86_400;
+  const period2 = signalSec + 10 * 86_400;
 
   try {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&period1=${period1}&period2=${period2}`;
@@ -78,18 +100,15 @@ export async function fetchPriceAtOrAfter(
     const data = await res.json();
     const result = data?.chart?.result?.[0];
     const timestamps: number[] | undefined = result?.timestamp;
-    const opens: (number | null)[] | undefined = result?.indicators?.quote?.[0]?.open;
-    if (!Array.isArray(timestamps) || !Array.isArray(opens)) return null;
+    const closes: (number | null)[] | undefined = result?.indicators?.quote?.[0]?.close;
+    if (!Array.isArray(timestamps) || !Array.isArray(closes)) return null;
 
-    // Signal instant in unix seconds. A daily bar's timestamp is that session's
-    // start; "at or after" means the first bar whose day is >= the signal's day.
-    const signalSec = Math.floor(start.getTime() / 1000);
+    // First daily bar whose session covers/follows the (post-roll) signal → its close.
     for (let i = 0; i < timestamps.length; i++) {
       const barSec = timestamps[i];
-      const open = opens[i];
-      if (typeof barSec !== 'number' || typeof open !== 'number') continue;
-      // Bar covers a whole session; accept the first bar ending after the signal.
-      if (barSec + 86_400 > signalSec) return open;
+      const close = closes[i];
+      if (typeof barSec !== 'number' || typeof close !== 'number') continue;
+      if (barSec + 86_400 > effSec) return close;
     }
     return null;
   } catch {
