@@ -1,6 +1,6 @@
 {
   "schema": "mindscape.v1",
-  "generated_at": 1790892001,
+  "generated_at": 1790949602,
   "generator": "benji",
   "agents": [
     {
@@ -19,21 +19,21 @@
       "machine": {
         "host": "ip-172-31-41-10",
         "cores": 2,
-        "uptime_sec": 11667058,
+        "uptime_sec": 11724658,
         "load": [
-          0.56,
-          0.16,
-          0.07
+          0.05,
+          0.01,
+          0
         ],
         "disk": {
           "total": 23843045376,
-          "used": 21463121920,
-          "pct": 90
+          "used": 21799116800,
+          "pct": 91
         },
         "mem": {
           "total": 4020396032,
-          "used": 1360965632,
-          "pct": 34
+          "used": 1674731520,
+          "pct": 42
         }
       },
       "memory": {
@@ -47,6 +47,12 @@
         "hot_count": 65,
         "cold_count": 13,
         "items": [
+          {
+            "name": "project_agent_dashboard",
+            "type": "project",
+            "mtime": 1790948712,
+            "desc": "Local read-only Next.js dashboard showing live Bob/Benji activity + memory/project state; repo jon-tompkins/agent-dashboard"
+          },
           {
             "name": "reference_myjunto_session_cookie_expired",
             "type": "reference",
@@ -100,12 +106,6 @@
             "type": "reference",
             "mtime": 1790681056,
             "desc": "Local secrets file auto-sourced by ~/.bashrc — holds CRON_SECRET and any future ops keys for myjunto endpoints"
-          },
-          {
-            "name": "project_agent_dashboard",
-            "type": "project",
-            "mtime": 1789959571,
-            "desc": "Local read-only Next.js dashboard showing live Bob/Benji activity + memory/project state; repo jon-tompkins/agent-dashboard"
           },
           {
             "name": "project_alpha_nyc_hub",
@@ -1939,12 +1939,12 @@
         "junto_health": {
           "last_alert": 1790575202.888639,
           "redset": "",
-          "greenlight_day": "2026-10-01"
+          "greenlight_day": "2026-10-02"
         },
         "disk_health": {
           "state": "alert",
           "pct": 91,
-          "ts": 1790841602
+          "ts": 1790928001
         },
         "tweet_queue": {
           "posted": 26,
@@ -1952,6 +1952,11 @@
           "total": 29
         },
         "git": [
+          {
+            "hash": "63a886e",
+            "ts": 1790892002,
+            "subject": "chore(mindscape): refresh telemetry snapshot"
+          },
           {
             "hash": "aa2701b",
             "ts": 1790863203,
@@ -2020,11 +2025,6 @@
           {
             "hash": "81c727b",
             "ts": 1790632802,
-            "subject": "chore(mindscape): refresh telemetry snapshot"
-          },
-          {
-            "hash": "ad4474c",
-            "ts": 1790604002,
             "subject": "chore(mindscape): refresh telemetry snapshot"
           }
         ]
