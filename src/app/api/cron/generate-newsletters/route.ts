@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getNewslettersDueForGeneration, getNewslettersForForcedGeneration, getNewsletterSources, getCurrentSendWindow, getCurrentPSTDay } from '@/lib/db/newsletters-v2';
+import {
+  getNewslettersDueForGeneration,
+  getNewslettersForForcedGeneration,
+  getNewslettersNeedingCatchup,
+  getNewsletterSources,
+  getCurrentSendWindow,
+  getCurrentPSTDay,
+  NO_CONTENT_SKIP_MESSAGE,
+  CATCHUP_NO_CONTENT_MESSAGE,
+  type CatchupDispatch,
+} from '@/lib/db/newsletters-v2';
 import { getRecentContentForSources, getContextContentForSources, groupContentByHandle } from '@/lib/db/content-twitter';
 import { getRecentContentForNewsletterSources, getContextContentForNewsletterSources, groupNewsletterContentBySlug } from '@/lib/db/content-newsletter';
 import { getNewsletterSubscribers } from '@/lib/db/subscriptions';
@@ -42,9 +52,24 @@ export async function GET(req: NextRequest) {
     const force = url.searchParams.get('force') === 'true';
     const forceNewsletterId = url.searchParams.get('newsletter_id') || undefined;
 
-    const dueNewsletters = force
+    const scheduledNewsletters = force
       ? await getNewslettersForForcedGeneration(forceNewsletterId)
       : await getNewslettersDueForGeneration();
+
+    // Same-day retry for dispatches an ingest outage made skip earlier today.
+    const catchups = new Map<string, CatchupDispatch>();
+    if (!force) {
+      try {
+        const pending = await getNewslettersNeedingCatchup(scheduledNewsletters.map((nl) => nl.id));
+        for (const c of pending) catchups.set(c.newsletter.id, c);
+        if (pending.length > 0) {
+          console.log(`[generate] Catch-up: ${pending.map((c) => `${c.newsletter.name} (${c.window})`).join(', ')}`);
+        }
+      } catch (err) {
+        console.error('[generate] Catch-up lookup failed:', err);
+      }
+    }
+    const dueNewsletters = [...scheduledNewsletters, ...Array.from(catchups.values()).map((c) => c.newsletter)];
 
     if (dueNewsletters.length === 0) {
       return NextResponse.json({
@@ -103,11 +128,14 @@ export async function GET(req: NextRequest) {
         ]);
 
         if (recentContent.length === 0 && recentNewsletterContent.length === 0) {
-          console.log(`[generate] Skipping ${newsletter.name}: no recent content (last 48h)`);
-          await storeSkippedRun(newsletter.id, 'skipped', 'No recent content in last 48 hours', {
+          const catchup = catchups.get(newsletter.id);
+          const skipMessage = catchup ? CATCHUP_NO_CONTENT_MESSAGE : NO_CONTENT_SKIP_MESSAGE;
+          console.log(`[generate] Skipping ${newsletter.name}: no recent content (last 48h)${catchup ? ' [catch-up]' : ''}`);
+          await storeSkippedRun(newsletter.id, 'skipped', skipMessage, {
             source_count: sources.length,
+            ...(catchup ? { catchup_window: catchup.window } : {}),
           });
-          results[newsletter.name] = { status: 'skipped', error: 'No recent content in last 48 hours' };
+          results[newsletter.name] = { status: 'skipped', error: skipMessage };
           continue;
         }
 
@@ -115,12 +143,15 @@ export async function GET(req: NextRequest) {
         // means only ONE concurrent invocation wins; the rest skip here instead of
         // generating + delivering (and double-charging credits) a second time.
         // Placed after the content check so a no-content skip never holds the lock.
-        if (!force && dispatchWindow) {
+        const catchupLock = catchups.get(newsletter.id);
+        const lockWindow = catchupLock ? catchupLock.window : dispatchWindow;
+        const lockDate = catchupLock ? catchupLock.lockDate : dispatchDate;
+        if (!force && lockWindow) {
           const { error: lockErr } = await lockSupabase
             .from('newsletter_dispatch_locks')
-            .insert({ newsletter_id: newsletter.id, dispatch_date: dispatchDate, send_window: dispatchWindow });
+            .insert({ newsletter_id: newsletter.id, dispatch_date: lockDate, send_window: lockWindow });
           if (lockErr) {
-            console.log(`[generate] ${newsletter.name}: ${dispatchWindow} already claimed for ${dispatchDate} — skipping (dedup)`);
+            console.log(`[generate] ${newsletter.name}: ${lockWindow} already claimed for ${lockDate} — skipping (dedup)`);
             results[newsletter.name] = { status: 'skipped', error: 'Already generated this window (dedup)' };
             continue;
           }

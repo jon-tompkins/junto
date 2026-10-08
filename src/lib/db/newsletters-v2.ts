@@ -447,11 +447,16 @@ export async function getNewslettersDueForGeneration(): Promise<NewsletterV2[]> 
   const cutoff = new Date(now.getTime() - 5 * 60 * 60 * 1000).toISOString();
   const { data: recentRuns } = await supabase()
     .from('newsletter_runs')
-    .select('newsletter_id')
+    .select('newsletter_id, error_message')
     .in('newsletter_id', dayFiltered.map(nl => nl.id))
     .gte('generated_at', cutoff);
 
-  const ranRecently = new Set((recentRuns || []).map((r: { newsletter_id: string }) => r.newsletter_id));
+  // Failed catch-up retries aren't real sends — don't let them block a window.
+  const ranRecently = new Set(
+    (recentRuns || [])
+      .filter((r: { error_message: string | null }) => r.error_message !== CATCHUP_NO_CONTENT_MESSAGE)
+      .map((r: { newsletter_id: string }) => r.newsletter_id),
+  );
   return dayFiltered.filter(nl => !ranRecently.has(nl.id));
 }
 
@@ -484,4 +489,129 @@ export async function getNewslettersForForcedGeneration(
 
   if (error) return [];
   return newsletters || [];
+}
+
+// ── Same-day catch-up for dispatches skipped by a content outage ─────────────
+// When ingest is down at send time, a dispatch skips with "No recent content"
+// and nothing retries it until its next window. On later cron fires the same
+// Pacific day we retry those: the most recent window that has already closed,
+// if every run since it opened is a no-content skip. The lock row for that
+// (newsletter, date, window) is still free because no-content skips never
+// claim it, so a successful catch-up uses the same dedup key the original
+// window would have.
+
+export const NO_CONTENT_SKIP_MESSAGE = 'No recent content in last 48 hours';
+export const CATCHUP_NO_CONTENT_MESSAGE = 'Catch-up: still no recent content';
+const CATCHUP_MAX_ATTEMPTS = 3;
+const CATCHUP_MIN_GAP_MS = 45 * 60 * 1000;
+const CATCHUP_MAX_PER_INVOCATION = 3;
+// Don't retroactively re-send windows missed before this shipped (Oct 9 00:00 PT).
+const CATCHUP_ENABLED_FROM = Date.parse('2026-10-09T07:00:00Z');
+const CATCHUP_NEXT_WINDOW_BUFFER_MIN = 5 * 60 + 30;
+
+export interface CatchupDispatch {
+  newsletter: NewsletterV2;
+  window: SendWindow;
+  // UTC date of the missed window's send time — matches the lock key the
+  // regular path would have used (it keys on the UTC date at send time).
+  lockDate: string;
+}
+
+function pacificMinutesSinceMidnight(now: Date): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    hour: 'numeric',
+    minute: 'numeric',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  const h = Number(parts.find((p) => p.type === 'hour')?.value ?? 0);
+  const m = Number(parts.find((p) => p.type === 'minute')?.value ?? 0);
+  return h * 60 + m;
+}
+
+export async function getNewslettersNeedingCatchup(
+  excludeIds: string[] = [],
+  nowUTC?: Date,
+): Promise<CatchupDispatch[]> {
+  const now = nowUTC || new Date();
+  const minutesNow = pacificMinutesSinceMidnight(now);
+  const today = getCurrentPSTDay(now);
+
+  // Today's windows that have fully closed, with their send instants.
+  const closed = (Object.entries(SEND_WINDOW_PACIFIC_HOURS) as [SendWindow, number][])
+    .filter(([, hour]) => hour * 60 + WINDOW_TOLERANCE_MINUTES <= minutesNow)
+    .map(([window, hour]) => ({
+      window,
+      startsAt: new Date(now.getTime() - (minutesNow - hour * 60) * 60 * 1000),
+    }))
+    .filter((w) => w.startsAt.getTime() >= CATCHUP_ENABLED_FROM);
+  if (closed.length === 0) return [];
+
+  const { data: newsletters, error } = await supabase().from('newsletters_v2').select('*');
+  if (error || !newsletters?.length) return [];
+
+  const exclude = new Set(excludeIds);
+  // For each newsletter, the latest closed window it was scheduled for today.
+  const candidates: { newsletter: NewsletterV2; window: SendWindow; startsAt: Date }[] = [];
+  for (const nl of newsletters as NewsletterV2[]) {
+    if (exclude.has(nl.id)) continue;
+    const ownerDays = (nl as any).send_days || ['mon', 'tue', 'wed', 'thu', 'fri'];
+    if (!ownerDays.includes(today)) continue;
+    const ownerWindows: string[] = (nl as any).default_send_windows || ['morning'];
+    const latest = closed
+      .filter((w) => ownerWindows.includes(w.window))
+      .sort((a, b) => b.startsAt.getTime() - a.startsAt.getTime())[0];
+    // If its next window today opens soon, let that run cover it — a catch-up
+    // now would trip the 5h gap guard and suppress the regular window.
+    const nextSoon = (Object.entries(SEND_WINDOW_PACIFIC_HOURS) as [SendWindow, number][]).some(
+      ([w, hour]) =>
+        ownerWindows.includes(w) &&
+        hour * 60 > minutesNow &&
+        hour * 60 - minutesNow < CATCHUP_NEXT_WINDOW_BUFFER_MIN,
+    );
+    if (latest && !nextSoon) candidates.push({ newsletter: nl, window: latest.window, startsAt: latest.startsAt });
+  }
+  if (candidates.length === 0) return [];
+
+  const { data: subData } = await supabase()
+    .from('subscriptions')
+    .select('newsletter_id')
+    .eq('is_active', true)
+    .in('newsletter_id', candidates.map((c) => c.newsletter.id));
+  const subscribed = new Set((subData || []).map((s: any) => s.newsletter_id));
+  const withSubs = candidates.filter((c) => subscribed.has(c.newsletter.id));
+  if (withSubs.length === 0) return [];
+
+  const earliest = new Date(Math.min(...withSubs.map((c) => c.startsAt.getTime())));
+  const { data: runs } = await supabase()
+    .from('newsletter_runs')
+    .select('newsletter_id, status, error_message, generated_at')
+    .in('newsletter_id', withSubs.map((c) => c.newsletter.id))
+    .gte('generated_at', earliest.toISOString());
+
+  const out: CatchupDispatch[] = [];
+  for (const c of withSubs) {
+    const since = (runs || []).filter(
+      (r: any) => r.newsletter_id === c.newsletter.id && new Date(r.generated_at) >= c.startsAt,
+    );
+    const originalSkip = since.some((r: any) => r.status === 'skipped' && r.error_message === NO_CONTENT_SKIP_MESSAGE);
+    if (!originalSkip) continue; // it ran, or failed for some other reason
+    const onlyNoContent = since.every(
+      (r: any) =>
+        r.status === 'skipped' &&
+        (r.error_message === NO_CONTENT_SKIP_MESSAGE || r.error_message === CATCHUP_NO_CONTENT_MESSAGE),
+    );
+    if (!onlyNoContent) continue;
+    const attempts = since.filter((r: any) => r.error_message === CATCHUP_NO_CONTENT_MESSAGE).length;
+    if (attempts >= CATCHUP_MAX_ATTEMPTS) continue;
+    const lastAt = Math.max(...since.map((r: any) => new Date(r.generated_at).getTime()));
+    if (now.getTime() - lastAt < CATCHUP_MIN_GAP_MS) continue;
+    out.push({
+      newsletter: c.newsletter,
+      window: c.window,
+      lockDate: c.startsAt.toISOString().split('T')[0],
+    });
+    if (out.length >= CATCHUP_MAX_PER_INVOCATION) break;
+  }
+  return out;
 }
