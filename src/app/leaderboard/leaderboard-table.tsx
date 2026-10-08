@@ -114,20 +114,20 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
                 className="border-b border-parchment/5 last:border-0 hover:bg-parchment/[0.03]"
               >
                 <td className="py-3 pl-3 sm:pl-4 pr-2 text-parchment/55 tabular-nums">{i + 1}</td>
-                <td className="py-3 px-2 max-w-[10rem] sm:max-w-none">
+                <td className="py-3 px-2 max-w-[8.5rem] sm:max-w-none">
                   <Link
                     href={`/sources/${encodeURIComponent(r.handle)}`}
-                    className="flex items-center gap-3 group"
+                    className="flex items-center gap-2 sm:gap-3 group"
                   >
                     {r.avatar_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={r.avatar_url}
                         alt={r.handle}
-                        className="w-8 h-8 rounded bg-raised object-cover shrink-0"
+                        className="w-6 h-6 sm:w-8 sm:h-8 rounded bg-raised object-cover shrink-0"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded bg-raised flex items-center justify-center text-parchment/60 text-xs font-medium shrink-0">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded bg-raised flex items-center justify-center text-parchment/60 text-xs font-medium shrink-0">
                         {r.handle[0]?.toUpperCase()}
                       </div>
                     )}
