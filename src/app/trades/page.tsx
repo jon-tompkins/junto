@@ -40,6 +40,9 @@ const STANCE_LABEL: Record<string, string> = {
   neutral: 'Neutral',
 };
 
+// 3k+ rows is a ~180k-px page on phones; render in pages instead.
+const PAGE_SIZE = 200;
+
 export default function TradesPage() {
   const router = useRouter();
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -58,6 +61,10 @@ export default function TradesPage() {
   const [heldMax, setHeldMax] = useState(0); // max held-days; 0 = any
   const [sortKey, setSortKey] = useState<SortKey>('return');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [shown, setShown] = useState(PAGE_SIZE);
+
+  // Any filter/sort change starts back at the first page.
+  useEffect(() => setShown(PAGE_SIZE), [juntoId, asset, minConv, includeClosed, includeStale, direction, heldMax, sortKey, sortDir]);
 
   useEffect(() => {
     fetch('/api/trades')
@@ -139,6 +146,8 @@ export default function TradesPage() {
       return sortDir === 'asc' ? cmp : -cmp;
     });
   }, [withReturn, includeClosed, includeStale, direction, heldMax, juntoId, asset, minConv, sortKey, sortDir]);
+
+  const visible = filtered.slice(0, shown);
 
   const clickSort = (k: SortKey) => {
     if (sortKey === k) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -222,11 +231,69 @@ export default function TradesPage() {
               <span>{filtered.length} trades</span>
               {pricing && <span className="animate-pulse">pricing…</span>}
             </div>
-            <div className="overflow-x-auto bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded">
-              <table className="w-full text-sm min-w-[720px] table-fixed">
+
+            {/* Phones: card stack — the 9-column table squeezed Source into ~30px and overlapped Ticker. */}
+            <div className="sm:hidden">
+              <div className="flex items-center gap-2 mb-2 text-[10px] uppercase tracking-wider text-parchment/45">
+                <span>Sort</span>
+                <select
+                  value={`${sortKey}:${sortDir}`}
+                  onChange={(e) => { const [k, d] = e.target.value.split(':'); setSortKey(k as SortKey); setSortDir(d as 'asc' | 'desc'); }}
+                  className="bg-surface border border-brass/20 rounded px-1.5 py-0.5 text-[11px] normal-case tracking-normal text-parchment/80"
+                >
+                  <option value="return:desc">Best return</option>
+                  <option value="return:asc">Worst return</option>
+                  <option value="conviction:desc">Conviction</option>
+                  <option value="days:asc">Newest</option>
+                  <option value="days:desc">Held longest</option>
+                  <option value="ticker:asc">Ticker A–Z</option>
+                </select>
+              </div>
+              <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded divide-y divide-[rgb(var(--t-brass) / 0.1)]">
+                {visible.map((t) => {
+                  const ret = (t as any).ret as number | null;
+                  return (
+                    <div
+                      key={t.id}
+                      onClick={() => router.push(`/trades/${t.source_id}/${encodeURIComponent(t.ticker)}`)}
+                      className="px-3 py-2.5 cursor-pointer active:bg-raised/40"
+                    >
+                      <div className="flex items-baseline justify-between gap-3">
+                        <div className="flex items-baseline gap-2 min-w-0">
+                          <Link href={`/positions/${encodeURIComponent(t.ticker)}`} onClick={(e) => e.stopPropagation()} className="font-mono font-bold truncate">{t.ticker}</Link>
+                          <span className={`text-[11px] font-semibold uppercase tracking-wide ${STANCE_TEXT[t.stance] ?? STANCE_TEXT.neutral}`}>{STANCE_LABEL[t.stance] ?? t.stance}</span>
+                        </div>
+                        <span className="font-mono shrink-0">
+                          {ret != null
+                            ? <span className={ret >= 0 ? 'text-bull' : 'text-bear'}>{ret >= 0 ? '+' : ''}{ret.toFixed(1)}%</span>
+                            : <span className="text-parchment/30">—</span>}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3 mt-1 text-[11px] text-parchment/45">
+                        <Link href={`/sources/${t.handle}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 min-w-0">
+                          {t.avatar_url
+                            ? <img src={t.avatar_url} alt={t.handle} className="w-4 h-4 rounded bg-raised object-cover shrink-0" />
+                            : <div className="w-4 h-4 rounded bg-raised flex items-center justify-center text-[9px] text-parchment/60 shrink-0">{t.handle[0]?.toUpperCase()}</div>}
+                          <span className="truncate">@{t.handle}</span>
+                        </Link>
+                        <span className="font-mono shrink-0">
+                          {t.entry_price != null ? `$${t.entry_price.toFixed(2)}` : '—'}
+                          {t.conviction != null ? ` · c${t.conviction}` : ''}
+                          {t.days != null ? ` · ${t.days}d` : ''}
+                          {t.status !== 'active' ? ` · ${t.status}` : ''}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="hidden sm:block overflow-x-auto bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded">
+              <table className="w-full text-sm min-w-[880px] table-fixed">
                 <thead className="text-left text-xs uppercase text-parchment/45 border-b border-brass/28 font-[var(--font-oswald)]">
                   <tr>
-                    <th className="py-2.5 px-4"><button onClick={() => clickSort('source')}>Source<Arrow k="source" /></button></th>
+                    <th className="py-2.5 px-4 w-52"><button onClick={() => clickSort('source')}>Source<Arrow k="source" /></button></th>
                     <th className="py-2.5 px-3 w-24"><button onClick={() => clickSort('ticker')}>Ticker<Arrow k="ticker" /></button></th>
                     <th className="py-2.5 px-3 w-20">Stance</th>
                     <th className="py-2.5 px-3 text-right w-24">Entry</th>
@@ -238,7 +305,7 @@ export default function TradesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((t) => {
+                  {visible.map((t) => {
                     const ret = (t as any).ret as number | null;
                     const current = (t as any).current as number | null | undefined;
                     return (
@@ -283,6 +350,15 @@ export default function TradesPage() {
                 </tbody>
               </table>
             </div>
+
+            {shown < filtered.length && (
+              <button
+                onClick={() => setShown((n) => n + PAGE_SIZE)}
+                className="mt-3 w-full py-2 text-xs uppercase tracking-wider border border-brass/20 rounded text-parchment/60 hover:text-brass hover:border-brass transition"
+              >
+                Show more ({filtered.length - shown} left)
+              </button>
+            )}
           </>
         )}
       </div>
