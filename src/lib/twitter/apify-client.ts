@@ -224,6 +224,21 @@ export type CollectResult =
  * Check status of a previously-started Apify run. If SUCCEEDED, fetch results
  * and group them by the originally-requested handles. Records cost on success.
  */
+// Author handle of an Apify tweet item. The actor's output shape has drifted before,
+// so try every known field and fall back to the status URL (x.com/<handle>/status/…).
+// Oct 2026: ingest silently stored ~0 tweets for a week while Apify returned 10k+/day
+// — every item failed the author match.
+function tweetAuthor(tweet: any): string {
+  const direct =
+    tweet?.author?.userName ?? tweet?.author?.username ?? tweet?.author?.screen_name ??
+    tweet?.author?.screenName ?? tweet?.user?.screen_name ?? tweet?.user?.username ??
+    tweet?.user?.userName ?? tweet?.username ?? tweet?.userName;
+  if (typeof direct === 'string' && direct) return direct.replace('@', '').toLowerCase();
+  const url = tweet?.url ?? tweet?.twitterUrl ?? tweet?.tweetUrl ?? '';
+  const m = typeof url === 'string' ? url.match(/(?:x|twitter)\.com\/([A-Za-z0-9_]+)\/status/) : null;
+  return m ? m[1].toLowerCase() : '';
+}
+
 export async function collectBatchResults(
   runId: string,
   handles: string[],
@@ -264,6 +279,25 @@ export async function collectBatchResults(
     `[Apify BATCH] Collected ${tweets.length} tweets for run ${runId} across ${handles.length} handles`,
   );
 
+  const cleanHandles = handles.map((h) => h.replace('@', ''));
+  const wanted = new Set(cleanHandles.map((h) => h.toLowerCase()));
+  const matched = tweets.filter((t: any) => wanted.has(tweetAuthor(t))).length;
+  // Diagnostic: Apify returned items but none map to a requested handle → the output
+  // shape or query semantics changed. Sample the raw shape into supplier_costs.metadata.
+  const unmatched_sample =
+    tweets.length > 0 && matched === 0
+      ? tweets.slice(0, 3).map((t: any) => ({
+          keys: Object.keys(t ?? {}).slice(0, 40),
+          author_keys: t?.author ? Object.keys(t.author).slice(0, 30) : null,
+          type: t?.type ?? null,
+          url: t?.url ?? t?.twitterUrl ?? null,
+          author: tweetAuthor(t) || null,
+        }))
+      : undefined;
+  if (unmatched_sample) {
+    console.error(`[Apify BATCH] ${tweets.length} items but 0 matched requested handles — sample:`, JSON.stringify(unmatched_sample));
+  }
+
   recordCost({
     supplier: 'apify',
     operation: 'tweet_pull_batched',
@@ -271,17 +305,16 @@ export async function collectBatchResults(
     usage_amount: tweets.length,
     usage_unit: 'tweets',
     external_id: runId,
-    metadata: { handles: handles.length, actor: APIFY_ACTOR_ID },
+    metadata: { handles: handles.length, actor: APIFY_ACTOR_ID, matched, ...(unmatched_sample ? { unmatched_sample } : {}) },
   });
 
-  const cleanHandles = handles.map((h) => h.replace('@', ''));
   const byHandle: Record<string, FetchedTweet[]> = {};
   for (const h of cleanHandles) {
     byHandle[h.toLowerCase()] = [];
   }
 
   for (const tweet of tweets) {
-    const author = (tweet.author?.userName || '').toLowerCase();
+    const author = tweetAuthor(tweet);
     if (!author) continue;
     if (!byHandle[author]) continue; // Skip tweets from authors we didn't ask for
 
