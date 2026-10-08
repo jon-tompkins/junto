@@ -43,12 +43,14 @@ export async function listPendingRuns(): Promise<ApifyPendingRun[]> {
   return data || [];
 }
 
-export async function markRunCompleted(id: string): Promise<void> {
+export async function markRunCompleted(id: string, storeErrors?: string): Promise<void> {
   const { error } = await supabase()
     .from('apify_pending_runs')
     .update({
       status: 'completed',
       completed_at: new Date().toISOString(),
+      // Partial-ingest diagnostics: the run succeeded but some handles failed to store.
+      ...(storeErrors ? { error: storeErrors.slice(0, 2000) } : {}),
     })
     .eq('id', id);
 

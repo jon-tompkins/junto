@@ -80,6 +80,7 @@ export async function GET(req: NextRequest) {
 
         // SUCCEEDED — ingest per-source
         let runStored = 0;
+        const storeErrors: string[] = [];
         for (const handle of handles) {
           const sourceId = run.handle_source_map[handle];
           if (!sourceId) continue;
@@ -123,10 +124,11 @@ export async function GET(req: NextRequest) {
           } catch (err) {
             const errMsg = err instanceof Error ? err.message : 'Unknown error';
             console.error(`[collect-twitter] Store error @${handle}:`, errMsg);
+            storeErrors.push(`@${handle} (${tweets.length}): ${errMsg}`);
           }
         }
 
-        await markRunCompleted(run.id);
+        await markRunCompleted(run.id, storeErrors.length ? `${storeErrors.length}/${handles.length} handles failed to store — ${storeErrors.slice(0, 5).join(' | ')}` : undefined);
         totalStored += runStored;
         totalFetched += result.tweetCount;
         processedCount += 1;

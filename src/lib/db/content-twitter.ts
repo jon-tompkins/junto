@@ -23,7 +23,7 @@ export async function storeTwitterContent(
   const rows = tweets.map((t) => ({
     source_id: sourceId,
     twitter_id: t.twitter_id,
-    content: t.content,
+    content: stripNul(t.content),
     posted_at: t.posted_at,
     likes: t.likes ?? 0,
     retweets: t.retweets ?? 0,
@@ -31,7 +31,7 @@ export async function storeTwitterContent(
     is_retweet: t.is_retweet ?? false,
     is_reply: t.is_reply ?? false,
     thread_id: t.thread_id ?? null,
-    raw_data: t.raw_data ?? {},
+    raw_data: sanitizeJson(t.raw_data ?? {}),
     fetched_at: new Date().toISOString(),
   }));
 
@@ -39,9 +39,33 @@ export async function storeTwitterContent(
     .from('content_twitter')
     .upsert(rows, { onConflict: 'twitter_id' })
     .select('id');
+  if (!error) return data?.length ?? 0;
 
-  if (error) throw error;
-  return data?.length ?? 0;
+  // Batch failed — salvage row by row so one bad tweet can't drop a handle's whole
+  // pull, then surface the first error (with the count lost) to the caller.
+  let stored = 0;
+  let firstError: string | null = null;
+  for (const row of rows) {
+    const r = await supabase().from('content_twitter').upsert([row], { onConflict: 'twitter_id' }).select('id');
+    if (r.error) firstError ??= `${r.error.code ?? ''} ${r.error.message}`.trim();
+    else stored += r.data?.length ?? 0;
+  }
+  if (stored === 0) throw new Error(`content_twitter upsert failed: ${error.code ?? ''} ${error.message}`.trim());
+  if (firstError) console.warn(`[content_twitter] stored ${stored}/${rows.length}; first row error: ${firstError}`);
+  return stored;
+}
+
+// Postgres text/jsonb reject NUL (\u0000), which scraped tweet payloads can contain.
+function stripNul(s: string): string {
+  return typeof s === 'string' ? s.replace(/\u0000/g, '') : s;
+}
+
+function sanitizeJson(v: Record<string, unknown>): Record<string, unknown> {
+  try {
+    return JSON.parse(JSON.stringify(v).replace(/\\u0000/g, ''));
+  } catch {
+    return {};
+  }
 }
 
 // Shape consumed by updateSourceProfile (profile-updater). Kept permissive so it
