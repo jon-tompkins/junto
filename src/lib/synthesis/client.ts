@@ -30,4 +30,5 @@ export const DEFAULT_MODEL = 'grok-3-fast';
 export const MAX_TOKENS = 2048;
 
 // Anthropic model used for newsletter synthesis
-export const HAIKU_MODEL = 'claude-haiku-4-5-20251001';
+// claude-haiku-5-5 (Oct 2026): 1M context, ~90% cheaper than 4.5, no dated snapshot alias
+export const HAIKU_MODEL = 'claude-haiku-5-5';
