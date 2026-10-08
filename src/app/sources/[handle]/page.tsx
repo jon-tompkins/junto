@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import type { SmartMoneyStats } from '@/lib/leaderboard';
+import { SmartMoneyBadge } from '@/components/smart-money-badge';
 import { useParams } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
 import { SourceChat } from '@/components/source-chat';
@@ -120,6 +122,15 @@ interface ClosedCall {
   entry_date: string | null;
   exit_date: string | null;
   close_reason: string | null;
+  pre_move_pct: number | null; // direction-adjusted 5-session run-up before entry
+  is_reaction: boolean | null; // chased a move that already happened
+  alpha_pct: number | null;    // return minus SPY/BTC over the same window
+}
+
+interface TrackRecord {
+  smart: SmartMoneyStats | null;
+  is_smart_money: boolean;
+  reaction_rate: number | null;
 }
 
 const STANCE_BADGE: Record<string, string> = {
@@ -181,6 +192,14 @@ function ClosedCallsTable({ calls }: { calls: ClosedCall[] }) {
                       {STANCE_LABELS[c.stance] ?? c.stance}
                     </span>
                   </Link>
+                  {c.is_reaction && c.pre_move_pct != null ? (
+                    <span
+                      title={`Called after the move: already ${c.pre_move_pct >= 0 ? '+' : ''}${Number(c.pre_move_pct).toFixed(1)}% in the call's direction over the 5 sessions before entry`}
+                      className="ml-2 text-[10px] px-1.5 py-0.5 rounded-sm font-medium bg-amber-900/40 text-amber-400 border border-amber-700/40 cursor-help"
+                    >
+                      Chased +{Number(c.pre_move_pct).toFixed(0)}%
+                    </span>
+                  ) : null}
                 </td>
                 <td className="px-3 py-3">
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium capitalize ${OUTCOME_PILL[outcome] ?? OUTCOME_PILL.unscored}`}>
@@ -193,6 +212,11 @@ function ClosedCallsTable({ calls }: { calls: ClosedCall[] }) {
                   ) : (
                     <span className="text-parchment/45">—</span>
                   )}
+                  {c.alpha_pct != null ? (
+                    <div className="text-[10px] text-parchment/45" title="Return minus SPY (stocks) / BTC (crypto) over the same window">
+                      {Number(c.alpha_pct) >= 0 ? '+' : ''}{Number(c.alpha_pct).toFixed(1)}% vs mkt
+                    </div>
+                  ) : null}
                 </td>
                 <td className="px-3 py-3 text-right font-mono text-parchment/60 whitespace-nowrap">
                   {c.entry_price != null ? `$${c.entry_price.toFixed(2)}` : '—'} → {c.exit_price != null ? `$${c.exit_price.toFixed(2)}` : '—'}
@@ -224,6 +248,7 @@ export default function SourceProfilePage() {
   const [hitRate, setHitRate] = useState<HitRate | null>(null);
   const [creator, setCreator] = useState<CreatorInfo | null>(null);
   const [closedCalls, setClosedCalls] = useState<ClosedCall[]>([]);
+  const [trackRecord, setTrackRecord] = useState<TrackRecord | null>(null);
   const [callView, setCallView] = useState<'open' | 'portfolio' | 'closed'>('open');
   const [starred, setStarred] = useState(false);
 
@@ -259,6 +284,7 @@ export default function SourceProfilePage() {
         setHitRate(d.hitRate ?? null);
         setCreator(d.creator ?? null);
         setClosedCalls(d.closedCalls ?? []);
+        setTrackRecord(d.trackRecord ?? null);
         const tickers = Object.keys(d.profile?.positions ?? {});
         if (tickers.length === 0) return;
         Promise.all(
@@ -365,6 +391,11 @@ export default function SourceProfilePage() {
               <h1 className="text-2xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">
                 {profile.source.display_name || `@${displayHandle}`}
               </h1>
+              {trackRecord?.is_smart_money && trackRecord.smart ? (
+                <SmartMoneyBadge
+                  title={`Smart money: ${trackRecord.smart.wins}/${trackRecord.smart.calls} long-horizon calls won, ${trackRecord.smart.median_alpha_pct >= 0 ? '+' : ''}${trackRecord.smart.median_alpha_pct.toFixed(1)}% median vs market, positive in ${trackRecord.smart.positive_months}/${trackRecord.smart.months} months`}
+                />
+              ) : null}
               <StarSourceButton
                 sourceId={profile.source_id}
                 starred={starred}
@@ -473,6 +504,9 @@ export default function SourceProfilePage() {
               </p>
               <p className="text-[10px] text-parchment/45 mt-0.5">
                 {hitRate && hitRate.total > 0 ? 'closed calls' : 'tracking from now'}
+                {trackRecord?.reaction_rate != null && trackRecord.reaction_rate > 0
+                  ? ` · ${Math.round(trackRecord.reaction_rate * 100)}% chased`
+                  : ''}
               </p>
             </div>
           </div>

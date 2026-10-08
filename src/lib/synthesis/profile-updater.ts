@@ -1,6 +1,6 @@
 import { getAnthropic, HAIKU_MODEL } from './client';
 import { getSourceProfile, upsertSourceProfile, recordCallOutcomes, SourceAnalystProfile, PositionEntry, CallOutcome } from '../db/source-analyst-profiles';
-import { fetchCurrentPrice, fetchPriceAtOrAfter } from '../prices';
+import { fetchCurrentPrice, fetchPriceAtOrAfter, fetchEntryContext, fetchBenchmarkReturn, reactionFields } from '../prices';
 import { recordCost, anthropicHaikuCostCents } from '../costs';
 
 interface TweetInput {
@@ -407,6 +407,20 @@ Output schema — include ONLY positions discussed in the new tweets. Do NOT inc
           else if (return_pct > 0.5) outcome = 'win';
           else if (return_pct < -0.5) outcome = 'loss';
           else outcome = 'flat';
+
+          // Reaction flag + alpha vs SPY/BTC. Anchored to the same signal instant the
+          // entry was priced off. Best-effort: a price miss leaves these null.
+          const signalTs = prev.entry_at || prev.since;
+          let context = reactionFields(null, 0);
+          let benchmark_return_pct: number | null = null;
+          if (directional && signalTs) {
+            const [ctx, bm] = await Promise.all([
+              fetchEntryContext(ticker, signalTs).catch(() => null),
+              fetchBenchmarkReturn(ticker, signalTs).catch(() => null),
+            ]);
+            context = reactionFields(ctx?.preMove ?? null, sign);
+            if (bm != null) benchmark_return_pct = bm * sign;
+          }
           return {
             source_id: sourceId,
             ticker,
@@ -417,6 +431,9 @@ Output schema — include ONLY positions discussed in the new tweets. Do NOT inc
             return_pct,
             outcome,
             close_reason: reason,
+            ...context,
+            benchmark_return_pct,
+            alpha_pct: return_pct != null && benchmark_return_pct != null ? return_pct - benchmark_return_pct : null,
           };
         }),
       );

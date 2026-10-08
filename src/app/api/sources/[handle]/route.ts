@@ -4,6 +4,7 @@ import { getPublicNewslettersByTwitterHandle, getUserIdByTwitterHandle } from '@
 import { getSubscribedNewslettersByUserId } from '@/lib/db/subscriptions';
 import { getEntityForSource, getCombinedHitRate } from '@/lib/db/creator-entities';
 import { getSupabase } from '@/lib/db/client';
+import { toSmartCall, smartStats, isSmartMoney } from '@/lib/leaderboard';
 
 // A source's realized track record: every call they've closed (win/loss/flat),
 // most-recently-closed first. Powers the "closed call history" view.
@@ -11,7 +12,7 @@ async function getClosedCallsForSource(sourceId: string) {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('source_call_outcomes')
-    .select('ticker, stance, outcome, return_pct, entry_price, exit_price, entry_date, exit_date, close_reason')
+    .select('ticker, stance, outcome, return_pct, entry_price, exit_price, entry_date, exit_date, close_reason, pre_move_pct, is_reaction, alpha_pct')
     .eq('source_id', sourceId)
     .order('exit_date', { ascending: false, nullsFirst: false });
   if (error || !data) return [];
@@ -61,7 +62,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ han
       creator = { name: entity.entity.name, slug: entity.entity.slug, siblings, combinedHitRate };
     }
 
-    return NextResponse.json({ profile, dispatches, juntos, subscribedDispatches, hitRate, creator, closedCalls });
+    const smart = smartStats(closedCalls.map(toSmartCall).filter((c) => c != null));
+    const priced = closedCalls.filter((c) => c.is_reaction != null);
+    const trackRecord = {
+      smart,
+      is_smart_money: isSmartMoney(smart),
+      reaction_rate: priced.length ? priced.filter((c) => c.is_reaction).length / priced.length : null,
+    };
+
+    return NextResponse.json({ profile, dispatches, juntos, subscribedDispatches, hitRate, creator, closedCalls, trackRecord });
   } catch (err) {
     console.error('[api/sources/[handle]]', err);
     return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });

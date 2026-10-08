@@ -3,14 +3,19 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import type { SourceHitRateRow } from '@/lib/leaderboard';
+import { SmartMoneyBadge } from '@/components/smart-money-badge';
 
-type SortKey = 'wilson_score' | 'hit_rate' | 'scored' | 'avg_return_pct' | 'total_positions' | 'avg_conviction';
+type SortKey =
+  | 'wilson_score' | 'hit_rate' | 'scored' | 'avg_return_pct' | 'avg_alpha_pct'
+  | 'reaction_rate' | 'total_positions' | 'avg_conviction';
 
 const COLUMNS: Array<{ key: SortKey; label: string; hideAt?: string }> = [
   { key: 'wilson_score', label: 'Score' },
   { key: 'hit_rate', label: 'Hit rate' },
   { key: 'scored', label: 'Calls' },
   { key: 'avg_return_pct', label: 'Avg return', hideAt: 'hidden md:table-cell' },
+  { key: 'avg_alpha_pct', label: 'vs mkt', hideAt: 'hidden md:table-cell' },
+  { key: 'reaction_rate', label: 'Chased', hideAt: 'hidden lg:table-cell' },
   { key: 'avg_conviction', label: 'Avg conv.', hideAt: 'hidden sm:table-cell' },
   { key: 'total_positions', label: 'Positions' },
 ];
@@ -18,6 +23,11 @@ const COLUMNS: Array<{ key: SortKey; label: string; hideAt?: string }> = [
 function pct(x: number | null): string {
   return x == null ? '—' : `${Math.round(x * 100)}%`;
 }
+
+function signedPct(x: number | null): string {
+  return x == null ? '—' : `${x > 0 ? '+' : ''}${x.toFixed(1)}%`;
+}
+
 
 // Null-aware value for sorting: unrated/empty metrics always sink to the bottom.
 // wilson_score is never null (0 for unrated), so we treat 0 as "unrated" for null-sink.
@@ -30,8 +40,10 @@ function sortVal(r: SourceHitRateRow, key: SortKey): number | null {
 export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
   const [sortKey, setSortKey] = useState<SortKey>('wilson_score');
   const [desc, setDesc] = useState(true);
+  const [smartOnly, setSmartOnly] = useState(false);
+  const smartCount = rows.filter((r) => r.is_smart_money).length;
 
-  const sorted = [...rows].sort((a, b) => {
+  const sorted = [...(smartOnly ? rows.filter((r) => r.is_smart_money) : rows)].sort((a, b) => {
     const av = sortVal(a, sortKey);
     const bv = sortVal(b, sortKey);
     // nulls to the bottom regardless of direction
@@ -54,6 +66,25 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
   const arrow = (key: SortKey) => (key === sortKey ? (desc ? ' ↓' : ' ↑') : '');
 
   return (
+    <>
+    <div className="flex items-center gap-1 mb-3 text-xs">
+      {[
+        { on: false, label: `All (${rows.length})` },
+        { on: true, label: `Smart money (${smartCount})` },
+      ].map((t) => (
+        <button
+          key={t.label}
+          onClick={() => setSmartOnly(t.on)}
+          className={`rounded px-3 py-1.5 border transition ${
+            smartOnly === t.on
+              ? 'border-brass/50 bg-brass/10 text-brass'
+              : 'border-parchment/10 text-parchment/60 hover:text-parchment'
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
     <div className="overflow-x-auto border border-parchment/10 rounded-lg">
       <table className="w-full text-sm">
         <thead>
@@ -104,6 +135,13 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
                       <span className="font-medium text-parchment group-hover:text-brass transition">
                         @{r.handle}
                       </span>
+                      {r.is_smart_money && r.smart ? (
+                        <span className="ml-2 align-middle">
+                          <SmartMoneyBadge
+                            title={`Smart money: ${r.smart.wins}/${r.smart.calls} long-horizon calls won, ${signedPct(r.smart.median_alpha_pct)} median vs market, positive in ${r.smart.positive_months}/${r.smart.months} months`}
+                          />
+                        </span>
+                      ) : null}
                       {r.display_name ? (
                         <div className="text-[11px] text-parchment/55 truncate">{r.display_name}</div>
                       ) : null}
@@ -141,6 +179,12 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
                     ? '—'
                     : `${r.avg_return_pct > 0 ? '+' : ''}${r.avg_return_pct.toFixed(1)}%`}
                 </td>
+                <td className="py-3 px-2 text-right tabular-nums hidden md:table-cell text-parchment/70">
+                  {signedPct(r.avg_alpha_pct)}
+                </td>
+                <td className="py-3 px-2 text-right tabular-nums hidden lg:table-cell text-parchment/70">
+                  {pct(r.reaction_rate)}
+                </td>
                 <td className="py-3 px-2 text-right tabular-nums hidden sm:table-cell text-parchment/70">
                   {r.avg_conviction == null ? '—' : r.avg_conviction.toFixed(1)}
                 </td>
@@ -152,6 +196,12 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
           })}
         </tbody>
       </table>
+      {sorted.length === 0 ? (
+        <div className="p-8 text-center text-parchment/50 text-sm">
+          No analyst clears the smart-money bar yet.
+        </div>
+      ) : null}
     </div>
+    </>
   );
 }

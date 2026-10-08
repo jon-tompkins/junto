@@ -28,6 +28,12 @@ export interface CallOutcome {
   return_pct: number | null;
   outcome: 'win' | 'loss' | 'flat' | 'unscored';
   close_reason: 'flip' | 'dropped' | 'stale';
+  // Reaction flag + benchmark-relative return (migration 090). See prices.ts.
+  pre_move_pct?: number | null;
+  pre_move_z?: number | null;
+  is_reaction?: boolean | null;
+  benchmark_return_pct?: number | null;
+  alpha_pct?: number | null;
 }
 
 // Append-only: records the outcome of a call at the moment it closes (stance

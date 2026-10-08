@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { TopNav } from '@/components/top-nav';
-import { getSourceHitRates } from '@/lib/leaderboard';
+import { getSourceHitRates, SMART_MONEY } from '@/lib/leaderboard';
 import { LeaderboardTable } from './leaderboard-table';
 
 const BASE = 'https://www.myjunto.xyz';
@@ -72,8 +72,13 @@ export default async function LeaderboardPage() {
           flipped. &ldquo;Calls&rdquo; is scored closed calls (wins&ndash;losses); hit rate is wins
           &divide; (wins + losses); &ldquo;unrated&rdquo; sources are tracked but have no closed call
           scored yet. Avg return is the mean return across scored calls. Conviction is the model&rsquo;s
-          1&ndash;5 read of how strongly a view is held. Track records are informational, not investment
-          advice.
+          1&ndash;5 read of how strongly a view is held. &ldquo;vs mkt&rdquo; is the mean return minus
+          SPY (stocks) or BTC (crypto) over the same window. &ldquo;Chased&rdquo; is the share of calls
+          made after the asset had already run hard in the call&rsquo;s direction (a 5-day move over 2&times;
+          its normal range) &mdash; reaction posts, not foresight. <strong>Smart money</strong> marks analysts
+          with at least {SMART_MONEY.minCalls} non-chased calls held {SMART_MONEY.minHoldDays}+ days that win
+          with statistical confidence, beat the market on both mean and median, and did so in most months.
+          Track records are informational, not investment advice.
         </p>
       </main>
     </div>
