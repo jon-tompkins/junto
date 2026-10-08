@@ -186,7 +186,7 @@ export default function PromptPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 px-8 py-4 bg-surface text-ink hover:bg-raised transition-colors disabled:bg-raised"
+            className="flex-1 px-8 py-4 bg-parchment text-ink hover:bg-parchment/90 transition-colors disabled:opacity-60"
           >
             {saving ? 'Saving...' : 'Save Prompt'}
           </button>
