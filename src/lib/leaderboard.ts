@@ -52,44 +52,56 @@ export interface SourceHitRateRow {
   smart: SmartMoneyStats | null;
   /** Passes every SMART_MONEY gate: consistent, benchmark-beating, long-horizon caller. */
   is_smart_money: boolean;
+  /** Human-readable smart-money explanation (badge tooltip); null when not smart money. */
+  smart_summary: string | null;
 }
 
 /**
- * "Smart money" = analysts making good, CONSISTENT, LONG-TERM calls. Judged only on
- * calls that (a) were held ≥ minHoldDays, (b) weren't reactions to a move that
- * already happened, and (c) were scored win/loss. Return is measured as alpha vs
- * SPY/BTC so a rising tape doesn't make everyone look smart. Calibrated Oct 2026
- * (~59 sources had ≥6 qualifying calls; these gates pass a handful).
+ * "Smart money" = analysts making good, CONSISTENT, LONG-TERM calls. Judged on
+ * calls held ≥ minHoldDays that weren't reactions to a move that already happened,
+ * measured as alpha vs SPY/BTC so a rising tape doesn't make everyone look smart.
+ *
+ * Closed calls count fully; OPEN positions (marked daily by /api/cron/mark-positions)
+ * count at openWeight — realized results matter more, but a book of open winners is
+ * still evidence. No hit-rate gate: cutting losers small and letting winners run
+ * (low hit rate, big payoff) is exactly what we want to find, so the core test is
+ * profit factor (Σ winning alpha ÷ Σ losing alpha), with a guard so one moonshot
+ * can't carry it. Calibrated Oct 2026 (57 sources eligible; ~4 pass).
  */
 export const SMART_MONEY = {
   minHoldDays: 21,
-  minCalls: 10,
-  minWilson: 0.4,       // hit-rate lower bound — confidently not a coin-flipper
-  minPositiveMonthShare: 2 / 3, // alpha positive in ≥ ⅔ of active months…
-  minMonths: 2,          // …across at least 2 months
+  openWeight: 0.5,
+  minEffectiveCalls: 10,  // closed + openWeight × open
+  minClosedCalls: 5,      // must have realized something
+  minProfitFactor: 1.5,
+  minProfitFactorExTop: 1.1, // still profitable without the single best call
+  minPositiveMonthShare: 2 / 3, // weighted alpha positive in ≥ ⅔ of months…
+  minMonths: 2,           // …across at least 2 (open positions count in the current month)
 } as const;
 
 export interface SmartMoneyStats {
-  calls: number;
-  wins: number;
+  closed: number;
+  open: number;
+  effective_calls: number;
+  /** Weighted share of calls beating the market (display only — not a gate). */
   hit_rate: number;
-  wilson: number;
+  avg_win_alpha_pct: number | null;
+  avg_loss_alpha_pct: number | null;
   avg_alpha_pct: number;
-  median_alpha_pct: number;
+  profit_factor: number | null; // null = no losing calls
+  profit_factor_ex_top: number | null;
   positive_months: number;
   months: number;
 }
 
-function median(xs: number[]): number {
-  const s = [...xs].sort((a, b) => a - b);
-  const m = s.length >> 1;
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+export interface SmartCall {
+  weight: number;
+  alpha: number;
+  month: string; // YYYY-MM: exit month (closed) or current month (open)
 }
 
-export interface SmartCall {
-  win: boolean;
-  alpha: number;
-  month: string; // YYYY-MM of exit
+function heldDays(from: string, to: string | number): number {
+  return (new Date(to).getTime() - new Date(from).getTime()) / 86_400_000;
 }
 
 /** A closed call's contribution to the smart-money sample, or null if it doesn't qualify. */
@@ -102,24 +114,43 @@ export function toSmartCall(o: {
 }): SmartCall | null {
   if ((o.outcome !== 'win' && o.outcome !== 'loss') || o.alpha_pct == null) return null;
   if (o.is_reaction !== false || !o.entry_date || !o.exit_date) return null;
-  const held = (new Date(o.exit_date).getTime() - new Date(o.entry_date).getTime()) / 86_400_000;
-  if (held < SMART_MONEY.minHoldDays) return null;
-  return { win: o.outcome === 'win', alpha: Number(o.alpha_pct), month: o.exit_date.slice(0, 7) };
+  if (heldDays(o.entry_date, o.exit_date) < SMART_MONEY.minHoldDays) return null;
+  return { weight: 1, alpha: Number(o.alpha_pct), month: o.exit_date.slice(0, 7) };
+}
+
+/** An open position's (marked-to-market) contribution, or null if it doesn't qualify. */
+export function toOpenSmartCall(p: {
+  since: string | null;
+  is_reaction: boolean | null;
+  mark_alpha_pct: number | string | null;
+}): SmartCall | null {
+  if (p.mark_alpha_pct == null || p.is_reaction !== false || !p.since) return null;
+  if (heldDays(p.since, Date.now()) < SMART_MONEY.minHoldDays) return null;
+  return { weight: SMART_MONEY.openWeight, alpha: Number(p.mark_alpha_pct), month: new Date().toISOString().slice(0, 7) };
 }
 
 export function smartStats(calls: SmartCall[]): SmartMoneyStats | null {
   if (calls.length === 0) return null;
-  const wins = calls.filter((c) => c.win).length;
-  const alphas = calls.map((c) => c.alpha);
+  const closed = calls.filter((c) => c.weight === 1).length;
+  const effective = calls.reduce((t, c) => t + c.weight, 0);
+  let gain = 0, loss = 0, winW = 0, lossW = 0, top = 0;
+  for (const c of calls) {
+    const v = c.weight * c.alpha;
+    if (c.alpha > 0) { gain += v; winW += c.weight; top = Math.max(top, v); }
+    else if (c.alpha < 0) { loss -= v; lossW += c.weight; }
+  }
   const byMonth = new Map<string, number>();
-  for (const c of calls) byMonth.set(c.month, (byMonth.get(c.month) ?? 0) + c.alpha);
+  for (const c of calls) byMonth.set(c.month, (byMonth.get(c.month) ?? 0) + c.weight * c.alpha);
   return {
-    calls: calls.length,
-    wins,
-    hit_rate: wins / calls.length,
-    wilson: wilsonLower(wins, calls.length),
-    avg_alpha_pct: alphas.reduce((a, b) => a + b, 0) / alphas.length,
-    median_alpha_pct: median(alphas),
+    closed,
+    open: calls.length - closed,
+    effective_calls: effective,
+    hit_rate: winW / effective,
+    avg_win_alpha_pct: winW ? gain / winW : null,
+    avg_loss_alpha_pct: lossW ? -loss / lossW : null,
+    avg_alpha_pct: (gain - loss) / effective,
+    profit_factor: loss ? gain / loss : null,
+    profit_factor_ex_top: loss ? (gain - top) / loss : null,
     positive_months: [...byMonth.values()].filter((v) => v > 0).length,
     months: byMonth.size,
   };
@@ -127,14 +158,23 @@ export function smartStats(calls: SmartCall[]): SmartMoneyStats | null {
 
 export function isSmartMoney(s: SmartMoneyStats | null): boolean {
   if (!s) return false;
+  const pf = s.profit_factor ?? Infinity;
+  const pfx = s.profit_factor_ex_top ?? Infinity;
   return (
-    s.calls >= SMART_MONEY.minCalls &&
-    s.wilson >= SMART_MONEY.minWilson &&
-    s.avg_alpha_pct > 0 &&
-    s.median_alpha_pct > 0 &&
+    s.effective_calls >= SMART_MONEY.minEffectiveCalls &&
+    s.closed >= SMART_MONEY.minClosedCalls &&
+    pf >= SMART_MONEY.minProfitFactor &&
+    pfx >= SMART_MONEY.minProfitFactorExTop &&
     s.months >= SMART_MONEY.minMonths &&
     s.positive_months / s.months >= SMART_MONEY.minPositiveMonthShare
   );
+}
+
+/** One-line human explanation of a smart-money stat block (badge tooltip). */
+export function smartMoneySummary(s: SmartMoneyStats): string {
+  const f = (x: number | null) => (x == null ? '—' : `${x > 0 ? '+' : ''}${x.toFixed(1)}%`);
+  const pf = s.profit_factor == null ? 'no losers' : `${s.profit_factor.toFixed(1)}× profit factor`;
+  return `Smart money: ${pf} vs market — avg winner ${f(s.avg_win_alpha_pct)}, avg loser ${f(s.avg_loss_alpha_pct)} across ${s.closed} closed + ${s.open} open long-horizon calls; positive in ${s.positive_months}/${s.months} months`;
 }
 
 // Supabase caps a single select at 1000 rows; page through so a busy table
@@ -190,7 +230,17 @@ export async function getSourceHitRates(minPositions = 20): Promise<SourceHitRat
     source_id: string;
     ticker: string;
     conviction: number | null;
-  }>(() => supabase.from('source_positions').select('source_id, ticker, conviction'));
+    since: string | null;
+    is_reaction: boolean | null;
+    mark_alpha_pct: number | null;
+  }>(() =>
+    supabase.from('source_positions').select('source_id, ticker, conviction, since, is_reaction, mark_alpha_pct'),
+  );
+  const openSmart = new Map<string, SmartCall[]>();
+  for (const p of positions) {
+    const sc = toOpenSmartCall(p);
+    if (sc) openSmart.set(p.source_id, [...(openSmart.get(p.source_id) ?? []), sc]);
+  }
 
   const posAgg = new Map<string, PositionAgg>();
   for (const p of positions) {
@@ -308,7 +358,7 @@ export async function getSourceHitRates(minPositions = 20): Promise<SourceHitRat
     const scored = wins + losses;
     const hit_rate = scored > 0 ? wins / scored : null;
     const avg_conviction = pa.convCount > 0 ? pa.convSum / pa.convCount : null;
-    const smart = smartStats(oa?.smartCalls ?? []);
+    const smart = smartStats([...(oa?.smartCalls ?? []), ...(openSmart.get(source_id) ?? [])]);
     const avg_conviction_wins =
       oa && oa.winConvCount > 0 ? oa.winConvSum / oa.winConvCount : null;
 
@@ -332,6 +382,7 @@ export async function getSourceHitRates(minPositions = 20): Promise<SourceHitRat
       avg_alpha_pct: oa && oa.alphaCount > 0 ? oa.alphaSum / oa.alphaCount : null,
       smart,
       is_smart_money: isSmartMoney(smart),
+      smart_summary: smart && isSmartMoney(smart) ? smartMoneySummary(smart) : null,
     });
   }
 

@@ -76,8 +76,12 @@ export default async function LeaderboardPage() {
           SPY (stocks) or BTC (crypto) over the same window. &ldquo;Chased&rdquo; is the share of calls
           made after the asset had already run hard in the call&rsquo;s direction (a 5-day move over 2&times;
           its normal range) &mdash; reaction posts, not foresight. <strong>Smart money</strong> marks analysts
-          with at least {SMART_MONEY.minCalls} non-chased calls held {SMART_MONEY.minHoldDays}+ days that win
-          with statistical confidence, beat the market on both mean and median, and did so in most months.
+          whose non-chased calls held {SMART_MONEY.minHoldDays}+ days make money against the market the way
+          good traders do: winners bigger than losers (gains vs market at least{' '}
+          {SMART_MONEY.minProfitFactor}&times; losses, and still ahead without their single best call),
+          positive in most months. Closed calls count fully; open positions are marked to market daily
+          and count at half weight. Win rate isn&rsquo;t a requirement &mdash; cutting losers fast and
+          letting winners run counts.
           Track records are informational, not investment advice.
         </p>
       </main>

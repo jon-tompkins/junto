@@ -130,6 +130,7 @@ interface ClosedCall {
 interface TrackRecord {
   smart: SmartMoneyStats | null;
   is_smart_money: boolean;
+  smart_summary: string | null;
   reaction_rate: number | null;
 }
 
@@ -392,9 +393,7 @@ export default function SourceProfilePage() {
                 {profile.source.display_name || `@${displayHandle}`}
               </h1>
               {trackRecord?.is_smart_money && trackRecord.smart ? (
-                <SmartMoneyBadge
-                  title={`Smart money: ${trackRecord.smart.wins}/${trackRecord.smart.calls} long-horizon calls won, ${trackRecord.smart.median_alpha_pct >= 0 ? '+' : ''}${trackRecord.smart.median_alpha_pct.toFixed(1)}% median vs market, positive in ${trackRecord.smart.positive_months}/${trackRecord.smart.months} months`}
-                />
+                <SmartMoneyBadge title={trackRecord.smart_summary ?? undefined} />
               ) : null}
               <StarSourceButton
                 sourceId={profile.source_id}

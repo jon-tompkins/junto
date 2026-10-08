@@ -67,6 +67,10 @@
     {
       "path": "/api/cron/tradingview-sync",
       "schedule": "30 12 * * *"
+    },
+    {
+      "path": "/api/cron/mark-positions",
+      "schedule": "30 21 * * *"
     }
   ]
 }

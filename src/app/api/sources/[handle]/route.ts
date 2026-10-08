@@ -4,7 +4,7 @@ import { getPublicNewslettersByTwitterHandle, getUserIdByTwitterHandle } from '@
 import { getSubscribedNewslettersByUserId } from '@/lib/db/subscriptions';
 import { getEntityForSource, getCombinedHitRate } from '@/lib/db/creator-entities';
 import { getSupabase } from '@/lib/db/client';
-import { toSmartCall, smartStats, isSmartMoney } from '@/lib/leaderboard';
+import { toSmartCall, toOpenSmartCall, smartStats, isSmartMoney, smartMoneySummary } from '@/lib/leaderboard';
 
 // A source's realized track record: every call they've closed (win/loss/flat),
 // most-recently-closed first. Powers the "closed call history" view.
@@ -62,11 +62,21 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ han
       creator = { name: entity.entity.name, slug: entity.entity.slug, siblings, combinedHitRate };
     }
 
-    const smart = smartStats(closedCalls.map(toSmartCall).filter((c) => c != null));
+    const { data: openMarks } = await getSupabase()
+      .from('source_positions')
+      .select('since, is_reaction, mark_alpha_pct')
+      .eq('source_id', profile.source_id)
+      .not('mark_alpha_pct', 'is', null);
+    const smart = smartStats([
+      ...closedCalls.map(toSmartCall).filter((c) => c != null),
+      ...(openMarks ?? []).map(toOpenSmartCall).filter((c) => c != null),
+    ]);
+    const smartMoney = isSmartMoney(smart);
     const priced = closedCalls.filter((c) => c.is_reaction != null);
     const trackRecord = {
       smart,
-      is_smart_money: isSmartMoney(smart),
+      is_smart_money: smartMoney,
+      smart_summary: smart && smartMoney ? smartMoneySummary(smart) : null,
       reaction_rate: priced.length ? priced.filter((c) => c.is_reaction).length / priced.length : null,
     };
 

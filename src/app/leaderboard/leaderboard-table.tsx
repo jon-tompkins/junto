@@ -135,11 +135,9 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
                       <span className="font-medium text-parchment group-hover:text-brass transition">
                         @{r.handle}
                       </span>
-                      {r.is_smart_money && r.smart ? (
+                      {r.is_smart_money ? (
                         <span className="ml-2 align-middle">
-                          <SmartMoneyBadge
-                            title={`Smart money: ${r.smart.wins}/${r.smart.calls} long-horizon calls won, ${signedPct(r.smart.median_alpha_pct)} median vs market, positive in ${r.smart.positive_months}/${r.smart.months} months`}
-                          />
+                          <SmartMoneyBadge title={r.smart_summary ?? undefined} />
                         </span>
                       ) : null}
                       {r.display_name ? (
