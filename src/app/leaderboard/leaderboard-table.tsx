@@ -17,7 +17,7 @@ const COLUMNS: Array<{ key: SortKey; label: string; hideAt?: string }> = [
   { key: 'avg_alpha_pct', label: 'vs mkt', hideAt: 'hidden md:table-cell' },
   { key: 'reaction_rate', label: 'Chased', hideAt: 'hidden lg:table-cell' },
   { key: 'avg_conviction', label: 'Avg conv.', hideAt: 'hidden sm:table-cell' },
-  { key: 'total_positions', label: 'Positions' },
+  { key: 'total_positions', label: 'Positions', hideAt: 'hidden sm:table-cell' },
 ];
 
 function pct(x: number | null): string {
@@ -89,7 +89,7 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-[10px] uppercase tracking-wider text-parchment/55 border-b border-parchment/10">
-            <th className="py-3 pl-4 pr-2 font-medium">#</th>
+            <th className="py-3 pl-3 sm:pl-4 pr-2 font-medium">#</th>
             <th className="py-3 px-2 font-medium">Analyst</th>
             {COLUMNS.map((c) => (
               <th
@@ -113,8 +113,8 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
                 key={r.source_id}
                 className="border-b border-parchment/5 last:border-0 hover:bg-parchment/[0.03]"
               >
-                <td className="py-3 pl-4 pr-2 text-parchment/55 tabular-nums">{i + 1}</td>
-                <td className="py-3 px-2">
+                <td className="py-3 pl-3 sm:pl-4 pr-2 text-parchment/55 tabular-nums">{i + 1}</td>
+                <td className="py-3 px-2 max-w-[10rem] sm:max-w-none">
                   <Link
                     href={`/sources/${encodeURIComponent(r.handle)}`}
                     className="flex items-center gap-3 group"
@@ -132,11 +132,11 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
                       </div>
                     )}
                     <div className="min-w-0">
-                      <span className="font-medium text-parchment group-hover:text-brass transition">
+                      <span className="block sm:inline truncate font-medium text-parchment group-hover:text-brass transition">
                         @{r.handle}
                       </span>
                       {r.is_smart_money ? (
-                        <span className="ml-2 align-middle">
+                        <span className="block sm:inline mt-0.5 sm:mt-0 sm:ml-2 align-middle">
                           <SmartMoneyBadge title={r.smart_summary ?? undefined} />
                         </span>
                       ) : null}
@@ -166,7 +166,7 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
                   {r.scored > 0 ? (
                     <>
                       {r.scored}
-                      <span className="text-parchment/45 text-[11px]"> ({r.wins}–{r.losses})</span>
+                      <span className="hidden sm:inline text-parchment/45 text-[11px]"> ({r.wins}–{r.losses})</span>
                     </>
                   ) : (
                     '—'
@@ -186,7 +186,7 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
                 <td className="py-3 px-2 text-right tabular-nums hidden sm:table-cell text-parchment/70">
                   {r.avg_conviction == null ? '—' : r.avg_conviction.toFixed(1)}
                 </td>
-                <td className="py-3 pl-2 pr-4 text-right tabular-nums text-parchment/55">
+                <td className="py-3 pl-2 pr-4 text-right tabular-nums text-parchment/55 hidden sm:table-cell">
                   {r.total_positions}
                 </td>
               </tr>
