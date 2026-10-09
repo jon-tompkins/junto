@@ -15,7 +15,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const users = await getProUsersForDispatch();
+  // Optional ?user_id= re-runs a single user's dispatch (e.g. after a bad generation)
+  // without re-sending everyone else's.
+  const onlyUser = request.nextUrl.searchParams.get('user_id');
+  const users = (await getProUsersForDispatch()).filter((u) => !onlyUser || u.id === onlyUser);
   const results: Array<{ userId: string; ok: boolean; reason?: string; sources?: number; tickers?: number }> = [];
 
   for (const user of users) {
