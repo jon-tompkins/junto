@@ -216,6 +216,10 @@ Be specific. Don't editorialize beyond what tweets say. Don't restate the struct
     output_tokens: outputTokens,
     metadata: { tickers: tickers.length, model: HAIKU_MODEL },
   });
+  // Truncation guard: never deliver a cut-off or empty brief (see generator-v2).
+  if (resp.stop_reason === 'max_tokens' || text.length < 300) {
+    throw new Error(`personal dispatch output unusable (stop_reason=${resp.stop_reason}, ${text.length} chars)`);
+  }
 
   const subject = `Your Day — ${dateLabel}`;
   return { subject, content: text };

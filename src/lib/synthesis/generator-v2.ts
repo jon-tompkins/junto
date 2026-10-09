@@ -86,6 +86,14 @@ export async function generateNewsletterV2({
     metadata: { model: HAIKU_MODEL, newsletterName },
   });
 
+  // Truncation guard (Oct 2026): a model that spends max_tokens on reasoning returns
+  // a cut-off or empty dispatch. Never deliver that — fail the run instead.
+  if (response.stop_reason === 'max_tokens' || content.trim().length < 400) {
+    throw new Error(
+      `synthesis output unusable (stop_reason=${response.stop_reason}, ${content.trim().length} chars, ${outputTokens} output tokens)`,
+    );
+  }
+
   return {
     subject,
     content,
