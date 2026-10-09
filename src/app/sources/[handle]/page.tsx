@@ -567,7 +567,59 @@ export default function SourceProfilePage() {
           ) : positions.length === 0 ? (
             <p className="text-parchment/60 text-sm">No positions tracked yet — will populate on next content pull.</p>
           ) : (
-            <div className="overflow-x-auto bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded">
+            <>
+            {/* Phones: card stack so Return/Status aren't hidden behind a 760px horizontal scroll */}
+            <div className="sm:hidden bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded divide-y divide-[rgb(var(--t-brass) / 0.08)]">
+              {positions.map(([ticker, pos]) => {
+                const days = daysHeld(pos.last_mentioned || pos.since);
+                const quote = quotes[ticker];
+                const stanceSign = pos.stance === 'bearish' ? -1 : 1;
+                const ret =
+                  quote?.price != null && pos.entry_price
+                    ? ((quote.price - pos.entry_price) / pos.entry_price) * 100 * stanceSign
+                    : null;
+                const level = stalenessLevel(pos);
+                const statusLabel = level === 'stale' ? `Stale · ${days}d` : level === 'warn' ? `Cooling · ${days}d` : `Active · ${days}d`;
+                const statusCls = level === 'stale' ? 'text-bear/80' : level === 'warn' ? 'text-amber-400/80' : 'text-bull';
+                const held = holdings[ticker] ?? [];
+                return (
+                  <Link key={ticker} href={`/positions/${ticker}`} className="block px-4 py-3 hover:bg-raised/50 transition">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="inline-flex items-center gap-2 min-w-0">
+                        <span className="font-mono font-bold text-parchment">{ticker}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium ${STANCE_BADGE[pos.stance]}`}>
+                          {STANCE_LABELS[pos.stance]}
+                        </span>
+                      </span>
+                      <span className="font-mono text-sm shrink-0">
+                        {ret != null ? (
+                          <span className={ret >= 0 ? 'text-bull' : 'text-bear'}>
+                            {ret >= 0 ? '+' : ''}{ret.toFixed(1)}%
+                          </span>
+                        ) : (
+                          <span className="text-parchment/45">—</span>
+                        )}
+                      </span>
+                    </div>
+                    {pos.note && <p className="text-xs text-parchment/55 mt-1 line-clamp-1">{pos.note}</p>}
+                    <div className="flex items-center justify-between gap-3 mt-1.5 text-xs">
+                      <span className="font-mono text-parchment/60">
+                        {pos.entry_price != null ? `$${pos.entry_price.toFixed(2)}` : '—'}
+                        <span className="text-parchment/35"> → </span>
+                        <span className="text-parchment/90">{quote?.price != null ? `$${quote.price.toFixed(2)}` : '—'}</span>
+                      </span>
+                      <span className={`whitespace-nowrap ${statusCls}`}>{statusLabel}</span>
+                    </div>
+                    {held.length > 0 && (
+                      <p className="text-[11px] text-brass/80 mt-1 truncate">
+                        Held in {held.map((h) => h.mandate_name).join(', ')}
+                      </p>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+            <div className="hidden sm:block overflow-x-auto bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded">
               <table className="w-full text-sm min-w-[760px]">
                 <thead>
                   <tr className="text-[10px] uppercase tracking-wider text-parchment/55 font-[var(--font-oswald)] border-b border-[rgb(var(--t-brass) / 0.18)]">
@@ -650,6 +702,7 @@ export default function SourceProfilePage() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
 
