@@ -210,7 +210,7 @@ Rules:
 - conviction (integer 1-5): your read of how strongly the source holds this view based on WHAT THEY SAID in these tweets, relative to the current conviction shown above. Doubling down / adding size / a strong fresh thesis → higher. A passing cashtag or bare restatement with no new thesis → keep it about the same as the current value. Hedging, trimming, or expressing doubt → lower. A mention by itself does NOT raise conviction. A brand-new position with a weak signal → 1-2.
 - If new tweets clearly show an exit or contradiction of an existing position, change the stance (a flip is a fresh call — conviction resets low unless they flipped with strong conviction).
 - Only return a position in the "WHAT NOT TO TRACK" category if you are removing/correcting it; never add one.
-- summary: 1–2 sentences on what this analyst focuses on and their style
+- summary: ALWAYS return the full 1–2 sentence summary of what this analyst focuses on and their style — restate the current summary (refined if the new tweets warrant) even when nothing changed. Never null when a current summary exists
 - Return ONLY valid JSON, no prose
 
 Normalization:
@@ -221,7 +221,7 @@ Normalization:
 
 Output schema — include ONLY positions discussed in the new tweets. Do NOT include a "since" date, that is managed externally:
 {
-  "summary": "string or null",
+  "summary": "string",
   "positions": {
     "<ticker or investable sector>": {
       "stance": "bullish" | "bearish" | "neutral" | "cautious",
@@ -443,7 +443,11 @@ Output schema — include ONLY positions discussed in the new tweets. Do NOT inc
     }
   }
 
-  await upsertSourceProfile(sourceId, parsed.summary, enriched);
+  // Never let a blank model summary erase a real one. Positions are delta-only, and
+  // Haiku 5.5 started treating the summary the same way (returning null when nothing
+  // changed) — which wiped ~40 profile summaries on Oct 8 2026.
+  const summary = parsed.summary?.trim() || existing?.summary || null;
+  await upsertSourceProfile(sourceId, summary, enriched);
 
-  return { summary: parsed.summary, positions: enriched, changed: true };
+  return { summary, positions: enriched, changed: true };
 }
