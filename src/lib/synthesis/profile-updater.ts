@@ -1,6 +1,6 @@
 import { getAnthropic, HAIKU_MODEL } from './client';
 import { getSourceProfile, upsertSourceProfile, recordCallOutcomes, SourceAnalystProfile, PositionEntry, CallOutcome } from '../db/source-analyst-profiles';
-import { fetchCurrentPrice, fetchPriceAtOrAfter, fetchEntryContext, fetchBenchmarkReturn, reactionFields } from '../prices';
+import { fetchCurrentPrice, fetchPriceAtOrAfter, fetchEntryContext, fetchBenchmarkReturn, reactionFields, isPriceable, type PriceOpts } from '../prices';
 import { recordCost, anthropicHaikuCostCents } from '../costs';
 
 interface TweetInput {
@@ -340,10 +340,13 @@ Output schema — include ONLY positions discussed in the new tweets. Do NOT inc
       let entry_price = (prev && !stanceFlipped) ? (prev.entry_price ?? null) : null;
       let entry_at = (prev && !stanceFlipped) ? (prev.entry_at ?? null) : null;
       const entry_tweet_id = (prev && !stanceFlipped) ? (prev.entry_tweet_id ?? null) : null;
-      if (entry_price == null) {
+      // Themes that collide with a real ticker ("AI" → C3.ai) must not be priced.
+      const priceOpts: PriceOpts = { assetClass: pos.asset_class || prev?.asset_class || null, analystPosition: true };
+      if (!isPriceable(ticker, priceOpts.assetClass)) { entry_price = null; entry_at = null; }
+      else if (entry_price == null) {
         const signalTs = earliestRawMention(rawScanTweets, ticker, aliases);
         if (signalTs) {
-          const priced = await fetchPriceAtOrAfter(ticker, signalTs);
+          const priced = await fetchPriceAtOrAfter(ticker, signalTs, priceOpts);
           if (priced != null) {
             entry_price = priced;
             entry_at = signalTs;
@@ -351,7 +354,7 @@ Output schema — include ONLY positions discussed in the new tweets. Do NOT inc
         }
         // Fallback: no dated signal or Yahoo had no bar → live quote, no anchor.
         if (entry_price == null) {
-          const price = await fetchCurrentPrice(ticker);
+          const price = await fetchCurrentPrice(ticker, priceOpts);
           if (price != null) entry_price = price;
         }
       }
@@ -395,7 +398,8 @@ Output schema — include ONLY positions discussed in the new tweets. Do NOT inc
     try {
       const outcomes = await Promise.all(
         closeEvents.map(async ({ ticker, prev, reason }): Promise<CallOutcome> => {
-          const exit = await fetchCurrentPrice(ticker);
+          const closeOpts: PriceOpts = { assetClass: prev.asset_class || null, analystPosition: true };
+          const exit = await fetchCurrentPrice(ticker, closeOpts);
           const sign = prev.stance === 'bearish' ? -1 : 1;
           const directional = prev.stance === 'bullish' || prev.stance === 'bearish';
           let return_pct: number | null = null;
@@ -415,7 +419,7 @@ Output schema — include ONLY positions discussed in the new tweets. Do NOT inc
           let benchmark_return_pct: number | null = null;
           if (directional && signalTs) {
             const [ctx, bm] = await Promise.all([
-              fetchEntryContext(ticker, signalTs).catch(() => null),
+              fetchEntryContext(ticker, signalTs, closeOpts).catch(() => null),
               fetchBenchmarkReturn(ticker, signalTs).catch(() => null),
             ]);
             context = reactionFields(ctx?.preMove ?? null, sign);

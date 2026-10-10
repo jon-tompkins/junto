@@ -10,6 +10,7 @@ import { SourceChat } from '@/components/source-chat';
 import { StarSourceButton } from '@/components/star-source-button';
 import { PortfolioView } from '@/components/portfolio-view';
 import { isCryptoTicker } from '@/lib/trading/asset';
+import { isPriceable, type AssetClass } from '@/lib/prices';
 
 interface PositionEntry {
   stance: 'bullish' | 'bearish' | 'neutral' | 'cautious';
@@ -286,7 +287,15 @@ export default function SourceProfilePage() {
         setCreator(d.creator ?? null);
         setClosedCalls(d.closedCalls ?? []);
         setTrackRecord(d.trackRecord ?? null);
-        const tickers = Object.keys(d.profile?.positions ?? {});
+        // Only quote real instruments. Theme keys ("gold", "crypto") and themes that
+        // collide with a ticker ("AI" → C3.ai, "GOLD" → Gold.com) would show the price
+        // of an unrelated stock. Sector positions are quoted only when they carry an
+        // entry price (i.e. resolved to a sector ETF at open).
+        const positions = (d.profile?.positions ?? {}) as Record<string, { asset_class?: AssetClass; entry_price?: number }>;
+        const tickers = Object.keys(positions).filter((t) => {
+          const p = positions[t];
+          return isPriceable(t, p?.asset_class) && (p?.asset_class !== 'sector' || p?.entry_price != null);
+        });
         if (tickers.length === 0) return;
         Promise.all(
           tickers.map((t) =>

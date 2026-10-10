@@ -1,7 +1,7 @@
 import { getSupabase } from '@/lib/db/client';
 import {
   classifyTicker, yahooSymbol, fetchDailyBars, entryBarIndex, preMoveFromBars,
-  reactionFields, benchmarkTicker, type DailyBars,
+  reactionFields, benchmarkTicker, isPriceable, isPriceableInstrument, type AssetClass, type DailyBars,
 } from '@/lib/prices';
 
 /**
@@ -14,11 +14,11 @@ export async function markOpenPositions(opts: { concurrency?: number } = {}) {
   const concurrency = opts.concurrency ?? 8;
   const supabase = getSupabase();
 
-  const positions: Array<{ source_id: string; ticker: string; stance: string; since: string | null; entry_price: number | null }> = [];
+  const positions: Array<{ source_id: string; ticker: string; stance: string; since: string | null; entry_price: number | null; asset_class: AssetClass }> = [];
   for (let from = 0; ; from += 1000) {
     const { data, error } = await supabase
       .from('source_positions')
-      .select('source_id, ticker, stance, since, entry_price')
+      .select('source_id, ticker, stance, since, entry_price, asset_class')
       .in('stance', ['bullish', 'bearish'])
       .not('entry_price', 'is', null)
       .not('since', 'is', null)
@@ -46,6 +46,8 @@ export async function markOpenPositions(opts: { concurrency?: number } = {}) {
     const b = bars.get(p.ticker);
     const entry = Number(p.entry_price);
     if (!b || b.c.length === 0 || !entry) continue;
+    // Theme colliding with a real ticker ("AI" → C3.ai): never mark it.
+    if (!isPriceable(p.ticker, p.asset_class) || !isPriceableInstrument(p.asset_class, b.instrumentType)) continue;
     const sign = p.stance === 'bullish' ? 1 : -1;
     const idx = entryBarIndex(b, classifyTicker(p.ticker), p.since!);
     const mark = b.c[b.c.length - 1];

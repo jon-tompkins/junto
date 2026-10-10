@@ -21,6 +21,71 @@ export function classifyTicker(ticker: string): PriceType {
   return 'theme';
 }
 
+// ── Priceability of ANALYST positions ────────────────────────────────────────
+// A tracked "position" key is often a theme, not an instrument, and many themes
+// collide with a real ticker: "AI" the theme was being priced as C3.ai (ticker AI),
+// "GOLD" as Gold.com, "AGI" as Alamos Gold, "USD" as a leveraged semis ETF. That
+// scored analysts' thematic views against an unrelated stock (Oct 2026: 45 open +
+// 43 closed "AI" calls alone). Two rules, both keyed off the model's own
+// asset_class label for the position:
+//   1. AMBIGUOUS_TICKERS — words that are a concept/commodity/macro code far more
+//      often than a stock. Priced only when the position is labelled a single equity.
+//   2. A 'sector' position is priced only when the symbol resolves to an ETF (XLE,
+//      SMH, GLD are legitimate sector proxies) or a named coin; a company ticker is
+//      a collision.
+export type AssetClass = 'equity' | 'crypto' | 'sector' | null | undefined;
+
+export const AMBIGUOUS_TICKERS = new Set([
+  'AI', 'AGI', 'RWA', 'DEFI', 'NFT', 'NFTS', 'ETF', 'IPO',
+  'GOLD', 'SILVER', 'OIL', 'GAS', 'CL', 'GC', 'SI', 'NG', 'HG', 'HALEU',
+  'USD', 'EUR', 'JPY', 'GBP', 'CNY', 'DXY', 'UST',
+  'ISM', 'CPI', 'PCE', 'GDP', 'PMI', 'BDI', 'QE', 'QT',
+]);
+
+// Sync half of the rule (no network): is this key even eligible to be priced?
+export function isPriceable(ticker: string, assetClass?: AssetClass): boolean {
+  if (classifyTicker(ticker) === 'theme') return false;
+  if (AMBIGUOUS_TICKERS.has(ticker.toUpperCase()) && assetClass !== 'equity') return false;
+  return true;
+}
+
+// Async half: once Yahoo tells us what the symbol actually is.
+export function isPriceableInstrument(assetClass: AssetClass, instrumentType?: string | null): boolean {
+  if (assetClass !== 'sector' || !instrumentType) return true;
+  // A fund, or a named coin the model mislabelled as a sector, is a real instrument.
+  return instrumentType === 'ETF' || instrumentType === 'CRYPTOCURRENCY';
+}
+
+export interface PriceOpts {
+  /** The position's asset_class. Pass it for ANALYST positions so themes that
+   *  collide with a ticker aren't priced. Omit for real brokerage instruments. */
+  assetClass?: AssetClass;
+  /** True when the caller is pricing an analyst position (enables the rules even
+   *  when asset_class is unknown). */
+  analystPosition?: boolean;
+}
+
+function gated(opts?: PriceOpts): boolean {
+  return !!opts && (opts.analystPosition === true || opts.assetClass !== undefined);
+}
+
+async function yahooQuote(symbol: string): Promise<{ price: number | null; instrumentType: string | null }> {
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return { price: null, instrumentType: null };
+    const data = await res.json();
+    const meta = data?.chart?.result?.[0]?.meta;
+    const price = meta?.regularMarketPrice;
+    return { price: typeof price === 'number' ? price : null, instrumentType: meta?.instrumentType ?? null };
+  } catch {
+    return { price: null, instrumentType: null };
+  }
+}
+
 async function yahooPrice(symbol: string): Promise<number | null> {
   try {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
@@ -37,11 +102,14 @@ async function yahooPrice(symbol: string): Promise<number | null> {
   }
 }
 
-export async function fetchCurrentPrice(ticker: string): Promise<number | null> {
+export async function fetchCurrentPrice(ticker: string, opts?: PriceOpts): Promise<number | null> {
   const type = classifyTicker(ticker);
   if (type === 'theme') return null;
-  if (type === 'crypto') return yahooPrice(`${ticker}-USD`);
-  return yahooPrice(ticker);
+  const symbol = type === 'crypto' ? `${ticker}-USD` : ticker;
+  if (!gated(opts)) return yahooPrice(symbol);
+  if (!isPriceable(ticker, opts!.assetClass)) return null;
+  const q = await yahooQuote(symbol);
+  return isPriceableInstrument(opts!.assetClass, q.instrumentType) ? q.price : null;
 }
 
 // 16:00 America/New_York (regular-session close) on the ET calendar day of `d`,
@@ -70,8 +138,9 @@ function etSessionCloseSec(d: Date): number {
 export async function fetchPriceAtOrAfter(
   ticker: string,
   ts: string | number | Date,
+  opts?: PriceOpts,
 ): Promise<number | null> {
-  const ctx = await fetchEntryContext(ticker, ts);
+  const ctx = await fetchEntryContext(ticker, ts, opts);
   return ctx?.entry ?? null;
 }
 
@@ -80,6 +149,7 @@ export async function fetchPriceAtOrAfter(
 export interface DailyBars {
   t: number[]; // bar start, unix seconds
   c: number[]; // close
+  instrumentType?: string | null; // Yahoo meta: EQUITY | ETF | CRYPTOCURRENCY | …
 }
 
 export function yahooSymbol(ticker: string): string | null {
@@ -101,7 +171,7 @@ export async function fetchDailyBars(symbol: string, period1: number, period2: n
     const timestamps: number[] | undefined = result?.timestamp;
     const closes: (number | null)[] | undefined = result?.indicators?.quote?.[0]?.close;
     if (!Array.isArray(timestamps) || !Array.isArray(closes)) return null;
-    const bars: DailyBars = { t: [], c: [] };
+    const bars: DailyBars = { t: [], c: [], instrumentType: result?.meta?.instrumentType ?? null };
     for (let i = 0; i < timestamps.length; i++) {
       if (typeof timestamps[i] !== 'number' || typeof closes[i] !== 'number') continue;
       bars.t.push(timestamps[i]);
@@ -184,16 +254,19 @@ export interface EntryContext {
 export async function fetchEntryContext(
   ticker: string,
   ts: string | number | Date,
+  opts?: PriceOpts,
 ): Promise<EntryContext | null> {
   const type = classifyTicker(ticker);
   const symbol = yahooSymbol(ticker);
   if (!symbol) return null;
+  if (gated(opts) && !isPriceable(ticker, opts!.assetClass)) return null;
   const start = new Date(ts);
   if (Number.isNaN(start.getTime())) return null;
   const signalSec = Math.floor(start.getTime() / 1000);
   // ~100 calendar days back covers the 60-session vol window; +10 spans holidays.
   const bars = await fetchDailyBars(symbol, signalSec - 100 * 86_400, signalSec + 10 * 86_400);
   if (!bars) return null;
+  if (gated(opts) && !isPriceableInstrument(opts!.assetClass, bars.instrumentType)) return null;
   const idx = entryBarIndex(bars, type, ts);
   if (idx < 0) return null;
   return { entry: bars.c[idx], preMove: preMoveFromBars(bars, idx) };
