@@ -282,6 +282,71 @@ async function signedGet(url: string, creds: XCreds): Promise<any> {
   return JSON.parse(responseText);
 }
 
+// Signed GET with query params (they must be part of the OAuth signature base).
+async function signedGetQuery(base: string, query: Record<string, string>, creds: XCreds): Promise<any> {
+  const authHeader = signRequest('GET', base, creds, query);
+  const qs = Object.keys(query).map((k) => `${pct(k)}=${pct(query[k])}`).join('&');
+  const res = await fetch(`${base}?${qs}`, { headers: { Authorization: authHeader } });
+  const responseText = await res.text();
+  if (!res.ok) throw new Error(`X GET ${base} ${res.status}: ${responseText}`);
+  return JSON.parse(responseText);
+}
+
+// ── Read-only metrics (growth loop measurement) ──────────────────────────────
+// What the API tier allows varies, so each read is attempted independently and a
+// failure is reported per-section instead of failing the whole call.
+export interface XMetrics {
+  account: { followers: number; following: number; tweets: number; listed: number } | null;
+  account_error?: string;
+  tweets: Array<{
+    id: string;
+    created_at?: string;
+    likes: number; replies: number; retweets: number; quotes: number; bookmarks: number | null;
+    impressions: number | null;
+    profile_clicks: number | null; url_clicks: number | null;
+  }>;
+  tweets_error?: string;
+}
+
+export async function getXMetrics(tweetIds: string[] = []): Promise<XMetrics> {
+  const creds = getCreds();
+  const out: XMetrics = { account: null, tweets: [] };
+  try {
+    const me = await signedGetQuery('https://api.x.com/2/users/me', { 'user.fields': 'public_metrics' }, creds);
+    const m = me?.data?.public_metrics;
+    if (m) out.account = { followers: m.followers_count, following: m.following_count, tweets: m.tweet_count, listed: m.listed_count };
+  } catch (e) {
+    out.account_error = e instanceof Error ? e.message.slice(0, 300) : String(e);
+  }
+  const ids = tweetIds.filter((i) => /^\d+$/.test(i)).slice(0, 100);
+  if (ids.length) {
+    // non_public/organic metrics (impressions, clicks) are only served for our own
+    // tweets from the last 30 days; fall back to public metrics if that's refused.
+    for (const fields of ['public_metrics,non_public_metrics,created_at', 'public_metrics,created_at']) {
+      try {
+        const r = await signedGetQuery('https://api.x.com/2/tweets', { ids: ids.join(','), 'tweet.fields': fields }, creds);
+        out.tweets = (r?.data ?? []).map((t: any) => ({
+          id: t.id,
+          created_at: t.created_at,
+          likes: t.public_metrics?.like_count ?? 0,
+          replies: t.public_metrics?.reply_count ?? 0,
+          retweets: t.public_metrics?.retweet_count ?? 0,
+          quotes: t.public_metrics?.quote_count ?? 0,
+          bookmarks: t.public_metrics?.bookmark_count ?? null,
+          impressions: t.non_public_metrics?.impression_count ?? t.public_metrics?.impression_count ?? null,
+          profile_clicks: t.non_public_metrics?.user_profile_clicks ?? null,
+          url_clicks: t.non_public_metrics?.url_link_clicks ?? null,
+        }));
+        delete out.tweets_error;
+        break;
+      } catch (e) {
+        out.tweets_error = e instanceof Error ? e.message.slice(0, 300) : String(e);
+      }
+    }
+  }
+  return out;
+}
+
 // Cache @myjunto_xyz user id for the lifetime of the lambda — never changes.
 let cachedMeId: string | null = null;
 
