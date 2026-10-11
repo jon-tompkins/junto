@@ -297,6 +297,7 @@ async function signedGetQuery(base: string, query: Record<string, string>, creds
 // failure is reported per-section instead of failing the whole call.
 export interface XMetrics {
   account: { followers: number; following: number; tweets: number; listed: number } | null;
+  profile?: { name: string; username: string; description: string; url: string | null; location: string | null; pinned_tweet_id: string | null };
   account_error?: string;
   tweets: Array<{
     id: string;
@@ -312,8 +313,15 @@ export async function getXMetrics(tweetIds: string[] = []): Promise<XMetrics> {
   const creds = getCreds();
   const out: XMetrics = { account: null, tweets: [] };
   try {
-    const me = await signedGetQuery('https://api.x.com/2/users/me', { 'user.fields': 'public_metrics' }, creds);
+    const me = await signedGetQuery('https://api.x.com/2/users/me', { 'user.fields': 'public_metrics,description,url,location,pinned_tweet_id,entities' }, creds);
     const m = me?.data?.public_metrics;
+    if (me?.data) {
+      out.profile = {
+        name: me.data.name, username: me.data.username, description: me.data.description ?? '',
+        url: me.data.entities?.url?.urls?.[0]?.expanded_url ?? me.data.url ?? null,
+        location: me.data.location ?? null, pinned_tweet_id: me.data.pinned_tweet_id ?? null,
+      };
+    }
     if (m) out.account = { followers: m.followers_count, following: m.following_count, tweets: m.tweet_count, listed: m.listed_count };
   } catch (e) {
     out.account_error = e instanceof Error ? e.message.slice(0, 300) : String(e);
