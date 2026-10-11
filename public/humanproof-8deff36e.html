@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>HumanProof — your AI built it. A human will tell you if it works.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f3efe6; --ink:#16130f; --soft:#5b554b; --rule:#16130f; --line:#cfc8b8;
+    --red:#d1341f; --card:#fbf9f3; --green:#1f6b4a; --amber:#a66a00;
+    --serif:"Fraunces",Georgia,serif; --mono:"IBM Plex Mono",ui-monospace,monospace; --sans:"Instrument Sans",system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.55;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px);background-size:100% 34px;background-position:0 -1px}
+  a{color:inherit}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+  .sample{background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:12px;text-align:center;padding:7px 12px;letter-spacing:.04em}
+
+  header{border-bottom:2px solid var(--rule);background:var(--paper)}
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0}
+  .logo{font-family:var(--serif);font-weight:800;font-size:24px;letter-spacing:-.02em;text-decoration:none}
+  .logo span{color:var(--red)}
+  .nav nav{display:flex;gap:26px;font-family:var(--mono);font-size:13px}
+  .nav nav a{text-decoration:none}
+  .nav nav a:hover{color:var(--red)}
+  @media(max-width:640px){.nav nav a:not(.cta-s){display:none}}
+  .cta-s{border:2px solid var(--ink);padding:6px 12px}
+
+  .hero{display:grid;grid-template-columns:1.25fr .75fr;gap:40px;padding:68px 0 60px;align-items:end;background:var(--paper)}
+  @media(max-width:860px){.hero{grid-template-columns:1fr;padding:44px 0}}
+  .kicker{font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--red);margin-bottom:18px}
+  h1{font-family:var(--serif);font-weight:800;font-size:clamp(44px,7.2vw,92px);line-height:.96;letter-spacing:-.035em}
+  h1 em{font-style:italic;font-weight:400}
+  .lede{font-size:20px;color:var(--soft);max-width:560px;margin-top:26px}
+  .btns{display:flex;gap:14px;flex-wrap:wrap;margin-top:32px}
+  .btn{font-family:var(--mono);font-size:14px;font-weight:600;text-decoration:none;padding:15px 22px;border:2px solid var(--ink);display:inline-block;transition:transform .12s,box-shadow .12s}
+  .btn.p{background:var(--ink);color:var(--paper);box-shadow:5px 5px 0 var(--red)}
+  .btn:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 var(--red)}
+  .stamp{justify-self:end;width:230px;height:230px;border:5px double var(--red);border-radius:50%;color:var(--red);display:grid;place-items:center;text-align:center;transform:rotate(-11deg);font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em;font-size:12px;font-weight:600;background:rgba(209,52,31,.04)}
+  .stamp b{display:block;font-family:var(--serif);font-size:38px;letter-spacing:-.02em;line-height:1;margin:6px 0;text-transform:none;font-weight:800}
+  @media(max-width:860px){.stamp{justify-self:start;width:170px;height:170px}.stamp b{font-size:28px}}
+
+  section{border-top:2px solid var(--rule);padding:64px 0;background:var(--paper)}
+  .sec-h{display:grid;grid-template-columns:200px 1fr;gap:28px;margin-bottom:36px}
+  @media(max-width:760px){.sec-h{grid-template-columns:1fr;gap:8px}}
+  .num{font-family:var(--mono);font-size:13px;color:var(--red);letter-spacing:.1em;text-transform:uppercase;padding-top:10px}
+  h2{font-family:var(--serif);font-weight:600;font-size:clamp(30px,4.2vw,48px);line-height:1.05;letter-spacing:-.025em;max-width:760px}
+
+  .miss{display:grid;grid-template-columns:repeat(3,1fr);border:2px solid var(--ink);background:var(--card)}
+  .miss div{padding:26px;border-right:2px solid var(--ink)}
+  .miss div:last-child{border-right:0}
+  @media(max-width:760px){.miss{grid-template-columns:1fr}.miss div{border-right:0;border-bottom:2px solid var(--ink)}.miss div:last-child{border-bottom:0}}
+  .miss h3{font-family:var(--serif);font-size:23px;font-weight:600;margin-bottom:8px;letter-spacing:-.01em}
+  .miss p{color:var(--soft);font-size:16px}
+  .miss .q{font-family:var(--mono);font-size:12.5px;color:var(--ink);margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+  @media(max-width:760px){.steps{grid-template-columns:1fr}}
+  .step .n{font-family:var(--serif);font-size:74px;font-weight:800;line-height:.9;color:var(--red)}
+  .step h3{font-family:var(--serif);font-size:24px;font-weight:600;margin:10px 0 6px}
+  .step p{color:var(--soft);font-size:16px}
+
+  .report{display:grid;grid-template-columns:.9fr 1.1fr;gap:36px;align-items:start}
+  @media(max-width:860px){.report{grid-template-columns:1fr}}
+  .report p{color:var(--soft);margin-bottom:14px}
+  .report ul{list-style:none;margin-top:8px}
+  .report li{padding:9px 0;border-bottom:1px solid var(--line);font-size:16px}
+  .report li::before{content:"→ ";color:var(--red);font-family:var(--mono)}
+  .doc{background:var(--ink);color:#e9e4d6;font-family:var(--mono);font-size:13px;line-height:1.7;padding:24px 26px;box-shadow:8px 8px 0 var(--red);overflow:auto}
+  .doc .c{color:#8d8676}.doc .k{color:#f0a48f}.doc .hi{color:#ffd27a}.doc .ok{color:#8fd6b0}
+
+  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:2px solid var(--ink)}
+  @media(max-width:860px){.tiers{grid-template-columns:1fr}}
+  .tier{padding:30px 26px 28px;background:var(--card);border-right:2px solid var(--ink);display:flex;flex-direction:column}
+  .tier:last-child{border-right:0}
+  @media(max-width:860px){.tier{border-right:0;border-bottom:2px solid var(--ink)}.tier:last-child{border-bottom:0}}
+  .tier.f{background:var(--ink);color:var(--paper)}
+  .tier .t{font-family:var(--mono);font-size:12.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--red)}
+  .tier.f .t{color:#ff8a73}
+  .tier h3{font-family:var(--serif);font-size:30px;font-weight:600;margin:8px 0 2px;letter-spacing:-.02em}
+  .price{font-family:var(--serif);font-size:58px;font-weight:800;letter-spacing:-.03em;line-height:1.05}
+  .price small{font-family:var(--mono);font-size:14px;font-weight:400;letter-spacing:0}
+  .tier ul{list-style:none;margin:18px 0 26px;flex:1}
+  .tier li{padding:8px 0;border-bottom:1px solid var(--line);font-size:15.5px}
+  .tier.f li{border-color:#3a352d}
+  .tier .btn{text-align:center}
+  .tier.f .btn{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+  .fine{font-family:var(--mono);font-size:12.5px;color:var(--soft);margin-top:16px}
+
+  .faq{display:grid;grid-template-columns:1fr 1fr;gap:6px 44px}
+  @media(max-width:760px){.faq{grid-template-columns:1fr}}
+  .faq div{padding:18px 0;border-bottom:1px solid var(--line)}
+  .faq h3{font-family:var(--serif);font-size:21px;font-weight:600;margin-bottom:6px}
+  .faq p{color:var(--soft);font-size:16px}
+
+  .close{background:var(--red);color:#fff;border-top:2px solid var(--ink);padding:74px 0;text-align:left}
+  .close h2{color:#fff;max-width:900px;font-weight:800;font-size:clamp(34px,5.4vw,66px)}
+  .close p{margin:18px 0 30px;font-size:19px;max-width:600px}
+  .close .btn{background:var(--ink);color:#fff;box-shadow:5px 5px 0 #fff}
+  .close .btn:hover{box-shadow:7px 7px 0 #fff}
+  footer{background:var(--ink);color:#a9a292;font-family:var(--mono);font-size:12.5px;padding:22px 0}
+</style>
+</head>
+<body>
+<div class="sample">SAMPLE SITE · DRAFT COPY · NAME AND PRICES NOT FINAL · BOOKING BUTTONS NOT WIRED</div>
+<header><div class="wrap nav">
+  <a class="logo" href="#">Human<span>Proof</span></a>
+  <nav><a href="#miss">What gets missed</a><a href="#how">How it works</a><a href="#report">The report</a><a href="#pricing">Pricing</a><a class="cta-s" href="#book">Book a pass</a></nav>
+</div></header>
+
+<div class="wrap hero">
+  <div>
+    <div class="kicker">Human feedback for agent-built apps</div>
+    <h1>Your AI built it.<br><em>I'll tell you if it actually works.</em></h1>
+    <p class="lede">A real person uses your app cold, the way a customer would. Within 48 hours you get a narrated screen recording and a prioritised fix list your coding agent can act on.</p>
+    <div class="btns"><a class="btn p" href="#book">Book a Quick Look · $149</a><a class="btn" href="#report">See a sample report</a></div>
+  </div>
+  <div class="stamp"><div>tested by<b>a human</b>48-hour turnaround</div></div>
+</div>
+
+<section id="miss"><div class="wrap">
+  <div class="sec-h"><div class="num">01 · The gap</div><h2>Your tests pass. Your users still leave. Here is what automated checks can't see.</h2></div>
+  <div class="miss">
+    <div><h3>Confusion</h3><p>The button works. Nobody knows it's the button. I'll show you the exact second I got lost.</p><div class="q">"What is this page asking me to do?"</div></div>
+    <div><h3>Trust</h3><p>Placeholder copy, an odd error, a form asking for too much. Small things that make people close the tab.</p><div class="q">"Would I put my card in here?"</div></div>
+    <div><h3>Feel</h3><p>Slow, cramped, jumpy on a phone. Things an agent reports as fine because the page technically loaded.</p><div class="q">"This is technically correct and annoying."</div></div>
+  </div>
+</div></section>
+
+<section id="how"><div class="wrap">
+  <div class="sec-h"><div class="num">02 · How it works</div><h2>Three steps. No calls unless you want one.</h2></div>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><h3>Send the link</h3><p>URL, a test login, who the app is for, and the one thing you most want checked.</p></div>
+    <div class="step"><div class="n">2</div><h3>I use it cold</h3><p>Screen and voice recorded, on desktop and phone. First impression, then your key tasks, then trying to break it.</p></div>
+    <div class="step"><div class="n">3</div><h3>You get the fix list</h3><p>Video plus a structured report, ranked by severity. Paste it into your agent and ship the fixes.</p></div>
+  </div>
+</div></section>
+
+<section id="report"><div class="wrap">
+  <div class="sec-h"><div class="num">03 · The report</div><h2>Written for you, formatted for your agent.</h2></div>
+  <div class="report">
+    <div>
+      <p>Every issue has the same shape: where it happened, what I did, what I expected, how bad it is, and a suggested fix. No essays to interpret.</p>
+      <ul>
+        <li>Narrated screen recording, timestamped to each issue</li>
+        <li>Issues ranked: blocker, major, minor, polish</li>
+        <li>What worked well, so you don't "fix" it</li>
+        <li>Markdown and JSON, ready to hand to a coding agent</li>
+      </ul>
+    </div>
+    <pre class="doc"><span class="c"># sample issue — illustrative</span>
+<span class="k">id</span>:        HP-004
+<span class="k">severity</span>:  <span class="hi">major</span>
+<span class="k">where</span>:     /signup  (mobile, 390px wide)
+<span class="k">video</span>:     04:12
+<span class="k">i_did</span>:     Tapped "Continue" after entering email
+<span class="k">happened</span>:  Nothing visible. Button stayed active.
+           Tapped 3 more times, got 4 confirmation emails.
+<span class="k">expected</span>:  A loading state, then the next step
+<span class="k">human_note</span>: I assumed it was broken and nearly left.
+<span class="k">suggested_fix</span>:
+  - Disable the button and show a spinner on submit
+  - Debounce the request
+<span class="k">retest</span>:    <span class="ok">pending</span></pre>
+  </div>
+</div></section>
+
+<section id="pricing"><div class="wrap">
+  <div class="sec-h"><div class="num">04 · Pricing</div><h2>Pay per pass. Cheaper than one lost customer.</h2></div>
+  <div class="tiers">
+    <div class="tier"><div class="t">Start here</div><h3>Quick Look</h3><div class="price">$149</div>
+      <ul><li>30-minute first-use session</li><li>Narrated recording</li><li>Top 10 issues, ranked</li><li>Delivered in 48 hours</li></ul>
+      <a class="btn" href="#book">Book a Quick Look</a></div>
+    <div class="tier f"><div class="t">Before launch</div><h3>Deep Pass</h3><div class="price">$399</div>
+      <ul><li>Every core flow, desktop and phone</li><li>Full structured report (Markdown + JSON)</li><li>One retest after you fix things</li><li>Optional 30-minute call</li></ul>
+      <a class="btn" href="#book">Book a Deep Pass</a></div>
+    <div class="tier"><div class="t">Shipping weekly</div><h3>Retainer</h3><div class="price">$600<small> /month</small></div>
+      <ul><li>Regular passes as you ship</li><li>Retests included</li><li>Shared chat channel</li><li>Priority turnaround</li></ul>
+      <a class="btn" href="#book">Ask about a retainer</a></div>
+  </div>
+  <p class="fine">Draft prices. Limited slots each week, because one person does every pass.</p>
+</div></section>
+
+<section><div class="wrap">
+  <div class="sec-h"><div class="num">05 · Questions</div><h2>Fair questions.</h2></div>
+  <div class="faq">
+    <div><h3>Why not a testing panel?</h3><p>Panels give you five strangers and a pile of video. You get one builder who has shipped products, and a list you can act on today.</p></div>
+    <div><h3>Can't my agent test itself?</h3><p>It can check that things run. It can't tell you a page made a person hesitate. That's the part I do.</p></div>
+    <div><h3>What kinds of apps?</h3><p>Web apps and mobile web. Especially AI-built products, and anything in finance or crypto where trust decides everything.</p></div>
+    <div><h3>Is my app kept private?</h3><p>Yes. Recordings and reports go to you only. Happy to sign an NDA before you send a link.</p></div>
+  </div>
+</div></section>
+
+<div class="close" id="book"><div class="wrap">
+  <h2>Ship it after a human has tried it.</h2>
+  <p>Send a link today, get the recording and fix list within 48 hours.</p>
+  <a class="btn" href="#book">Book a pass (not wired in this sample)</a>
+</div></div>
+<footer><div class="wrap">HumanProof · sample site, draft v0 · not a live service yet</div></footer>
+</body>
+</html>
