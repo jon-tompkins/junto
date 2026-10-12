@@ -302,9 +302,18 @@ export default function SourcesPage() {
     return true;
   });
 
-  const allTickers = Array.from(
-    new Set(profiles.flatMap((p) => Object.keys(p.positions).map((k) => k.toUpperCase())))
-  ).sort().slice(0, 12);
+  // Quick pills = the 12 most widely held positions. (Alphabetical order surfaced
+  // junk first: contract addresses, numeric exchange codes.)
+  const tickerCounts = new Map<string, number>();
+  for (const p of profiles) {
+    for (const k of new Set(Object.keys(p.positions).map((key) => key.toUpperCase()))) {
+      tickerCounts.set(k, (tickerCounts.get(k) || 0) + 1);
+    }
+  }
+  const allTickers = Array.from(tickerCounts.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 12)
+    .map(([ticker]) => ticker);
 
   const toggleJunto = (id: string) => {
     setJuntoFilter((prev) => {
