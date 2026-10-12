@@ -346,6 +346,56 @@ export async function getPositionsForTicker(ticker: string): Promise<Array<{
   return (data ?? []) as Array<{ source_id: string; ticker: string; stance: string; conviction: number | null; mentions: number; last_mentioned: string | null }>;
 }
 
+export interface TickerStance {
+  handle: string;
+  display_name: string | null;
+  stance: string;
+  conviction: number | null;
+  mentions: number;
+  since: string | null;
+  last_mentioned: string | null;
+  mark_return_pct: number | null;
+}
+
+/**
+ * Who holds a stance on a ticker, with handles resolved — the public "analyst
+ * stance" block on /tickers/[ticker]. source_positions has no FK to sources,
+ * so the handle lookup is a second query. Never throws (SEO page must render).
+ */
+export async function getTickerStances(ticker: string): Promise<TickerStance[]> {
+  const supabase = getSupabase();
+  const { data: rows, error } = await supabase
+    .from('source_positions')
+    .select('source_id, stance, conviction, mentions, since, last_mentioned, mark_return_pct')
+    .ilike('ticker', ticker)
+    .order('conviction', { ascending: false, nullsFirst: false });
+  if (error || !rows?.length) {
+    if (error) console.error('[source-analyst-profiles] getTickerStances failed:', error);
+    return [];
+  }
+  const { data: sources } = await supabase
+    .from('sources')
+    .select('id, handle_or_url, display_name')
+    .in('id', rows.map((r) => r.source_id));
+  const byId = new Map((sources ?? []).map((s) => [s.id, s]));
+  return rows.flatMap((r) => {
+    const src = byId.get(r.source_id);
+    // Non-Twitter sources store a URL here — no /sources/[handle] page to link.
+    const handle = src?.handle_or_url?.replace(/^@/, '');
+    if (!handle || handle.includes('/')) return [];
+    return [{
+      handle,
+      display_name: src?.display_name ?? null,
+      stance: r.stance,
+      conviction: r.conviction,
+      mentions: r.mentions ?? 0,
+      since: r.since,
+      last_mentioned: r.last_mentioned,
+      mark_return_pct: r.mark_return_pct,
+    }];
+  });
+}
+
 // Returns Twitter sources that have stored tweets but no analyst profile yet,
 // plus sources whose profile hasn't been re-analyzed in >48h.
 // Used by collect-twitter to seed/refresh profiles in background after each poll cycle.
