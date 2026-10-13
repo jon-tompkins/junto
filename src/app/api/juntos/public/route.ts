@@ -63,6 +63,28 @@ export async function GET() {
       (sourceDeets || []).forEach((s: any) => { sourceDetailsMap[s.id] = s; });
     }
 
+    // Dispatches built on each junto. Separate query (no embed) for the same schema-cache
+    // reason as above. Personal/private dispatches only surface to their owner.
+    const dispatchMap: Record<string, { id: string; name: string; subscriber_count: number; schedule_cadence: string }[]> = {};
+    if (juntoIds.length > 0) {
+      const { data: dispatchRows } = await supabase
+        .from('newsletters_v2')
+        .select('id, name, junto_id, is_public, is_personal, admin_user_id, subscriber_count, schedule_cadence')
+        .in('junto_id', juntoIds)
+        .order('subscriber_count', { ascending: false });
+      (dispatchRows || []).forEach((n: any) => {
+        const visible = (n.is_public && !n.is_personal) || (userId && n.admin_user_id === userId);
+        if (!visible) return;
+        if (!dispatchMap[n.junto_id]) dispatchMap[n.junto_id] = [];
+        dispatchMap[n.junto_id].push({
+          id: n.id,
+          name: n.name,
+          subscriber_count: n.subscriber_count ?? 0,
+          schedule_cadence: n.schedule_cadence,
+        });
+      });
+    }
+
     const juntos = (data || []).map((j: any) => ({
       id: j.id,
       name: j.name,
@@ -73,7 +95,7 @@ export async function GET() {
       is_own: j.owner_id === userId,
       source_count: sourceCountMap[j.id] ?? 0,
       sources: (sourceIdsMap[j.id] ?? []).map((sid: string) => sourceDetailsMap[sid]).filter(Boolean),
-      dispatches: [],
+      dispatches: dispatchMap[j.id] ?? [],
     }));
 
     return NextResponse.json({ juntos });

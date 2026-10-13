@@ -175,6 +175,30 @@ function JuntoModal({ junto, onClose }: { junto: JuntoCard; onClose: () => void 
           )}
         </div>
 
+        {/* Dispatches already built on this junto */}
+        {junto.dispatches.length > 0 && (
+          <div className="px-5 py-3" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.15)' }}>
+            <div className="text-[10px] uppercase tracking-wider mb-2" style={{ color: 'rgb(var(--t-parchment) / 0.45)', fontFamily: 'var(--font-oswald, sans-serif)' }}>
+              {junto.dispatches.length === 1 ? 'Dispatch' : 'Dispatches'}
+            </div>
+            <div className="space-y-1.5">
+              {junto.dispatches.slice(0, 3).map((d) => (
+                <Link
+                  key={d.id}
+                  href={`/newsletter/${d.id}`}
+                  className="flex items-center justify-between gap-3 px-3 py-2 text-sm transition hover:opacity-80"
+                  style={{ background: 'rgb(var(--t-raised))', border: '1px solid rgb(var(--t-brass) / 0.18)', color: 'rgb(var(--t-parchment))' }}
+                >
+                  <span className="truncate">{d.name}</span>
+                  <span className="text-[11px] shrink-0" style={{ color: 'rgb(var(--t-brass))' }}>
+                    {CADENCE_LABELS[d.schedule_cadence] ?? d.schedule_cadence} · Read →
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Footer actions */}
         <div className="px-5 py-4 flex gap-2 flex-wrap" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.15)' }}>
           <Link
@@ -331,7 +355,9 @@ export default function JuntosPage() {
                     <span className="text-xs text-parchment/55 font-mono shrink-0">{junto.source_count} sources</span>
                   </div>
                   <span className="text-[11px] text-parchment/50 shrink-0">
-                    {junto.dispatches.length > 0 ? `${junto.dispatches.length} dispatch${junto.dispatches.length === 1 ? '' : 'es'}` : 'No dispatches'}
+                    {junto.dispatches.length === 1
+                      ? `${CADENCE_LABELS[junto.dispatches[0].schedule_cadence] ?? junto.dispatches[0].schedule_cadence} dispatch`
+                      : junto.dispatches.length > 1 ? `${junto.dispatches.length} dispatches` : 'No dispatch yet'}
                   </span>
                 </div>
               </button>
