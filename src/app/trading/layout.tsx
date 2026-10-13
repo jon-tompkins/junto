@@ -1,5 +1,12 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getTradingAccess } from '@/lib/trading/access';
+
+export const metadata: Metadata = {
+  title: 'Mandates',
+  description: 'Your trading mandates, positions and trade history.',
+  robots: { index: false },
+};
 
 // Server-side gate for the whole /trading section. Operator-or-admin only;
 // everyone else gets bounced to /pricing where the Operator card lives.
