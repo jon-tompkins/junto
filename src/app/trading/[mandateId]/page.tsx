@@ -313,6 +313,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   }
 
   useEffect(() => {
+    if (status === 'unauthenticated') { setLoading(false); return; }
     if (status !== 'authenticated') return;
     fetch(`/api/admin/trading/mandates/${mandateId}`)
       .then(r => r.json())
@@ -329,6 +330,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         setDraftGuidelines(data.mandate?.guidelines || '');
         setAccount(data.account || { equity: null, cash: null });
       })
+      .catch(() => {})
       .finally(() => setLoading(false));
     fetch('/api/juntos/public').then(r => r.ok ? r.json() : { juntos: [] }).then(j => setJuntos(j.juntos || [])).catch(() => {});
   }, [status, mandateId]);
@@ -471,11 +473,30 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     if (data.mandate) setMandate(m => m ? { ...m, status: data.mandate.status } : m);
   }
 
-  if (loading || !mandate) {
+  if (loading || status === 'loading') {
     return (
       <main className="min-h-screen bg-ink text-parchment">
         <TopNav />
         <div className="max-w-6xl mx-auto px-6 py-12 text-parchment/60">Loading…</div>
+      </main>
+    );
+  }
+
+  if (!mandate) {
+    return (
+      <main className="min-h-screen bg-ink text-parchment">
+        <TopNav />
+        <div className="max-w-6xl mx-auto px-6 py-12">
+          <h1 className="text-xl font-medium text-parchment mb-2">Mandate not found</h1>
+          <p className="text-sm text-parchment/60 mb-6">
+            {status === 'unauthenticated'
+              ? 'Sign in to view your mandates.'
+              : 'This mandate doesn’t exist, or it belongs to a different account.'}
+          </p>
+          <Link href={status === 'unauthenticated' ? '/login?callbackUrl=/trading' : '/trading'} className="text-sm text-brass hover:underline">
+            {status === 'unauthenticated' ? 'Sign in →' : '← Back to mandates'}
+          </Link>
+        </div>
       </main>
     );
   }

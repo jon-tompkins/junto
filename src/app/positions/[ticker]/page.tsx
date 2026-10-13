@@ -955,7 +955,7 @@ export default function PositionPage() {
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="font-medium text-parchment group-hover:text-brass transition text-sm">
+                          <span className="font-medium text-parchment group-hover:text-brass transition text-sm max-w-full truncate">
                             @{a.handle}
                           </span>
                           {a.display_name && (
