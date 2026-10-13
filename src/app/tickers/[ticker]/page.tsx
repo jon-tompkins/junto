@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -22,6 +23,9 @@ const STANCE_TEXT: Record<string, string> = {
 };
 const MAX_ANALYSTS = 8;
 
+// Shared by generateMetadata and the page so the stance lookup runs once per request.
+const loadStances = cache((t: string) => getTickerStances(t));
+
 export async function generateMetadata({
   params,
 }: {
@@ -30,7 +34,13 @@ export async function generateMetadata({
   const { ticker } = await params;
   const t = decodeURIComponent(ticker).toUpperCase();
   const title = `$${t} — dispatch coverage & mentions`;
-  const description = `Every public MyJunto dispatch that covered $${t}: AI-synthesized briefings tracking the narrative, catalysts, and analyst sentiment around $${t}.`;
+  const stances = await loadStances(t);
+  const counts: Record<string, number> = {};
+  for (const s of stances) counts[s.stance] = (counts[s.stance] ?? 0) + 1;
+  const split = STANCES.filter((s) => counts[s]).map((s) => `${counts[s]} ${s}`).join(', ');
+  const description = split
+    ? `Tracked analyst stances on $${t}: ${split}. Plus every public MyJunto dispatch that covered $${t}.`
+    : `Every public MyJunto dispatch that covered $${t}: AI-synthesized briefings tracking the narrative, catalysts, and analyst sentiment around $${t}.`;
   return {
     title,
     description,
@@ -47,7 +57,7 @@ export default async function TickerCoveragePage({
 }) {
   const { ticker } = await params;
   const t = decodeURIComponent(ticker).toUpperCase();
-  const [runs, stances] = await Promise.all([getPublicRunsByTicker(t, 60), getTickerStances(t)]);
+  const [runs, stances] = await Promise.all([getPublicRunsByTicker(t, 60), loadStances(t)]);
   if (runs.length === 0) notFound();
 
   const counts: Record<string, number> = {};
