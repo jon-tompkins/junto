@@ -2,7 +2,7 @@ import { GroupedTweets } from '@/types';
 import { getAnthropic, HAIKU_MODEL } from './client';
 import { parseNewsletterResponse, extractTweetReferences } from './prompts';
 import { recordCost, anthropicHaikuCostCents } from '../costs';
-import { checkHistoryClaims, type SourceHistory } from './source-history';
+import { checkHistoryClaims, renderShiftsSection, type SourceHistory } from './source-history';
 
 /**
  * V2 Newsletter Generator — newsletter-centric, not user-centric.
@@ -31,6 +31,7 @@ export interface HistoryOutcome {
   attempts: number;       // model calls made
   problems: string[];     // claims that failed the check (on the last history attempt)
   fell_back: boolean;     // history dropped because claims kept failing the check
+  shifts_section?: boolean; // a Shifts & Conviction section was appended
 }
 
 interface GenerateV2Result {
@@ -161,7 +162,13 @@ export async function generateNewsletterV2({
       outcome.fell_back = true;
       draft = await write(userPrompt);
     }
-    return { subject: draft.subject, content: draft.content, model_used: HAIKU_MODEL, input_tokens: inputTokens, output_tokens: outputTokens, history: outcome };
+    // The Shifts & Conviction section is built from the call log, not by the model, so it
+    // is always accurate and always present when there is something to call out. Added
+    // even if inline history fell back — these facts don't depend on the writer.
+    const section = renderShiftsSection(history, draft.content);
+    const content = section ? `${draft.content.trimEnd()}\n\n---\n\n${section}` : draft.content;
+    outcome.shifts_section = !!section;
+    return { subject: draft.subject, content, model_used: HAIKU_MODEL, input_tokens: inputTokens, output_tokens: outputTokens, history: outcome };
   }
 }
 

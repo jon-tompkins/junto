@@ -28,6 +28,9 @@ export interface SourceHistory {
   turned: Set<string>;
   /** handle|TICKER → the dates that belong to that view (since / turned / changed). */
   datesByView: Map<string, Set<string>>;
+  /** Structured signals for the deterministic Shifts & Conviction section. */
+  shifts: { handle: string; ticker: string; from: string; to: string; date: string; heldDays: number }[];
+  holds: { handle: string; ticker: string; stance: string; conviction: number; ret: string; since: string; sinceIso: string }[];
   lines: number;
 }
 
@@ -167,6 +170,7 @@ export async function buildSourceHistory(
 
   // ── changes of mind in the last two weeks, on today's names ──
   const changes: string[] = [];
+  const shifts: SourceHistory['shifts'] = [];
   const perAccount = new Map<string, number>();
   for (const o of outcomes) {
     if (changes.length >= MAX_CHANGES) break;
@@ -180,6 +184,7 @@ export async function buildSourceHistory(
     const held = Math.max(1, daysSince(o.entry_date) - daysSince(o.exit_date));
     const when = fmtDate(o.exit_date);
     changes.push(`- @${h} · $${o.ticker} · ${o.stance} → ${now.stance} on ${when} (after ${dayWord(held)} ${o.stance})`);
+    shifts.push({ handle: h, ticker: o.ticker, from: o.stance, to: now.stance, date: when, heldDays: held });
     dates.add(when);
     addViewDate(h, o.ticker, when);
     turned.add(`${h.toLowerCase()}|${o.ticker}`);
@@ -188,6 +193,7 @@ export async function buildSourceHistory(
 
   // ── holding conviction through a drawdown, on today's names ──
   const holding: string[] = [];
+  const holds: SourceHistory['holds'] = [];
   const held = positions
     .filter((p) => tickerWeights.has(p.ticker) && (p.stance === 'bullish' || p.stance === 'bearish') && p.since && handleById[p.source_id])
     .filter((p) => p.mark_return_pct != null && Number(p.mark_return_pct) <= DRAWDOWN_PCT)
@@ -201,6 +207,7 @@ export async function buildSourceHistory(
     const restated = fmtDate(p.last_mentioned!);
     const r = fmtPct(Number(p.mark_return_pct));
     holding.push(`- @${h} · $${p.ticker} · still ${p.stance} at conviction ${p.conviction}/5, last restated ${restated} · call ${r} since ${since}`);
+    holds.push({ handle: h, ticker: p.ticker, stance: p.stance, conviction: p.conviction ?? 0, ret: r, since, sinceIso: p.since!.slice(0, 10) });
     dates.add(since); dates.add(restated); returns.add(r);
     addViewDate(h, p.ticker, since); addViewDate(h, p.ticker, restated);
     usedSources.add(p.source_id);
@@ -231,12 +238,63 @@ export async function buildSourceHistory(
     `\nHow to use it:
 - Add history only where it changes how a reader should weigh a view: a long-held view, a fresh change of mind, a call that has gone notably well or badly since, or a lone dissenter against the rest. One short clause, e.g. "(bullish since May 28; the call is up 78%)".
 - Only say an account "turned", "flipped" or "changed its mind" on a name when its line above says TURNED or it is in the changes list. An "on record since" line is NOT a change of mind.
-- Two signals readers want called out explicitly: who CHANGED their mind, and who is HOLDING conviction while the call is going against them. When either list above has an entry on a name you feature (or a lone dissenter stands against the rest), include a short section **Shifts & Conviction** (2-4 bullets) just before your closing section — one fact per bullet, plainly stated, e.g. "@x is still bullish $LPTH at 5/5 conviction with the call down 41% since May 26". If neither list touches a featured name, leave the section out.
+- A **Shifts & Conviction** section (changes of mind, and conviction held through a drawdown) is added automatically after you finish — do NOT write one yourself. You may still mention a change of mind or a held-through-drawdown view inline, briefly, where it matters to the point you're making.
 - Mention a track record at most twice in the whole dispatch, and only when it changes the read.
 - History never earns a name a place in the dispatch on its own; it only adds context to names that belong there.`,
   ].filter(Boolean).join('\n');
 
-  return { block, dates, returns, turned, datesByView, lines: standing.length + changes.length + holding.length + records.length };
+  return { block, dates, returns, turned, datesByView, shifts, holds, lines: standing.length + changes.length + holding.length + records.length };
+}
+
+const SPELLED: Record<string, string> = { BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', XRP: 'ripple', DOGE: 'dogecoin' };
+const mentions = (content: string, ticker: string) =>
+  new RegExp(`(\\$|\\b)${ticker.replace('.', '\\.')}\\b`, CASE_FREE.has(ticker) ? 'i' : '').test(content) ||
+  (!!SPELLED[ticker] && new RegExp(`\\b${SPELLED[ticker]}\\b`, 'i').test(content));
+
+const joinHandles = (hs: string[]) =>
+  hs.length === 1 ? `@${hs[0]}` : `${hs.slice(0, -1).map((h) => `@${h}`).join(', ')} and @${hs[hs.length - 1]}`;
+const span = (xs: string[]) => {
+  const u = [...new Set(xs)];
+  return u.length === 1 ? u[0] : `${u[0]}–${u[u.length - 1]}`;
+};
+
+/**
+ * The Shifts & Conviction section, rendered from the call log (never by the model), for
+ * names the finished dispatch actually features. Jon (Oct 14): "calling out shifts or who
+ * retains conviction in the face of declining prices are both good signals". Returns ''
+ * when nothing qualifies.
+ */
+export function renderShiftsSection(history: SourceHistory, content: string, max = 4): string {
+  const shiftLines = history.shifts
+    .filter((x) => mentions(content, x.ticker))
+    .map((x) => `- **@${x.handle}** turned ${x.to} on $${x.ticker} on ${x.date}, after ${dayWord(x.heldDays)} ${x.from}.`);
+
+  // Holders of the same name and side read as one line: "A, B and C are still bullish…"
+  const groups = new Map<string, SourceHistory['holds']>();
+  for (const x of history.holds.filter((x) => mentions(content, x.ticker))) {
+    const k = `${x.ticker}|${x.stance}`;
+    groups.set(k, [...(groups.get(k) || []), x]);
+  }
+  const holdLines = [...groups.values()].map((g) => {
+    const byRet = [...g].sort((a, b) => parseInt(a.ret.replace('−', '-')) - parseInt(b.ret.replace('−', '-')));
+    const convs = [...new Set(g.map((x) => x.conviction))].sort();
+    const conv = convs.length === 1 ? `${convs[0]}/5` : `${convs[0]}–${convs[convs.length - 1]}/5`;
+    const pcts = byRet.map((x) => x.ret.replace(/^[+−]/, ''));
+    const dir = byRet[0].ret.startsWith('−') ? 'down' : 'up';
+    const sinces = [...g].sort((a, b) => (a.sinceIso < b.sinceIso ? -1 : 1)).map((x) => x.since);
+    const verb = g.length === 1 ? 'is' : 'are';
+    const calls = g.length === 1 ? 'the call' : 'their calls';
+    return `- **${joinHandles(g.map((x) => x.handle))}** ${verb} still ${g[0].stance} on $${g[0].ticker} at ${conv} conviction, with ${calls} ${dir} ${span([pcts[pcts.length - 1], pcts[0]].map((x) => x.replace('%', '')))}% since ${span(sinces)}.`;
+  });
+
+  const bullets: string[] = [];
+  // Interleave so both signals show when both exist.
+  for (let i = 0; bullets.length < max && (i < shiftLines.length || i < holdLines.length); i++) {
+    if (i < holdLines.length) bullets.push(holdLines[i]);
+    if (bullets.length < max && i < shiftLines.length) bullets.push(shiftLines[i]);
+  }
+  if (!bullets.length) return '';
+  return `**Shifts & Conviction**\n${bullets.join('\n')}\n\n*From myJunto's call log: when each view was first recorded, and how the call has done since.*`;
 }
 
 // Units a claim lives in: a bullet is one unit (its ticker, handle and date travel
