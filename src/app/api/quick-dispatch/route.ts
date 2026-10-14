@@ -332,7 +332,9 @@ export async function POST(req: NextRequest) {
     const anthropic = getAnthropic();
     const response = await anthropic.messages.create({
       model: HAIKU_MODEL,
-      max_tokens: 1200,
+      // 1200 cut dispatches off mid-section when 5 active sources were covered (and the
+      // truncated result was still charged). 2500 fits the full format with room to spare.
+      max_tokens: 2500,
       system: QUICK_DISPATCH_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userPrompt }],
     });
