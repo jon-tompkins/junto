@@ -255,6 +255,7 @@ export async function GET(req: NextRequest) {
             recent_newsletter_count: recentNewsletterContent.length,
             context_newsletter_count: contextNewsletterContent.length,
             ...(result.history ? { history: result.history } : {}),
+            ...(result.refusal_fallback_level ? { refusal_fallback_level: result.refusal_fallback_level } : {}),
           },
         });
 

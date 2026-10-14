@@ -40,6 +40,7 @@ interface GenerateV2Result {
   input_tokens: number;
   output_tokens: number;
   history?: HistoryOutcome;
+  refusal_fallback_level?: number; // set when the model refused the full prompt and a trimmed one was used
 }
 
 export async function generateNewsletterV2({
@@ -59,86 +60,109 @@ export async function generateNewsletterV2({
 }: GenerateV2Params): Promise<GenerateV2Result> {
   const client = getAnthropic();
 
-  // Build the user prompt from source content
-  const userPrompt = buildSourceContentPrompt(
-    recentTweets,
-    contextTweets,
-    secondaryPrompt,
-    `${startDate} to ${endDate}`,
-    recentNewsletterContent,
-    contextNewsletterContent,
-    watchlistTickers,
-    recentDispatches,
-  );
+  // Prompt at three levels of trimming. Level 0 is the normal prompt. If the model
+  // refuses it (Oct 14 2026: Haiku 4.5 returned stop_reason=refusal / general_harms on a
+  // CC Research input — the combination of defense-tech tweets, not any single one),
+  // retry without the background sections, then with only each account's top tweets,
+  // rather than skipping the dispatch.
+  const engagementOrder = (x: { likes: number; retweets: number }, y: { likes: number; retweets: number }) =>
+    engagementScore(y.likes, y.retweets) - engagementScore(x.likes, x.retweets);
+  const trimmed = (g: GroupedTweets): GroupedTweets =>
+    Object.fromEntries(Object.entries(g).map(([h, ts]) => [h, [...ts].sort(engagementOrder).slice(0, 4)])) as GroupedTweets;
+  const promptAt = (level: number) =>
+    buildSourceContentPrompt(
+      level >= 2 ? trimmed(recentTweets) : recentTweets,
+      level >= 1 ? undefined : contextTweets,
+      secondaryPrompt,
+      `${startDate} to ${endDate}`,
+      recentNewsletterContent,
+      level >= 1 ? undefined : contextNewsletterContent,
+      watchlistTickers,
+      level >= 1 ? undefined : recentDispatches,
+    );
 
   let inputTokens = 0;
   let outputTokens = 0;
 
-  async function write(prompt_: string) {
-    onPrompt?.(prompt, prompt_);
-    const response = await client.messages.create({
-      model: HAIKU_MODEL,
-      max_tokens: 2500,
-      system: prompt,
-      messages: [{ role: 'user', content: prompt_ }],
-    });
-    const rawContent = response.content
-      .filter((block): block is Extract<typeof block, { type: 'text' }> => block.type === 'text')
-      .map((block) => block.text)
-      .join('');
-    const { subject } = parseNewsletterResponse(rawContent, newsletterName);
-    const { content } = extractTweetReferences(rawContent, recentTweets, contextTweets);
-
-    inputTokens += response.usage.input_tokens;
-    outputTokens += response.usage.output_tokens;
-    recordCost({
-      supplier: 'anthropic',
-      operation: 'newsletter_synthesis',
-      cost_cents: anthropicHaikuCostCents(response.usage.input_tokens, response.usage.output_tokens),
-      usage_amount: response.usage.input_tokens + response.usage.output_tokens,
-      usage_unit: 'tokens',
-      input_tokens: response.usage.input_tokens,
-      output_tokens: response.usage.output_tokens,
-      metadata: { model: HAIKU_MODEL, newsletterName, history: !!history },
-    });
-
-    // Truncation guard (Oct 2026): a model that spends max_tokens on reasoning returns
-    // a cut-off or empty dispatch. Never deliver that — fail the run instead.
-    if (response.stop_reason === 'max_tokens' || content.trim().length < 400) {
-      throw new Error(
-        `synthesis output unusable (stop_reason=${response.stop_reason}, ${content.trim().length} chars, ${response.usage.output_tokens} output tokens)`,
-      );
+  for (let level = 0; ; level++) {
+    try {
+      const r = await generateFrom(promptAt(level));
+      if (level > 0) console.warn(`[generator-v2] ${newsletterName}: generated after refusal fallback level ${level}`);
+      return { ...r, refusal_fallback_level: level || undefined };
+    } catch (e) {
+      const refused = e instanceof Error && e.message.includes('stop_reason=refusal');
+      if (!refused || level >= 2) throw e;
+      console.warn(`[generator-v2] ${newsletterName}: model refused prompt level ${level} — retrying trimmed`);
     }
-    return { subject, content };
   }
 
-  if (!history) {
-    const { subject, content } = await write(userPrompt);
-    return { subject, content, model_used: HAIKU_MODEL, input_tokens: inputTokens, output_tokens: outputTokens };
-  }
+  async function generateFrom(userPrompt: string): Promise<GenerateV2Result> {
+    async function write(prompt_: string) {
+      onPrompt?.(prompt, prompt_);
+      const response = await client.messages.create({
+        model: HAIKU_MODEL,
+        max_tokens: 2500,
+        system: prompt,
+        messages: [{ role: 'user', content: prompt_ }],
+      });
+      const rawContent = response.content
+        .filter((block): block is Extract<typeof block, { type: 'text' }> => block.type === 'text')
+        .map((block) => block.text)
+        .join('');
+      const { subject } = parseNewsletterResponse(rawContent, newsletterName);
+      const { content } = extractTweetReferences(rawContent, recentTweets, contextTweets);
 
-  // History-aware: write with the call-log facts, check every history claim against
-  // them, give the writer one chance to fix what failed, and if it still can't, send
-  // today's dispatch without history rather than a wrong fact.
-  const withHistory = `${history.block}\n\n${userPrompt}`;
-  const outcome: HistoryOutcome = { used: true, lines: history.lines, attempts: 1, problems: [], fell_back: false };
-  let draft = await write(withHistory);
-  outcome.problems = checkHistoryClaims(draft.content, history, userPrompt);
-  if (outcome.problems.length) {
-    outcome.attempts++;
-    draft = await write(
-      `${withHistory}\n\n## CORRECTION\nA previous draft made history claims that the TRACKED HISTORY block does not support:\n${outcome.problems.map((p) => `- ${p}`).join('\n')}\nWrite the dispatch again. Use only facts from the TRACKED HISTORY block, exactly as written there.`,
-    );
+      inputTokens += response.usage.input_tokens;
+      outputTokens += response.usage.output_tokens;
+      recordCost({
+        supplier: 'anthropic',
+        operation: 'newsletter_synthesis',
+        cost_cents: anthropicHaikuCostCents(response.usage.input_tokens, response.usage.output_tokens),
+        usage_amount: response.usage.input_tokens + response.usage.output_tokens,
+        usage_unit: 'tokens',
+        input_tokens: response.usage.input_tokens,
+        output_tokens: response.usage.output_tokens,
+        metadata: { model: HAIKU_MODEL, newsletterName, history: !!history },
+      });
+
+      // Truncation guard (Oct 2026): a model that spends max_tokens on reasoning returns
+      // a cut-off or empty dispatch. Never deliver that — fail the run instead.
+      if (response.stop_reason === 'max_tokens' || content.trim().length < 400) {
+        throw new Error(
+          `synthesis output unusable (stop_reason=${response.stop_reason}, ${content.trim().length} chars, ${response.usage.output_tokens} output tokens)`,
+        );
+      }
+      return { subject, content };
+    }
+
+    if (!history) {
+      const { subject, content } = await write(userPrompt);
+      return { subject, content, model_used: HAIKU_MODEL, input_tokens: inputTokens, output_tokens: outputTokens };
+    }
+
+    // History-aware: write with the call-log facts, check every history claim against
+    // them, give the writer one chance to fix what failed, and if it still can't, send
+    // today's dispatch without history rather than a wrong fact.
+    const withHistory = `${history.block}\n\n${userPrompt}`;
+    const outcome: HistoryOutcome = { used: true, lines: history.lines, attempts: 1, problems: [], fell_back: false };
+    let draft = await write(withHistory);
     outcome.problems = checkHistoryClaims(draft.content, history, userPrompt);
+    if (outcome.problems.length) {
+      outcome.attempts++;
+      draft = await write(
+        `${withHistory}\n\n## CORRECTION\nA previous draft made history claims that the TRACKED HISTORY block does not support:\n${outcome.problems.map((p) => `- ${p}`).join('\n')}\nWrite the dispatch again. Use only facts from the TRACKED HISTORY block, exactly as written there.`,
+      );
+      outcome.problems = checkHistoryClaims(draft.content, history, userPrompt);
+    }
+    if (outcome.problems.length) {
+      console.warn(`[generator-v2] ${newsletterName}: history claims still unsupported after retry — sending without history`, outcome.problems);
+      outcome.attempts++;
+      outcome.used = false;
+      outcome.fell_back = true;
+      draft = await write(userPrompt);
+    }
+    return { subject: draft.subject, content: draft.content, model_used: HAIKU_MODEL, input_tokens: inputTokens, output_tokens: outputTokens, history: outcome };
   }
-  if (outcome.problems.length) {
-    console.warn(`[generator-v2] ${newsletterName}: history claims still unsupported after retry — sending without history`, outcome.problems);
-    outcome.attempts++;
-    outcome.used = false;
-    outcome.fell_back = true;
-    draft = await write(userPrompt);
-  }
-  return { subject: draft.subject, content: draft.content, model_used: HAIKU_MODEL, input_tokens: inputTokens, output_tokens: outputTokens, history: outcome };
 }
 
 function engagementScore(likes: number, retweets: number, content?: string, tickers?: string[]): number {
