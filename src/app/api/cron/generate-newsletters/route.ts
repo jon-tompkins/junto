@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
         const allSources = await getNewsletterSources(newsletter.id);
         if (allSources.length === 0) {
           console.log(`[generate] Skipping ${newsletter.name}: no sources`);
-          await storeSkippedRun(newsletter.id, 'skipped', 'No sources configured');
+          if (!dryRun) await storeSkippedRun(newsletter.id, 'skipped', 'No sources configured');
           results[newsletter.name] = { status: 'skipped', error: 'No sources configured' };
           continue;
         }
@@ -137,7 +137,7 @@ export async function GET(req: NextRequest) {
           const catchup = catchups.get(newsletter.id);
           const skipMessage = catchup ? CATCHUP_NO_CONTENT_MESSAGE : NO_CONTENT_SKIP_MESSAGE;
           console.log(`[generate] Skipping ${newsletter.name}: no recent content (last 48h)${catchup ? ' [catch-up]' : ''}`);
-          await storeSkippedRun(newsletter.id, 'skipped', skipMessage, {
+          if (!dryRun) await storeSkippedRun(newsletter.id, 'skipped', skipMessage, {
             source_count: sources.length,
             ...(catchup ? { catchup_window: catchup.window } : {}),
           });
@@ -461,7 +461,7 @@ export async function GET(req: NextRequest) {
         const msg = error instanceof Error ? error.message : 'Unknown error';
         console.error(`[generate] Error processing ${newsletter.name}:`, error);
         try {
-          await storeSkippedRun(newsletter.id, 'error', msg);
+          if (!dryRun) await storeSkippedRun(newsletter.id, 'error', msg); // dry runs never write
         } catch { /* ignore secondary failure */ }
         results[newsletter.name] = { status: 'error', error: msg };
       }
