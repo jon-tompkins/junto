@@ -14,6 +14,11 @@ import type { PositionEntry } from '@/lib/db/source-analyst-profiles';
 
 const QUICK_DISPATCH_CREDIT_COST = 5;
 const QUICK_DISPATCH_TYPE = 'quick_dispatch';
+// Onboarding sample: one free quick dispatch per user, generated inside /welcome so a
+// new user sees a real dispatch from the junto they just picked before they finish
+// setup. Recorded as a zero-amount transaction so it can only happen once.
+const ONBOARDING_SAMPLE_TYPE = 'quick_dispatch_sample';
+const SAMPLE_SOURCE_COUNT = 5;
 
 interface ConsensusPosition {
   ticker: string;
@@ -58,6 +63,37 @@ async function hasUsedQuickDispatchToday(userId: string): Promise<boolean> {
 
   if (error) throw error;
   return (data?.length ?? 0) > 0;
+}
+
+async function hasUsedOnboardingSample(userId: string): Promise<boolean> {
+  const { data, error } = await getSupabase()
+    .from('credit_transactions')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('type', ONBOARDING_SAMPLE_TYPE)
+    .limit(1);
+  if (error) throw error;
+  return (data?.length ?? 0) > 0;
+}
+
+// The sources to sample from a junto: the ones with the most posts in the last 48h,
+// so the sample reads like a real day instead of whichever five happened to be listed first.
+async function pickSampleSources(juntoId: string | null): Promise<string[]> {
+  const supabase = getSupabase();
+  let ids: string[] = [];
+  if (juntoId) {
+    const { data: junto } = await supabase.from('juntos').select('id, is_public').eq('id', juntoId).maybeSingle();
+    if (junto?.is_public) {
+      const { data: links } = await supabase.from('junto_sources').select('source_id').eq('junto_id', juntoId);
+      ids = (links || []).map((l) => l.source_id as string);
+    }
+  }
+  if (ids.length === 0) ids = (await fetchFeaturedSources()).sources.map((s) => s.id);
+  if (ids.length <= SAMPLE_SOURCE_COUNT) return ids;
+  const recent = await getRecentContentForSources(ids, 48);
+  const counts = new Map<string, number>();
+  for (const t of recent as { source_id: string }[]) counts.set(t.source_id, (counts.get(t.source_id) ?? 0) + 1);
+  return [...ids].sort((a, b) => (counts.get(b) ?? 0) - (counts.get(a) ?? 0)).slice(0, SAMPLE_SOURCE_COUNT);
 }
 
 function computeConsensusPositions(
@@ -226,7 +262,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const body = (await req.json().catch(() => null)) as { sourceIds?: unknown } | null;
+    const body = (await req.json().catch(() => null)) as { sourceIds?: unknown; sample?: unknown; juntoId?: unknown } | null;
+    const isSample = body?.sample === true;
+    if (isSample) {
+      if (await hasUsedOnboardingSample(userId)) {
+        return NextResponse.json({ error: 'Sample already generated' }, { status: 409 });
+      }
+      body!.sourceIds = await pickSampleSources(typeof body!.juntoId === 'string' ? body!.juntoId : null);
+    }
     if (!body || !Array.isArray(body.sourceIds)) {
       return NextResponse.json({ error: 'sourceIds (array) is required' }, { status: 400 });
     }
@@ -239,7 +282,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Maximum 5 sources allowed' }, { status: 400 });
     }
 
-    if (await hasUsedQuickDispatchToday(userId)) {
+    if (!isSample && await hasUsedQuickDispatchToday(userId)) {
       return NextResponse.json(
         { error: 'You\'ve already used your Quick Dispatch today. Try again tomorrow.' },
         { status: 429 },
@@ -312,8 +355,21 @@ export async function POST(req: NextRequest) {
       usage_unit: 'tokens',
       input_tokens: inputTokens,
       output_tokens: outputTokens,
-      metadata: { model: HAIKU_MODEL, user_id: userId, source_count: sources.length },
+      metadata: { model: HAIKU_MODEL, user_id: userId, source_count: sources.length, sample: isSample },
     });
+
+    // A cut-off or empty sample is worse than none (first impression) — fail instead.
+    if (response.stop_reason === 'max_tokens' || content.trim().length < 200) {
+      return NextResponse.json({ error: 'Could not generate a dispatch right now.' }, { status: 502 });
+    }
+
+    if (isSample) {
+      // Free, once: zero-amount marker instead of a charge.
+      await getSupabase().from('credit_transactions').insert({
+        user_id: userId, amount: 0, type: ONBOARDING_SAMPLE_TYPE, description: 'Onboarding sample dispatch (free)',
+      });
+      return NextResponse.json({ subject, content, positions: computeConsensusPositions(profiles, sourcesById), sourcesUsed, sample: true });
+    }
 
     const deducted = await deductCredits(
       userId,

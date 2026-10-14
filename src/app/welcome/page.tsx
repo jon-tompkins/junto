@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { markdownToHtml } from '@/lib/utils/markdown-client';
 
 interface Interest {
   key: string;
@@ -90,6 +91,12 @@ export default function WelcomePage() {
 
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
 
+  // Sample dispatch: written in the background from the junto they picked, so the last
+  // step shows a real dispatch instead of "arrives tomorrow". Free, once per user.
+  const [sample, setSample] = useState<{ subject: string; content: string; junto: string } | null>(null);
+  const [sampleState, setSampleState] = useState<'idle' | 'loading' | 'done' | 'failed'>('idle');
+  const [sampleOpen, setSampleOpen] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -166,6 +173,27 @@ export default function WelcomePage() {
     () => presets.find((p) => p.id === selectedJuntoId) || null,
     [presets, selectedJuntoId],
   );
+
+  const startSample = () => {
+    if (sampleState !== 'idle') return; // one attempt; a miss just falls back to the old copy
+    setSampleState('loading');
+    const juntoName = selectedJunto?.name || 'the Featured junto';
+    fetch('/api/quick-dispatch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sample: true, juntoId: selectedJuntoId || undefined }),
+    })
+      .then(async (r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d?.content) { setSampleState('failed'); return; }
+        const s = { subject: d.subject as string, content: d.content as string, junto: juntoName };
+        setSample(s);
+        setSampleState('done');
+        // The dashboard shows this same sample right after setup instead of an empty state.
+        try { sessionStorage.setItem('mj_sample_dispatch', JSON.stringify(s)); } catch { /* private mode */ }
+      })
+      .catch(() => setSampleState('failed'));
+  };
 
   const submit = async () => {
     // juntoId may be null when no preset matched — the API falls back to Featured.
@@ -331,7 +359,7 @@ export default function WelcomePage() {
             <div className="mt-6 flex justify-between">
               <button onClick={() => setStep(1)} className="text-sm text-parchment/55 hover:text-parchment">← Back</button>
               <button
-                onClick={() => setStep(3)}
+                onClick={() => { startSample(); setStep(3); }}
                 disabled={presets.length > 0 && !selectedJuntoId}
                 className="bg-brass disabled:opacity-30 text-ink px-5 py-2 rounded text-sm font-semibold uppercase tracking-wide font-[var(--font-oswald)]"
               >
@@ -394,8 +422,41 @@ export default function WelcomePage() {
           <section>
             <h2 className="text-lg font-semibold mb-1">You&apos;re set.</h2>
             <p className="text-sm text-parchment/55 mb-5">
-              Your first dispatch arrives tomorrow morning. Here&apos;s what we&apos;ll send:
+              {sampleState === 'done'
+                ? 'Here\u2019s a live sample, written just now from your junto\u2019s sources. Your own arrives every morning.'
+                : 'Your first dispatch arrives tomorrow morning. Here\u2019s what we\u2019ll send:'}
             </p>
+
+            {sampleState === 'loading' && (
+              <div className="mb-5 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface p-4">
+                <div className="text-[10px] uppercase tracking-wider text-brass/70 mb-2 font-[var(--font-oswald)]">Sample dispatch</div>
+                <p className="text-sm text-parchment/60 animate-pulse">
+                  Reading the last 48 hours from {selectedJunto?.name || 'your junto'} and writing a sample&hellip; about 15 seconds.
+                  You can finish setup below while it loads.
+                </p>
+              </div>
+            )}
+
+            {sampleState === 'done' && sample && (
+              <div className="mb-5 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface p-4">
+                <div className="text-[10px] uppercase tracking-wider text-brass/70 mb-2 font-[var(--font-oswald)]">
+                  Sample dispatch &middot; {sample.junto}
+                </div>
+                <h3 className="font-semibold text-parchment mb-2">{sample.subject}</h3>
+                <div className="relative">
+                  <div
+                    className={`text-sm text-parchment/80 space-y-2 overflow-hidden ${sampleOpen ? '' : 'max-h-56'}`}
+                    dangerouslySetInnerHTML={{ __html: markdownToHtml(sample.content) }}
+                  />
+                  {!sampleOpen && (
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[rgb(var(--t-surface))] to-transparent" />
+                  )}
+                </div>
+                <button onClick={() => setSampleOpen((o) => !o)} className="mt-2 text-xs text-brass hover:underline">
+                  {sampleOpen ? 'Show less' : 'Read the whole sample'}
+                </button>
+              </div>
+            )}
 
             <div className="space-y-2 text-sm bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-4">
               <Row label="Junto" value={selectedJunto?.name || '—'} />

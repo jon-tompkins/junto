@@ -3,6 +3,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
+import { SignupCTA } from '@/components/signup-cta';
 import { getPublicRunsByTicker } from '@/lib/db/newsletter-runs';
 import { getTickerStances } from '@/lib/db/source-analyst-profiles';
 
@@ -137,6 +138,8 @@ export default async function TickerCoveragePage({
             </Link>
           </section>
         )}
+
+        <SignupCTA context="ticker" subject={t} />
 
         <h2 className="text-[11px] uppercase tracking-wide text-brass/70 font-[var(--font-oswald)] mb-1">Dispatches</h2>
         <ul className="divide-y divide-[rgb(var(--t-brass) / 0.18)]">

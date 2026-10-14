@@ -7,6 +7,7 @@ import { SmartMoneyBadge } from '@/components/smart-money-badge';
 import { useParams } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
 import { SourceChat } from '@/components/source-chat';
+import { SignupCTA } from '@/components/signup-cta';
 import { StarSourceButton } from '@/components/star-source-button';
 import { PortfolioView } from '@/components/portfolio-view';
 import { isCryptoTicker } from '@/lib/trading/asset';
@@ -457,6 +458,8 @@ export default function SourceProfilePage() {
             commentary tracking, not financial advice or a record of what anyone actually owns.
           </p>
         </div>
+
+        <SignupCTA context="analyst" subject={displayHandle} />
 
         {/* Ask about this source */}
         <div className="mb-8">

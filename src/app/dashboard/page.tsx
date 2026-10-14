@@ -17,6 +17,17 @@ function FirstDispatchCTA() {
   const [result, setResult] = useState<{ subject: string; content: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // A sample written during /welcome is carried over, so a brand-new user lands on a
+  // real dispatch instead of a button.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('mj_sample_dispatch');
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      if (s?.subject && s?.content) setResult({ subject: s.subject, content: s.content });
+    } catch { /* ignore */ }
+  }, []);
+
   async function generate() {
     setLoading(true);
     setError(null);
