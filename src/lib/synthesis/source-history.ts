@@ -41,10 +41,18 @@ const fmtPct = (x: number) => `${x >= 0 ? '+' : '−'}${Math.abs(Math.round(x))}
 const dayWord = (n: number) => `${n} day${n === 1 ? '' : 's'}`;
 const MAX_CHANGES = 6;
 const MAX_CHANGES_PER_ACCOUNT = 2;
+// "Holding through a drawdown" (Jon, Oct 14: "who retains conviction in the face of
+// declining prices" is a signal): the call is down at least this much, conviction is
+// still high, and the account restated it recently — so it's a live view, not a stale one.
+const DRAWDOWN_PCT = -15;
+const DRAWDOWN_MIN_CONVICTION = 4;
+const RESTATED_WITHIN_DAYS = 7;
+const MAX_HOLDING = 6;
 
 interface Position {
   source_id: string; ticker: string; stance: string; since: string | null;
   conviction: number | null; mark_return_pct: number | null; aliases: string[] | null;
+  last_mentioned: string | null;
 }
 
 // Names written lowercase as often as not ("eth", "bitcoin"), so matched case-insensitively.
@@ -96,7 +104,7 @@ export async function buildSourceHistory(
   const [{ data: posData }, { data: outData }] = await Promise.all([
     supabase
       .from('source_positions')
-      .select('source_id, ticker, stance, since, conviction, mark_return_pct, aliases')
+      .select('source_id, ticker, stance, since, conviction, mark_return_pct, aliases, last_mentioned')
       .in('source_id', sourceIds)
       .limit(5000),
     supabase
@@ -178,6 +186,26 @@ export async function buildSourceHistory(
     usedSources.add(o.source_id);
   }
 
+  // ── holding conviction through a drawdown, on today's names ──
+  const holding: string[] = [];
+  const held = positions
+    .filter((p) => tickerWeights.has(p.ticker) && (p.stance === 'bullish' || p.stance === 'bearish') && p.since && handleById[p.source_id])
+    .filter((p) => p.mark_return_pct != null && Number(p.mark_return_pct) <= DRAWDOWN_PCT)
+    .filter((p) => (p.conviction ?? 0) >= DRAWDOWN_MIN_CONVICTION)
+    .filter((p) => p.last_mentioned && daysSince(p.last_mentioned) <= RESTATED_WITHIN_DAYS)
+    .sort((a, b) => Number(a.mark_return_pct) - Number(b.mark_return_pct))
+    .slice(0, MAX_HOLDING);
+  for (const p of held) {
+    const h = handleById[p.source_id];
+    const since = fmtDate(p.since!);
+    const restated = fmtDate(p.last_mentioned!);
+    const r = fmtPct(Number(p.mark_return_pct));
+    holding.push(`- @${h} · $${p.ticker} · still ${p.stance} at conviction ${p.conviction}/5, last restated ${restated} · call ${r} since ${since}`);
+    dates.add(since); dates.add(restated); returns.add(r);
+    addViewDate(h, p.ticker, since); addViewDate(h, p.ticker, restated);
+    usedSources.add(p.source_id);
+  }
+
   // ── track records for the accounts that appear above ──
   const tally = new Map<string, { won: number; scored: number }>();
   for (const o of outcomes) {
@@ -191,23 +219,24 @@ export async function buildSourceHistory(
     .sort((a, b) => b[1].scored - a[1].scored)
     .map(([id, t]) => `- @${handleById[id]}: ${t.won} of ${t.scored} closed calls won`);
 
-  if (standing.length === 0 && changes.length === 0) return null;
+  if (standing.length === 0 && changes.length === 0 && holding.length === 0) return null;
 
   const block = [
     `## TRACKED HISTORY — from myJunto's call log`,
     `How long tracked accounts have held their views, who changed their mind, and how their calls have gone ("call +78% since" = the call's own return, direction-adjusted: a bearish call on a falling name is positive). This is the ONLY allowed source for such facts: never state a date, duration, return-since, change of mind or track record that is not written below. Tracking began in 2026, so say "on record since", never "has believed since".`,
     standing.length ? `\nStanding views on names in today's tweets:\n${standing.join('\n')}` : '',
     changes.length ? `\nChanges of mind in the last ${FLIP_WINDOW_DAYS} days:\n${changes.join('\n')}` : '',
+    holding.length ? `\nHolding conviction through a drawdown (call down ${Math.abs(DRAWDOWN_PCT)}%+, conviction ${DRAWDOWN_MIN_CONVICTION}+/5, restated in the last ${RESTATED_WITHIN_DAYS} days):\n${holding.join('\n')}` : '',
     records.length ? `\nTrack records:\n${records.join('\n')}` : '',
     `\nHow to use it:
 - Add history only where it changes how a reader should weigh a view: a long-held view, a fresh change of mind, a call that has gone notably well or badly since, or a lone dissenter against the rest. One short clause, e.g. "(bullish since May 28; the call is up 78%)".
 - Only say an account "turned", "flipped" or "changed its mind" on a name when its line above says TURNED or it is in the changes list. An "on record since" line is NOT a change of mind.
-- If there is a meaningful change of mind or a lone dissenter on a name you feature, add a short section **Who's Shifted** (2-4 bullets) just before your closing section. If nothing qualifies, leave it out.
+- Two signals readers want called out explicitly: who CHANGED their mind, and who is HOLDING conviction while the call is going against them. When either list above has an entry on a name you feature (or a lone dissenter stands against the rest), include a short section **Shifts & Conviction** (2-4 bullets) just before your closing section — one fact per bullet, plainly stated, e.g. "@x is still bullish $LPTH at 5/5 conviction with the call down 41% since May 26". If neither list touches a featured name, leave the section out.
 - Mention a track record at most twice in the whole dispatch, and only when it changes the read.
 - History never earns a name a place in the dispatch on its own; it only adds context to names that belong there.`,
   ].filter(Boolean).join('\n');
 
-  return { block, dates, returns, turned, datesByView, lines: standing.length + changes.length + records.length };
+  return { block, dates, returns, turned, datesByView, lines: standing.length + changes.length + holding.length + records.length };
 }
 
 // Units a claim lives in: a bullet is one unit (its ticker, handle and date travel
