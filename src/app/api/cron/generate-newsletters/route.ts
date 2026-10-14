@@ -17,6 +17,7 @@ import { getSupabase } from '@/lib/db/client';
 import { storeRun, storeSkippedRun, updateRunStatus, getRecentDeliveredRuns } from '@/lib/db/newsletter-runs';
 import { recordBulkDeliveries } from '@/lib/db/newsletter-deliveries';
 import { generateNewsletterV2 } from '@/lib/synthesis/generator-v2';
+import { buildSourceHistory, tickerWeightsFrom } from '@/lib/synthesis/source-history';
 import { sendNewsletter } from '@/lib/email/sender';
 import { sendTelegramNewsletter, sendTelegramAudio } from '@/lib/telegram/client';
 import { chargeOwner, chargeSubscriber } from '@/lib/db/credits';
@@ -51,6 +52,11 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const force = url.searchParams.get('force') === 'true';
     const forceNewsletterId = url.searchParams.get('newsletter_id') || undefined;
+    // ?dry_run=true (with force + newsletter_id): generate and return the dispatch
+    // without storing, delivering or charging anyone. ?history=on|off overrides the
+    // newsletter's history_aware flag for that dry run (side-by-side comparisons).
+    const dryRun = force && !!forceNewsletterId && url.searchParams.get('dry_run') === 'true';
+    const historyOverride = url.searchParams.get('history');
 
     const scheduledNewsletters = force
       ? await getNewslettersForForcedGeneration(forceNewsletterId)
@@ -82,7 +88,7 @@ export async function GET(req: NextRequest) {
 
     console.log(`[generate] ${dueNewsletters.length} newsletter(s) ${force ? 'forced' : 'due'} for generation`);
 
-    const results: Record<string, { status: string; subscribers?: number; error?: string }> = {};
+    const results: Record<string, { status: string; subscribers?: number; error?: string; subject?: string; content?: string; history?: unknown }> = {};
 
     // Atomic dedup key for this run: the cron fires 3×/active-hour (:00/:05/:10) and
     // Vercel can double-invoke, so concurrent runs used to both pass the 5h-gap guard
@@ -196,6 +202,18 @@ export async function GET(req: NextRequest) {
         // Pull last 3 delivered runs so the LLM can avoid repeating quotes/themes
         const recentDispatches = await getRecentDeliveredRuns(newsletter.id, 3);
 
+        // History-aware dispatches (migration 092 `history_aware`): who has held a view
+        // for how long, who changed their mind, how calls have gone. Best-effort — a
+        // failure here just means today's dispatch goes out the old way.
+        const historyOn = historyOverride === 'on' || (historyOverride !== 'off' && !!(newsletter as any).history_aware);
+        const history = historyOn
+          ? await buildSourceHistory(
+              sourceIds,
+              sourceMap,
+              tickerWeightsFrom(recentContent.map((c: any) => c.content || ''), watchlistTickers || []),
+            ).catch((e) => { console.warn(`[generate] ${newsletter.name}: history build failed`, e); return null; })
+          : null;
+
         const result = await generateNewsletterV2({
           prompt: resolvedPrompt,
           secondaryPrompt: newsletter.secondary_prompt,
@@ -208,7 +226,13 @@ export async function GET(req: NextRequest) {
           newsletterName: newsletter.name,
           watchlistTickers,
           recentDispatches,
+          history,
         });
+
+        if (dryRun) {
+          results[newsletter.name] = { status: 'dry_run', subject: result.subject, content: result.content, history: result.history ?? null };
+          continue;
+        }
 
         // 5. Store the run (status updated after delivery)
         const run = await storeRun({
@@ -224,6 +248,7 @@ export async function GET(req: NextRequest) {
             context_tweet_count: contextContent.length,
             recent_newsletter_count: recentNewsletterContent.length,
             context_newsletter_count: contextNewsletterContent.length,
+            ...(result.history ? { history: result.history } : {}),
           },
         });
 
