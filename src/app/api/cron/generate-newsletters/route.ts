@@ -17,7 +17,7 @@ import { getSupabase } from '@/lib/db/client';
 import { storeRun, storeSkippedRun, updateRunStatus, getRecentDeliveredRuns } from '@/lib/db/newsletter-runs';
 import { recordBulkDeliveries } from '@/lib/db/newsletter-deliveries';
 import { generateNewsletterV2 } from '@/lib/synthesis/generator-v2';
-import { buildSourceHistory, tickerWeightsFrom } from '@/lib/synthesis/source-history';
+import { buildSourceHistory } from '@/lib/synthesis/source-history';
 import { sendNewsletter } from '@/lib/email/sender';
 import { sendTelegramNewsletter, sendTelegramAudio } from '@/lib/telegram/client';
 import { chargeOwner, chargeSubscriber } from '@/lib/db/credits';
@@ -210,7 +210,8 @@ export async function GET(req: NextRequest) {
           ? await buildSourceHistory(
               sourceIds,
               sourceMap,
-              tickerWeightsFrom(recentContent.map((c: any) => c.content || ''), watchlistTickers || []),
+              recentContent.map((c: any) => c.content || ''),
+              watchlistTickers || [],
             ).catch((e) => { console.warn(`[generate] ${newsletter.name}: history build failed`, e); return null; })
           : null;
 

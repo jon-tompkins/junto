@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/db/client';
+import { AMBIGUOUS_TICKERS } from '@/lib/prices';
 
 /**
  * History-aware dispatches (Oct 2026). The dispatch writer used to see only the last
@@ -35,10 +36,40 @@ const fmtDate = (iso: string) => {
 const daysSince = (iso: string) =>
   Math.floor((Date.now() - new Date(iso.length <= 10 ? `${iso}T00:00:00Z` : iso).getTime()) / 86_400_000);
 const fmtPct = (x: number) => `${x >= 0 ? '+' : '−'}${Math.abs(Math.round(x))}%`;
+const dayWord = (n: number) => `${n} day${n === 1 ? '' : 's'}`;
+const MAX_CHANGES = 6;
+const MAX_CHANGES_PER_ACCOUNT = 2;
 
 interface Position {
   source_id: string; ticker: string; stance: string; since: string | null;
-  conviction: number | null; mark_return_pct: number | null;
+  conviction: number | null; mark_return_pct: number | null; aliases: string[] | null;
+}
+
+// Names written lowercase as often as not ("eth", "bitcoin"), so matched case-insensitively.
+const CASE_FREE = new Set(['BTC', 'ETH', 'SOL', 'XRP', 'BNB', 'DOGE', 'HYPE', 'AAVE', 'LINK', 'AVAX', 'SUI', 'ZEC']);
+const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Which tracked names come up in today's input, and how often. Crypto accounts rarely
+ * use cashtags ("bitcoin h1", "eth looks heavy"), so beyond $CASHTAGS this matches each
+ * tracked position's ticker as a word and its stored aliases (BTC ↔ "Bitcoin").
+ */
+export function tickerWeightsFrom(texts: string[], positions: { ticker: string; aliases?: string[] | null }[], watchlist: string[] = []): Map<string, number> {
+  const patterns = new Map<string, RegExp[]>();
+  for (const p of positions) {
+    const t = p.ticker;
+    if (!/^[A-Z][A-Z0-9.]{0,9}$/.test(t) || AMBIGUOUS_TICKERS.has(t) || patterns.has(t)) continue;
+    const res = [new RegExp(`\\$${esc(t)}\\b`, 'i')];
+    if (t.length >= 3) res.push(new RegExp(`\\b${esc(t)}\\b`, CASE_FREE.has(t) ? 'i' : ''));
+    for (const a of p.aliases || []) if (a && a.length >= 4) res.push(new RegExp(`\\b${esc(a)}\\b`, 'i'));
+    patterns.set(t, res);
+  }
+  const w = new Map<string, number>();
+  for (const text of texts) {
+    for (const [t, res] of patterns) if (res.some((re) => re.test(text))) w.set(t, (w.get(t) ?? 0) + 1);
+  }
+  for (const t of watchlist) { const u = t.toUpperCase(); if (patterns.has(u)) w.set(u, (w.get(u) ?? 0) + 3); }
+  return w;
 }
 interface Outcome {
   source_id: string; ticker: string; stance: string; entry_date: string | null;
@@ -54,17 +85,18 @@ interface Outcome {
 export async function buildSourceHistory(
   sourceIds: string[],
   handleById: Record<string, string>,
-  tickerWeights: Map<string, number>,
+  texts: string[],
+  watchlist: string[] = [],
 ): Promise<SourceHistory | null> {
-  if (sourceIds.length === 0 || tickerWeights.size === 0) return null;
+  if (sourceIds.length === 0 || texts.length === 0) return null;
   const supabase = getSupabase();
-  const tickers = [...tickerWeights.keys()];
 
   const [{ data: posData }, { data: outData }] = await Promise.all([
     supabase
       .from('source_positions')
-      .select('source_id, ticker, stance, since, conviction, mark_return_pct')
-      .in('source_id', sourceIds),
+      .select('source_id, ticker, stance, since, conviction, mark_return_pct, aliases')
+      .in('source_id', sourceIds)
+      .limit(5000),
     supabase
       .from('source_call_outcomes')
       .select('source_id, ticker, stance, entry_date, exit_date, close_reason, outcome')
@@ -74,6 +106,8 @@ export async function buildSourceHistory(
   ]);
   const positions = (posData || []) as Position[];
   const outcomes = (outData || []) as Outcome[];
+  const tickerWeights = tickerWeightsFrom(texts, positions, watchlist);
+  if (tickerWeights.size === 0) return null;
   const current = new Map(positions.map((p) => [`${p.source_id}|${p.ticker}`, p]));
 
   const dates = new Set<string>();
@@ -98,17 +132,18 @@ export async function buildSourceHistory(
     let line: string;
     if (prev && prev.entry_date) {
       const heldPrev = Math.max(1, daysSince(prev.entry_date) - daysSince(prev.exit_date!));
-      line = `- @${h} · $${p.ticker} · ${p.stance} · TURNED ${p.stance} ${since} (was ${prev.stance} for ${heldPrev} days)`;
+      line = `- @${h} · $${p.ticker} · ${p.stance} · TURNED ${p.stance} ${since} (was ${prev.stance} for ${dayWord(heldPrev)})`;
       turned.add(`${h.toLowerCase()}|${p.ticker}`);
     } else {
-      line = `- @${h} · $${p.ticker} · ${p.stance} · on record since ${since} (${daysSince(p.since!)} days)`;
+      line = `- @${h} · $${p.ticker} · ${p.stance} · on record since ${since} (${dayWord(daysSince(p.since!))})`;
     }
     dates.add(since);
     if (p.conviction != null) line += ` · conviction ${p.conviction}/5`;
+    // Direction-adjusted: how the CALL has done (a bearish call on a falling stock is +).
     if (p.mark_return_pct != null) {
-      const r = fmtPct(Number(p.mark_return_pct));
-      line += ` · ${r} since`;
-      returns.add(r);
+      const v = Number(p.mark_return_pct);
+      if (Math.abs(v) < 0.5) line += ' · call flat since';
+      else { const r = fmtPct(v); line += ` · call ${r} since`; returns.add(r); }
     }
     standing.push(line);
     usedSources.add(p.source_id);
@@ -116,15 +151,19 @@ export async function buildSourceHistory(
 
   // ── changes of mind in the last two weeks, on today's names ──
   const changes: string[] = [];
+  const perAccount = new Map<string, number>();
   for (const o of outcomes) {
+    if (changes.length >= MAX_CHANGES) break;
     if (o.close_reason !== 'flip' || !o.exit_date || !o.entry_date) continue;
     if (daysSince(o.exit_date) > FLIP_WINDOW_DAYS || !tickerWeights.has(o.ticker)) continue;
     const now = current.get(`${o.source_id}|${o.ticker}`);
     const h = handleById[o.source_id];
     if (!h || !now || now.stance === o.stance) continue;
+    if ((perAccount.get(h) ?? 0) >= MAX_CHANGES_PER_ACCOUNT) continue; // don't let one account fill the list
+    perAccount.set(h, (perAccount.get(h) ?? 0) + 1);
     const held = Math.max(1, daysSince(o.entry_date) - daysSince(o.exit_date));
     const when = fmtDate(o.exit_date);
-    changes.push(`- @${h} · $${o.ticker} · ${o.stance} → ${now.stance} on ${when} (after ${held} days ${o.stance})`);
+    changes.push(`- @${h} · $${o.ticker} · ${o.stance} → ${now.stance} on ${when} (after ${dayWord(held)} ${o.stance})`);
     dates.add(when);
     turned.add(`${h.toLowerCase()}|${o.ticker}`);
     usedSources.add(o.source_id);
@@ -147,12 +186,12 @@ export async function buildSourceHistory(
 
   const block = [
     `## TRACKED HISTORY — from myJunto's call log`,
-    `How long tracked accounts have held their views, who changed their mind, and how their calls have gone. This is the ONLY allowed source for such facts: never state a date, duration, return-since, change of mind or track record that is not written below. Tracking began in 2026, so say "on record since", never "has believed since".`,
+    `How long tracked accounts have held their views, who changed their mind, and how their calls have gone ("call +78% since" = the call's own return, direction-adjusted: a bearish call on a falling name is positive). This is the ONLY allowed source for such facts: never state a date, duration, return-since, change of mind or track record that is not written below. Tracking began in 2026, so say "on record since", never "has believed since".`,
     standing.length ? `\nStanding views on names in today's tweets:\n${standing.join('\n')}` : '',
     changes.length ? `\nChanges of mind in the last ${FLIP_WINDOW_DAYS} days:\n${changes.join('\n')}` : '',
     records.length ? `\nTrack records:\n${records.join('\n')}` : '',
     `\nHow to use it:
-- Add history only where it changes how a reader should weigh a view: a long-held view, a fresh change of mind, a call that has gone notably well or badly since, or a lone dissenter against the rest. One short clause, e.g. "(bullish since May 28, +78% since)".
+- Add history only where it changes how a reader should weigh a view: a long-held view, a fresh change of mind, a call that has gone notably well or badly since, or a lone dissenter against the rest. One short clause, e.g. "(bullish since May 28; the call is up 78%)".
 - Only say an account "turned", "flipped" or "changed its mind" on a name when its line above says TURNED or it is in the changes list. An "on record since" line is NOT a change of mind.
 - If there is a meaningful change of mind or a lone dissenter on a name you feature, add a short section **Who's Shifted** (2-4 bullets) just before your closing section. If nothing qualifies, leave it out.
 - Mention a track record at most twice in the whole dispatch, and only when it changes the read.
@@ -160,16 +199,6 @@ export async function buildSourceHistory(
   ].filter(Boolean).join('\n');
 
   return { block, dates, returns, turned, lines: standing.length + changes.length + records.length };
-}
-
-/** Tickers mentioned in today's input, weighted by how often they come up. */
-export function tickerWeightsFrom(texts: string[], watchlist: string[] = []): Map<string, number> {
-  const w = new Map<string, number>();
-  for (const t of texts) {
-    for (const m of t.matchAll(/\$([A-Z]{1,6})\b/g)) w.set(m[1], (w.get(m[1]) ?? 0) + 1);
-  }
-  for (const t of watchlist) w.set(t.toUpperCase(), (w.get(t.toUpperCase()) ?? 0) + 3);
-  return w;
 }
 
 /**
@@ -193,6 +222,11 @@ export function checkHistoryClaims(output: string, history: SourceHistory, input
     if (!history.returns.has(r) && !history.returns.has(r.replace('−', '-')) && !hay.includes(`${plain} since`)) {
       problems.push(`unsupported return "${m[1]} since"`);
     }
+  }
+  // 2b. "the call is up/down N%" phrasing must also match a recorded return.
+  const absReturns = new Set([...history.returns].map((r) => r.replace(/^[+−-]/, '')));
+  for (const m of output.matchAll(/\bcall(?:'s| is| has)?\s+(?:been\s+)?(?:up|down)\s+(\d{1,4})%/gi)) {
+    if (!absReturns.has(`${m[1]}%`)) problems.push(`unsupported return "${m[0]}"`);
   }
   // 3. Only real changes of mind may be called one.
   const verb = /\b(turn(?:ed|s)|flip(?:ped|s)?|switch(?:ed|es)?|revers(?:ed|es)|chang(?:ed|es) (?:its|their|his|her) mind)\b/i;
