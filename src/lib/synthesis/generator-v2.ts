@@ -22,6 +22,7 @@ interface GenerateV2Params {
   watchlistTickers?: string[];  // Tickers to uprank in synthesis
   recentDispatches?: { subject: string | null; content: string | null; generated_at: string }[]; // Anti-repeat context
   history?: SourceHistory | null; // History-aware dispatches: tracked call-log facts (source-history.ts)
+  onPrompt?: (system: string, user: string) => void; // debug hook (dry runs): sees the exact prompt sent
 }
 
 export interface HistoryOutcome {
@@ -54,6 +55,7 @@ export async function generateNewsletterV2({
   watchlistTickers,
   recentDispatches,
   history,
+  onPrompt,
 }: GenerateV2Params): Promise<GenerateV2Result> {
   const client = getAnthropic();
 
@@ -73,6 +75,7 @@ export async function generateNewsletterV2({
   let outputTokens = 0;
 
   async function write(prompt_: string) {
+    onPrompt?.(prompt, prompt_);
     const response = await client.messages.create({
       model: HAIKU_MODEL,
       max_tokens: 2500,

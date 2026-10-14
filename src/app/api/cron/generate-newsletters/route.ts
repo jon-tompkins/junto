@@ -57,6 +57,7 @@ export async function GET(req: NextRequest) {
     // newsletter's history_aware flag for that dry run (side-by-side comparisons).
     const dryRun = force && !!forceNewsletterId && url.searchParams.get('dry_run') === 'true';
     const historyOverride = url.searchParams.get('history');
+    const debugPrompt = dryRun && url.searchParams.get('debug_prompt') === 'true';
 
     const scheduledNewsletters = force
       ? await getNewslettersForForcedGeneration(forceNewsletterId)
@@ -88,7 +89,8 @@ export async function GET(req: NextRequest) {
 
     console.log(`[generate] ${dueNewsletters.length} newsletter(s) ${force ? 'forced' : 'due'} for generation`);
 
-    const results: Record<string, { status: string; subscribers?: number; error?: string; subject?: string; content?: string; history?: unknown }> = {};
+    const results: Record<string, { status: string; subscribers?: number; error?: string; subject?: string; content?: string; history?: unknown; prompt?: { system: string; user: string } }> = {};
+    let lastPrompt: { system: string; user: string } | undefined;
 
     // Atomic dedup key for this run: the cron fires 3×/active-hour (:00/:05/:10) and
     // Vercel can double-invoke, so concurrent runs used to both pass the 5h-gap guard
@@ -230,10 +232,11 @@ export async function GET(req: NextRequest) {
           watchlistTickers,
           recentDispatches,
           history,
+          onPrompt: debugPrompt ? (system, user) => { lastPrompt = { system, user }; } : undefined,
         });
 
         if (dryRun) {
-          results[newsletter.name] = { status: 'dry_run', subject: result.subject, content: result.content, history: result.history ?? null };
+          results[newsletter.name] = { status: 'dry_run', subject: result.subject, content: result.content, history: result.history ?? null, ...(debugPrompt && lastPrompt ? { prompt: lastPrompt } : {}) };
           continue;
         }
 
@@ -466,7 +469,7 @@ export async function GET(req: NextRequest) {
         try {
           if (!dryRun) await storeSkippedRun(newsletter.id, 'error', msg); // dry runs never write
         } catch { /* ignore secondary failure */ }
-        results[newsletter.name] = { status: 'error', error: msg };
+        results[newsletter.name] = { status: 'error', error: msg, ...(debugPrompt && lastPrompt ? { prompt: lastPrompt } : {}) };
       }
     }
 
