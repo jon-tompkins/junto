@@ -327,14 +327,20 @@ export async function POST(req: NextRequest) {
       used: (groupedTweets[s.handle_or_url] || []).length > 0,
     }));
 
-    const userPrompt = buildUserPrompt(sources, groupedTweets, profilesByHandle);
+    // The onboarding sample is a first look, read mid-signup: same structure, a third the
+    // length. (Uncapped, five active accounts produce ~1,300 words and take ~25s.)
+    const SAMPLE_BREVITY = `
+
+LENGTH LIMIT FOR THIS BRIEF — it is a first-look sample for a new reader: keep the WHOLE brief under 380 words. Executive View: 2-3 sentences. At most 2 bullets in each of the other sections. Desk Notes: one sentence per account. At most 2 callouts in total. Finish every sentence — never stop mid-thought.`;
+    const userPrompt = buildUserPrompt(sources, groupedTweets, profilesByHandle) + (isSample ? SAMPLE_BREVITY : '');
 
     const anthropic = getAnthropic();
     const response = await anthropic.messages.create({
       model: HAIKU_MODEL,
-      // 1200 cut dispatches off mid-section when 5 active sources were covered (and the
-      // truncated result was still charged). 2500 fits the full format with room to spare.
-      max_tokens: 2500,
+      // 1200 (and then 2500) cut full dispatches off mid-section when 5 active sources were
+      // covered, and the truncated result was still charged. The full format runs to
+      // ~2,600 tokens; samples are held to ~600 by SAMPLE_BREVITY.
+      max_tokens: isSample ? 1500 : 4000,
       system: QUICK_DISPATCH_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userPrompt }],
     });
