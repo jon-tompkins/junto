@@ -26,6 +26,8 @@ export interface SourceHistory {
   returns: Set<string>;
   /** handle|TICKER pairs that genuinely changed stance (the only ones that may be called a flip). */
   turned: Set<string>;
+  /** handle|TICKER → the dates that belong to that view (since / turned / changed). */
+  datesByView: Map<string, Set<string>>;
   lines: number;
 }
 
@@ -113,6 +115,11 @@ export async function buildSourceHistory(
   const dates = new Set<string>();
   const returns = new Set<string>();
   const turned = new Set<string>();
+  const datesByView = new Map<string, Set<string>>();
+  const addViewDate = (h: string, t: string, d: string) => {
+    const k = `${h.toLowerCase()}|${t}`;
+    datesByView.set(k, (datesByView.get(k) || new Set<string>()).add(d));
+  };
   const usedSources = new Set<string>();
 
   // ── standing views on today's names ──
@@ -138,6 +145,7 @@ export async function buildSourceHistory(
       line = `- @${h} · $${p.ticker} · ${p.stance} · on record since ${since} (${dayWord(daysSince(p.since!))})`;
     }
     dates.add(since);
+    addViewDate(h, p.ticker, since);
     if (p.conviction != null) line += ` · conviction ${p.conviction}/5`;
     // Direction-adjusted: how the CALL has done (a bearish call on a falling stock is +).
     if (p.mark_return_pct != null) {
@@ -165,6 +173,7 @@ export async function buildSourceHistory(
     const when = fmtDate(o.exit_date);
     changes.push(`- @${h} · $${o.ticker} · ${o.stance} → ${now.stance} on ${when} (after ${dayWord(held)} ${o.stance})`);
     dates.add(when);
+    addViewDate(h, o.ticker, when);
     turned.add(`${h.toLowerCase()}|${o.ticker}`);
     usedSources.add(o.source_id);
   }
@@ -198,7 +207,18 @@ export async function buildSourceHistory(
 - History never earns a name a place in the dispatch on its own; it only adds context to names that belong there.`,
   ].filter(Boolean).join('\n');
 
-  return { block, dates, returns, turned, lines: standing.length + changes.length + records.length };
+  return { block, dates, returns, turned, datesByView, lines: standing.length + changes.length + records.length };
+}
+
+// Units a claim lives in: a bullet is one unit (its ticker, handle and date travel
+// together); prose is split into sentences.
+function segments(text: string): string[] {
+  const out: string[] = [];
+  for (const line of text.split('\n')) {
+    if (/^\s*([-*•]|\d+\.)\s/.test(line)) out.push(line);
+    else out.push(...line.split(/(?<=[.!?])\s+(?=[A-Z@$*(])/));
+  }
+  return out;
 }
 
 /**
@@ -210,10 +230,31 @@ export function checkHistoryClaims(output: string, history: SourceHistory, input
   const problems: string[] = [];
   const hay = `${history.block}\n${inputText}`;
 
-  // 1. "since <date>" must be a date from the history (or the input).
-  for (const m of output.matchAll(/\bsince ((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2})\b/g)) {
-    const d = m[1].replace(/^([A-Z][a-z]{2})[a-z]*/, '$1');
-    if (!history.dates.has(d) && !hay.includes(m[1])) problems.push(`unsupported date "since ${m[1]}"`);
+  // 1. A history date must exist AND belong to the account + name it's attached to
+  //    (a real date from one view pinned on another account's or name's view is wrong).
+  const DATE = /\b(?:since|on|from)\s+((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.? \d{1,2})\b/g;
+  const viewsOf = (h: string) => [...history.datesByView.keys()].filter((k) => k.startsWith(`${h}|`));
+  for (const seg of segments(output)) {
+    const dates = [...seg.matchAll(DATE)].map((m) => m[1].replace(/\./, '').replace(/^([A-Z][a-z]{2})[a-z]*/, '$1'));
+    if (!dates.length) continue;
+    const handles = [...new Set([...seg.matchAll(/@(\w{1,15})/g)].map((m) => m[1].toLowerCase()))];
+    const known = handles.filter((h) => viewsOf(h).length);
+    for (const d of dates) {
+      if (known.length !== 1) {
+        // No single tracked account to pin it on: the date just has to exist somewhere.
+        if (!history.dates.has(d) && !hay.includes(d)) problems.push(`unsupported date "${d}"`);
+        continue;
+      }
+      const h = known[0];
+      const segTickers = viewsOf(h).map((k) => k.split('|')[1])
+        .filter((t) => new RegExp(`(\\$|\\b)${t.replace('.', '\\.')}\\b`, CASE_FREE.has(t) ? 'i' : '').test(seg));
+      const candidates = segTickers.length ? segTickers.map((t) => `${h}|${t}`) : viewsOf(h);
+      if (!candidates.some((k) => history.datesByView.get(k)?.has(d))) {
+        if (history.dates.has(d) || !hay.includes(d)) {
+          problems.push(`"${d}" is not a date of @${h}'s view${segTickers.length ? ` on ${segTickers.map((t) => '$' + t).join('/')}` : ''} — "${seg.trim().slice(0, 120)}"`);
+        }
+      }
+    }
   }
   // 2. "+NN% since" must be a return from the history.
   for (const m of output.matchAll(/([+\-−]\s?\d{1,4}(?:\.\d+)?%)\s+since/g)) {
@@ -230,7 +271,7 @@ export function checkHistoryClaims(output: string, history: SourceHistory, input
   }
   // 3. Only real changes of mind may be called one.
   const verb = /\b(turn(?:ed|s)|flip(?:ped|s)?|switch(?:ed|es)?|revers(?:ed|es)|chang(?:ed|es) (?:its|their|his|her) mind)\b/i;
-  for (const seg of output.split(/\n|(?<=[.!?])\s+/)) {
+  for (const seg of segments(output)) {
     if (!verb.test(seg)) continue;
     const handles = [...seg.matchAll(/@(\w{1,15})/g)].map((m) => m[1].toLowerCase());
     const tickers = [...seg.matchAll(/\$([A-Z]{1,6})\b/g)].map((m) => m[1]);
