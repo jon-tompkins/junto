@@ -248,6 +248,12 @@ export function checkHistoryClaims(output: string, history: SourceHistory, input
       const h = known[0];
       const segTickers = viewsOf(h).map((k) => k.split('|')[1])
         .filter((t) => new RegExp(`(\\$|\\b)${t.replace('.', '\\.')}\\b`, CASE_FREE.has(t) ? 'i' : '').test(seg));
+      // A dated claim on a name this account has no recorded view of can't be right.
+      const cashtags = [...seg.matchAll(/\$([A-Z]{1,6})\b/g)].map((m) => m[1]);
+      if (!segTickers.length && cashtags.length && history.dates.has(d)) {
+        problems.push(`@${h} has no recorded view on ${cashtags.map((t) => '$' + t).join('/')} — "${d}" belongs to another view: "${seg.trim().slice(0, 120)}"`);
+        continue;
+      }
       const candidates = segTickers.length ? segTickers.map((t) => `${h}|${t}`) : viewsOf(h);
       if (!candidates.some((k) => history.datesByView.get(k)?.has(d))) {
         if (history.dates.has(d) || !hay.includes(d)) {

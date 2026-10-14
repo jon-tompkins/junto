@@ -210,7 +210,9 @@ export async function GET(req: NextRequest) {
           ? await buildSourceHistory(
               sourceIds,
               sourceMap,
-              recentContent.map((c: any) => c.content || ''),
+              // Recent + the 7-day background the writer also sees, so names it pulls from
+              // background tweets get their history too.
+              [...recentContent, ...contextContent].map((c: any) => c.content || ''),
               watchlistTickers || [],
             ).catch((e) => { console.warn(`[generate] ${newsletter.name}: history build failed`, e); return null; })
           : null;
