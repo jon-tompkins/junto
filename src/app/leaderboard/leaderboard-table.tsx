@@ -12,7 +12,7 @@ type SortKey =
 const COLUMNS: Array<{ key: SortKey; label: string; hideAt?: string }> = [
   { key: 'wilson_score', label: 'Score' },
   { key: 'hit_rate', label: 'Hit rate' },
-  { key: 'scored', label: 'Calls' },
+  { key: 'scored', label: 'Calls', hideAt: 'hidden sm:table-cell' },
   { key: 'avg_return_pct', label: 'Avg return', hideAt: 'hidden md:table-cell' },
   { key: 'avg_alpha_pct', label: 'vs mkt', hideAt: 'hidden md:table-cell' },
   { key: 'reaction_rate', label: 'Chased', hideAt: 'hidden lg:table-cell' },
@@ -114,7 +114,7 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
                 className="border-b border-parchment/5 last:border-0 hover:bg-parchment/[0.03]"
               >
                 <td className="py-3 pl-3 sm:pl-4 pr-2 text-parchment/55 tabular-nums">{i + 1}</td>
-                <td className="py-3 px-2 max-w-[8.5rem] sm:max-w-none">
+                <td className="py-3 px-2 max-w-[10.5rem] sm:max-w-none">
                   <Link
                     href={`/sources/${encodeURIComponent(r.handle)}`}
                     className="flex items-center gap-2 sm:gap-3 group"
@@ -161,8 +161,11 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
                   ) : (
                     <span className="text-parchment/45 font-normal">unrated</span>
                   )}
+                  {r.scored > 0 ? (
+                    <div className="sm:hidden text-[11px] font-normal text-parchment/55">{r.scored} calls</div>
+                  ) : null}
                 </td>
-                <td className="py-3 px-2 text-right tabular-nums text-parchment/70">
+                <td className="py-3 px-2 text-right tabular-nums text-parchment/70 hidden sm:table-cell">
                   {r.scored > 0 ? (
                     <>
                       {r.scored}
