@@ -437,9 +437,9 @@ export default function JuntoViewPage() {
 
         {/* Header card */}
         <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-6 mb-8">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="min-w-0 flex-1">
-              <h1 className="text-3xl font-bold mb-2 font-[var(--font-oswald)] uppercase tracking-wide">{junto.name}</h1>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="min-w-0 sm:flex-1">
+              <h1 className="text-3xl font-bold mb-2 break-words font-[var(--font-oswald)] uppercase tracking-wide">{junto.name}</h1>
               {junto.description && <p className="text-parchment/60 mb-3">{junto.description}</p>}
               <p className="text-sm text-parchment/60">
                 {sources.length} {sources.length === 1 ? 'member' : 'members'}
@@ -449,7 +449,7 @@ export default function JuntoViewPage() {
                 )}
               </p>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex flex-wrap items-center gap-3 sm:shrink-0">
               {isOwner && (
                 <Link
                   href={`/junto/${junto.id}/edit`}

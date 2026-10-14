@@ -79,12 +79,12 @@ export function JuntoChat({ juntoId, juntoName, disabled }: JuntoChatProps) {
         onClick={() => setCollapsed(c => !c)}
         className="w-full px-4 py-3 border-b border-[rgb(var(--t-brass) / 0.12)] flex items-center justify-between text-left hover:bg-[rgb(var(--t-brass) / 0.04)] transition-colors"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <span className="text-lg">💬</span>
-          <h3 className="text-sm font-semibold text-parchment">Chat with {juntoName}</h3>
+          <h3 className="text-sm font-semibold text-parchment truncate">Chat with {juntoName}</h3>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-parchment/55">10 credits/query • Operator/Pro</span>
+        <div className="flex items-center gap-3 shrink-0 ml-3">
+          <span className="text-xs text-parchment/55 whitespace-nowrap">10 credits/query<span className="hidden sm:inline"> • Operator/Pro</span></span>
           <span className={`text-parchment/55 text-xs transition-transform ${collapsed ? '' : 'rotate-180'}`}>▾</span>
         </div>
       </button>
