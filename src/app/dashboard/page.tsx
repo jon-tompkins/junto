@@ -16,6 +16,20 @@ function FirstDispatchCTA() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ subject: string; content: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Primary junto's sources, loaded up front so an empty junto gets "add sources"
+  // instead of a promise of tomorrow's dispatch that will never run.
+  const [junto, setJunto] = useState<{ id: string; sourceIds: string[] } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/v2/primary-junto')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((pj) => {
+        if (!pj?.junto?.id) return;
+        const sourceIds = (pj.junto.junto_sources || []).map((js: any) => js.source_id).filter(Boolean);
+        setJunto({ id: pj.junto.id, sourceIds });
+      })
+      .catch(() => {});
+  }, []);
 
   // A sample written during /welcome is carried over, so a brand-new user lands on a
   // real dispatch instead of a button.
@@ -32,11 +46,7 @@ function FirstDispatchCTA() {
     setLoading(true);
     setError(null);
     try {
-      const pj = await fetch('/api/v2/primary-junto').then((r) => (r.ok ? r.json() : null));
-      const sourceIds = ((pj?.junto_sources) || [])
-        .map((js: any) => js.source_id)
-        .filter(Boolean)
-        .slice(0, 5);
+      const sourceIds = (junto?.sourceIds || []).slice(0, 5);
       if (sourceIds.length === 0) {
         setError('Add a few sources to your junto first, then try again.');
         return;
@@ -63,6 +73,20 @@ function FirstDispatchCTA() {
         <h3 className="font-semibold text-parchment mb-2">{result.subject}</h3>
         <div className="text-sm text-parchment/80 space-y-2" dangerouslySetInnerHTML={{ __html: markdownToHtml(result.content) }} />
         <p className="text-xs text-parchment/45 mt-3">This one&apos;s a live sample — your full dispatch runs automatically every morning.</p>
+      </div>
+    );
+  }
+
+  if (junto && junto.sourceIds.length === 0) {
+    return (
+      <div className="p-4 rounded border border-[rgb(var(--t-brass) / 0.28)] bg-surface">
+        <p className="text-sm text-parchment/70 mb-3">Your junto has no sources yet. Add a few accounts you follow and your daily dispatch starts the next morning.</p>
+        <Link
+          href={`/junto/${junto.id}/edit`}
+          className="inline-block bg-brass text-ink px-4 py-2 rounded text-sm font-semibold uppercase tracking-wide font-[var(--font-oswald)]"
+        >
+          Add sources →
+        </Link>
       </div>
     );
   }
