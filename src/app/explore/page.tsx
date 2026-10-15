@@ -124,7 +124,7 @@ export default function ExplorePage() {
 
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-start justify-between mb-10">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-10">
           <div className="max-w-3xl">
             <h1 className="text-4xl font-bold mb-3 font-[var(--font-oswald)] uppercase tracking-wide">
               Explore <span className="text-brass">Dispatches</span>
@@ -135,7 +135,7 @@ export default function ExplorePage() {
           </div>
           <Link
             href="/create"
-            className="bg-brass hover:bg-brass/80 text-ink px-5 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition text-sm shrink-0"
+            className="bg-brass hover:bg-brass/80 text-ink px-5 py-2.5 rounded font-[var(--font-oswald)] uppercase tracking-wide transition text-sm shrink-0 self-start"
           >
             + Create Dispatch
           </Link>
