@@ -40,6 +40,8 @@ export function TopNav() {
 
   const isActive = (path: string) => pathname === path || pathname?.startsWith(path + '/');
 
+  // '/trade' is the hub — don't light it up on its sub-pages.
+  const navActive = (path: string) => (path === '/trade' ? pathname === '/trade' : isActive(path));
   const product: Product = TRADE_PREFIXES.some((p) => isActive(p)) ? 'trade' : 'signal';
   const signalHome = session?.user ? '/dashboard' : '/explore';
 
@@ -53,6 +55,7 @@ export function TopNav() {
   const tradeNav: NavItem[] = [
     { href: '/trade', label: 'Overview' },
     { href: '/leaderboard', label: 'Discover' },
+    { href: '/trade/top-traders', label: 'HL Top 10' },
     { href: '/trades', label: 'Best Trades' },
     { href: '/positions', label: 'Positions' },
     { href: tradingUnlocked ? '/trading' : '/pricing', label: 'Mandates', locked: !tradingUnlocked },
@@ -125,8 +128,8 @@ export function TopNav() {
             style={{
               color: locked
                 ? 'rgb(var(--t-parchment) / 0.3)'
-                : isActive(href) ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.5)',
-              fontWeight: isActive(href) && !locked ? 500 : undefined,
+                : navActive(href) ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.5)',
+              fontWeight: navActive(href) && !locked ? 500 : undefined,
             }}
           >
             {locked && <LockIcon cls="w-3 h-3" />}
@@ -265,7 +268,7 @@ export function TopNav() {
               {/* Active product's links */}
               <div className="space-y-0.5">
                 {navLinks.map(({ href, label, locked }) => (
-                  <MobileNavLink key={href} href={href} label={label} active={isActive(href) && !locked} onClick={() => setMobileOpen(false)} locked={locked} />
+                  <MobileNavLink key={href} href={href} label={label} active={navActive(href) && !locked} onClick={() => setMobileOpen(false)} locked={locked} />
                 ))}
                 <MobileNavLink href="/demos" label="Demo" active={isActive('/demos')} onClick={() => setMobileOpen(false)} />
               </div>

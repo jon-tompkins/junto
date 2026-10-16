@@ -24,6 +24,7 @@ export default function TradeHome() {
 
   const cards: Card[] = [
     { href: '/leaderboard', title: 'Discover Traders', blurb: 'Ranked by real, tracked track record — hit rate and returns, not follower count.' },
+    { href: '/trade/top-traders', title: 'Hyperliquid Top 10', blurb: "What HL's best-performing traders hold right now — consensus by coin and each trader's 30-day curve." },
     { href: '/trades', title: 'Best Trades', blurb: 'Every tracked position across sources, filterable by ticker, stance, and outcome.' },
     { href: '/positions', title: 'Live Positions', blurb: 'What the desk holds right now, aggregated across the traders you follow.' },
     { href: operator ? '/trading' : '/pricing', title: 'Mandates', blurb: operator ? 'Launch a mandate to trade alongside a trader — automated, on your rules.' : 'Trade alongside the best. Upgrade to Operator to launch mandates.', locked: !operator },

@@ -225,7 +225,18 @@ export async function syncRosterToJunto(juntoId: string, roster: RosterEntry[]) 
       if (linkErr) throw new Error(`junto link ${addr}: ${linkErr.message}`);
       added.push(addr);
     }
-    await supabase.from('sources').update({ display_name: r.label, updated_at: new Date().toISOString() }).eq('id', sourceId);
+    // Roster stats ride along in metadata so the public Top Traders board can
+    // show rank / hold time / 7d-30d figures without recomputing.
+    await supabase.from('sources').update({
+      display_name: r.label,
+      metadata: {
+        roster: true, rank: r.rank, account_usd: r.accountUsd,
+        week_pnl: r.weekPnl, week_roi: r.weekRoi, month_pnl: r.monthPnl, month_roi: r.monthRoi,
+        median_hold_hours: r.medianHoldHours, round_trips: r.roundTrips, fills_per_day: r.fillsPerDay,
+        roster_at: new Date().toISOString(),
+      },
+      updated_at: new Date().toISOString(),
+    }).eq('id', sourceId);
     await supabase.from('hl_tracked_wallets').upsert({ address: addr, label: r.label, is_active: true });
   }
 
