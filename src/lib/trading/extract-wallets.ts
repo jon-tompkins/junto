@@ -66,7 +66,12 @@ export async function loadWalletSignals(
   const signals: ExtractedSignal[] = [];
   for (const e of fresh) {
     let direction: ExtractedSignal['direction'];
-    if (e.kind === 'closed') direction = 'exit';
+    if (e.kind === 'closed') {
+      // Trailing-stop mandates handle a trader's exit by tightening the trail
+      // (trailing-stops.ts) instead of proposing a close.
+      if (Number(mandate.trailing_stop_pct) > 0) continue;
+      direction = 'exit';
+    }
     else if (e.kind === 'opened' || e.kind === 'increased' || e.kind === 'flipped') {
       direction = e.side === 'short' ? 'short' : 'long';
     } else {
