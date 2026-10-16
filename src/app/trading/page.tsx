@@ -76,6 +76,8 @@ export default function AdminTradingPage() {
     hl_wallet_address: '',
     hl_agent_secret: '',
     hl_max_leverage: '3',
+    trailing_stop_pct: '',
+    trailing_stop_exit_pct: '',
     telegram_chat_id: '',
     mode: 'paper' as 'paper' | 'live',
   });
@@ -166,7 +168,7 @@ export default function AdminTradingPage() {
       if (data.mandate) {
         setMandates(prev => [{ ...data.mandate, stats: { open: 0, closed: 0, pnl: 0, unrealized: null } }, ...prev]);
         setShowCreate(false);
-        setForm({ name: '', junto_id: '', capital_allotted_usd: '1000', max_position_pct: '10', daily_loss_limit_pct: '3', max_single_position_pct: '', max_top3_concentration_pct: '', max_sector_concentration_pct: '', idleness_days_threshold: '', guidelines: '', style: '', broker: 'alpaca', account_kind: 'byo_keys', alpaca_key_id: '', alpaca_secret: '', hl_wallet_address: '', hl_agent_secret: '', hl_max_leverage: '3', telegram_chat_id: '', mode: 'paper' });
+        setForm({ name: '', junto_id: '', capital_allotted_usd: '1000', max_position_pct: '10', daily_loss_limit_pct: '3', max_single_position_pct: '', max_top3_concentration_pct: '', max_sector_concentration_pct: '', idleness_days_threshold: '', guidelines: '', style: '', broker: 'alpaca', account_kind: 'byo_keys', alpaca_key_id: '', alpaca_secret: '', hl_wallet_address: '', hl_agent_secret: '', hl_max_leverage: '3', trailing_stop_pct: '', trailing_stop_exit_pct: '', telegram_chat_id: '', mode: 'paper' });
         setCreateType(null);
       } else {
         setError(data.error || 'Failed to create');
@@ -476,6 +478,12 @@ export default function AdminTradingPage() {
                 </Field>
                 <Field label="Max leverage (x)">
                   <input type="number" min={1} max={20} value={form.hl_max_leverage} onChange={e => setForm({ ...form, hl_max_leverage: e.target.value })} className={inputCls} placeholder="3" />
+                </Field>
+                <Field label="Trailing stop % (blank = off)">
+                  <input type="number" min={1} max={95} value={form.trailing_stop_pct} onChange={e => setForm({ ...form, trailing_stop_pct: e.target.value })} className={inputCls} placeholder="e.g. 50" />
+                </Field>
+                <Field label="Trail % after trader exits / drops">
+                  <input type="number" min={1} max={95} value={form.trailing_stop_exit_pct} onChange={e => setForm({ ...form, trailing_stop_exit_pct: e.target.value })} className={inputCls} placeholder="e.g. 10" />
                 </Field>
               </div>
               <Field label="Agent key (private key — optional)">

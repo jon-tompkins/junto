@@ -237,6 +237,8 @@ export async function POST(req: NextRequest) {
       hl_wallet_address: hlWalletAddress,
       hl_agent_secret: isHl && body.hl_agent_secret ? encryptSecret(String(body.hl_agent_secret)) : null,
       hl_max_leverage: isHl ? Math.min(Math.max(Number(body.hl_max_leverage) || 3, 1), 20) : 3,
+      trailing_stop_pct: isHl && Number(body.trailing_stop_pct) > 0 ? Math.min(Number(body.trailing_stop_pct), 95) : null,
+      trailing_stop_exit_pct: isHl && Number(body.trailing_stop_exit_pct) > 0 ? Math.min(Number(body.trailing_stop_exit_pct), 95) : null,
       telegram_chat_id: body.telegram_chat_id ? String(body.telegram_chat_id).trim() : null,
       style: body.style || null,
       status: 'active',

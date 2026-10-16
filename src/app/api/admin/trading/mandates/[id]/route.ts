@@ -258,6 +258,13 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       }
       patch.hl_wallet_address = w || null;
     }
+    // Trailing stop %s: blank/0 = off. Capped below 100 so a long stop stays > 0.
+    for (const k of ['trailing_stop_pct', 'trailing_stop_exit_pct'] as const) {
+      if (body[k] !== undefined) {
+        const n = Number(body[k]);
+        patch[k] = n > 0 ? Math.min(n, 95) : null;
+      }
+    }
     if (body.hl_max_leverage !== undefined) {
       patch.hl_max_leverage = Math.min(Math.max(Number(body.hl_max_leverage) || 3, 1), 20);
     }
