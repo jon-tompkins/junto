@@ -181,16 +181,19 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient & {
       // correct whether or not HL has auto-moved margin into the perp wallet.
       const [state, spot] = await Promise.all([
         info<HlClearinghouseState>(url, { type: 'clearinghouseState', user }),
-        info<{ balances: { coin: string; total: string }[] }>(url, {
+        info<{ balances: { coin: string; total: string; hold?: string }[] }>(url, {
           type: 'spotClearinghouseState',
           user,
-        }).catch(() => ({ balances: [] as { coin: string; total: string }[] })),
+        }).catch(() => ({ balances: [] as { coin: string; total: string; hold?: string }[] })),
       ]);
       const perpValue = Number(state.marginSummary.accountValue) || 0;
       const perpWithdrawable = Number(state.withdrawable) || 0;
+      // Spot USDC `total` already includes the margin held for open perps
+      // (`hold`), which the perp accountValue also counts — so only the free
+      // part is added, or equity double-counts margin once positions are open.
       const spotUsdc = (spot.balances || [])
         .filter((b) => b.coin === 'USDC')
-        .reduce((sum, b) => sum + (Number(b.total) || 0), 0);
+        .reduce((sum, b) => sum + Math.max(0, (Number(b.total) || 0) - (Number(b.hold) || 0)), 0);
       const equity = String(perpValue + spotUsdc);
       const cash = String(perpWithdrawable + spotUsdc);
       return {

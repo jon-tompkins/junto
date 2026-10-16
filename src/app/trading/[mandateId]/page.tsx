@@ -190,6 +190,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   const [reconciling, setReconciling] = useState(false);
   const [reconcileResult, setReconcileResult] = useState<string | null>(null);
   const [account, setAccount] = useState<{ equity: number | null; cash: number | null }>({ equity: null, cash: null });
+  const [perps, setPerps] = useState<PerpsSnapshot | null>(null);
   const [lastTickAt, setLastTickAt] = useState<string | null>(null);
   const [livePulse, setLivePulse] = useState(false);
   const [regenLearnings, setRegenLearnings] = useState(false);
@@ -353,6 +354,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         if (cancelled) return;
         setPositions(data.positions || {});
         setAccount(data.account || { equity: null, cash: null });
+        setPerps(data.perps || null);
         setLastTickAt(data.fetched_at);
         setLivePulse(true);
         setTimeout(() => setLivePulse(false), 600);
@@ -569,7 +571,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               disabled={reconciling}
               title="Pull live qty + stop/target from Alpaca and overwrite drifted DB values"
               className="px-2 py-1 rounded text-xs font-[var(--font-oswald)] uppercase tracking-wide bg-surface border border-brass/28 text-brass hover:text-parchment disabled:opacity-50"
-            >{reconciling ? 'Syncing…' : 'Sync from Alpaca'}</button>
+            >{reconciling ? 'Syncing…' : `Sync from ${mandate.broker === 'hyperliquid' ? 'HL' : 'Alpaca'}`}</button>
             <button
               onClick={reattachProtection}
               disabled={protecting}
@@ -657,6 +659,8 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             />
           </div>
         </div>
+
+        {mandate.broker === 'hyperliquid' && <PerpsPanel perps={perps} mandate={mandate} />}
 
         {(() => {
           const awaitingApproval = trades.filter(t => t.status === 'pending');
@@ -1191,6 +1195,96 @@ function SettingRow({ label, value, wide }: { label: string; value: string; wide
     <div className={wide ? 'col-span-2 sm:col-span-3' : ''}>
       <dt className="text-[10px] uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] mb-0.5">{label}</dt>
       <dd className="font-mono text-sm text-parchment break-all">{value}</dd>
+    </div>
+  );
+}
+
+interface PerpsPosition {
+  coin: string; side: 'long' | 'short'; size: number; value: number; entry: number | null; mark: number;
+  leverage: number; leverage_type: string; margin_used: number; unrealized_pnl: number; roe_pct: number;
+  funding_since_open: number; liq_px: number | null; liq_away_pct: number | null;
+  stop_px: number | null; stop_away_pct: number | null; stop_trailing: boolean; stop_detail: string | null;
+}
+interface PerpsSnapshot {
+  collateral: number; notional: number; margin_used: number; free_collateral: number;
+  effective_leverage: number; maintenance_margin: number; positions: PerpsPosition[];
+}
+
+const px = (n: number | null) => (n == null ? '—' : n >= 1000 ? n.toLocaleString(undefined, { maximumFractionDigits: 1 }) : n >= 1 ? n.toFixed(2) : n.toPrecision(4));
+
+// Perps-only view (Hyperliquid): collateral, margin, leverage, liquidation and
+// the live (trailing) stop per position. Spot/equity mandates don't render it.
+function PerpsPanel({ perps, mandate }: { perps: PerpsSnapshot | null; mandate: any }) {
+  const cap = Number(mandate.hl_max_leverage) || 1;
+  const trail = Number(mandate.trailing_stop_pct) || 0;
+  const trailExit = Number(mandate.trailing_stop_exit_pct) || 0;
+  const marginPct = perps && perps.collateral > 0 ? (perps.margin_used / perps.collateral) * 100 : null;
+  return (
+    <div className="bg-surface border border-brass/28 rounded p-4 sm:p-5 mb-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+        <div className="text-[10px] uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)]">Perps · Hyperliquid</div>
+        <div className="text-[10px] text-parchment/55 font-mono">
+          {cap}x cap · {trail ? `trail ${trail}% margin (${(trail / cap).toFixed(1)}% px) → ${trailExit || trail}% on trader exit · no TP` : 'fixed stop + target'}
+        </div>
+      </div>
+      {!perps ? (
+        <p className="text-xs text-parchment/50">Loading on-chain account…</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+            <SnapStat label="Collateral" value={fmtUsd(perps.collateral)} sub="USDC (unified)" />
+            <SnapStat label="Margin used" value={fmtUsd(perps.margin_used)} sub={marginPct == null ? undefined : `${marginPct.toFixed(0)}% of collateral`} />
+            <SnapStat label="Free collateral" value={fmtUsd(perps.free_collateral)} />
+            <SnapStat label="Open notional" value={fmtUsd(perps.notional)} sub={`${perps.positions.length} position${perps.positions.length === 1 ? '' : 's'}`} />
+            <SnapStat label="Eff. leverage" value={`${perps.effective_leverage.toFixed(2)}x`} sub="notional ÷ collateral"
+              accent={perps.effective_leverage > cap ? 'rgb(var(--t-bear))' : undefined} />
+          </div>
+          {perps.positions.length > 0 && (
+            <div className="overflow-x-auto mt-5 -mx-1">
+              <table className="w-full text-xs font-mono min-w-[720px]">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-wider text-parchment/50 text-left">
+                    <th className="px-1 py-1.5 font-normal">Coin</th>
+                    <th className="px-1 py-1.5 font-normal text-right">Size</th>
+                    <th className="px-1 py-1.5 font-normal text-right">Entry → Mark</th>
+                    <th className="px-1 py-1.5 font-normal text-right">Lev · Margin</th>
+                    <th className="px-1 py-1.5 font-normal text-right">uPnL · ROE</th>
+                    <th className="px-1 py-1.5 font-normal text-right">Funding</th>
+                    <th className="px-1 py-1.5 font-normal text-right">Stop</th>
+                    <th className="px-1 py-1.5 font-normal text-right">Liq</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {perps.positions.map((p) => (
+                    <tr key={p.coin} className="border-t border-brass/14">
+                      <td className="px-1 py-2">
+                        <span className="text-parchment">{p.coin}</span>{' '}
+                        <span className={p.side === 'long' ? 'text-bull' : 'text-bear'}>{p.side === 'long' ? 'LONG' : 'SHORT'}</span>
+                      </td>
+                      <td className="px-1 py-2 text-right text-parchment/80">{fmtUsd(p.value)}<div className="text-[10px] text-parchment/45">{p.size} {p.coin}</div></td>
+                      <td className="px-1 py-2 text-right text-parchment/80">{px(p.entry)} → {px(p.mark)}</td>
+                      <td className="px-1 py-2 text-right text-parchment/80">{p.leverage}x {p.leverage_type}<div className="text-[10px] text-parchment/45">{fmtUsd(p.margin_used)}</div></td>
+                      <td className="px-1 py-2 text-right" style={{ color: plColor(p.unrealized_pnl) }}>
+                        {fmtUsd(p.unrealized_pnl)}<div className="text-[10px]">{p.roe_pct >= 0 ? '+' : ''}{p.roe_pct.toFixed(1)}%</div>
+                      </td>
+                      <td className="px-1 py-2 text-right text-parchment/70">{p.funding_since_open >= 0 ? '+' : ''}{p.funding_since_open.toFixed(3)}</td>
+                      <td className="px-1 py-2 text-right">
+                        {p.stop_px == null ? <span className="text-bear">none</span> : (
+                          <span className="text-parchment/80" title={p.stop_detail || undefined}>
+                            {px(p.stop_px)}{p.stop_trailing && <span className="ml-1 text-[9px] uppercase text-brass border border-brass/40 rounded px-1">trail</span>}
+                            <div className="text-[10px] text-parchment/45">{p.stop_away_pct?.toFixed(1)}% away</div>
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-1 py-2 text-right text-parchment/70">{px(p.liq_px)}<div className="text-[10px] text-parchment/45">{p.liq_away_pct == null ? '' : `${p.liq_away_pct.toFixed(0)}% away`}</div></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
