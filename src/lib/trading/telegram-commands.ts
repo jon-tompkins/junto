@@ -20,16 +20,28 @@ function fmtUsd(n: number): string {
   return `${sign}$${Math.abs(n).toFixed(2)}`;
 }
 
-async function loadUserMandates(userId: string, opts: { activeOnly?: boolean } = {}): Promise<Mandate[]> {
+// Commands run inside a mandate's Telegram group only see the mandate(s) bound
+// to that group; in a DM (or an unbound chat) they see all of the user's.
+// Old paused/archived mandates still bound to the group are dropped when an
+// active one is bound, so a bare /pause targets the live mandate.
+export function scopeToChat<T extends { telegram_chat_id?: string | null; status?: string }>(mandates: T[], chatId?: number | string | null): T[] {
+  if (chatId == null) return mandates;
+  const bound = mandates.filter((m) => m.telegram_chat_id != null && String(m.telegram_chat_id) === String(chatId));
+  if (!bound.length) return mandates;
+  const active = bound.filter((m) => m.status === 'active');
+  return active.length ? active : bound;
+}
+
+async function loadUserMandates(userId: string, opts: { activeOnly?: boolean; chatId?: number | string | null } = {}): Promise<Mandate[]> {
   const q = getSupabase().from('trading_mandates').select('*').eq('user_id', userId);
   if (opts.activeOnly) q.eq('status', 'active');
   const { data } = await q;
-  return (data || []) as Mandate[];
+  return scopeToChat((data || []) as Mandate[], opts.chatId);
 }
 
 // /pnl — realized today / 7d / all-time + total unrealized across all mandates.
-export async function buildPnlMessage(userId: string): Promise<string> {
-  const mandates = await loadUserMandates(userId);
+export async function buildPnlMessage(userId: string, chatId?: number | string | null): Promise<string> {
+  const mandates = await loadUserMandates(userId, { chatId });
   if (!mandates.length) return '<b>No mandates.</b>';
 
   const ids = mandates.map(m => m.id);
@@ -97,8 +109,8 @@ export async function buildPnlMessage(userId: string): Promise<string> {
 }
 
 // /mandates — list with status, mode, open count, capital.
-export async function buildMandatesMessage(userId: string): Promise<string> {
-  const mandates = await loadUserMandates(userId);
+export async function buildMandatesMessage(userId: string, chatId?: number | string | null): Promise<string> {
+  const mandates = await loadUserMandates(userId, { chatId });
   if (!mandates.length) return '<b>No mandates.</b>';
 
   const ids = mandates.map(m => m.id);
@@ -127,14 +139,16 @@ export async function setMandateStatus(
   userId: string,
   query: string,
   newStatus: 'active' | 'paused',
+  chatId?: number | string | null,
 ): Promise<string> {
-  const mandates = await loadUserMandates(userId);
+  const mandates = await loadUserMandates(userId, { chatId });
   if (!mandates.length) return 'No mandates to update.';
 
   const q = query.trim().toLowerCase();
-  if (!q) return `Usage: <code>/${newStatus === 'paused' ? 'pause' : 'resume'} &lt;mandate name&gt;</code>`;
+  // In a group bound to a single mandate, a bare /pause or /resume targets it.
+  if (!q && mandates.length !== 1) return `Usage: <code>/${newStatus === 'paused' ? 'pause' : 'resume'} &lt;mandate name&gt;</code>`;
 
-  const matches = mandates.filter(m => m.name.toLowerCase().includes(q));
+  const matches = q ? mandates.filter(m => m.name.toLowerCase().includes(q)) : mandates;
   if (matches.length === 0) return `No mandate matches "${escapeHtml(query)}".`;
   if (matches.length > 1) {
     return `Ambiguous — "${escapeHtml(query)}" matches: ${matches.map(m => m.name).join(', ')}`;
@@ -156,8 +170,8 @@ export async function setMandateStatus(
 
 // Kill switch: pause every active mandate the user owns; with `flatten`, also
 // market-close all open HL positions on them. Resume individually with /resume.
-export async function killAll(userId: string, flatten: boolean): Promise<string> {
-  const mandates = (await loadUserMandates(userId)).filter((m) => m.status === 'active');
+export async function killAll(userId: string, flatten: boolean, chatId?: number | string | null): Promise<string> {
+  const mandates = (await loadUserMandates(userId, { chatId })).filter((m) => m.status === 'active');
   if (!mandates.length) return 'No active mandates — nothing to stop.';
   await getSupabase().from('trading_mandates').update({ status: 'paused', updated_at: new Date().toISOString() }).in('id', mandates.map((m) => m.id));
   const lines: string[] = [];
@@ -222,11 +236,11 @@ export async function unbindMandate(userId: string, idArg: string): Promise<stri
 }
 
 // /close <ticker> — market-close any open trades in this ticker across all mandates.
-export async function closeTickerCommand(userId: string, ticker: string): Promise<string> {
+export async function closeTickerCommand(userId: string, ticker: string, chatId?: number | string | null): Promise<string> {
   const sym = ticker.trim().toUpperCase().replace(/^\$/, '');
   if (!sym) return 'Usage: <code>/close TICKER</code>';
 
-  const mandates = await loadUserMandates(userId);
+  const mandates = await loadUserMandates(userId, { chatId });
   if (!mandates.length) return 'No mandates.';
 
   const results: string[] = [];
@@ -266,8 +280,8 @@ export async function closeTickerCommand(userId: string, ticker: string): Promis
 }
 
 // /ticks — last 5 tick runs across user's mandates, with errors flagged.
-export async function buildTicksMessage(userId: string): Promise<string> {
-  const mandates = await loadUserMandates(userId);
+export async function buildTicksMessage(userId: string, chatId?: number | string | null): Promise<string> {
+  const mandates = await loadUserMandates(userId, { chatId });
   if (!mandates.length) return '<b>No mandates.</b>';
 
   const ids = mandates.map(m => m.id);

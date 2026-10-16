@@ -1,3 +1,4 @@
+import { scopeToChat } from './telegram-commands';
 import { getSupabase } from '@/lib/db/client';
 import { alpacaForMandate } from './client';
 import type { Mandate } from './types';
@@ -16,14 +17,15 @@ interface TradeWithJournal {
 // Render an HTML summary of all open/pending trades across the user's mandates,
 // with live price + unrealized P&L from Alpaca and the source URL that drove
 // each proposal (pulled from the original entry journal).
-export async function buildPositionsMessage(userId: string): Promise<string> {
+export async function buildPositionsMessage(userId: string, chatId?: number | string | null): Promise<string> {
   const supabase = getSupabase();
 
-  const { data: mandates } = await supabase
+  const { data: allMandates } = await supabase
     .from('trading_mandates')
     .select('*')
     .eq('user_id', userId)
     .eq('status', 'active');
+  const mandates = scopeToChat(allMandates || [], chatId);
 
   if (!mandates || mandates.length === 0) {
     return '<b>No active trading mandates.</b>\n\nCreate one at <a href="https://myjunto.xyz/trading">myjunto.xyz/trading</a>.';

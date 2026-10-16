@@ -91,10 +91,10 @@ export async function POST(req: NextRequest) {
             const action = cb.data.slice('menu_'.length);
             let body: string;
             switch (action) {
-              case 'positions': body = await buildPositionsMessage(userId); break;
-              case 'pnl':       body = await buildPnlMessage(userId); break;
-              case 'mandates':  body = await buildMandatesMessage(userId); break;
-              case 'ticks':     body = await buildTicksMessage(userId); break;
+              case 'positions': body = await buildPositionsMessage(userId, chatId); break;
+              case 'pnl':       body = await buildPnlMessage(userId, chatId); break;
+              case 'mandates':  body = await buildMandatesMessage(userId, chatId); break;
+              case 'ticks':     body = await buildTicksMessage(userId, chatId); break;
               default:          body = 'Unknown menu action.';
             }
             await sendTelegramMessage(chatId, body);
@@ -242,14 +242,14 @@ export async function POST(req: NextRequest) {
     try {
       let body: string;
       switch (cmd) {
-        case 'positions': body = await buildPositionsMessage(userId); break;
-        case 'pnl':       body = await buildPnlMessage(userId); break;
-        case 'mandates':  body = await buildMandatesMessage(userId); break;
-        case 'ticks':     body = await buildTicksMessage(userId); break;
-        case 'pause':     body = await setMandateStatus(userId, arg, 'paused'); break;
-        case 'resume':    body = await setMandateStatus(userId, arg, 'active'); break;
-        case 'close':     body = await closeTickerCommand(userId, arg); break;
-        case 'kill':      body = await killAll(userId, /flatten/i.test(arg)); break;
+        case 'positions': body = await buildPositionsMessage(userId, chatId); break;
+        case 'pnl':       body = await buildPnlMessage(userId, chatId); break;
+        case 'mandates':  body = await buildMandatesMessage(userId, chatId); break;
+        case 'ticks':     body = await buildTicksMessage(userId, chatId); break;
+        case 'pause':     body = await setMandateStatus(userId, arg, 'paused', chatId); break;
+        case 'resume':    body = await setMandateStatus(userId, arg, 'active', chatId); break;
+        case 'close':     body = await closeTickerCommand(userId, arg, chatId); break;
+        case 'kill':      body = await killAll(userId, /flatten/i.test(arg), chatId); break;
         default:          body = 'Unknown command.';
       }
       await sendTelegramMessage(chatId, body);
