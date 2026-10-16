@@ -135,7 +135,9 @@ export interface HyperliquidConfig {
   maxLeverage?: number | null;
 }
 
-export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
+export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient & {
+  submitTrailingStop(params: { symbol: string; qty: number; side: 'buy' | 'sell'; retracementPct: number }): Promise<string>;
+} {
   const url = baseUrl(cfg.mode);
   const user = cfg.walletAddress;
   if (!user) throw new Error('Hyperliquid wallet address not configured');
@@ -449,8 +451,8 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
       if ((hasTp && tpOid == null) || slOid == null) {
         try {
           const live = (await rawOpenOrders()).filter((o) => o.coin === params.symbol && o.isTrigger);
-          if (hasTp) tpOid = tpOid ?? live.find((o) => o.tpsl === 'tp')?.oid;
-          slOid = slOid ?? live.find((o) => o.tpsl === 'sl')?.oid;
+          if (hasTp) tpOid = tpOid ?? live.find((o) => legKind(o) === 'tp')?.oid;
+          slOid = slOid ?? live.find((o) => legKind(o) === 'sl')?.oid;
         } catch { /* best-effort */ }
       }
       // Parent with legs so the protector captures both leg ids (stop + target).
@@ -474,6 +476,31 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
       };
     },
 
+    // Native HL trailing stop (perps): reduce-only, trails the best price by
+    // retracementPct from placement. Returns the order id.
+    async submitTrailingStop(params: { symbol: string; qty: number; side: 'buy' | 'sell'; retracementPct: number }): Promise<string> {
+      const assets = await assetIndexMap(cfg.mode);
+      const asset = assets.get(params.symbol);
+      if (!asset) throw new Error(`Unknown Hyperliquid asset: ${params.symbol}`);
+      const resp = await signAndSend<{ response?: { type?: string; data?: { oid?: number } }; data?: { oid?: number; statuses?: HlOrderStatus[] } }>({
+        type: 'trailingStop',
+        asset: asset.index,
+        isBuy: params.side === 'buy',
+        sz: formatSize(params.qty, asset.szDecimals),
+        reduceOnly: true,
+        retracement: { pct: `${Number(params.retracementPct.toFixed(3))}%` },
+        activationPx: null,
+      });
+      const st = resp?.data?.statuses?.[0];
+      if (st?.error) throw new Error(`Hyperliquid trailingStop rejected: ${st.error}`);
+      const oid = resp?.data?.oid ?? resp?.response?.data?.oid ?? st?.resting?.oid;
+      if (oid != null) return String(oid);
+      const live = (await rawOpenOrders()).filter((o) => o.coin === params.symbol && (o.orderType || '').toLowerCase().includes('trailing'));
+      const newest = live.sort((a, b) => Number(b.oid) - Number(a.oid))[0];
+      if (!newest) throw new Error(`Hyperliquid trailingStop: no oid in response ${JSON.stringify(resp).slice(0, 200)}`);
+      return String(newest.oid);
+    },
+
     // Move an existing trigger order (stop/target) to a new level via HL modify.
     async replaceOrder(id: string, patch: { stop_price?: number; limit_price?: number; qty?: number }): Promise<AlpacaOrder> {
       const all = await rawOpenOrders();
@@ -483,9 +510,7 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
       const meta = assets.get(o.coin);
       if (!meta) throw new Error(`Unknown Hyperliquid asset: ${o.coin}`);
       const b = o.side === 'B';
-      const tpsl: 'tp' | 'sl' = o.tpsl === 'tp' || o.tpsl === 'sl'
-        ? o.tpsl
-        : patch.stop_price != null ? 'sl' : 'tp';
+      const tpsl: 'tp' | 'sl' = legKind(o) ?? (patch.stop_price != null ? 'sl' : 'tp');
       const newLevel = patch.stop_price ?? patch.limit_price;
       if (newLevel == null) throw new Error('replaceOrder: no new price provided');
       const triggerPx = formatPrice(newLevel, meta.szDecimals);
@@ -509,7 +534,7 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
         // Without this, a successful stop/target move was reported as a broker
         // rejection, the amendment marked 'rejected', and the DB left stale.
         try {
-          const live = (await rawOpenOrders()).filter((x) => x.coin === o.coin && x.isTrigger && x.tpsl === tpsl);
+          const live = (await rawOpenOrders()).filter((x) => x.coin === o.coin && x.isTrigger && legKind(x) === tpsl);
           newOid = live[0]?.oid ?? Number(id);
         } catch {
           newOid = Number(id);
@@ -558,6 +583,16 @@ interface HlFrontendOrder {
   orderType?: string;
 }
 
+// Stop vs take-profit for an open trigger order. frontendOpenOrders returns
+// tpsl=null, so key off orderType ("Stop Market", "Take Profit Market",
+// "Trailing Stop") and only fall back to tpsl.
+function legKind(o: HlFrontendOrder): 'sl' | 'tp' | null {
+  const ot = (o.orderType || '').toLowerCase();
+  if (ot.includes('take profit')) return 'tp';
+  if (ot.includes('stop')) return 'sl';
+  return o.tpsl === 'sl' || o.tpsl === 'tp' ? o.tpsl : null;
+}
+
 // Map an HL open order into the AlpacaOrder shape the protection reconciler
 // reads. A stop trigger -> type 'stop' + stop_price; a take-profit trigger or a
 // plain limit -> type 'limit' + limit_price, so hasStop/hasLimit checks work.
@@ -566,8 +601,7 @@ function mapHlOrder(o: HlFrontendOrder): AlpacaOrder {
   // Classify by orderType first ("Stop ..." vs "Take Profit ..."), since HL
   // returns tpsl=null in frontendOpenOrders. Without this, a stop-loss leg gets
   // mistyped as a limit/target and reconcile copies its price into target_price.
-  const ot = (o.orderType || '').toLowerCase();
-  const isStop = o.isTrigger && (ot.startsWith('stop') || (!ot && o.tpsl === 'sl'));
+  const isStop = legKind(o) === 'sl';
   const limitPx = o.isTrigger ? o.triggerPx : o.limitPx;
   return {
     id: String(o.oid),

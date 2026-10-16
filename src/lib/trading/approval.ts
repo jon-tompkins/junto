@@ -276,29 +276,45 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
     // fail the approval (the position is open; protect will retry).
     let protectedNote = '';
     if (mandate.broker === 'hyperliquid' && trade.stop_price) {
-      try {
-        const exitSide = trade.side === 'long' ? 'sell' : 'buy';
-        const qty = Number(order.filled_qty) > 0 ? Number(order.filled_qty) : Number(trade.qty);
-        const oco = await alpaca.submitOcoExit({
-          symbol: trade.ticker,
-          qty,
-          side: exitSide,
-          stopPrice: Number(trade.stop_price),
-          limitPrice: Number(trade.target_price) || 0, // 0 = stop only
-          clientOrderId: `protect-${tradeId}`,
-        });
-        const legs = oco.legs || [];
-        const stopLeg = legs.find((l) => l.type === 'stop' || l.type === 'stop_limit');
-        const targetLeg = legs.find((l) => l.type === 'limit');
-        await updateTrade(tradeId, {
-          status: 'open',
-          stop_order_id: stopLeg?.id || null,
-          target_order_id: targetLeg?.id || null,
-        });
-        await addJournalEntry({ tradeId, kind: 'daily', content: `[protection attached inline: stop ${trade.stop_price}, target ${trade.target_price ?? 'none'}]` });
-        protectedNote = trade.target_price ? ' (stop+target attached)' : ' (trailing stop attached)';
-      } catch (e: any) {
-        await addJournalEntry({ tradeId, kind: 'daily', content: `[inline protection failed: ${String(e?.message).slice(0, 150)} — protect tick will retry]` });
+      const exitSide = trade.side === 'long' ? 'sell' : 'buy';
+      const qty = Number(order.filled_qty) > 0 ? Number(order.filled_qty) : Number(trade.qty);
+      // Trailing mandates: native HL trailing stop at fill. If the exchange
+      // rejects it, fall back to a fixed stop; the trail tick retries native.
+      const { isTrailing, trailPricePct } = await import('./trailing-stops');
+      if (isTrailing(mandate) && typeof (alpaca as any).submitTrailingStop === 'function') {
+        const pct = trailPricePct(mandate, Number(mandate.trailing_stop_pct));
+        try {
+          const oid = await (alpaca as any).submitTrailingStop({ symbol: trade.ticker, qty, side: exitSide, retracementPct: pct });
+          await updateTrade(tradeId, { status: 'open', stop_order_id: oid, target_order_id: null, trail_pct: pct } as any);
+          await addJournalEntry({ tradeId, kind: 'daily', content: `[native trailing stop attached inline: ${pct.toFixed(2)}% price retracement, order ${oid}]` });
+          protectedNote = ' (native trailing stop attached)';
+        } catch (e: any) {
+          await addJournalEntry({ tradeId, kind: 'daily', content: `[native trailing stop failed: ${String(e?.message).slice(0, 150)} — attaching fixed stop]` });
+        }
+      }
+      if (!protectedNote) {
+        try {
+          const oco = await alpaca.submitOcoExit({
+            symbol: trade.ticker,
+            qty,
+            side: exitSide,
+            stopPrice: Number(trade.stop_price),
+            limitPrice: Number(trade.target_price) || 0, // 0 = stop only
+            clientOrderId: `protect-${tradeId}`,
+          });
+          const legs = oco.legs || [];
+          const stopLeg = legs.find((l) => l.type === 'stop' || l.type === 'stop_limit');
+          const targetLeg = legs.find((l) => l.type === 'limit');
+          await updateTrade(tradeId, {
+            status: 'open',
+            stop_order_id: stopLeg?.id || null,
+            target_order_id: targetLeg?.id || null,
+          });
+          await addJournalEntry({ tradeId, kind: 'daily', content: `[protection attached inline: stop ${trade.stop_price}, target ${trade.target_price ?? 'none'}]` });
+          protectedNote = trade.target_price ? ' (stop+target attached)' : ' (stop attached)';
+        } catch (e: any) {
+          await addJournalEntry({ tradeId, kind: 'daily', content: `[inline protection failed: ${String(e?.message).slice(0, 150)} — protect tick will retry]` });
+        }
       }
     }
 

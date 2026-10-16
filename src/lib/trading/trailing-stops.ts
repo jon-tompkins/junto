@@ -96,6 +96,18 @@ export async function trailMandateStops(mandate: Mandate): Promise<TrailResult[]
 
   const client = alpacaForMandate(mandate);
   const results: TrailResult[] = [];
+  // Native HL trailing stops (exchange-side, tick-by-tick) when the driver has
+  // them; the app re-places one only when the trail % changes. Falls back to
+  // app-managed trailing (hourly replace of a fixed stop) if placement fails.
+  const native = typeof (client as any).submitTrailingStop === 'function';
+  let liveOrders: any[] = [];
+  let positions: any[] = [];
+  if (native) {
+    [liveOrders, positions] = await Promise.all([
+      info(mandate.mode, { type: 'frontendOpenOrders', user: mandate.hl_wallet_address }).catch(() => []),
+      client.getPositions().catch(() => []),
+    ]);
+  }
   for (const t of trades) {
     try {
       const entry = Number(t.entry_price);
@@ -119,6 +131,49 @@ export async function trailMandateStops(mandate: Mandate): Promise<TrailResult[]
       const move = prevPct == null || tighter;
 
       const patch: Record<string, any> = { trail_hwm: hwm, trail_pct: pct, trail_checked_at: new Date().toISOString() };
+
+      if (native) {
+        const coinOrders = (liveOrders as any[]).filter((o) => o.coin === coin);
+        const isTrail = (o: any) => String(o.orderType || '').toLowerCase().includes('trailing');
+        const current = coinOrders.find((o) => String(o.oid) === String(t.stop_order_id));
+        const needPlace = prevPct == null || pct < prevPct || !current || !isTrail(current);
+        const pos = (positions as any[]).find((x) => String(x.symbol).toUpperCase() === coin);
+        if (needPlace && pos && Math.abs(Number(pos.qty)) > 0) {
+          try {
+            const oid = await (client as any).submitTrailingStop({
+              symbol: coin,
+              qty: Math.abs(Number(pos.qty)),
+              side: t.side === 'long' ? 'sell' : 'buy',
+              retracementPct: pct,
+            });
+            // Retire every other stop on this coin (old fixed stop / old trail).
+            for (const o of coinOrders) {
+              const ot = String(o.orderType || '').toLowerCase();
+              if (String(o.oid) !== oid && o.reduceOnly && (ot.includes('stop') || isTrail(o)) && !ot.includes('take profit')) {
+                try { await client.cancelOrder(String(o.oid)); } catch { /* best-effort */ }
+              }
+            }
+            const mark = Number(pos.current_price) || hwm;
+            patch.stop_order_id = oid;
+            patch.stop_price = trailLevel(t.side, mark, pct);
+            patch.trail_hwm = mark; // the exchange trails from placement
+            if (prevPct != null && pct < prevPct) {
+              await addJournalEntry({ tradeId: t.id, kind: 'note', content: `Copied trader exited or left the roster — native trailing stop tightened to ${Number(mandate.trailing_stop_exit_pct)}% of margin (${pct.toFixed(2)}% price, order ${oid}).` });
+            }
+            results.push({ ticker: coin, action: prevPct == null || !current ? 'native_trail_set' : 'native_trail_tightened', stop: patch.stop_price, pct });
+            await supabase.from('trades').update(patch).eq('id', t.id);
+            continue;
+          } catch (e) {
+            results.push({ ticker: coin, action: 'replace_failed', detail: `native trailingStop failed, app-managed fallback: ${e instanceof Error ? e.message.slice(0, 140) : e}` });
+          }
+        } else if (!needPlace && current) {
+          if (Number(current.triggerPx) > 0) patch.stop_price = Number(current.triggerPx);
+          results.push({ ticker: coin, action: 'native_trail_live', stop: patch.stop_price, pct });
+          await supabase.from('trades').update(patch).eq('id', t.id);
+          continue;
+        }
+      }
+
       if (move && (cur == null || Math.abs(level - cur) / cur > 0.001)) {
         patch.stop_price = level;
         if (t.stop_order_id) {
