@@ -132,7 +132,7 @@ export function PositionsHeatmap({
             {showStance && (
               <span
                 className="font-medium uppercase tracking-wider leading-none mt-1"
-                style={{ fontSize: `${Math.max(8, Math.floor(fontSize * 0.4))}px`, color: stanceColor }}
+                style={{ fontSize: `${Math.max(8, Math.floor(fontSize * 0.4))}px`, color: 'rgb(var(--t-parchment) / 0.85)' }}
               >
                 {item.detail ?? `${STANCE_LABEL[item.stance] ?? item.stance} · ${shownCount}`}
               </span>
