@@ -412,6 +412,9 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
         try {
           const trade = openTrades.find((t) => t.id === amend.trade_id);
           if (!trade) continue;
+          // Trailing-stop mandates: the exchange trail owns the stop and there
+          // is no target, so only close suggestions are worth a ping.
+          if (isTrailing(mandate) && amend.kind !== 'close') continue;
           // Avoid stacking duplicate pending amendments
           const pending = await getPendingAmendmentsForTrade(trade.id);
           if (pending.some((p) => p.kind === amend.kind)) continue;

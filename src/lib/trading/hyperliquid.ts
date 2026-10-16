@@ -136,7 +136,7 @@ export interface HyperliquidConfig {
 }
 
 export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient & {
-  submitTrailingStop(params: { symbol: string; qty: number; side: 'buy' | 'sell'; retracementPct: number }): Promise<string>;
+  submitTrailingStop(params: { symbol: string; qty: number; side: 'buy' | 'sell'; retracementPct?: number; retracementPx?: number }): Promise<string>;
 } {
   const url = baseUrl(cfg.mode);
   const user = cfg.walletAddress;
@@ -481,7 +481,9 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient & {
 
     // Native HL trailing stop (perps): reduce-only, trails the best price by
     // retracementPct from placement. Returns the order id.
-    async submitTrailingStop(params: { symbol: string; qty: number; side: 'buy' | 'sell'; retracementPct: number }): Promise<string> {
+    // retracementPct = trail % from the best price; retracementPx = fixed price
+    // distance (used to move a live trail so its trigger lands on a given level).
+    async submitTrailingStop(params: { symbol: string; qty: number; side: 'buy' | 'sell'; retracementPct?: number; retracementPx?: number }): Promise<string> {
       const assets = await assetIndexMap(cfg.mode);
       const asset = assets.get(params.symbol);
       if (!asset) throw new Error(`Unknown Hyperliquid asset: ${params.symbol}`);
@@ -491,7 +493,9 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient & {
         isBuy: params.side === 'buy',
         sz: formatSize(params.qty, asset.szDecimals),
         reduceOnly: true,
-        retracement: { pct: `${Number(params.retracementPct.toFixed(3))}%` },
+        retracement: params.retracementPx != null
+          ? { px: formatPrice(params.retracementPx, asset.szDecimals) }
+          : { pct: `${Number((params.retracementPct ?? 0).toFixed(3))}%` },
         activationPx: null,
       });
       const st = resp?.data?.statuses?.[0];
@@ -512,6 +516,19 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient & {
       const assets = await assetIndexMap(cfg.mode);
       const meta = assets.get(o.coin);
       if (!meta) throw new Error(`Unknown Hyperliquid asset: ${o.coin}`);
+      // Trailing stops can't be `modify`'d ("Attempted to modify to invalid new
+      // order"). Re-place a trail whose current trigger is the requested level
+      // (fixed px distance from mark), then cancel the old one — it keeps trailing.
+      if ((o.orderType || '').toLowerCase().includes('trailing') && patch.stop_price != null) {
+        const mark = await getMid(o.coin);
+        if (!mark) throw new Error(`No mark for ${o.coin}`);
+        const isBuy = o.side === 'B'; // buy-to-close = short position
+        const dist = isBuy ? patch.stop_price - mark : mark - patch.stop_price;
+        if (!(dist > 0)) throw new Error(`Stop ${patch.stop_price} is already through the mark ${mark} — close the position instead`);
+        const newId = await this.submitTrailingStop({ symbol: o.coin, qty: Number(o.sz), side: isBuy ? 'buy' : 'sell', retracementPx: dist });
+        await this.cancelOrder(String(o.oid));
+        return { id: newId, symbol: o.coin, qty: o.sz, filled_qty: '0', side: isBuy ? 'buy' : 'sell', status: 'open', type: 'stop', stop_price: String(patch.stop_price), filled_avg_price: null } as AlpacaOrder;
+      }
       const b = o.side === 'B';
       const tpsl: 'tp' | 'sl' = legKind(o) ?? (patch.stop_price != null ? 'sl' : 'tp');
       const newLevel = patch.stop_price ?? patch.limit_price;
