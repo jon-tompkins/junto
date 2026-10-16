@@ -18,6 +18,11 @@ export interface HeatmapPosition {
   stance: string;
   count: number;
   fresh_count?: number;
+  // Optional tile size (e.g. $ exposure); defaults to the source count.
+  value?: number;
+  // Optional second line under the ticker (replaces "Long · 3").
+  detail?: string;
+  title?: string;
   sources?: Array<{ handle: string; display_name?: string | null; avatar_url: string | null; is_stale?: boolean }>;
 }
 
@@ -25,7 +30,8 @@ interface Props {
   items: HeatmapPosition[];
   height?: number;
   includeStale?: boolean;
-  linkBase?: string;
+  // null = tiles aren't links (e.g. coins with no positions page).
+  linkBase?: string | null;
   className?: string;
 }
 
@@ -51,15 +57,16 @@ export function PositionsHeatmap({
   const effectiveCount = (i: HeatmapPosition) =>
     includeStale ? i.count : i.fresh_count ?? i.count;
   const maxCount = Math.max(...items.map(effectiveCount), 1);
+  const sizeOf = (i: HeatmapPosition) => (i.value != null ? i.value : effectiveCount(i));
 
   const sorted = useMemo(
-    () => [...items].filter((i) => effectiveCount(i) > 0).sort((a, b) => effectiveCount(b) - effectiveCount(a)),
+    () => [...items].filter((i) => effectiveCount(i) > 0 && sizeOf(i) > 0).sort((a, b) => sizeOf(b) - sizeOf(a)),
     [items, includeStale],
   );
 
   const layout = useMemo(
     () => squarifiedTreemap(
-      sorted.map((i) => ({ value: effectiveCount(i), data: i })),
+      sorted.map((i) => ({ value: sizeOf(i), data: i })),
       width,
       height,
     ),
@@ -96,9 +103,9 @@ export function PositionsHeatmap({
         const avatarSize = Math.max(14, Math.min(Math.floor(Math.sqrt(tileArea) / 12), 28));
 
         return (
-          <Link
+          <Tile
             key={`${item.ticker}-${item.stance}`}
-            href={`${linkBase}/${encodeURIComponent(item.ticker)}`}
+            href={linkBase ? `${linkBase}/${encodeURIComponent(item.ticker)}` : null}
             className="absolute flex flex-col items-center justify-center overflow-hidden transition group"
             style={{
               left: `${x}px`,
@@ -108,7 +115,7 @@ export function PositionsHeatmap({
               background: `rgb(var(${token}) / ${alpha})`,
               boxShadow: 'inset 0 0 0 1px rgb(var(--t-ink) / 0.6)',
             }}
-            title={`${item.ticker} · ${STANCE_LABEL[item.stance] ?? item.stance} · ${shownCount} source${shownCount !== 1 ? 's' : ''}`}
+            title={item.title ?? `${item.ticker} · ${STANCE_LABEL[item.stance] ?? item.stance} · ${shownCount} source${shownCount !== 1 ? 's' : ''}`}
           >
             <span
               className="absolute inset-0 opacity-0 group-hover:opacity-100 transition pointer-events-none"
@@ -127,7 +134,7 @@ export function PositionsHeatmap({
                 className="font-medium uppercase tracking-wider leading-none mt-1"
                 style={{ fontSize: `${Math.max(8, Math.floor(fontSize * 0.4))}px`, color: stanceColor }}
               >
-                {STANCE_LABEL[item.stance] ?? item.stance} · {shownCount}
+                {item.detail ?? `${STANCE_LABEL[item.stance] ?? item.stance} · ${shownCount}`}
               </span>
             )}
             {showAvatars && visibleSources.length > 0 && (
@@ -158,9 +165,13 @@ export function PositionsHeatmap({
                 ))}
               </div>
             )}
-          </Link>
+          </Tile>
         );
       })}
     </div>
   );
+}
+
+function Tile({ href, children, ...rest }: { href: string | null; children: React.ReactNode; className: string; style: React.CSSProperties; title: string }) {
+  return href ? <Link href={href} {...rest}>{children}</Link> : <div {...rest}>{children}</div>;
 }

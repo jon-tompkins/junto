@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
+import { PositionsHeatmap, type HeatmapPosition } from '@/components/positions-heatmap';
 
 // HL Top Traders board: what the dynamic top-10 Hyperliquid roster holds right
 // now (consensus by coin) and how each trader has done over 30 days.
@@ -59,7 +60,7 @@ export default function TopTradersPage() {
           <p className="text-parchment/50 mt-10">Roster unavailable right now.</p>
         ) : (
           <>
-            <Consensus traders={traders} />
+            <ConsensusSection traders={traders} />
             <h2 className="text-xl font-semibold font-[var(--font-oswald)] mt-12 mb-1">The roster</h2>
             <p className="text-sm text-parchment/50 mb-4">30-day PnL curve, current account size and open positions.</p>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -113,11 +114,8 @@ function Consensus({ traders }: { traders: Trader[] }) {
   );
 
   return (
-    <section className="mt-10 rounded border border-[rgb(var(--t-brass)/0.22)] bg-surface p-4 sm:p-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xl font-semibold font-[var(--font-oswald)]">Consensus</h2>
-        <p className="text-xs text-parchment/50">One block per trader · hover for size · {flat} of {traders.length} flat right now</p>
-      </div>
+    <div>
+      <p className="text-xs text-parchment/50">One block per trader · hover for size · {flat} of {traders.length} flat right now</p>
       <div className="grid grid-cols-[3.5rem_1fr_1fr] sm:grid-cols-[5rem_1fr_1fr] text-[11px] uppercase tracking-wide text-parchment/50 mt-4 mb-1">
         <span />
         <span className="text-right pr-2">◀ Short</span>
@@ -142,6 +140,99 @@ function Consensus({ traders }: { traders: Trader[] }) {
             style={{ left: Math.min(tip.x + 12, (boxRef.current?.clientWidth || 400) - 220), top: tip.y + 12 }}>
             {tip.text.map((l, i) => <div key={i} className={i === 0 ? 'text-parchment font-semibold' : 'text-parchment/70'}>{l}</div>)}
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type View = 'heatmap' | 'bars';
+type SizeBy = 'traders' | 'usd' | 'book';
+type Side = 'all' | 'long' | 'short';
+
+// Consensus with a heatmap (default, like junto positions) or the diverging
+// bars, sharing one filter row: size-by, side, min % of book, and which traders.
+function ConsensusSection({ traders }: { traders: Trader[] }) {
+  const [view, setView] = useState<View>('heatmap');
+  const [sizeBy, setSizeBy] = useState<SizeBy>('traders');
+  const [side, setSide] = useState<Side>('all');
+  const [minBook, setMinBook] = useState(0);
+  const [excluded, setExcluded] = useState<Set<string>>(new Set());
+
+  const filtered = useMemo(() => traders
+    .filter((t) => !excluded.has(t.address))
+    .map((t) => ({ ...t, positions: t.positions.filter((p) => (side === 'all' || p.side === side) && p.pctOfAccount >= minBook) })),
+  [traders, excluded, side, minBook]);
+
+  const tiles: HeatmapPosition[] = useMemo(() => {
+    const by = new Map<string, { coin: string; side: 'long' | 'short'; holders: { t: Trader; p: Position }[] }>();
+    for (const t of filtered) for (const p of t.positions) {
+      const k = `${p.coin}|${p.side}`;
+      const e = by.get(k) || { coin: p.coin, side: p.side, holders: [] };
+      e.holders.push({ t, p });
+      by.set(k, e);
+    }
+    return [...by.values()].map((e) => {
+      const usdSum = e.holders.reduce((n, h) => n + h.p.value, 0);
+      const bookSum = e.holders.reduce((n, h) => n + h.p.pctOfAccount, 0);
+      const n = e.holders.length;
+      return {
+        ticker: e.coin,
+        stance: e.side === 'long' ? 'bullish' : 'bearish',
+        count: n,
+        value: sizeBy === 'usd' ? usdSum : sizeBy === 'book' ? bookSum : n,
+        detail: `${e.side === 'long' ? 'Long' : 'Short'} · ${n} · ${sizeBy === 'book' ? `${bookSum.toFixed(0)}% book` : usd(usdSum)}`,
+        title: [`${e.coin} ${e.side} — ${n} trader${n === 1 ? '' : 's'}, ${usd(usdSum)}`,
+          ...e.holders.map((h) => `#${h.t.rank} ${short(h.t.address)}: ${usd(h.p.value)} · ${h.p.pctOfAccount.toFixed(0)}% of acct · ${h.p.leverage}x`)].join('\n'),
+      };
+    });
+  }, [filtered, sizeBy]);
+
+  const seg = <T extends string>(value: T, set: (v: T) => void, opts: [T, string][]) => (
+    <div className="flex rounded overflow-hidden border border-[rgb(var(--t-brass)/0.28)]">
+      {opts.map(([v, label]) => (
+        <button key={v} onClick={() => set(v)} className="px-2.5 py-1 text-xs transition"
+          style={{ background: value === v ? 'rgb(var(--t-brass))' : 'rgb(var(--t-surface))', color: value === v ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.6)', fontFamily: 'var(--font-oswald)' }}>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+  const toggle = (a: string) => setExcluded((prev) => { const n = new Set(prev); if (n.has(a)) n.delete(a); else n.add(a); return n; });
+
+  return (
+    <section className="mt-10 rounded border border-[rgb(var(--t-brass)/0.22)] bg-surface p-4 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-semibold font-[var(--font-oswald)]">Consensus</h2>
+        {seg(view, setView, [['heatmap', '⊞ Heatmap'], ['bars', '≡ Bars']])}
+      </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4 text-[11px] text-parchment/50">
+        <label className="flex items-center gap-2">Size by {seg(sizeBy, setSizeBy, [['traders', 'Traders'], ['usd', '$ Size'], ['book', '% of book']])}</label>
+        <label className="flex items-center gap-2">Side {seg(side, setSide, [['all', 'All'], ['long', 'Long'], ['short', 'Short']])}</label>
+        <label className="flex items-center gap-2">Min % of book
+          {seg(String(minBook) as '0' | '5' | '10' | '25', (v) => setMinBook(Number(v)), [['0', 'Any'], ['5', '5%'], ['10', '10%'], ['25', '25%']])}
+        </label>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5 mt-3">
+        <span className="text-[11px] text-parchment/50 mr-1">Traders</span>
+        {traders.map((t) => {
+          const on = !excluded.has(t.address);
+          return (
+            <button key={t.address} onClick={() => toggle(t.address)} title={`${short(t.address)} · ${t.positions.length} open`}
+              className={`text-[11px] font-mono rounded-sm px-1.5 py-0.5 border transition ${on ? 'border-brass/50 text-parchment/90 bg-raised' : 'border-parchment/15 text-parchment/30 line-through'} ${t.positions.length === 0 ? 'opacity-60' : ''}`}>
+              #{t.rank}
+            </button>
+          );
+        })}
+        {excluded.size > 0 && <button onClick={() => setExcluded(new Set())} className="text-[11px] text-brass ml-1 hover:underline">reset</button>}
+      </div>
+      <div className="mt-4">
+        {tiles.length === 0 ? (
+          <p className="text-sm text-parchment/50 py-10 text-center">No positions match these filters.</p>
+        ) : view === 'heatmap' ? (
+          <PositionsHeatmap items={tiles} height={420} linkBase={null} includeStale />
+        ) : (
+          <Consensus traders={filtered} />
         )}
       </div>
     </section>
