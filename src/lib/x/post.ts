@@ -75,6 +75,9 @@ export async function postTweet(
   text: string,
   opts?: {
     replyToId?: string;
+    // Reply to the tweet's author only: drop everyone else X would auto-tag from
+    // the thread (e.g. the source we credited on a call card).
+    replyAuthorOnly?: boolean;
     mediaIds?: string[];
     images?: Array<{ data: Buffer; mimeType: string }>;
     video?: { data: Buffer; mimeType: string };
@@ -105,7 +108,13 @@ export async function postTweet(
   if (mediaIds.length > 4) throw new Error(`X allows at most 4 media per tweet (got ${mediaIds.length})`);
 
   const body: Record<string, any> = { text: tagged };
-  if (opts?.replyToId) body.reply = { in_reply_to_tweet_id: opts.replyToId };
+  if (opts?.replyToId) {
+    body.reply = { in_reply_to_tweet_id: opts.replyToId };
+    if (opts.replyAuthorOnly) {
+      const exclude = await threadMentionsExceptAuthor(opts.replyToId, creds);
+      if (exclude.length) body.reply.exclude_reply_user_ids = exclude;
+    }
+  }
   if (mediaIds.length) body.media = { media_ids: mediaIds };
 
   const authHeader = signRequest('POST', url, creds);
@@ -132,6 +141,12 @@ export async function postTweet(
   // We don't know the screen name from the API response without an extra
   // /users/me call. The /i/web/status/ URL works regardless of handle.
   return { id, text: returnedText, url: `https://x.com/i/web/status/${id}` };
+}
+
+async function threadMentionsExceptAuthor(tweetId: string, creds: XCreds): Promise<string[]> {
+  const r = await signedGetQuery(`https://api.x.com/2/tweets/${tweetId}`, { 'tweet.fields': 'author_id', expansions: 'entities.mentions.username' }, creds);
+  const author = r?.data?.author_id;
+  return (r?.includes?.users ?? []).map((u: any) => u.id).filter((id: string) => id && id !== author);
 }
 
 export async function deleteTweet(id: string): Promise<{ deleted: boolean }> {

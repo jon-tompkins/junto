@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  let body: { text?: string; replyToId?: string; imageUrls?: string[]; videoUrl?: string; debugVideo?: boolean };
+  let body: { text?: string; replyToId?: string; replyAuthorOnly?: boolean; imageUrls?: string[]; videoUrl?: string; debugVideo?: boolean };
   try {
     body = await req.json();
   } catch {
@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
     }
     const result = await postTweet(text, {
       replyToId: body.replyToId,
+      replyAuthorOnly: body.replyAuthorOnly === true,
       images: images.length ? images : undefined,
       video,
     });
