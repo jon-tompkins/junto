@@ -6,7 +6,7 @@
 //                               entries still need approval
 //                   full_auto — entries and exits run automatically
 //
-// Gates (all HL modes): daily-loss flatten+pause, total exposure cap, entry
+// Gates: daily-loss flatten+pause (auto modes only), total exposure cap, entry
 // filters (coin volume, chase, per-day cap, per-coin cooldown) and sqrt-of-
 // notional sizing for wallet-copy signals.
 import { getSupabase } from '@/lib/db/client';
@@ -74,6 +74,10 @@ export async function checkDailyLoss(mandate: Mandate): Promise<{ tripped: boole
   }
   const start = Number(mandate.day_start_equity);
   const lossPct = ((start - equity) / start) * 100;
+  // Enforced only when the mandate trades unattended; in approval mode the
+  // limit stays advisory (the human is the gate) so tight legacy limits don't
+  // suddenly flatten books.
+  if (mandate.execution_mode === 'approval') return { tripped: false, lossPct };
   if (lossPct < limit) return { tripped: false, lossPct };
 
   const reason = `daily loss ${lossPct.toFixed(1)}% ≥ limit ${limit}% (equity $${start.toFixed(0)} → $${equity.toFixed(0)})`;
