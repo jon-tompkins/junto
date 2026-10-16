@@ -355,6 +355,43 @@ export async function getXMetrics(tweetIds: string[] = []): Promise<XMetrics> {
   return out;
 }
 
+// ── Replies to our tweets (read-only) ────────────────────────────────────────
+// Tries recent search by conversation_id first; if the API tier refuses it, falls
+// back to our mentions timeline (a reply to us always lands there).
+export interface XReply { id: string; text: string; author: string | null; created_at?: string; in_reply_to: string | null; conversation_id?: string }
+
+export async function getReplies(conversationId?: string): Promise<{ replies: XReply[]; via: string; errors: string[] }> {
+  const creds = getCreds();
+  const errors: string[] = [];
+  const params = { 'tweet.fields': 'author_id,created_at,conversation_id,referenced_tweets', expansions: 'author_id', 'user.fields': 'username', max_results: '100' };
+  const shape = (r: any): XReply[] => {
+    const users = new Map<string, string>((r?.includes?.users ?? []).map((u: any) => [u.id, u.username]));
+    return (r?.data ?? []).map((t: any) => ({
+      id: t.id, text: t.text, author: users.get(t.author_id) ?? null, created_at: t.created_at,
+      in_reply_to: t.referenced_tweets?.find((x: any) => x.type === 'replied_to')?.id ?? null,
+      conversation_id: t.conversation_id,
+    }));
+  };
+  if (conversationId && /^\d+$/.test(conversationId)) {
+    try {
+      const r = await signedGetQuery('https://api.x.com/2/tweets/search/recent', { query: `conversation_id:${conversationId}`, ...params }, creds);
+      return { replies: shape(r), via: 'search', errors };
+    } catch (e) {
+      errors.push(`search: ${e instanceof Error ? e.message.slice(0, 200) : String(e)}`);
+    }
+  }
+  try {
+    const me = await getMyUserId();
+    const r = await signedGetQuery(`https://api.x.com/2/users/${me}/mentions`, params, creds);
+    let replies = shape(r);
+    if (conversationId) replies = replies.filter((t) => t.conversation_id === conversationId);
+    return { replies, via: 'mentions', errors };
+  } catch (e) {
+    errors.push(`mentions: ${e instanceof Error ? e.message.slice(0, 200) : String(e)}`);
+  }
+  return { replies: [], via: 'none', errors };
+}
+
 // Cache @myjunto_xyz user id for the lifetime of the lambda — never changes.
 let cachedMeId: string | null = null;
 
