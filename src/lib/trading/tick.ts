@@ -23,6 +23,7 @@ import { decideAmendments } from './decide-amendments';
 import { reviewPositions } from './review-positions';
 import { monitorMandate } from './monitor';
 import { protectMandate } from './protection';
+import { trailMandateStops } from './trailing-stops';
 import { reconcileMandate } from './reconcile';
 import { requestApproval } from './approval';
 import { requestAmendmentApproval } from './amendment';
@@ -315,9 +316,14 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
       } else {
         qty = Math.max(1, Math.floor(decision.notional_usd / lastPrice));
       }
+      // Trailing-stop mandates start at the trail distance, not the LLM's stop.
+      const stopPct = mandate.broker === 'hyperliquid' && Number(mandate.trailing_stop_pct) > 0
+        ? Number(mandate.trailing_stop_pct)
+        : decision.stop_pct;
+      decision.stop_pct = stopPct; // so the approval card shows the real stop
       const stopPrice = decision.side === 'long'
-        ? lastPrice * (1 - decision.stop_pct / 100)
-        : lastPrice * (1 + decision.stop_pct / 100);
+        ? lastPrice * (1 - stopPct / 100)
+        : lastPrice * (1 + stopPct / 100);
       const targetPrice = decision.side === 'long'
         ? lastPrice * (1 + decision.target_pct / 100)
         : lastPrice * (1 - decision.target_pct / 100);
@@ -444,6 +450,15 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     }
   } catch (err: any) {
     result.errors.push(`amend: ${err.message}`);
+  }
+
+  // Trailing stops ratchet stop_price first so the protector re-attaches at the
+  // trailed level if a stop leg is missing.
+  try {
+    const trail = await trailMandateStops(mandate);
+    for (const r of trail) if (r.action === 'error' || r.action === 'replace_failed') result.errors.push(`trail ${r.ticker}: ${r.detail}`);
+  } catch (err: any) {
+    result.errors.push(`trail: ${err.message}`);
   }
 
   // Ensure every open position carries live GTC OCO protection. Catches

@@ -23,6 +23,10 @@ export interface Mandate {
   // open at controlled leverage (NOT the asset's max), keeping liquidation
   // outside our stop. Default 3x.
   hl_max_leverage: number;
+  // Trailing stop (HL): trail % from the best price since entry; tightens to
+  // trailing_stop_exit_pct once the copied trader exits / leaves the roster.
+  trailing_stop_pct: number | null;
+  trailing_stop_exit_pct: number | null;
   // Optional per-mandate Telegram chat for suggestions (group/channel id as
   // text; negative for groups). Falls back to the user's DM when null.
   telegram_chat_id: string | null;
