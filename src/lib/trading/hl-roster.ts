@@ -56,9 +56,27 @@ export interface RosterEntry {
 export interface RosterRejection { address: string; reason: string }
 
 async function info(body: unknown): Promise<any> {
-  const res = await fetch(HL_INFO, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  if (!res.ok) throw new Error(`HL info ${res.status}`);
-  return res.json();
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(HL_INFO, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (res.ok) return res.json();
+    if (res.status !== 429 || attempt >= 4) throw new Error(`HL info ${res.status}`);
+    await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+  }
+}
+
+// userFillsByTime returns at most 2000 fills from startTime forward, so page
+// until we reach now. Still capped after maxPages = trades too often to copy.
+async function fillsSince(user: string, startTime: number, maxPages = 5): Promise<{ fills: any[]; capped: boolean }> {
+  const fills: any[] = [];
+  let from = startTime;
+  for (let page = 0; page < maxPages; page++) {
+    const batch = await info({ type: 'userFillsByTime', user, startTime: from, aggregateByTime: true });
+    if (!Array.isArray(batch) || !batch.length) return { fills, capped: false };
+    fills.push(...batch);
+    if (batch.length < 2000) return { fills, capped: false };
+    from = Math.max(...batch.map((f: any) => f.time)) + 1;
+  }
+  return { fills, capped: true };
 }
 
 function windowPerf(row: any, key: string) {
@@ -77,7 +95,7 @@ function rankAverage<T>(items: T[], metrics: Array<(t: T) => number>): Map<T, nu
 
 // Round trips from fills: a position opened from flat and later returned to flat
 // (or flipped). Fills carry startPosition, so no full history is needed.
-function fillStats(fills: any[], now: number) {
+function fillStats(fills: any[], now: number, capped: boolean) {
   const n = fills.length;
   const first = n ? Math.min(...fills.map((f) => f.time)) : now;
   const spanDays = Math.max((now - first) / 86_400_000, 1);
@@ -99,9 +117,7 @@ function fillStats(fills: any[], now: number) {
   holds.sort((a, b) => a - b);
   const median = holds.length ? holds[Math.floor(holds.length / 2)] : null;
   const lastFill = n ? Math.max(...fills.map((f) => f.time)) : 0;
-  // aggregated fills cap at 2000 per call — if the cap was hit in under a few
-  // days the wallet trades far too often to copy.
-  return { n, fillsPerDay: n >= 2000 && spanDays < 3 ? Infinity : n / spanDays, maker, roundTrips: holds.length, median, lastFill };
+  return { n, fillsPerDay: capped ? Infinity : n / spanDays, maker, roundTrips: holds.length, median, lastFill };
 }
 
 export async function computeRoster(
@@ -143,10 +159,10 @@ export async function computeRoster(
   for (const c of toCheck) {
     if (passed.length >= o.size + 10 && !inc.has(c.address)) break;
     try {
-      const fills = await info({ type: 'userFillsByTime', user: c.address, startTime: now - 30 * 86_400_000, aggregateByTime: true });
-      const s = fillStats(Array.isArray(fills) ? fills : [], now);
+      const { fills, capped } = await fillsSince(c.address, now - 30 * 86_400_000);
+      const s = fillStats(fills, now, capped);
       const reject = (reason: string) => rejected.push({ address: c.address, reason });
-      if (s.fillsPerDay > o.maxFillsPerDay) { reject(`hft: ${s.fillsPerDay === Infinity ? '2000+ fills <3d' : s.fillsPerDay.toFixed(0) + ' fills/day'}`); continue; }
+      if (s.fillsPerDay > o.maxFillsPerDay) { reject(`hft: ${s.fillsPerDay === Infinity ? '10k+ fills in 30d' : s.fillsPerDay.toFixed(0) + ' fills/day'}`); continue; }
       if (s.lastFill < now - 7 * 86_400_000) { reject('no trades in 7d'); continue; }
       if (s.median != null && s.median < o.minMedianHoldHours) { reject(`median hold ${s.median.toFixed(1)}h`); continue; }
       if (s.maker >= o.mmMakerRatio && (s.median == null || s.median < o.mmHoldHours)) { reject(`market maker (maker ${Math.round(s.maker * 100)}%)`); continue; }
