@@ -243,6 +243,23 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   ];
   for (const f of fields) if (body[f] !== undefined) patch[f] = body[f];
 
+  // Resuming re-baselines the daily-loss gate (else it trips again at once).
+  if (body.status === 'active') { patch.day_start_date = null; patch.daily_loss_tripped_at = null; }
+
+  // Autopilot settings (HL). Numbers: blank/<=0 = gate off.
+  if (body.execution_mode !== undefined) {
+    if (!['approval', 'auto_exit', 'full_auto'].includes(body.execution_mode)) {
+      return NextResponse.json({ error: 'execution_mode must be approval | auto_exit | full_auto' }, { status: 400 });
+    }
+    patch.execution_mode = body.execution_mode;
+  }
+  for (const k of ['max_total_leverage', 'max_new_positions_per_day', 'coin_cooldown_hours', 'min_coin_volume_usd', 'max_entry_chase_pct', 'sizing_ref_notional_usd'] as const) {
+    if (body[k] !== undefined) {
+      const n = Number(body[k]);
+      patch[k] = n > 0 ? n : null;
+    }
+  }
+
   // telegram_chat_id: trim, allow clearing to null
   if (body.telegram_chat_id !== undefined) {
     const tg = String(body.telegram_chat_id).trim();

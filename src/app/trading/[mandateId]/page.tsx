@@ -29,6 +29,14 @@ interface Mandate {
   hl_max_leverage: number | null;
   trailing_stop_pct: number | null;
   trailing_stop_exit_pct: number | null;
+  execution_mode: 'approval' | 'auto_exit' | 'full_auto';
+  max_total_leverage: number | null;
+  max_new_positions_per_day: number | null;
+  coin_cooldown_hours: number | null;
+  min_coin_volume_usd: number | null;
+  max_entry_chase_pct: number | null;
+  sizing_ref_notional_usd: number | null;
+  daily_loss_tripped_at: string | null;
   hl_has_agent_key: boolean;
   learnings: string | null;
   learnings_updated_at: string | null;
@@ -179,6 +187,13 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     hl_max_leverage: '',
     trailing_stop_pct: '',
     trailing_stop_exit_pct: '',
+    execution_mode: 'approval',
+    max_total_leverage: '',
+    max_new_positions_per_day: '',
+    coin_cooldown_hours: '',
+    min_coin_volume_usd: '',
+    max_entry_chase_pct: '',
+    sizing_ref_notional_usd: '',
     hl_agent_secret: '',
     alpaca_key_id: '',
     alpaca_secret: '',
@@ -406,6 +421,13 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
       hl_max_leverage: mandate.hl_max_leverage != null ? String(mandate.hl_max_leverage) : '3',
       trailing_stop_pct: mandate.trailing_stop_pct != null ? String(mandate.trailing_stop_pct) : '',
       trailing_stop_exit_pct: mandate.trailing_stop_exit_pct != null ? String(mandate.trailing_stop_exit_pct) : '',
+      execution_mode: mandate.execution_mode || 'approval',
+      max_total_leverage: mandate.max_total_leverage != null ? String(mandate.max_total_leverage) : '',
+      max_new_positions_per_day: mandate.max_new_positions_per_day != null ? String(mandate.max_new_positions_per_day) : '',
+      coin_cooldown_hours: mandate.coin_cooldown_hours != null ? String(mandate.coin_cooldown_hours) : '',
+      min_coin_volume_usd: mandate.min_coin_volume_usd != null ? String(mandate.min_coin_volume_usd / 1e6) : '',
+      max_entry_chase_pct: mandate.max_entry_chase_pct != null ? String(mandate.max_entry_chase_pct) : '',
+      sizing_ref_notional_usd: mandate.sizing_ref_notional_usd != null ? String(mandate.sizing_ref_notional_usd / 1e3) : '',
       hl_agent_secret: '',
       alpaca_key_id: '',
       alpaca_secret: '',
@@ -436,6 +458,13 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         payload.hl_max_leverage = Number(settingsDraft.hl_max_leverage) || 3;
         payload.trailing_stop_pct = Number(settingsDraft.trailing_stop_pct) || null;
         payload.trailing_stop_exit_pct = Number(settingsDraft.trailing_stop_exit_pct) || null;
+        payload.execution_mode = settingsDraft.execution_mode;
+        payload.max_total_leverage = Number(settingsDraft.max_total_leverage) || null;
+        payload.max_new_positions_per_day = Number(settingsDraft.max_new_positions_per_day) || null;
+        payload.coin_cooldown_hours = Number(settingsDraft.coin_cooldown_hours) || null;
+        payload.min_coin_volume_usd = Number(settingsDraft.min_coin_volume_usd) ? Number(settingsDraft.min_coin_volume_usd) * 1e6 : null;
+        payload.max_entry_chase_pct = Number(settingsDraft.max_entry_chase_pct) || null;
+        payload.sizing_ref_notional_usd = Number(settingsDraft.sizing_ref_notional_usd) ? Number(settingsDraft.sizing_ref_notional_usd) * 1e3 : null;
         // Only send the agent key when the user typed a new one (blank = keep existing).
         if (settingsDraft.hl_agent_secret.trim()) payload.hl_agent_secret = settingsDraft.hl_agent_secret.trim();
       } else if (broker?.account_kind === 'byo_keys') {
@@ -859,6 +888,8 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                       <>
                         <SettingRow label="HL wallet" value={mandate.hl_wallet_address || '— none —'} wide />
                         <SettingRow label="Max leverage" value={`${mandate.hl_max_leverage ?? 3}x`} />
+                        <SettingRow label="Execution" value={{ approval: 'Approval — every entry & exit needs a tap', auto_exit: 'Auto-exit — closes run automatically, entries need approval', full_auto: 'Full auto — entries & exits run automatically' }[mandate.execution_mode || 'approval']} wide />
+                        <SettingRow label="Risk gates" value={`daily loss ${mandate.daily_loss_limit_pct}% → flatten+pause · exposure ≤ ${mandate.max_total_leverage ?? '—'}x · ≤ ${mandate.max_new_positions_per_day ?? '∞'} entries/day · ${mandate.coin_cooldown_hours ?? 0}h coin cooldown · vol ≥ $${((mandate.min_coin_volume_usd ?? 0) / 1e6).toFixed(0)}M · chase ≤ ${mandate.max_entry_chase_pct ?? '—'}% · √ sizing ref $${((mandate.sizing_ref_notional_usd ?? 0) / 1e3).toFixed(0)}k`} wide />
                         <SettingRow label="Trailing stop" value={mandate.trailing_stop_pct ? `${mandate.trailing_stop_pct}% of margin (${(mandate.trailing_stop_pct / (mandate.hl_max_leverage || 1)).toFixed(1)}% px) → ${mandate.trailing_stop_exit_pct ?? mandate.trailing_stop_pct}% when trader exits · no take-profit` : '— off —'} />
                         <SettingRow label="Agent key" value={mandate.hl_has_agent_key ? '✓ set (suggestion+execute)' : '— not set (suggestion-only) —'} />
                       </>
@@ -919,6 +950,31 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                         </SettingField>
                         <SettingField label="Max leverage (x)">
                           <input type="number" min={1} max={20} value={settingsDraft.hl_max_leverage} onChange={e => setSettingsDraft({ ...settingsDraft, hl_max_leverage: e.target.value })} className={settingInputCls} />
+                        </SettingField>
+                        <SettingField label="Execution mode">
+                          <select value={settingsDraft.execution_mode} onChange={e => setSettingsDraft({ ...settingsDraft, execution_mode: e.target.value })} className={settingInputCls}>
+                            <option value="approval">Approval — tap to enter &amp; exit</option>
+                            <option value="auto_exit">Auto-exit — closes automatic, entries need approval</option>
+                            <option value="full_auto">Full auto — entries &amp; exits automatic</option>
+                          </select>
+                        </SettingField>
+                        <SettingField label="Max total exposure (x equity)">
+                          <input type="number" min={0.5} step={0.5} value={settingsDraft.max_total_leverage} onChange={e => setSettingsDraft({ ...settingsDraft, max_total_leverage: e.target.value })} placeholder="3" className={settingInputCls} />
+                        </SettingField>
+                        <SettingField label="Max new positions / day">
+                          <input type="number" min={0} value={settingsDraft.max_new_positions_per_day} onChange={e => setSettingsDraft({ ...settingsDraft, max_new_positions_per_day: e.target.value })} placeholder="6" className={settingInputCls} />
+                        </SettingField>
+                        <SettingField label="Coin cooldown (hours)">
+                          <input type="number" min={0} value={settingsDraft.coin_cooldown_hours} onChange={e => setSettingsDraft({ ...settingsDraft, coin_cooldown_hours: e.target.value })} placeholder="12" className={settingInputCls} />
+                        </SettingField>
+                        <SettingField label="Min coin 24h volume ($M)">
+                          <input type="number" min={0} value={settingsDraft.min_coin_volume_usd} onChange={e => setSettingsDraft({ ...settingsDraft, min_coin_volume_usd: e.target.value })} placeholder="5" className={settingInputCls} />
+                        </SettingField>
+                        <SettingField label="Max chase past traders' entry (%)">
+                          <input type="number" min={0} step={0.5} value={settingsDraft.max_entry_chase_pct} onChange={e => setSettingsDraft({ ...settingsDraft, max_entry_chase_pct: e.target.value })} placeholder="2" className={settingInputCls} />
+                        </SettingField>
+                        <SettingField label="√ sizing: full size at copied $ (k)">
+                          <input type="number" min={0} value={settingsDraft.sizing_ref_notional_usd} onChange={e => setSettingsDraft({ ...settingsDraft, sizing_ref_notional_usd: e.target.value })} placeholder="1000" className={settingInputCls} />
                         </SettingField>
                         <SettingField label="Trailing stop, % of margin (blank = off)">
                           <input type="number" min={1} max={95} value={settingsDraft.trailing_stop_pct} onChange={e => setSettingsDraft({ ...settingsDraft, trailing_stop_pct: e.target.value })} placeholder="e.g. 50" className={settingInputCls} />

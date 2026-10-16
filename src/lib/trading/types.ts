@@ -27,6 +27,17 @@ export interface Mandate {
   // trailing_stop_exit_pct once the copied trader exits / leaves the roster.
   trailing_stop_pct: number | null;
   trailing_stop_exit_pct: number | null;
+  // Autopilot (autopilot.ts)
+  execution_mode: 'approval' | 'auto_exit' | 'full_auto';
+  max_total_leverage: number | null;
+  max_new_positions_per_day: number | null;
+  coin_cooldown_hours: number | null;
+  min_coin_volume_usd: number | null;
+  max_entry_chase_pct: number | null;
+  sizing_ref_notional_usd: number | null;
+  day_start_equity: number | null;
+  day_start_date: string | null;
+  daily_loss_tripped_at: string | null;
   // Optional per-mandate Telegram chat for suggestions (group/channel id as
   // text; negative for groups). Falls back to the user's DM when null.
   telegram_chat_id: string | null;

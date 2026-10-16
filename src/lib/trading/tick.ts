@@ -24,6 +24,9 @@ import { reviewPositions } from './review-positions';
 import { monitorMandate } from './monitor';
 import { protectMandate } from './protection';
 import { trailMandateStops, isTrailing, trailPricePct } from './trailing-stops';
+import { checkDailyLoss, loadEntryContext, gateEntry, autoEntries, autoExits, notifyMandate, type EntryContext } from './autopilot';
+import { approveTrade } from './approval';
+import { handleAmendmentCallback } from './amendment';
 import { reconcileMandate } from './reconcile';
 import { requestApproval } from './approval';
 import { requestAmendmentApproval } from './amendment';
@@ -130,6 +133,20 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     await reconcileMandate(mandate.id);
   } catch (err: any) {
     result.errors.push(`reconcile: ${err.message}`);
+  }
+
+  // Hard daily-loss gate (HL): flattens + pauses before anything new happens.
+  if (mandate.broker === 'hyperliquid') {
+    try {
+      const dl = await checkDailyLoss(mandate);
+      if (dl.tripped) {
+        result.note = `daily_loss_tripped ${dl.lossPct?.toFixed(1)}%`;
+        await persist();
+        return result;
+      }
+    } catch (err: any) {
+      result.errors.push(`daily_loss: ${err.message}`);
+    }
   }
 
   if (!mandate.junto_id) {
@@ -268,6 +285,12 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     }
   }
 
+  // Entry gates + sqrt sizing context (HL), loaded once for this tick.
+  let entryCtx: EntryContext | null = null;
+  if (mandate.broker === 'hyperliquid' && decisions.length) {
+    try { entryCtx = await loadEntryContext(mandate, accountEquity, ownPositions); } catch (err: any) { result.errors.push(`entry_ctx: ${err.message}`); }
+  }
+
   for (const decision of decisions) {
     try {
       if (delistedHl.has(decision.ticker.toUpperCase())) {
@@ -302,6 +325,23 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
         // commit — % of collateral. Leverage scales it into actual exposure, so
         // a $100 budget at 3x is a $300 notional position using $100 of margin.
         const leverage = Math.max(1, mandate.hl_max_leverage ?? 3);
+        if (entryCtx) {
+          const v = gateEntry(mandate, entryCtx, decision, lastPrice, decision.notional_usd, leverage);
+          if (!v.ok) {
+            await logSignal({
+              mandateId: mandate.id,
+              signal: { ticker: decision.ticker, direction: decision.side, conviction: decision.conviction, source_urls: decision.source_urls },
+              decision: 'skipped_guideline',
+              decisionReason: `gate: ${v.reason}`.slice(0, 200),
+            });
+            continue;
+          }
+          // sqrt-of-notional: hedges get small size, big conviction gets full.
+          if (v.weight < 1) {
+            decision.entry_thesis = `${decision.entry_thesis}\n\nSizing: ${Math.round(v.weight * 100)}% of max (copied traders hold $${Math.round(v.copiedNotional).toLocaleString()}; √-weighted).`;
+          }
+          decision.notional_usd = decision.notional_usd * v.weight;
+        }
         const exposureNotional = decision.notional_usd * leverage;
         if (exposureNotional < 10) {
           await logSignal({
@@ -357,15 +397,27 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
         tradeId,
       });
 
-      await requestApproval({
-        userId: mandate.user_id,
-        mandateName: mandate.name,
-        chatIdOverride: mandate.telegram_chat_id,
-        tradeId,
-        decision,
-        entryPrice: lastPrice,
-        leverage: mandate.broker === 'hyperliquid' ? Math.max(1, mandate.hl_max_leverage ?? 3) : 1,
-      });
+      if (entryCtx) {
+        entryCtx.entriesToday++;
+        entryCtx.lastEntryByCoin.set(decision.ticker.toUpperCase(), Date.now());
+        entryCtx.openNotional += qty * lastPrice;
+      }
+
+      if (mandate.broker === 'hyperliquid' && autoEntries(mandate)) {
+        // Full auto: execute now, then tell the group what happened.
+        const res = await approveTrade(tradeId, 'auto');
+        await notifyMandate(mandate, `🤖 <b>${mandate.name}</b> auto-${res.ok ? 'entered' : 'skipped'} ${decision.side.toUpperCase()} ${decision.ticker} (~$${(qty * lastPrice).toFixed(0)}, ${decision.stop_pct}% trail)\n${res.message}\n\n${decision.entry_thesis.slice(0, 600)}`);
+      } else {
+        await requestApproval({
+          userId: mandate.user_id,
+          mandateName: mandate.name,
+          chatIdOverride: mandate.telegram_chat_id,
+          tradeId,
+          decision,
+          entryPrice: lastPrice,
+          leverage: mandate.broker === 'hyperliquid' ? Math.max(1, mandate.hl_max_leverage ?? 3) : 1,
+        });
+      }
 
       result.proposed++;
     } catch (err: any) {
@@ -436,6 +488,12 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
             sourceUrls: amend.source_urls,
           });
 
+          if (amend.kind === 'close' && mandate.broker === 'hyperliquid' && autoExits(mandate)) {
+            const res = await handleAmendmentCallback({ data: `amend_approve:${amendmentId}` });
+            await notifyMandate(mandate, `🤖 <b>${mandate.name}</b> auto-closed ${trade.ticker}: ${res.message}\nWhy: ${amend.rationale.slice(0, 500)}`);
+            result.amendments_proposed++;
+            continue;
+          }
           await requestAmendmentApproval({
             userId: mandate.user_id,
             mandateName: mandate.name,

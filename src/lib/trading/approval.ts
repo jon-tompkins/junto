@@ -145,7 +145,7 @@ export async function skipTrade(tradeId: string, source: 'telegram' | 'web'): Pr
 // Runs the 1% slippage guard against live price before submitting to Alpaca.
 // Returns immediately after order submission — sets status to 'submitted'.
 // Fill detection + protection attachment happen asynchronously via monitor tick.
-export async function approveTrade(tradeId: string, source: 'telegram' | 'web'): Promise<ActionResult> {
+export async function approveTrade(tradeId: string, source: 'telegram' | 'web' | 'auto'): Promise<ActionResult> {
   const trade = await getTradeById(tradeId);
   if (!trade) return { ok: false, message: 'Trade not found.' };
   if (trade.status !== 'pending') return { ok: false, message: `Trade already ${trade.status}.` };

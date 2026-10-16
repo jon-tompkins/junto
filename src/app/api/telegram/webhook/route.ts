@@ -12,6 +12,7 @@ import {
   buildTicksMessage,
   requestMandateBind,
   unbindMandate,
+  killAll,
 } from '@/lib/trading/telegram-commands';
 
 export const dynamic = 'force-dynamic';
@@ -186,6 +187,7 @@ export async function POST(req: NextRequest) {
       `/pause &lt;name&gt; — pause a mandate\n` +
       `/resume &lt;name&gt; — resume a mandate\n` +
       `/close &lt;ticker&gt; — market-close any open position\n` +
+      `/kill — pause ALL active mandates · <code>/kill flatten</code> also closes HL positions\n` +
       `/bind &lt;mandate-id&gt; — (in a group) request routing that mandate's cards here (you confirm)\n` +
       `/unbind &lt;mandate-id&gt; — send its cards back to your DM\n` +
       `/help — this menu\n` +
@@ -221,7 +223,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const tradingCmdMatch = /^\/(positions|pnl|mandates|ticks|pause|resume|close)(?:@\w+)?(?:\s+(.+))?$/i.exec(text);
+  const tradingCmdMatch = /^\/(positions|pnl|mandates|ticks|pause|resume|close|kill)(?:@\w+)?(?:\s+(.+))?$/i.exec(text);
   if (tradingCmdMatch) {
     const cmd = tradingCmdMatch[1].toLowerCase();
     const arg = (tradingCmdMatch[2] || '').trim();
@@ -247,6 +249,7 @@ export async function POST(req: NextRequest) {
         case 'pause':     body = await setMandateStatus(userId, arg, 'paused'); break;
         case 'resume':    body = await setMandateStatus(userId, arg, 'active'); break;
         case 'close':     body = await closeTickerCommand(userId, arg); break;
+        case 'kill':      body = await killAll(userId, /flatten/i.test(arg)); break;
         default:          body = 'Unknown command.';
       }
       await sendTelegramMessage(chatId, body);

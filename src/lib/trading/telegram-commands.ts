@@ -145,12 +145,32 @@ export async function setMandateStatus(
 
   const { error } = await getSupabase()
     .from('trading_mandates')
-    .update({ status: newStatus, updated_at: new Date().toISOString() })
+    // Resuming re-baselines the daily-loss gate, or it would trip again at once.
+    .update({ status: newStatus, updated_at: new Date().toISOString(), ...(newStatus === 'active' ? { day_start_date: null, daily_loss_tripped_at: null } : {}) })
     .eq('id', m.id);
   if (error) return `❌ ${error.message}`;
 
   const verb = newStatus === 'paused' ? '⏸️ Paused' : '▶️ Resumed';
   return `${verb} <b>${escapeHtml(m.name)}</b>.`;
+}
+
+// Kill switch: pause every active mandate the user owns; with `flatten`, also
+// market-close all open HL positions on them. Resume individually with /resume.
+export async function killAll(userId: string, flatten: boolean): Promise<string> {
+  const mandates = (await loadUserMandates(userId)).filter((m) => m.status === 'active');
+  if (!mandates.length) return 'No active mandates — nothing to stop.';
+  await getSupabase().from('trading_mandates').update({ status: 'paused', updated_at: new Date().toISOString() }).in('id', mandates.map((m) => m.id));
+  const lines: string[] = [];
+  for (const m of mandates) {
+    let note = 'paused';
+    if (flatten && m.broker === 'hyperliquid') {
+      const { flattenMandate } = await import('./autopilot');
+      const closed = await flattenMandate(m as any, 'kill switch');
+      note += closed.length ? ` · closed ${closed.join(', ')}` : ' · nothing open';
+    }
+    lines.push(`• <b>${escapeHtml(m.name)}</b> — ${note}`);
+  }
+  return `🛑 <b>Kill switch</b>${flatten ? ' (flatten)' : ''}\n${lines.join('\n')}\n\nExchange stops stay live${flatten ? '' : ' on open positions'}. /resume &lt;name&gt; to restart.`;
 }
 
 // Match one of the user's mandates by id-prefix (names collide; ids don't). The
