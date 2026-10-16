@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: '/trade/top-traders' },
-  openGraph: { title: `${title} | MyJunto`, description, type: 'website', url: 'https://www.myjunto.xyz/trade/top-traders', images: ['/opengraph-image'] },
-  twitter: { card: 'summary_large_image', title: `${title} | MyJunto`, description, images: ['/opengraph-image'] },
+  openGraph: { title: `${title} | MyJunto`, description, type: 'website', url: 'https://www.myjunto.xyz/trade/top-traders' },
+  twitter: { card: 'summary_large_image', title: `${title} | MyJunto`, description },
 };
 
 export default function TopTradersLayout({ children }: { children: React.ReactNode }) {
