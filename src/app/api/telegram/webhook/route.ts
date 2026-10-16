@@ -80,7 +80,9 @@ export async function POST(req: NextRequest) {
       await answerCallbackQuery(cb.id, 'Loading…').catch(() => {});
       const chatId = cb.message?.chat?.id;
       if (chatId) {
-        const userId = await getUserIdByTelegramChatId(chatId);
+        // Sender first (works in mandate groups), then the chat itself (DMs).
+        const userId = (cb.from?.id ? await getUserIdByTelegramChatId(cb.from.id) : null)
+          ?? await getUserIdByTelegramChatId(chatId);
         if (!userId) {
           await sendTelegramMessage(chatId, '⚠️ This chat isn\'t linked. Open <a href="https://myjunto.xyz">myjunto.xyz</a> → Settings → Link Telegram.');
         } else {
@@ -223,7 +225,11 @@ export async function POST(req: NextRequest) {
   if (tradingCmdMatch) {
     const cmd = tradingCmdMatch[1].toLowerCase();
     const arg = (tradingCmdMatch[2] || '').trim();
-    const userId = await getUserIdByTelegramChatId(chatId);
+    // Resolve by the SENDER's DM-linked id first so commands work inside a
+    // mandate group (whose chat id is never itself linked); fall back to the
+    // chat id for DMs. Unlinked group members still get the link prompt.
+    const userId = (msg.from?.id ? await getUserIdByTelegramChatId(msg.from.id) : null)
+      ?? await getUserIdByTelegramChatId(chatId);
     if (!userId) {
       await sendTelegramMessage(
         chatId,
