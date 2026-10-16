@@ -23,7 +23,7 @@ import { decideAmendments } from './decide-amendments';
 import { reviewPositions } from './review-positions';
 import { monitorMandate } from './monitor';
 import { protectMandate } from './protection';
-import { trailMandateStops } from './trailing-stops';
+import { trailMandateStops, isTrailing, trailPricePct } from './trailing-stops';
 import { reconcileMandate } from './reconcile';
 import { requestApproval } from './approval';
 import { requestAmendmentApproval } from './amendment';
@@ -317,14 +317,18 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
         qty = Math.max(1, Math.floor(decision.notional_usd / lastPrice));
       }
       // Trailing-stop mandates start at the trail distance, not the LLM's stop.
-      const stopPct = mandate.broker === 'hyperliquid' && Number(mandate.trailing_stop_pct) > 0
-        ? Number(mandate.trailing_stop_pct)
+      // Trailing mandates: stop = margin trail ÷ leverage, and no take-profit —
+      // exits ride the trail.
+      const trailing = isTrailing(mandate);
+      const stopPct = trailing
+        ? Number(trailPricePct(mandate, Number(mandate.trailing_stop_pct)).toFixed(2))
         : decision.stop_pct;
       decision.stop_pct = stopPct; // so the approval card shows the real stop
+      if (trailing) decision.target_pct = 0;
       const stopPrice = decision.side === 'long'
         ? lastPrice * (1 - stopPct / 100)
         : lastPrice * (1 + stopPct / 100);
-      const targetPrice = decision.side === 'long'
+      const targetPrice = trailing ? null : decision.side === 'long'
         ? lastPrice * (1 + decision.target_pct / 100)
         : lastPrice * (1 - decision.target_pct / 100);
 

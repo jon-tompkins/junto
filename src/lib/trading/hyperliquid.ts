@@ -427,15 +427,17 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
       const cushion = (px: number) => (isBuy ? px * (1 + MARKET_SLIPPAGE) : px * (1 - MARKET_SLIPPAGE));
       const tpP = formatPrice(cushion(params.limitPrice), asset.szDecimals);
       const slP = formatPrice(cushion(params.stopPrice), asset.szDecimals);
+      // limitPrice <= 0 = stop only (trailing-stop mandates have no take-profit).
+      const hasTp = params.limitPrice > 0;
+      const slOrder = { a: asset.index, b: isBuy, p: slP, s: sz, r: true, t: { trigger: { isMarket: true, triggerPx: slTrig, tpsl: 'sl' } } };
       const resp = await signAndSend<{ data: { statuses: HlOrderStatus[] } }>({
         type: 'order',
-        orders: [
-          { a: asset.index, b: isBuy, p: tpP, s: sz, r: true, t: { trigger: { isMarket: true, triggerPx: tpTrig, tpsl: 'tp' } } },
-          { a: asset.index, b: isBuy, p: slP, s: sz, r: true, t: { trigger: { isMarket: true, triggerPx: slTrig, tpsl: 'sl' } } },
-        ],
+        orders: hasTp
+          ? [{ a: asset.index, b: isBuy, p: tpP, s: sz, r: true, t: { trigger: { isMarket: true, triggerPx: tpTrig, tpsl: 'tp' } } }, slOrder]
+          : [slOrder],
         grouping: 'positionTpsl',
       });
-      const statuses = resp.data.statuses || [];
+      const statuses = hasTp ? resp.data.statuses || [] : [undefined as unknown as HlOrderStatus, ...(resp.data.statuses || [])];
       const err = statuses.find((s) => s?.error);
       if (err) throw new Error(`Hyperliquid OCO rejected: ${err.error}`);
       const oidOf = (s?: HlOrderStatus) => s?.resting?.oid ?? s?.filled?.oid;
@@ -444,14 +446,18 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
       // positionTpsl responses don't always surface resting oids — read them
       // back from the venue so the trade row stores real leg ids (needed for
       // later amend/cancel).
-      if (tpOid == null || slOid == null) {
+      if ((hasTp && tpOid == null) || slOid == null) {
         try {
           const live = (await rawOpenOrders()).filter((o) => o.coin === params.symbol && o.isTrigger);
-          tpOid = tpOid ?? live.find((o) => o.tpsl === 'tp')?.oid;
+          if (hasTp) tpOid = tpOid ?? live.find((o) => o.tpsl === 'tp')?.oid;
           slOid = slOid ?? live.find((o) => o.tpsl === 'sl')?.oid;
         } catch { /* best-effort */ }
       }
       // Parent with legs so the protector captures both leg ids (stop + target).
+      const slLeg = { id: slOid != null ? String(slOid) : '', symbol: params.symbol, qty: sz, filled_qty: '0', side: params.side, status: 'open', type: 'stop', stop_price: slTrig, filled_avg_price: null };
+      if (!hasTp) {
+        return { ...slLeg, order_class: 'oco', legs: [slLeg] } as AlpacaOrder;
+      }
       return {
         id: tpOid != null ? String(tpOid) : '',
         symbol: params.symbol,
@@ -462,7 +468,7 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient {
         order_class: 'oco',
         legs: [
           { id: tpOid != null ? String(tpOid) : '', symbol: params.symbol, qty: sz, filled_qty: '0', side: params.side, status: 'open', type: 'limit', limit_price: tpTrig, filled_avg_price: null },
-          { id: slOid != null ? String(slOid) : '', symbol: params.symbol, qty: sz, filled_qty: '0', side: params.side, status: 'open', type: 'stop', stop_price: slTrig, filled_avg_price: null },
+          slLeg,
         ],
         filled_avg_price: null,
       };

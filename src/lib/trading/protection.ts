@@ -86,7 +86,9 @@ export async function protectMandate(mandateId: string): Promise<{
 
       const stop = Number(trade.stop_price);
       const target = Number(trade.target_price);
-      if (!stop || !target) {
+      // HL trailing-stop trades carry no take-profit: a stop alone is complete.
+      const stopOnly = mandate.broker === 'hyperliquid' && !target;
+      if (!stop || (!target && !stopOnly)) {
         results.push({ ticker: sym, action: 'no_levels', detail: 'Missing stop or target on trade row' });
         continue;
       }
@@ -107,7 +109,7 @@ export async function protectMandate(mandateId: string): Promise<{
       );
       const hasStop = hasOco || sellOrders.some((o: any) => (o.type === 'stop' || o.type === 'stop_limit') && Number(o.stop_price) > 0);
       const hasLimit = hasOco || sellOrders.some((o: any) => o.type === 'limit' && Number(o.limit_price) > 0);
-      if (hasStop && hasLimit) {
+      if (hasStop && (hasLimit || stopOnly)) {
         // The position IS protected, but if we lost the order ids (stop_order_id
         // null), amendments can't cleanly MOVE the level — they fall to re-attach,
         // bail here as "already_protected", and reconcile keeps clobbering the

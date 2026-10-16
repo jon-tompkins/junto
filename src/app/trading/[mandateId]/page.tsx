@@ -855,7 +855,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                       <>
                         <SettingRow label="HL wallet" value={mandate.hl_wallet_address || '— none —'} wide />
                         <SettingRow label="Max leverage" value={`${mandate.hl_max_leverage ?? 3}x`} />
-                        <SettingRow label="Trailing stop" value={mandate.trailing_stop_pct ? `${mandate.trailing_stop_pct}% → ${mandate.trailing_stop_exit_pct ?? mandate.trailing_stop_pct}% when trader exits` : '— off —'} />
+                        <SettingRow label="Trailing stop" value={mandate.trailing_stop_pct ? `${mandate.trailing_stop_pct}% of margin (${(mandate.trailing_stop_pct / (mandate.hl_max_leverage || 1)).toFixed(1)}% px) → ${mandate.trailing_stop_exit_pct ?? mandate.trailing_stop_pct}% when trader exits · no take-profit` : '— off —'} />
                         <SettingRow label="Agent key" value={mandate.hl_has_agent_key ? '✓ set (suggestion+execute)' : '— not set (suggestion-only) —'} />
                       </>
                     )}
@@ -916,10 +916,10 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                         <SettingField label="Max leverage (x)">
                           <input type="number" min={1} max={20} value={settingsDraft.hl_max_leverage} onChange={e => setSettingsDraft({ ...settingsDraft, hl_max_leverage: e.target.value })} className={settingInputCls} />
                         </SettingField>
-                        <SettingField label="Trailing stop % (blank = off)">
+                        <SettingField label="Trailing stop, % of margin (blank = off)">
                           <input type="number" min={1} max={95} value={settingsDraft.trailing_stop_pct} onChange={e => setSettingsDraft({ ...settingsDraft, trailing_stop_pct: e.target.value })} placeholder="e.g. 50" className={settingInputCls} />
                         </SettingField>
-                        <SettingField label="Trail % after trader exits / drops">
+                        <SettingField label="Trail % of margin after trader exits / drops">
                           <input type="number" min={1} max={95} value={settingsDraft.trailing_stop_exit_pct} onChange={e => setSettingsDraft({ ...settingsDraft, trailing_stop_exit_pct: e.target.value })} placeholder="e.g. 10" className={settingInputCls} />
                         </SettingField>
                         <SettingField label={mandate.hl_has_agent_key ? 'Replace agent key (blank = keep current)' : 'Agent key (blank = suggestion-only)'}>

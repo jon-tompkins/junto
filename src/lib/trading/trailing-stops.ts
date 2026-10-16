@@ -30,6 +30,15 @@ async function extremeSince(mode: 'paper' | 'live', coin: string, side: string, 
     : Math.min(...candles.map((c: any) => Number(c.l)));
 }
 
+// Trail %s are set on MARGIN (what the position actually loses); the price
+// distance is that divided by leverage — 50% at 3x trails price by 16.7%.
+export function isTrailing(mandate: Pick<Mandate, 'broker' | 'trailing_stop_pct'>): boolean {
+  return mandate.broker === 'hyperliquid' && Number(mandate.trailing_stop_pct) > 0;
+}
+export function trailPricePct(mandate: Pick<Mandate, 'hl_max_leverage'>, marginPct: number): number {
+  return marginPct / Math.max(1, Number(mandate.hl_max_leverage) || 1);
+}
+
 export function trailLevel(side: string, hwm: number, pct: number): number {
   return side === 'long' ? hwm * (1 - pct / 100) : hwm * (1 + pct / 100);
 }
@@ -71,9 +80,12 @@ async function traderStillIn(juntoId: string | null, wallets: string[], coin: st
 }
 
 export async function trailMandateStops(mandate: Mandate): Promise<TrailResult[]> {
-  const basePct = Number(mandate.trailing_stop_pct);
-  if (mandate.broker !== 'hyperliquid' || !(basePct > 0)) return [];
-  const exitPct = Number(mandate.trailing_stop_exit_pct) > 0 ? Number(mandate.trailing_stop_exit_pct) : basePct;
+  if (!isTrailing(mandate)) return [];
+  // trail_pct on the trade row stores the PRICE distance actually applied.
+  const basePct = trailPricePct(mandate, Number(mandate.trailing_stop_pct));
+  const exitPct = Number(mandate.trailing_stop_exit_pct) > 0
+    ? trailPricePct(mandate, Number(mandate.trailing_stop_exit_pct))
+    : basePct;
   const supabase = getSupabase();
   const { data: trades } = await supabase
     .from('trades')
@@ -123,7 +135,7 @@ export async function trailMandateStops(mandate: Mandate): Promise<TrailResult[]
           await addJournalEntry({
             tradeId: t.id,
             kind: 'note',
-            content: `Copied trader exited or left the roster — trailing stop tightened ${prevPct}% → ${pct}% (stop ${level.toPrecision(6)}, best ${hwm.toPrecision(6)}).`,
+            content: `Copied trader exited or left the roster — trailing stop tightened to ${Number(mandate.trailing_stop_exit_pct)}% of margin (${pct.toFixed(2)}% price; stop ${level.toPrecision(6)}, best ${hwm.toPrecision(6)}).`,
           });
         }
         results.push({ ticker: coin, action: prevPct == null ? 'trail_set' : pct !== prevPct ? 'trail_tightened' : 'trail_moved', stop: level, pct });

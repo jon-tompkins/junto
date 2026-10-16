@@ -116,7 +116,7 @@ export async function createPendingTrade(params: {
   side: 'long' | 'short';
   qty: number;
   stopPrice: number;
-  targetPrice: number;
+  targetPrice: number | null; // null = no take-profit (trailing-stop mandates)
   proposalPrice: number;
 }): Promise<string> {
   const { data, error } = await getSupabase()

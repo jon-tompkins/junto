@@ -34,7 +34,10 @@ export async function requestApproval(params: {
   const sizeLine = lev > 1
     ? `Size: ~$${(margin * lev).toFixed(0)} notional · $${margin.toFixed(0)} margin · ${lev}x @ ~$${params.entryPrice.toFixed(2)}`
     : `Notional: $${margin.toFixed(0)} @ ~$${params.entryPrice.toFixed(2)}`;
-  const riskLine = lev > 1
+  const noTarget = !(params.decision.target_pct > 0);
+  const riskLine = noTarget
+    ? `Trailing stop: $${stopPrice.toFixed(2)} (−${params.decision.stop_pct}% px${lev > 1 ? ` · −${(params.decision.stop_pct * lev).toFixed(0)}% on margin` : ''}), ratchets with price\nTarget: none — exits ride the trail`
+    : lev > 1
     ? `Stop: $${stopPrice.toFixed(2)} (−${params.decision.stop_pct}% px · −${(params.decision.stop_pct * lev).toFixed(0)}% on margin)\nTarget: $${targetPrice.toFixed(2)} (+${params.decision.target_pct}% px · +${(params.decision.target_pct * lev).toFixed(0)}% on margin)`
     : `Stop: $${stopPrice.toFixed(2)} (-${params.decision.stop_pct}%)  Target: $${targetPrice.toFixed(2)} (+${params.decision.target_pct}%)`;
 
@@ -272,7 +275,7 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
     // protect sweep stays as the backstop. Best-effort: a failure here doesn't
     // fail the approval (the position is open; protect will retry).
     let protectedNote = '';
-    if (mandate.broker === 'hyperliquid' && trade.stop_price && trade.target_price) {
+    if (mandate.broker === 'hyperliquid' && trade.stop_price) {
       try {
         const exitSide = trade.side === 'long' ? 'sell' : 'buy';
         const qty = Number(order.filled_qty) > 0 ? Number(order.filled_qty) : Number(trade.qty);
@@ -281,7 +284,7 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
           qty,
           side: exitSide,
           stopPrice: Number(trade.stop_price),
-          limitPrice: Number(trade.target_price),
+          limitPrice: Number(trade.target_price) || 0, // 0 = stop only
           clientOrderId: `protect-${tradeId}`,
         });
         const legs = oco.legs || [];
@@ -292,8 +295,8 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web'):
           stop_order_id: stopLeg?.id || null,
           target_order_id: targetLeg?.id || null,
         });
-        await addJournalEntry({ tradeId, kind: 'daily', content: `[protection attached inline: stop ${trade.stop_price}, target ${trade.target_price}]` });
-        protectedNote = ' (stop+target attached)';
+        await addJournalEntry({ tradeId, kind: 'daily', content: `[protection attached inline: stop ${trade.stop_price}, target ${trade.target_price ?? 'none'}]` });
+        protectedNote = trade.target_price ? ' (stop+target attached)' : ' (trailing stop attached)';
       } catch (e: any) {
         await addJournalEntry({ tradeId, kind: 'daily', content: `[inline protection failed: ${String(e?.message).slice(0, 150)} — protect tick will retry]` });
       }

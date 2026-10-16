@@ -479,10 +479,10 @@ export default function AdminTradingPage() {
                 <Field label="Max leverage (x)">
                   <input type="number" min={1} max={20} value={form.hl_max_leverage} onChange={e => setForm({ ...form, hl_max_leverage: e.target.value })} className={inputCls} placeholder="3" />
                 </Field>
-                <Field label="Trailing stop % (blank = off)">
+                <Field label="Trailing stop, % of margin (blank = off)">
                   <input type="number" min={1} max={95} value={form.trailing_stop_pct} onChange={e => setForm({ ...form, trailing_stop_pct: e.target.value })} className={inputCls} placeholder="e.g. 50" />
                 </Field>
-                <Field label="Trail % after trader exits / drops">
+                <Field label="Trail % of margin after trader exits / drops">
                   <input type="number" min={1} max={95} value={form.trailing_stop_exit_pct} onChange={e => setForm({ ...form, trailing_stop_exit_pct: e.target.value })} className={inputCls} placeholder="e.g. 10" />
                 </Field>
               </div>
