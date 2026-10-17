@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Link Papertrade bot</title>
+<style>
+  body { background:#080604; color:#ece3d1; font:15px/1.5 -apple-system, system-ui, sans-serif; margin:0; padding:24px; }
+  main { max-width:560px; margin:0 auto; }
+  h1 { font-size:22px; margin:0 0 6px; }
+  p, li { color:#ece3d1cc; }
+  code { background:#1c1a17; padding:1px 5px; border-radius:3px; font-size:13px; word-break:break-all; }
+  button { background:#b08d57; color:#080604; border:0; border-radius:4px; padding:12px 18px; font-weight:600; font-size:15px; width:100%; margin-top:10px; }
+  button:disabled { opacity:.5; }
+  #log { white-space:pre-wrap; background:#141210; border:1px solid #b08d5747; border-radius:4px; padding:12px; margin-top:16px; font:12px/1.5 ui-monospace, monospace; min-height:60px; }
+  .ok { color:#3ecf6a; } .err { color:#e8453c; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Link the myJunto Papertrade bot</h1>
+  <p>This signs one Papertrade <b>RegisterSessionKey</b> message authorising the bot key
+    <code>0x7bf756973feCDA74aD22e8Cb6F25E4C556990B79</code> for 30 days.</p>
+  <ul>
+    <li>The key can <b>open and close</b> positions on your Papertrade account.</li>
+    <li>It <b>cannot withdraw</b>, stake, unstake or claim. Revoke any time via <code>revokeSessionKey</code> on the SessionKeyManager.</li>
+    <li>No gas, no funds move. Open this page in your wallet's browser (MetaMask / Rabby) with the wallet you deposit to Papertrade from.</li>
+  </ul>
+  <button id="go">Connect wallet &amp; sign</button>
+  <div id="log">Waiting…</div>
+</main>
+<script>
+const KEY = '0x7bf756973fecda74ad22e8cb6f25e4c556990b79';
+const EXCHANGE = '0x6cd5661646289fb6e65ea5c032310fded797d0a2';
+const CHAIN = 999;
+const log = (m, cls) => { const el = document.getElementById('log'); el.innerHTML += '\n' + (cls ? `<span class="${cls}">${m}</span>` : m); };
+
+async function ensureChain(eth) {
+  const hex = '0x' + CHAIN.toString(16);
+  try { await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: hex }] }); }
+  catch (e) {
+    if (e.code !== 4902 && !/Unrecognized|not been added/i.test(e.message || '')) throw e;
+    await eth.request({ method: 'wallet_addEthereumChain', params: [{ chainId: hex, chainName: 'HyperEVM', nativeCurrency: { name: 'HYPE', symbol: 'HYPE', decimals: 18 }, rpcUrls: ['https://rpc.hyperliquid.xyz/evm'], blockExplorerUrls: ['https://hyperevmscan.io'] }] });
+  }
+}
+
+document.getElementById('go').onclick = async () => {
+  const btn = document.getElementById('go');
+  btn.disabled = true;
+  document.getElementById('log').textContent = '';
+  try {
+    const eth = window.ethereum;
+    if (!eth) throw new Error('No wallet found — open this page inside MetaMask/Rabby\'s browser.');
+    const [user] = await eth.request({ method: 'eth_requestAccounts' });
+    log('Wallet: ' + user);
+    await ensureChain(eth);
+    log('Network: HyperEVM (999)');
+    const now = Math.floor(Date.now() / 1000);
+    const message = {
+      user: user.toLowerCase(),
+      key: KEY,
+      expiry: String(now + 30 * 86400 - 300),
+      feeAddress: '0x0000000000000000000000000000000000000000',
+      nonce: String((Math.floor(Math.random() * 0xffffff) || 1) * 256),
+      deadline: String(now + 3600),
+    };
+    const typed = {
+      domain: { name: 'String', version: '1', chainId: CHAIN, verifyingContract: EXCHANGE },
+      types: {
+        EIP712Domain: [{ name: 'name', type: 'string' }, { name: 'version', type: 'string' }, { name: 'chainId', type: 'uint256' }, { name: 'verifyingContract', type: 'address' }],
+        RegisterSessionKey: [
+          { name: 'user', type: 'address' }, { name: 'key', type: 'address' }, { name: 'expiry', type: 'uint64' },
+          { name: 'feeAddress', type: 'address' }, { name: 'nonce', type: 'uint256' }, { name: 'deadline', type: 'uint64' },
+        ],
+      },
+      primaryType: 'RegisterSessionKey',
+      message,
+    };
+    log('Requesting signature…');
+    const sig = await eth.request({ method: 'eth_signTypedData_v4', params: [user, JSON.stringify(typed)] });
+    const r = '0x' + sig.slice(2, 66), s = '0x' + sig.slice(66, 130);
+    let v = parseInt(sig.slice(130, 132), 16); if (v < 27) v += 27;
+    const signed = { ...message, v: String(v), r: r.toLowerCase(), s: s.toLowerCase() };
+    log('Submitting to Papertrade…');
+    const res = await fetch('/api/papertrade/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ signed }) });
+    const out = await res.json();
+    if (res.ok) log('✅ Linked. Bot key authorised for 30 days.\n' + JSON.stringify(out), 'ok');
+    else log('❌ Papertrade rejected it:\n' + JSON.stringify(out, null, 1), 'err');
+  } catch (e) {
+    log('❌ ' + (e.message || e), 'err');
+  } finally {
+    btn.disabled = false;
+  }
+};
+</script>
+</body>
+</html>
