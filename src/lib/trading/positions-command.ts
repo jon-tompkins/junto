@@ -1,6 +1,7 @@
 import { scopeToChat } from './telegram-commands';
 import { getSupabase } from '@/lib/db/client';
 import { alpacaForMandate } from './client';
+import { hlPerps, type HlPerps } from './hl-perps';
 import type { Mandate } from './types';
 
 interface TradeWithJournal {
@@ -83,6 +84,31 @@ export async function buildPositionsMessage(userId: string, chatId?: number | st
 
   const mandateById = new Map<string, Mandate>(mandates.map((m: Mandate) => [m.id, m]));
 
+  // HL perps detail (leverage, margin, stop, liq) per mandate wallet.
+  const perpsByMandate = new Map<string, HlPerps>();
+  await Promise.all(mandates.filter((m: any) => m.broker === 'hyperliquid' && m.hl_wallet_address).map(async (m: any) => {
+    try { perpsByMandate.set(m.id, await hlPerps(m.hl_wallet_address, m.mode)); } catch { /* fall back to basic line */ }
+  }));
+  // Copied-wallet status: still holding? still on the roster?
+  const walletAddrs = new Set<string>();
+  for (const urls of sourcesByTrade.values()) for (const u of urls) { const a = WALLET_RE.exec(u)?.[1]; if (a) walletAddrs.add(a.toLowerCase()); }
+  const walletState = new Map<string, any[]>();
+  const walletLabel = new Map<string, string>();
+  const rosterByJunto = new Map<string, Set<string>>();
+  if (walletAddrs.size) {
+    const [{ data: states }, { data: tracked }] = await Promise.all([
+      supabase.from('hl_wallet_state').select('address, positions').in('address', [...walletAddrs]),
+      supabase.from('hl_tracked_wallets').select('address, label').in('address', [...walletAddrs]),
+    ]);
+    for (const st of states || []) walletState.set(String(st.address).toLowerCase(), (st.positions as any[]) || []);
+    for (const t of tracked || []) walletLabel.set(String(t.address).toLowerCase(), String(t.label || ''));
+    for (const m of mandates as any[]) {
+      if (!m.junto_id || rosterByJunto.has(m.junto_id)) continue;
+      const { data: srcs } = await supabase.from('junto_sources').select('sources!inner(handle_or_url, type)').eq('junto_id', m.junto_id).eq('sources.type', 'hyperliquid_wallet');
+      rosterByJunto.set(m.junto_id, new Set((srcs || []).map((r: any) => String(r.sources.handle_or_url).toLowerCase())));
+    }
+  }
+
   const lines: string[] = ['<b>📊 Active positions</b>\n'];
   let totalUnrealized = 0;
 
@@ -103,8 +129,16 @@ export async function buildPositionsMessage(userId: string, chatId?: number | st
       const entry = t.entry_price ?? t.proposal_price;
       const sideLabel = t.side === 'long' ? 'LONG' : 'SHORT';
 
+      const pp = perpsByMandate.get(mId)?.positions.find((x: any) => x.coin.toUpperCase() === t.ticker.toUpperCase());
       let plLine = '';
-      if (live) {
+      if (pp) {
+        totalUnrealized += pp.unrealized_pnl;
+        const sign = pp.unrealized_pnl >= 0 ? '+' : '';
+        plLine = `  Last $${fmtPx(pp.mark)}  P&L ${sign}$${pp.unrealized_pnl.toFixed(2)} (${sign}${pp.roe_pct.toFixed(1)}% on $${pp.margin_used.toFixed(2)} margin)` +
+          `\n  ${pp.leverage}x ${pp.leverage_type} · size $${pp.value.toFixed(0)}` +
+          `\n  Stop ${pp.stop_px == null ? '<b>NONE</b>' : `$${fmtPx(pp.stop_px)}${pp.stop_trailing ? ' (trailing)' : ''} · ${pp.stop_away_pct?.toFixed(1)}% away`}` +
+          (pp.liq_px ? ` · Liq $${fmtPx(pp.liq_px)}` : '');
+      } else if (live) {
         totalUnrealized += live.pl;
         const sign = live.pl >= 0 ? '+' : '';
         plLine = `  Last $${live.price.toFixed(2)}  P&L ${sign}$${live.pl.toFixed(2)}`;
@@ -117,13 +151,25 @@ export async function buildPositionsMessage(userId: string, chatId?: number | st
       }
 
       lines.push(
-        `• <b>${escapeHtml(t.ticker)}</b> ${sideLabel} ${t.qty}` +
+        `• <b>${escapeHtml(t.ticker)}</b> ${sideLabel} ${pp ? Number(pp.size.toFixed(6)) : Number(Number(t.qty).toFixed(6))}` +
         (entry ? ` @ $${Number(entry).toFixed(2)}` : '') +
         `\n${plLine}`,
       );
 
       const srcs = sourcesByTrade.get(t.id);
-      if (srcs && srcs.length) {
+      const walletSrcs = (srcs || []).map((u) => WALLET_RE.exec(u)?.[1]?.toLowerCase()).filter((a): a is string => !!a);
+      if (walletSrcs.length) {
+        // Copy-trade sources: show each wallet and whether it still holds the trade.
+        const roster = rosterByJunto.get(m.junto_id || '') || new Set<string>();
+        const parts = walletSrcs.map((a) => {
+          const held = (walletState.get(a) || []).find((p) => String(p.coin).toUpperCase() === t.ticker.toUpperCase());
+          const same = held && (t.side === 'long' ? held.szi > 0 : held.szi < 0);
+          const status = !roster.has(a) ? '⚪ dropped from roster' : same ? `✅ still ${t.side}` : held ? '🔄 flipped' : '❌ exited';
+          const label = (walletLabel.get(a) || '').replace(/^HL Top /, '') || `${a.slice(0, 8)}…`;
+          return `<a href="https://hypurrscan.io/address/${a}">${escapeHtml(label)}</a> ${status}`;
+        });
+        lines.push(`  Copying: ${parts.join(' · ')}`);
+      } else if (srcs && srcs.length) {
         const resolved = await resolveSourceLabels(srcs);
         // Multiple tweet URLs from the same handle are common (e.g. three
         // posts by @intheassembly cited the same thesis). Dedupe by resolved
@@ -146,6 +192,9 @@ export async function buildPositionsMessage(userId: string, chatId?: number | st
   lines.push(`<b>Total unrealized: ${sign}$${totalUnrealized.toFixed(2)}</b>`);
   return lines.join('\n');
 }
+
+const WALLET_RE = /address\/(0x[0-9a-fA-F]{40})/;
+const fmtPx = (n: number) => (n >= 1000 ? n.toFixed(1) : n >= 1 ? n.toFixed(2) : n.toPrecision(4));
 
 function escapeHtml(s: string): string {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

@@ -88,7 +88,8 @@ export async function reconcileMandate(mandateId: string): Promise<{
         continue;
       }
 
-      const liveQty = Math.floor(Math.abs(Number(pos.qty)));
+      // HL perps are fractional (2.35 SOL); only Alpaca equities are whole-share.
+      const liveQty = mandate.broker === 'hyperliquid' ? Math.abs(Number(pos.qty)) : Math.floor(Math.abs(Number(pos.qty)));
       const dbQty = Number(trade.qty);
 
       const exitSide: 'sell' | 'buy' = trade.side === 'short' ? 'buy' : 'sell';
@@ -106,7 +107,7 @@ export async function reconcileMandate(mandateId: string): Promise<{
       const after: ReconcileResult['after'] = { qty: dbQty, stop: dbStop, target: dbTarget };
 
       let qtySynced = false;
-      if (liveQty > 0 && liveQty !== dbQty) {
+      if (liveQty > 0 && Math.abs(liveQty - dbQty) > 1e-9) {
         patch.qty = liveQty;
         after.qty = liveQty;
         qtySynced = true;
@@ -159,7 +160,7 @@ export async function reconcileMandate(mandateId: string): Promise<{
   for (const [sym, pos] of posBySymbol) {
     if (trackedSymbols.has(sym)) continue;
     if (otherOwned.has(sym)) continue; // belongs to a sibling mandate
-    const qty = Math.floor(Math.abs(Number(pos.qty)));
+    const qty = mandate.broker === 'hyperliquid' ? Math.abs(Number(pos.qty)) : Math.floor(Math.abs(Number(pos.qty)));
     if (qty <= 0) continue;
     results.push({
       ticker: sym,
