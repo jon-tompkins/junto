@@ -163,15 +163,17 @@ function Body({ s }: { s: Snap }) {
               </tr>))}</tbody>
           </table>
         </Panel>
-        <Panel title="Recent pairs" className="md:col-span-2">
+        <Panel title="Recent pairs" note="PAPER comes only from the losing side" className="md:col-span-2">
           <div className="max-h-80 overflow-auto">
             <table className="w-full text-sm min-w-[560px]">
-              <thead className="sticky top-0 bg-surface"><tr className="text-[10px] uppercase tracking-wider text-parchment/45 text-left"><th className="py-1 font-normal">When</th><th className="font-normal">Coin</th><th className="font-normal">Legs</th><th className="font-normal text-right">PnL</th><th className="font-normal text-right">PAPER</th></tr></thead>
+              <thead className="sticky top-0 bg-surface"><tr className="text-[10px] uppercase tracking-wider text-parchment/45 text-left"><th className="py-1 font-normal">When</th><th className="font-normal">Coin</th><th className="font-normal">Legs</th><th className="font-normal text-right">Pair PnL</th><th className="font-normal text-right" title="Minted by the losing (cut) side; wins never mint PAPER">PAPER (cut side)</th></tr></thead>
               <tbody>{s.recentPairs.map((p: any, i: number) => (
                 <tr key={i} className="border-t border-brass/10">
                   <td className="py-1.5 text-parchment/60 text-xs">{new Date(p.t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</td>
                   <td className="font-mono">{p.coin}</td>
-                  <td className="text-xs text-parchment/60">{p.legs.map((l: any) => `${l.side} ${l.reason}`).join(' · ')}</td>
+                  <td className="text-xs text-parchment/60">{p.legs.map((l: any, j: number) => (
+                    <span key={j}>{j > 0 && ' · '}{l.side} {l.reason} <span className={tone(l.pnl)}>{signed(l.pnl)}</span></span>
+                  ))}</td>
                   <td className={`text-right tabular-nums ${tone(p.pnl)}`}>{signed(p.pnl)}</td>
                   <td className="text-right tabular-nums">{num(p.paper)}</td>
                 </tr>))}</tbody>
