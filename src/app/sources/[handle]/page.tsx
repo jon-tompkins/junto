@@ -190,7 +190,7 @@ function ClosedCallsTable({ calls }: { calls: ClosedCall[] }) {
               <tr key={`${c.ticker}-${c.exit_date}-${i}`} className="border-b border-[rgb(var(--t-brass) / 0.08)] last:border-0 hover:bg-raised/50 transition">
                 <td className="px-4 py-3">
                   <Link href={`/positions/${c.ticker}`} className="inline-flex items-center gap-2 group">
-                    <span className="font-mono font-bold text-parchment group-hover:text-brass transition">{c.ticker}</span>
+                    <span className="font-mono font-bold text-parchment group-hover:text-brass transition truncate max-w-[16ch]" title={c.ticker}>{c.ticker}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium ${STANCE_BADGE[c.stance] ?? STANCE_BADGE.neutral}`}>
                       {STANCE_LABELS[c.stance] ?? c.stance}
                     </span>
@@ -598,8 +598,8 @@ export default function SourceProfilePage() {
                   <Link key={ticker} href={`/positions/${ticker}`} className="block px-4 py-3 hover:bg-raised/50 transition">
                     <div className="flex items-center justify-between gap-3">
                       <span className="inline-flex items-center gap-2 min-w-0">
-                        <span className="font-mono font-bold text-parchment">{ticker}</span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium ${STANCE_BADGE[pos.stance]}`}>
+                        <span className="font-mono font-bold text-parchment truncate min-w-0" title={ticker}>{ticker}</span>
+                        <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-sm font-medium ${STANCE_BADGE[pos.stance]}`}>
                           {STANCE_LABELS[pos.stance]}
                         </span>
                       </span>
@@ -663,7 +663,7 @@ export default function SourceProfilePage() {
                       <tr key={ticker} className="border-b border-[rgb(var(--t-brass) / 0.08)] last:border-0 hover:bg-raised/50 transition">
                         <td className="px-4 py-3">
                           <Link href={`/positions/${ticker}`} className="inline-flex items-center gap-2 group">
-                            <span className="font-mono font-bold text-parchment group-hover:text-brass transition">{ticker}</span>
+                            <span className="font-mono font-bold text-parchment group-hover:text-brass transition truncate max-w-[16ch]" title={ticker}>{ticker}</span>
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-medium ${STANCE_BADGE[pos.stance]}`}>
                               {STANCE_LABELS[pos.stance]}
                             </span>
