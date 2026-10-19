@@ -90,7 +90,7 @@ function Body({ s }: { s: Snap }) {
       <section className="grid md:grid-cols-3 gap-3 mt-3">
         <Panel title={`Open positions (${s.positions.length})`} className="md:col-span-2">
           {s.positions.length === 0 ? <p className="text-sm text-parchment/50">Flat.</p> : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm min-w-[480px]">
               <thead><tr className="text-[10px] uppercase tracking-wider text-parchment/45 text-left">
                 <th className="py-1 font-normal">Coin</th><th className="font-normal text-right">Size</th><th className="font-normal text-right">Entry → Mark</th><th className="font-normal text-right">uPnL</th><th className="font-normal text-right">Liq</th>
               </tr></thead>
@@ -102,7 +102,7 @@ function Body({ s }: { s: Snap }) {
                   <td className={`text-right tabular-nums ${tone(p.upnl)}`}>{signed(p.upnl)}</td>
                   <td className="text-right tabular-nums text-parchment/60">{p.liq.toLocaleString()}<div className="text-[10px] text-parchment/45">{p.liqAwayPct?.toFixed(2)}% away</div></td>
                 </tr>))}</tbody>
-            </table>
+            </table></div>
           )}
         </Panel>
         <Panel title="Settings">
@@ -164,8 +164,8 @@ function Body({ s }: { s: Snap }) {
           </table>
         </Panel>
         <Panel title="Recent pairs" className="md:col-span-2">
-          <div className="max-h-80 overflow-y-auto">
-            <table className="w-full text-sm">
+          <div className="max-h-80 overflow-auto">
+            <table className="w-full text-sm min-w-[560px]">
               <thead className="sticky top-0 bg-surface"><tr className="text-[10px] uppercase tracking-wider text-parchment/45 text-left"><th className="py-1 font-normal">When</th><th className="font-normal">Coin</th><th className="font-normal">Legs</th><th className="font-normal text-right">PnL</th><th className="font-normal text-right">PAPER</th></tr></thead>
               <tbody>{s.recentPairs.map((p: any, i: number) => (
                 <tr key={i} className="border-t border-brass/10">
@@ -182,7 +182,8 @@ function Body({ s }: { s: Snap }) {
 
       {/* Variants */}
       <Panel title="Simulated variants ($100k/side, live prices)" note="ranked by cost per PAPER" className="mt-3">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[560px]">
           <thead><tr className="text-[10px] uppercase tracking-wider text-parchment/45 text-left"><th className="py-1 font-normal">Variant</th><th className="font-normal text-right">Cut / Trail</th><th className="font-normal text-right">Pairs</th><th className="font-normal text-right">Win%</th><th className="font-normal text-right">Net</th><th className="font-normal text-right">Cost / PAPER</th></tr></thead>
           <tbody>{s.variants.map((v: any) => {
             const isLive = v.cutPct === s.config.cutPct && v.trailPct === s.config.trailPct && !v.runner;
@@ -196,6 +197,7 @@ function Body({ s }: { s: Snap }) {
               </tr>);
           })}</tbody>
         </table>
+        </div>
       </Panel>
     </>
   );
