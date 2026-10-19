@@ -113,8 +113,8 @@ export default function HistoryPage() {
                   className="w-full flex items-center justify-between p-5 hover:bg-raised transition text-left"
                 >
                   <div className="min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="font-semibold text-parchment truncate">
+                    <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3 mb-1">
+                      <h3 className="font-semibold text-parchment line-clamp-2 sm:line-clamp-1 min-w-0">
                         {run.subject || 'Untitled issue'}
                       </h3>
                       {run.newsletter_name && (
