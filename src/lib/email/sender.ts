@@ -100,7 +100,20 @@ export async function sendNewsletter({
   return { id: ids[0] || '' };
 }
 
-function markdownToHtml(markdown: string): string {
+const SECTION_COLORS = ['#2563eb', '#7c3aed', '#0891b2', '#059669', '#d97706', '#db2777'];
+
+const TONES: Array<[RegExp, { bg: string; fg: string }]> = [
+  [/^(bull|long|buy|upgrade|accumulat|breakout)/i, { bg: '#dcfce7', fg: '#15803d' }],
+  [/^(bear|short|sell|downgrade|exit)/i, { bg: '#fee2e2', fg: '#b91c1c' }],
+  [/^(risk|caution|warning|hype|promo)/i, { bg: '#ffedd5', fg: '#c2410c' }],
+  [/^(watch|neutral|mixed|wait|update|news)/i, { bg: '#e0f2fe', fg: '#0369a1' }],
+];
+function labelTone(label: string) {
+  if (!/^[A-Za-z][A-Za-z /-]{1,24}:?$/.test(label.trim())) return null;
+  return TONES.find(([re]) => re.test(label.trim()))?.[1] ?? { bg: '#f1f5f9', fg: '#334155' };
+}
+
+export function markdownToHtml(markdown: string): string {
   let html = markdown;
 
   // Horizontal rules → styled dividers
@@ -109,8 +122,24 @@ function markdownToHtml(markdown: string): string {
   // Headers with proper styling
   html = html.replace(/^#### (.+)$/gm, '<h4 style="margin: 16px 0 8px; font-size: 14px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.5px;">$1</h4>');
   html = html.replace(/^### (.+)$/gm, '<h3 style="margin: 20px 0 8px; font-size: 15px; font-weight: 600; color: #1f2937;">$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2 style="margin: 28px 0 12px; font-size: 18px; font-weight: 700; color: #111827; border-bottom: 2px solid #2563eb; padding-bottom: 8px; display: inline-block;">$1</h2>');
+  // Section headers get a rotating accent color so long dispatches have visual landmarks.
+  let section = 0;
+  html = html.replace(/^## (.+)$/gm, (_m, title) => {
+    const top = section === 0 ? 0 : 32;
+    const c = SECTION_COLORS[section++ % SECTION_COLORS.length];
+    return `<h2 style="margin: ${top}px 0 14px; font-size: 19px; font-weight: 700; color: #0f172a; border-left: 4px solid ${c}; padding: 2px 0 2px 12px;">${title}</h2>`;
+  });
   html = html.replace(/^# (.+)$/gm, '<h1 style="margin: 0 0 16px; font-size: 22px; font-weight: 700; color: #111827;">$1</h1>');
+
+  // `Bullish:` style labels (the model emits them as inline code) → colored pills; other inline code → mono chip.
+  html = html.replace(/`([^`\n]+?)`/g, (_m, label: string) => {
+    const tone = labelTone(label);
+    if (tone) return `<span style="display: inline-block; background: ${tone.bg}; color: ${tone.fg}; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.2px; vertical-align: 1px;">${label.replace(/:\s*$/, '')}</span>`;
+    return `<code style="background: #f1f5f9; color: #0f172a; padding: 1px 5px; border-radius: 4px; font-size: 13px;">${label}</code>`;
+  });
+
+  // **$TICKER** leading a paragraph or bullet → colored ticker chip.
+  html = html.replace(/^(- )?\*\*(\$[A-Z][A-Z0-9.]{0,9})\*\*/gm, '$1<span style="display: inline-block; background: #eef2ff; color: #4338ca; padding: 1px 7px; border-radius: 4px; font-weight: 800; font-size: 14px;">$2</span>');
 
   // Bold + italic
   html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
@@ -124,14 +153,11 @@ function markdownToHtml(markdown: string): string {
   html = html.replace(/(?<!["\w])@([A-Za-z0-9_]{1,15})(?!["\w])/g,
     '<a href="https://x.com/$1" style="color: #2563eb; text-decoration: none; font-weight: 500;">@$1</a>');
 
-  // Ticker callouts: **$TICKER** at start of bullet → highlighted
-  html = html.replace(/^- \*\*(\$[A-Z]+)\*\*/gm, '- <span style="display: inline-block; background: #eff6ff; color: #1d4ed8; padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 13px;">$1</span>');
-
   // Bullet lists. Allow blank lines between items so the model's
   // "- a\n\n- b" markdown collapses into one <ul> instead of one <ul>
   // per bullet (which doubled vertical margin and inserted stray <p>s).
-  html = html.replace(/^- (.+)$/gm, '<li style="margin: 6px 0; padding-left: 4px; line-height: 1.5;">$1</li>');
-  html = html.replace(/(<li[^>]*>.*<\/li>\s*)+/g, '<ul style="margin: 12px 0; padding-left: 20px; list-style-type: disc;">$&</ul>');
+  html = html.replace(/^- (.+)$/gm, '<li style="margin: 10px 0; padding-left: 4px; line-height: 1.6;">$1</li>');
+  html = html.replace(/(<li[^>]*>.*<\/li>\s*)+/g, (m) => `<ul style="margin: 12px 0; padding-left: 20px; list-style-type: disc;">${m.replace(/<\/li>\s+/g, '</li>')}</ul>`);
 
   // Blockquotes
   html = html.replace(/^> (.+)$/gm, '<blockquote style="border-left: 3px solid #2563eb; margin: 16px 0; padding: 12px 16px; color: #4b5563; background: #f9fafb; border-radius: 0 6px 6px 0; font-style: italic;">$1</blockquote>');
@@ -162,7 +188,7 @@ function markdownToHtml(markdown: string): string {
   return html;
 }
 
-function buildEmailHtml(content: string, subject: string, date: string, unsubUrl: string): string {
+export function buildEmailHtml(content: string, subject: string, date: string, unsubUrl: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -170,7 +196,16 @@ function buildEmailHtml(content: string, subject: string, date: string, unsubUrl
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>${subject}</title>
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
   <!--[if mso]><style>body{font-family:Arial,sans-serif!important}</style><![endif]-->
+  <style>
+    @media only screen and (max-width: 600px) {
+      .jt-outer { padding: 12px 8px !important; }
+      .jt-body { padding: 20px 16px !important; font-size: 15px !important; }
+      .jt-title { font-size: 20px !important; }
+    }
+  </style>
 </head>
 <body style="margin: 0; padding: 0; background-color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
 
@@ -181,8 +216,9 @@ function buildEmailHtml(content: string, subject: string, date: string, unsubUrl
 
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0f172a;">
     <tr>
-      <td align="center" style="padding: 24px 16px;">
-        <table width="100%" style="max-width: 560px;">
+      <td align="center" class="jt-outer" style="padding: 28px 20px;">
+        <!--[if mso]><table width="760" align="center"><tr><td><![endif]-->
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 760px;">
 
           <!-- Header Bar -->
           <tr>
@@ -205,7 +241,7 @@ function buildEmailHtml(content: string, subject: string, date: string, unsubUrl
           <!-- Subject Line -->
           <tr>
             <td style="padding: 0 0 20px;">
-              <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #f1f5f9; line-height: 1.3;">
+              <h1 class="jt-title" style="margin: 0; font-size: 24px; font-weight: 700; color: #f1f5f9; line-height: 1.3;">
                 ${subject}
               </h1>
             </td>
@@ -216,7 +252,10 @@ function buildEmailHtml(content: string, subject: string, date: string, unsubUrl
             <td style="background-color: #ffffff; border-radius: 12px; overflow: hidden;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="padding: 28px 24px; color: #374151; font-size: 15px; line-height: 1.65;">
+                  <td style="height: 5px; line-height: 5px; font-size: 0; background-color: #3b82f6; background-image: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);">&nbsp;</td>
+                </tr>
+                <tr>
+                  <td class="jt-body" style="padding: 32px 40px; color: #374151; font-size: 16px; line-height: 1.7;">
                     ${content}
                   </td>
                 </tr>
@@ -245,6 +284,7 @@ function buildEmailHtml(content: string, subject: string, date: string, unsubUrl
           </tr>
 
         </table>
+        <!--[if mso]></td></tr></table><![endif]-->
       </td>
     </tr>
   </table>
