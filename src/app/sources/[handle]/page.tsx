@@ -448,31 +448,23 @@ export default function SourceProfilePage() {
           </div>
         </div>
 
-        {/* Inferred-positions disclaimer */}
-        <div className="bg-[rgb(var(--t-warn) / 0.10)] border border-[rgb(var(--t-warn) / 0.40)] rounded p-4 mb-8 flex gap-3">
-          <span className="text-[rgb(var(--t-warn))] text-lg leading-none mt-0.5">⚠</span>
-          <p className="text-sm text-parchment/80 leading-relaxed">
-            <span className="font-semibold text-[rgb(var(--t-warn))]">These are not real positions.</span>{' '}
+        {/* Inferred-positions disclaimer — one line on top so cold visitors
+            from X see the track record first; full wording one tap away. */}
+        <details className="group bg-[rgb(var(--t-warn) / 0.10)] border border-[rgb(var(--t-warn) / 0.40)] rounded px-4 py-2.5 mb-6 text-sm">
+          <summary className="cursor-pointer list-none flex items-center gap-2 text-parchment/80 [&::-webkit-details-marker]:hidden">
+            <span className="text-[rgb(var(--t-warn))] leading-none">⚠</span>
+            <span>
+              <span className="font-semibold text-[rgb(var(--t-warn))]">Not real positions</span>
+              <span className="text-parchment/70"> — inferred from public posts.</span>
+            </span>
+            <span className="ml-auto text-xs text-parchment/50 group-open:hidden">Details</span>
+          </summary>
+          <p className="mt-2 text-parchment/80 leading-relaxed">
             Every stance, entry, and return below is <span className="font-semibold">inferred from this account&apos;s public posts</span> — not from any brokerage,
             wallet, or disclosed holding. Entries are rough estimates from when a view was first spotted, and people post for many reasons. Treat this as
             commentary tracking, not financial advice or a record of what anyone actually owns.
           </p>
-        </div>
-
-        <SignupCTA context="analyst" subject={displayHandle} />
-
-        {/* Ask about this source */}
-        <div className="mb-8">
-          <SourceChat handle={displayHandle} />
-        </div>
-
-        {/* Summary */}
-        {profile.summary && (
-          <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5 mb-8">
-            <h2 className="text-xs font-semibold text-parchment/60 uppercase tracking-wider mb-2 font-[var(--font-oswald)]">Source Summary</h2>
-            <p className="text-parchment/80 leading-relaxed">{profile.summary}</p>
-          </div>
-        )}
+        </details>
 
         {/* Live call performance — directional return on each open call vs the
             source's rough entry. Not a closed-trade hit rate; that needs call
@@ -522,6 +514,21 @@ export default function SourceProfilePage() {
             </div>
           </div>
         )}
+
+        {/* Summary */}
+        {profile.summary && (
+          <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5 mb-8">
+            <h2 className="text-xs font-semibold text-parchment/60 uppercase tracking-wider mb-2 font-[var(--font-oswald)]">Source Summary</h2>
+            <p className="text-parchment/80 leading-relaxed">{profile.summary}</p>
+          </div>
+        )}
+
+        <SignupCTA context="analyst" subject={displayHandle} />
+
+        {/* Ask about this source */}
+        <div className="mb-8">
+          <SourceChat handle={displayHandle} />
+        </div>
 
         {/* Tracked stances table */}
         <div className="mb-8">
