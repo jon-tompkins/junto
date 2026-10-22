@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
 import { STYLE_OPTIONS } from '@/lib/trading/styles';
 import ReactMarkdown from 'react-markdown';
+import { PnlChart } from '@/components/pnl-chart';
 
 interface Mandate {
   id: string;
@@ -713,6 +714,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         </div>
 
         {isPerps && <PerpsPanel perps={perps} mandate={mandate} tradeIdByCoin={Object.fromEntries([...dbOpenByTicker].map(([k, t]) => [k, t.id]))} />}
+        <PnlChart mandateId={mandateId} />
 
         {(() => {
           const awaitingApproval = trades.filter(t => t.status === 'pending');
