@@ -79,7 +79,9 @@ For every position you open, you write an entry thesis that captures:
 - what would invalidate the thesis
 - stop and target as percentages off entry (typical: stop 5-10%, target 15-25%, asymmetric to the upside)
 
-Use conservative position sizing. max_position_pct caps each notional as a % of equity.
+${mandate.broker === 'hyperliquid'
+  ? `Position size is set by code from your conviction score: 5 = full max position, 4 = 85%, 3 = 70%, 1-2 = 50%, then scaled down when the copied traders hold little of the coin. Use the full 1-5 range honestly — reserve 5 for several top traders aligned with large size, 1-2 for thin or hedge-like positioning. Still return a positive notional_usd (it is overridden).`
+  : 'Use conservative position sizing. max_position_pct caps each notional as a % of equity.'}
 Reject low-quality signals — it is fine to return an empty list.
 
 ${isBookFull ? 'PORTFOLIO STATUS: The book is currently near or at max risk capacity (most capital is already deployed in open positions). You may still propose trades, but the user will be warned that free capital is limited.' : ''}

@@ -130,9 +130,20 @@ export async function loadEntryContext(mandate: Mandate, equity: number, positio
 
 // sqrt sizing: the copied traders' combined notional in this coin+side, scaled
 // so a $ref position gets full size, smaller ones (hedges) proportionally less.
+// Floor 0.5: stacked on conviction sizing, a 0.2 floor made copies too small.
 export function sqrtWeight(copiedNotional: number, ref: number): number {
   if (!(copiedNotional > 0) || !(ref > 0)) return 1;
-  return Math.min(1, Math.max(0.2, Math.sqrt(copiedNotional / ref)));
+  return Math.min(1, Math.max(0.5, Math.sqrt(copiedNotional / ref)));
+}
+
+// Conviction-tier sizing for HL copy mandates: the model scores conviction
+// (1-5) and code turns it into a fraction of the max position (margin), rather
+// than the model picking dollars (it anchored small).
+export function convictionFraction(conviction: number): number {
+  if (conviction >= 5) return 1;
+  if (conviction >= 4) return 0.85;
+  if (conviction >= 3) return 0.7;
+  return 0.5;
 }
 
 export interface EntryVerdict { ok: boolean; reason?: string; weight: number; copiedNotional: number }

@@ -24,7 +24,7 @@ import { reviewPositions } from './review-positions';
 import { monitorMandate } from './monitor';
 import { protectMandate } from './protection';
 import { trailMandateStops, isTrailing, trailPricePct } from './trailing-stops';
-import { checkDailyLoss, loadEntryContext, gateEntry, autoEntries, autoExits, notifyMandate, type EntryContext } from './autopilot';
+import { checkDailyLoss, loadEntryContext, gateEntry, convictionFraction, autoEntries, autoExits, notifyMandate, type EntryContext } from './autopilot';
 import { approveTrade } from './approval';
 import { handleAmendmentCallback } from './amendment';
 import { reconcileMandate } from './reconcile';
@@ -326,6 +326,8 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
         // a $100 budget at 3x is a $300 notional position using $100 of margin.
         const leverage = Math.max(1, mandate.hl_max_leverage ?? 3);
         if (entryCtx) {
+          // Smart sizing: conviction tier of the max margin, then × copy weight.
+          decision.notional_usd = ((accountEquity * mandate.max_position_pct) / 100) * convictionFraction(Number(decision.conviction) || 3);
           const v = gateEntry(mandate, entryCtx, decision, lastPrice, decision.notional_usd, leverage);
           if (!v.ok) {
             await logSignal({
@@ -337,10 +339,9 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
             continue;
           }
           // sqrt-of-notional: hedges get small size, big conviction gets full.
-          if (v.weight < 1) {
-            decision.entry_thesis = `${decision.entry_thesis}\n\nSizing: ${Math.round(v.weight * 100)}% of max (copied traders hold $${Math.round(v.copiedNotional).toLocaleString()}; √-weighted).`;
-          }
+          const convPct = Math.round(convictionFraction(Number(decision.conviction) || 3) * 100);
           decision.notional_usd = decision.notional_usd * v.weight;
+          decision.entry_thesis = `${decision.entry_thesis}\n\nSizing: conviction ${decision.conviction} → ${convPct}% of max × copy weight ${Math.round(v.weight * 100)}% (copied traders hold $${Math.round(v.copiedNotional).toLocaleString()}) = $${decision.notional_usd.toFixed(2)} margin.`;
         }
         const exposureNotional = decision.notional_usd * leverage;
         if (exposureNotional < 10) {
