@@ -57,6 +57,7 @@ interface Trade {
   target_price: number | null;
   status: string;
   realized_pnl_usd: number | null;
+  leverage?: number | null;
   created_at: string;
 }
 
@@ -560,7 +561,11 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
   // Cost bases for the $/% P/L toggle. Open = qty×avg entry of live positions;
   // closed = qty×entry of closed trades. Used only as the % denominator.
   const openCostBasis = Object.values(positions).reduce((s, p) => s + Math.abs((p.qty || 0) * (p.avg_entry_price || 0)), 0);
-  const closedCostBasis = closedTrades.reduce((s, t) => s + Math.abs((Number(t.qty) || 0) * (Number(t.entry_price) || 0)), 0);
+  const isPerps = mandate.broker === 'hyperliquid';
+  const closedCostBasis = closedTrades.reduce((s, t) => {
+    const notional = Math.abs((Number(t.qty) || 0) * (Number(t.entry_price) || 0));
+    return s + (isPerps ? notional / tradeLeverage(t, mandate) : notional);
+  }, 0);
   // Render a P/L stat as $ or as % of the given cost basis, honoring the header toggle.
   const plStat = (usd: number, basis: number): string => {
     if (!plPct) return fmtUsd(usd);
@@ -689,7 +694,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
           </div>
         </div>
 
-        {mandate.broker === 'hyperliquid' && <PerpsPanel perps={perps} mandate={mandate} />}
+        {isPerps && <PerpsPanel perps={perps} mandate={mandate} tradeIdByCoin={Object.fromEntries([...dbOpenByTicker].map(([k, t]) => [k, t.id]))} />}
 
         {(() => {
           const awaitingApproval = trades.filter(t => t.status === 'pending');
@@ -1126,8 +1131,8 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
           )}
         </div>
 
-        {/* Trades */}
-        <div className="bg-surface border border-brass/28 rounded p-5 mb-6">
+        {/* Trades — perps mandates show open positions in the perps panel above */}
+        {!isPerps && <div className="bg-surface border border-brass/28 rounded p-5 mb-6">
           <h2 className="text-sm uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] mb-3">
             Open · {openRows.length}
           </h2>
@@ -1138,7 +1143,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
               <OpenPositionsTable rows={openRows} agreement={agreement} perfRefs={perfRefs} />
             </div>
           )}
-        </div>
+        </div>}
 
         <div className="bg-surface border border-brass/28 rounded p-5 mb-6">
           <h2 className="text-sm uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] mb-3">
@@ -1148,7 +1153,9 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             <p className="text-sm text-parchment/45">No closed trades.</p>
           ) : (
             <div className="overflow-x-auto -mx-5 px-5">
-              <TradeTable trades={closedTrades} positions={positions} />
+              {isPerps
+                ? <PerpsClosedTable trades={closedTrades} mandate={mandate} />
+                : <TradeTable trades={closedTrades} positions={positions} />}
             </div>
           )}
         </div>
@@ -1270,7 +1277,7 @@ const px = (n: number | null) => (n == null ? '—' : n >= 1000 ? n.toLocaleStri
 
 // Perps-only view (Hyperliquid): collateral, margin, leverage, liquidation and
 // the live (trailing) stop per position. Spot/equity mandates don't render it.
-function PerpsPanel({ perps, mandate }: { perps: PerpsSnapshot | null; mandate: any }) {
+function PerpsPanel({ perps, mandate, tradeIdByCoin }: { perps: PerpsSnapshot | null; mandate: any; tradeIdByCoin: Record<string, string> }) {
   const cap = Number(mandate.hl_max_leverage) || 1;
   const trail = Number(mandate.trailing_stop_pct) || 0;
   const trailExit = Number(mandate.trailing_stop_exit_pct) || 0;
@@ -1314,7 +1321,9 @@ function PerpsPanel({ perps, mandate }: { perps: PerpsSnapshot | null; mandate: 
                   {perps.positions.map((p) => (
                     <tr key={p.coin} className="border-t border-brass/14">
                       <td className="px-1 py-2">
-                        <span className="text-parchment">{p.coin}</span>{' '}
+                        {tradeIdByCoin[p.coin.toUpperCase()]
+                          ? <Link href={`/trading/trades/${tradeIdByCoin[p.coin.toUpperCase()]}`} className="text-brass hover:underline">{p.coin}</Link>
+                          : <span className="text-parchment">{p.coin}</span>}{' '}
                         <span className={p.side === 'long' ? 'text-bull' : 'text-bear'}>{p.side === 'long' ? 'LONG' : 'SHORT'}</span>
                       </td>
                       <td className="px-1 py-2 text-right text-parchment/80">{fmtUsd(p.value)}<div className="text-[10px] text-parchment/45">{p.size} {p.coin}</div></td>
@@ -1342,6 +1351,86 @@ function PerpsPanel({ perps, mandate }: { perps: PerpsSnapshot | null; mandate: 
         </>
       )}
     </div>
+  );
+}
+
+// Leverage a perps trade opened at. Trades from before we recorded it fall
+// back to the mandate's current cap (shown with a ~ in the table).
+function tradeLeverage(t: Trade, mandate: any): number {
+  return Number(t.leverage) || Number(mandate?.hl_max_leverage) || 1;
+}
+
+function fmtHeld(from: string | null, to: string | null): string {
+  if (!from || !to) return '—';
+  const h = (new Date(to).getTime() - new Date(from).getTime()) / 3.6e6;
+  if (h < 1) return `${Math.max(1, Math.round(h * 60))}m`;
+  if (h < 48) return `${h.toFixed(h < 10 ? 1 : 0)}h`;
+  return `${(h / 24).toFixed(1)}d`;
+}
+
+// Closed perps trades: collateral committed (notional ÷ leverage) and PnL as a
+// return on that collateral, which is what the trade actually risked.
+function PerpsClosedTable({ trades, mandate }: { trades: Trade[]; mandate: any }) {
+  let totCollateral = 0;
+  let totPnl = 0;
+  const rows = trades.map(t => {
+    const notional = t.entry_price != null ? Math.abs(Number(t.qty) * t.entry_price) : null;
+    const lev = tradeLeverage(t, mandate);
+    const collateral = notional != null ? notional / lev : null;
+    const pnl = t.realized_pnl_usd != null ? Number(t.realized_pnl_usd) : null;
+    const roe = pnl != null && collateral ? (pnl / collateral) * 100 : null;
+    if (collateral != null && pnl != null) { totCollateral += collateral; totPnl += pnl; }
+    return { t, notional, lev, levKnown: Number(t.leverage) > 0, collateral, pnl, roe };
+  });
+  const totRoe = totCollateral ? (totPnl / totCollateral) * 100 : null;
+  const pctStr = (n: number | null) => (n == null ? '—' : `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`);
+  return (
+    <table className="w-full text-xs font-mono min-w-[760px]">
+      <thead>
+        <tr className="text-[10px] uppercase tracking-wider text-parchment/50 text-left border-b border-brass/28">
+          <th className="px-1 py-1.5 font-normal">Coin</th>
+          <th className="px-1 py-1.5 font-normal text-right">Notional</th>
+          <th className="px-1 py-1.5 font-normal text-right">Lev</th>
+          <th className="px-1 py-1.5 font-normal text-right" title="Margin committed: notional ÷ leverage">Collateral</th>
+          <th className="px-1 py-1.5 font-normal text-right">Entry → Exit</th>
+          <th className="px-1 py-1.5 font-normal text-right">Held</th>
+          <th className="px-1 py-1.5 font-normal text-right">PnL</th>
+          <th className="px-1 py-1.5 font-normal text-right" title="PnL ÷ collateral">ROE</th>
+          <th className="px-1 py-1.5 font-normal text-right">Closed</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(({ t, notional, lev, levKnown, collateral, pnl, roe }) => (
+          <tr key={t.id} className="border-t border-brass/14">
+            <td className="px-1 py-2">
+              <Link href={`/trading/trades/${t.id}`} className="text-brass hover:underline">{t.ticker}</Link>{' '}
+              <span className={t.side === 'long' ? 'text-bull' : 'text-bear'}>{t.side === 'long' ? 'LONG' : 'SHORT'}</span>
+            </td>
+            <td className="px-1 py-2 text-right text-parchment/70">{notional != null ? fmtUsd(notional) : '—'}<div className="text-[10px] text-parchment/45">{t.qty} {t.ticker}</div></td>
+            <td className="px-1 py-2 text-right text-parchment/70" title={levKnown ? undefined : 'Not recorded at entry; assumed mandate cap'}>{levKnown ? '' : '~'}{lev}x</td>
+            <td className="px-1 py-2 text-right text-parchment">{collateral != null ? fmtUsd(collateral) : '—'}</td>
+            <td className="px-1 py-2 text-right text-parchment/70">{px(t.entry_price)} → {px(t.exit_price)}</td>
+            <td className="px-1 py-2 text-right text-parchment/60">{fmtHeld(t.entry_at, t.exit_at)}</td>
+            <td className="px-1 py-2 text-right" style={{ color: plColor(pnl) }}>{pnl != null ? fmtUsd(pnl) : '—'}</td>
+            <td className="px-1 py-2 text-right" style={{ color: plColor(roe) }}>{pctStr(roe)}</td>
+            <td className="px-1 py-2 text-right text-parchment/50 whitespace-nowrap">{t.exit_at ? new Date(t.exit_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '—'}</td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot>
+        <tr className="border-t border-brass/28 text-parchment/70">
+          <td className="px-1 py-2 uppercase text-[10px] tracking-wider">Total</td>
+          <td />
+          <td />
+          <td className="px-1 py-2 text-right">{fmtUsd(totCollateral)}</td>
+          <td />
+          <td />
+          <td className="px-1 py-2 text-right" style={{ color: plColor(totPnl) }}>{fmtUsd(totPnl)}</td>
+          <td className="px-1 py-2 text-right" style={{ color: plColor(totRoe) }}>{pctStr(totRoe)}</td>
+          <td />
+        </tr>
+      </tfoot>
+    </table>
   );
 }
 

@@ -49,6 +49,11 @@ export async function monitorMandate(mandate: Mandate): Promise<{
             entry_at: new Date().toISOString(),
             stop_order_id: stopLeg?.id ?? null,
             target_order_id: targetLeg?.id ?? null,
+            // Perps: record the leverage cap the order opened at (set just
+            // before submit) so the closed-trade view can show collateral.
+            ...(mandate.broker === 'hyperliquid'
+              ? { leverage: await (await import('./hyperliquid')).hlOpenLeverage(mandate, trade.ticker) }
+              : {}),
           });
 
           // Best-effort: echo the position into analyst profiles

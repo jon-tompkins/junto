@@ -39,6 +39,7 @@ export interface TradeRow {
   target_order_id: string | null;
   status: 'pending' | 'submitted' | 'open' | 'closed' | 'cancelled' | 'rejected';
   realized_pnl_usd: number | null;
+  leverage?: number | null;
 }
 
 export interface AmendmentRow {

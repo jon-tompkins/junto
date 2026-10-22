@@ -275,6 +275,12 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web' |
     // protect sweep stays as the backstop. Best-effort: a failure here doesn't
     // fail the approval (the position is open; protect will retry).
     let protectedNote = '';
+    // Perps: record the leverage cap the order opened at (set just before
+    // submit) so closed trades can show collateral and return on it.
+    if (mandate.broker === 'hyperliquid') {
+      const { hlOpenLeverage } = await import('./hyperliquid');
+      await updateTrade(tradeId, { leverage: await hlOpenLeverage(mandate, trade.ticker) } as any).catch(() => {});
+    }
     if (mandate.broker === 'hyperliquid' && trade.stop_price) {
       const exitSide = trade.side === 'long' ? 'sell' : 'buy';
       const qty = Number(order.filled_qty) > 0 ? Number(order.filled_qty) : Number(trade.qty);

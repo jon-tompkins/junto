@@ -644,3 +644,12 @@ export async function getHyperliquidMeta(mode?: 'paper' | 'live' | null): Promis
   const meta = await info<HlMeta>(baseUrl(mode), { type: 'meta' });
   return meta.universe;
 }
+
+// Leverage a new position actually opens at: our mandate cap, clamped to the
+// asset's max (HL won't go above it, e.g. TIA tops out at 5x).
+export async function hlOpenLeverage(mandate: { hl_max_leverage?: number | null; mode?: string | null }, coin: string): Promise<number> {
+  const cap = Math.max(1, Math.floor(mandate.hl_max_leverage ?? 3));
+  const meta = await getHyperliquidMeta(mandate.mode === 'live' ? 'live' : 'paper').catch(() => [] as HlAssetMeta[]);
+  const max = meta.find((a) => a.name === coin)?.maxLeverage;
+  return max ? Math.min(cap, max) : cap;
+}
