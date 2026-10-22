@@ -661,16 +661,34 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <SnapStat
-              label="Equity"
-              value={openRows.length === 0 ? '—' : fmtUsd(positionEquity)}
-              sub={account.equity != null ? `acct ${fmtUsd(account.equity)}` : `capital ${fmtUsd(mandate.capital_allotted_usd)}`}
-            />
-            <SnapStat
-              label="Cash"
-              value={account.cash == null ? '—' : fmtUsd(account.cash)}
-              sub={cashPct == null ? undefined : `${cashPct.toFixed(1)}% of equity`}
-            />
+            {isPerps ? (
+              <>
+                {/* Perps: account value is the collateral; position "equity" would be notional */}
+                <SnapStat
+                  label="Account value"
+                  value={perps ? fmtUsd(perps.collateral) : '—'}
+                  sub={`capital ${fmtUsd(mandate.capital_allotted_usd)}`}
+                />
+                <SnapStat
+                  label="Free collateral"
+                  value={perps ? fmtUsd(perps.free_collateral) : '—'}
+                  sub={perps && perps.collateral > 0 ? `${((perps.free_collateral / perps.collateral) * 100).toFixed(0)}% of account` : undefined}
+                />
+              </>
+            ) : (
+              <>
+                <SnapStat
+                  label="Equity"
+                  value={openRows.length === 0 ? '—' : fmtUsd(positionEquity)}
+                  sub={account.equity != null ? `acct ${fmtUsd(account.equity)}` : `capital ${fmtUsd(mandate.capital_allotted_usd)}`}
+                />
+                <SnapStat
+                  label="Cash"
+                  value={account.cash == null ? '—' : fmtUsd(account.cash)}
+                  sub={cashPct == null ? undefined : `${cashPct.toFixed(1)}% of equity`}
+                />
+              </>
+            )}
             <SnapStat
               label="Day P/L"
               value={openRows.length === 0 ? '—' : fmtUsd(totalDayPl)}
