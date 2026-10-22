@@ -4,7 +4,8 @@ import { ROSTER_JUNTO_ID } from '@/lib/trading/hl-roster';
 
 // Public: the dynamic HL Top Traders roster — live positions + 30d PnL curve per
 // wallet, straight from Hyperliquid's public info API. Cached 5 min at the edge.
-export const revalidate = 300;
+// Rendered on request, not at build: an HL 429 during prerender failed deploys.
+export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const HL_INFO = 'https://api.hyperliquid.xyz/info';
@@ -75,5 +76,8 @@ export async function GET() {
     }
   }
   traders.sort((a, b) => a.rank - b.rank);
-  return NextResponse.json({ updatedAt: new Date().toISOString(), traders });
+  return NextResponse.json(
+    { updatedAt: new Date().toISOString(), traders },
+    { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' } },
+  );
 }
