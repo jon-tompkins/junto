@@ -515,6 +515,10 @@ export default function SourceProfilePage() {
           </div>
         )}
 
+        {/* Signup CTA sits right under the track-record stats: on mobile the summary below is
+            ~2 screens tall, which pushed the CTA out of sight for cold search/X visitors. */}
+        <SignupCTA context="analyst" subject={displayHandle} />
+
         {/* Summary */}
         {profile.summary && (
           <div className="bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded p-5 mb-8">
@@ -522,8 +526,6 @@ export default function SourceProfilePage() {
             <p className="text-parchment/80 leading-relaxed">{profile.summary}</p>
           </div>
         )}
-
-        <SignupCTA context="analyst" subject={displayHandle} />
 
         {/* Ask about this source */}
         <div className="mb-8">
