@@ -29,12 +29,15 @@ import { generateDispatchAudio } from '@/lib/audio/generate';
 import { setDispatchAudio } from '@/lib/db/personal-dispatches';
 import { postDispatchToDiscord } from '@/lib/discord/post';
 import { queueDispatchTweetForRunId } from '@/lib/dispatch-x-crosspost';
+import { runBounded } from '@/lib/utils/bounded';
 
 export const maxDuration = 300; // 5 minutes
+const GENERATE_BUDGET_MS = 210_000; // stop starting new newsletters after this
 
 // GET /api/cron/generate-newsletters — generate due newsletters and deliver to subscribers
 // Triggered by Vercel cron every 5 minutes
 export async function GET(req: NextRequest) {
+  const tickStartedAt = Date.now();
   try {
     const cronSecret = process.env.CRON_SECRET;
     if (!cronSecret) {
@@ -99,7 +102,7 @@ export async function GET(req: NextRequest) {
     const dispatchDate = new Date().toISOString().split('T')[0];
     const dispatchWindow = getCurrentSendWindow();
 
-    for (const newsletter of dueNewsletters) {
+    const batch = await runBounded(dueNewsletters, async (newsletter) => {
       try {
         console.log(`[generate] Processing: ${newsletter.name} (${newsletter.id})`);
 
@@ -109,7 +112,7 @@ export async function GET(req: NextRequest) {
           console.log(`[generate] Skipping ${newsletter.name}: no sources`);
           if (!dryRun) await storeSkippedRun(newsletter.id, 'skipped', 'No sources configured');
           results[newsletter.name] = { status: 'skipped', error: 'No sources configured' };
-          continue;
+          return;
         }
         // Hard cap sources per dispatch (cost guardrail). Juntos are already
         // capped at 20; this also bounds the direct newsletter_sources path.
@@ -144,7 +147,7 @@ export async function GET(req: NextRequest) {
             ...(catchup ? { catchup_window: catchup.window } : {}),
           });
           results[newsletter.name] = { status: 'skipped', error: skipMessage };
-          continue;
+          return;
         }
 
         // Atomic claim — the unique PK on (newsletter_id, dispatch_date, send_window)
@@ -161,7 +164,7 @@ export async function GET(req: NextRequest) {
           if (lockErr) {
             console.log(`[generate] ${newsletter.name}: ${lockWindow} already claimed for ${lockDate} — skipping (dedup)`);
             results[newsletter.name] = { status: 'skipped', error: 'Already generated this window (dedup)' };
-            continue;
+            return;
           }
         }
 
@@ -237,7 +240,7 @@ export async function GET(req: NextRequest) {
 
         if (dryRun) {
           results[newsletter.name] = { status: 'dry_run', subject: result.subject, content: result.content, history: result.history ?? null, ...(debugPrompt && lastPrompt ? { prompt: lastPrompt } : {}) };
-          continue;
+          return;
         }
 
         // 5. Store the run (status updated after delivery)
@@ -288,7 +291,7 @@ export async function GET(req: NextRequest) {
           console.log(`[generate] ${newsletter.name}: ${errMsg}`);
           await updateRunStatus(run.id, 'generated_not_delivered', errMsg);
           results[newsletter.name] = { status: 'generated_not_delivered', error: errMsg };
-          continue;
+          return;
         }
 
         // 6b. Generate audio once per run if the dispatch has voice enabled.
@@ -334,7 +337,7 @@ export async function GET(req: NextRequest) {
           console.log(`[generate] No subscribers for ${newsletter.name}`);
           await updateRunStatus(run.id, 'generated');
           results[newsletter.name] = { status: 'generated', subscribers: 0 };
-          continue;
+          return;
         }
 
         const deliveredEmails: string[] = [];
@@ -374,7 +377,7 @@ export async function GET(req: NextRequest) {
           console.log(`[generate] No payable subscribers for ${newsletter.name}`);
           await updateRunStatus(run.id, 'generated', 'All subscribers had insufficient credits');
           results[newsletter.name] = { status: 'generated', subscribers: 0 };
-          continue;
+          return;
         }
 
         console.log(
@@ -472,6 +475,20 @@ export async function GET(req: NextRequest) {
         } catch { /* ignore secondary failure */ }
         results[newsletter.name] = { status: 'error', error: msg, ...(debugPrompt && lastPrompt ? { prompt: lastPrompt } : {}) };
       }
+    }, {
+      // Newsletters are independent (own lock, own run, own billing), so a few can
+      // generate at once. GENERATE_CONCURRENCY=1 restores the old sequential behaviour.
+      concurrency: dryRun ? 1 : Math.max(1, Number(process.env.GENERATE_CONCURRENCY) || 3),
+      // Stop STARTING newsletters near the 300s limit. Unstarted ones hold no dispatch lock,
+      // so the next cron tick (:05/:10) picks them up instead of the function being killed.
+      budgetMs: GENERATE_BUDGET_MS,
+      startedAt: tickStartedAt,
+    });
+    for (const d of batch.deferred) {
+      results[d.name] = { status: 'deferred', error: 'Time budget reached — will resume next tick' };
+    }
+    if (batch.deferred.length > 0) {
+      console.log(`[generate] Deferred ${batch.deferred.length} newsletter(s) to next tick: ${batch.deferred.map((d) => d.name).join(', ')}`);
     }
 
     return NextResponse.json({
