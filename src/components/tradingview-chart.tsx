@@ -13,6 +13,11 @@ const CRYPTO_TICKERS = new Set([
   'BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE', 'ADA', 'AVAX', 'DOT', 'LINK',
   'UNI', 'AAVE', 'MATIC', 'POL', 'OP', 'ARB', 'SUI', 'APT', 'INJ', 'TIA',
   'TON', 'NEAR', 'ATOM', 'FTM', 'LTC', 'BCH', 'ETC', 'XLM', 'ALGO',
+  // Added Oct 23 (WLD showed an equity chart + equity research button). Only names with
+  // no common US-equity collision; ambiguous ones (CVX, ONE, GMT...) stay out on purpose.
+  'WLD', 'PEPE', 'SHIB', 'WIF', 'BONK', 'SEI', 'PYTH', 'JTO', 'RENDER', 'FET', 'GRT',
+  'LDO', 'IMX', 'PENDLE', 'FIL', 'ICP', 'HBAR', 'CRV', 'MKR', 'DYDX', 'BLUR', 'STRK',
+  'FLOKI', 'AXS', 'MANA', 'SAND', 'ENJ', 'COMP', 'SNX', 'YFI', 'TRX', 'HYPE',
 ]);
 
 export function getTVSymbol(ticker: string): string {
