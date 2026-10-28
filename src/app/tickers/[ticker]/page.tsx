@@ -59,7 +59,8 @@ export default async function TickerCoveragePage({
   const { ticker } = await params;
   const t = decodeURIComponent(ticker).toUpperCase();
   const [runs, stances] = await Promise.all([getPublicRunsByTicker(t, 60), loadStances(t)]);
-  if (runs.length === 0) notFound();
+  // A ticker with tracked analyst positions is worth a page even before any dispatch has covered it.
+  if (runs.length === 0 && stances.length === 0) notFound();
 
   const counts: Record<string, number> = {};
   for (const s of stances) counts[s.stance] = (counts[s.stance] ?? 0) + 1;
@@ -90,7 +91,9 @@ export default async function TickerCoveragePage({
           <span className="text-brass">${t}</span> — dispatch coverage
         </h1>
         <p className="text-sm text-parchment/55 mb-6">
-          {runs.length} public MyJunto dispatch{runs.length === 1 ? '' : 'es'} mentioning ${t}, newest first.
+          {runs.length > 0
+            ? `${runs.length} public MyJunto dispatch${runs.length === 1 ? '' : 'es'} mentioning $${t}, newest first.`
+            : `No dispatch has covered $${t} yet. Here is what the analysts we track are saying.`}
         </p>
 
         {stances.length > 0 && (
@@ -141,7 +144,7 @@ export default async function TickerCoveragePage({
 
         <SignupCTA context="ticker" subject={t} />
 
-        <h2 className="text-[11px] uppercase tracking-wide text-brass/70 font-[var(--font-oswald)] mb-1">Dispatches</h2>
+        {runs.length > 0 && <h2 className="text-[11px] uppercase tracking-wide text-brass/70 font-[var(--font-oswald)] mb-1">Dispatches</h2>}
         <ul className="divide-y divide-[rgb(var(--t-brass) / 0.18)]">
           {runs.map((r) => (
             <li key={r.id} className="py-3">
