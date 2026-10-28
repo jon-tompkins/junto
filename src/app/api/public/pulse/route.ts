@@ -9,6 +9,10 @@ export const REPORTER_HANDLES = [
   'bespokeinvest', 'messaricrypto', 'theaigrid', 'ai_explained_', 'biologyaidaily',
 ];
 
+// Themes and macro words that extractors emit as "tickers" but aren't tradable symbols.
+const NON_TICKERS = new Set(['AI', 'AGI', 'USD', 'GOLD', 'OIL', 'CRYPTO', 'ALTCOINS', 'ETFS', 'BONDS', 'STOCKS']);
+const isRealTicker = (t: unknown) => typeof t === 'string' && t === t.toUpperCase() && !NON_TICKERS.has(t);
+
 // GET /api/public/pulse?days=7&asset=equity — aggregates for the public /pulse dashboard.
 // One RPC (public_pulse_summary) so row-count caps can't undercount; cached 5 min at the edge.
 export async function GET(req: NextRequest) {
@@ -27,7 +31,11 @@ export async function GET(req: NextRequest) {
     console.error('[public/pulse]', error.message);
     return NextResponse.json({ error: 'Query failed' }, { status: 500 });
   }
-  return NextResponse.json(data, {
+  const clean = { ...data } as Record<string, unknown>;
+  for (const key of ['hot', 'consensus', 'new_calls', 'best_open', 'worst_open', 'recent_closed']) {
+    if (Array.isArray(clean[key])) clean[key] = (clean[key] as { ticker?: string }[]).filter((r) => isRealTicker(r.ticker));
+  }
+  return NextResponse.json(clean, {
     headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
   });
 }

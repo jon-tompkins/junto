@@ -99,7 +99,7 @@ function MoodGauge({ bull, bear }: { bull: number; bear: number }) {
 function Heatmap({ rows }: { rows: Mix[] }) {
   if (!rows.length) return <p className="text-sm text-parchment/40 py-6">Nothing yet in this window.</p>;
   return (
-    <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 auto-rows-[68px] sm:auto-rows-[76px] gap-1.5 [grid-auto-flow:dense]">
+    <div className="grid flex-1 grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 auto-rows-[68px] sm:auto-rows-fr gap-1.5 [grid-auto-flow:dense] sm:min-h-[420px]">
       {rows.map((r, i) => {
         const directional = Math.max(r.bullish + r.bearish, 1);
         const net = (r.bullish - r.bearish) / directional; // -1..1
@@ -132,7 +132,7 @@ function Heatmap({ rows }: { rows: Mix[] }) {
 function Panel({ title, sub, children, className = '', glow }: { title: string; sub?: string; children: React.ReactNode; className?: string; glow?: boolean }) {
   return (
     <section
-      className={`relative rounded-md p-4 sm:p-5 ${className}`}
+      className={`relative flex flex-col rounded-md p-4 sm:p-5 ${className}`}
       style={{
         background: 'linear-gradient(180deg, rgb(var(--t-surface)), rgb(var(--t-ink)))',
         border: `1px solid ${brass(0.22)}`,
@@ -246,7 +246,7 @@ export function PulseDashboard({ compactHeader = false }: { compactHeader?: bool
   const bestRows = (data?.best_open ?? []).map((c) => ({ handle: c.handle, ticker: c.ticker, label: c.stance === 'bullish' ? 'long' : 'short', value: c.return_pct }));
   const worstRows = (data?.worst_open ?? []).map((c) => ({ handle: c.handle, ticker: c.ticker, label: c.stance === 'bullish' ? 'long' : 'short', value: c.return_pct }));
   const closedRows = (data?.recent_closed ?? []).map((c) => ({ handle: c.handle, ticker: c.ticker, label: c.stance === 'bullish' ? 'long' : 'short', value: c.return_pct }));
-  const maxRet = Math.max(...[...bestRows, ...worstRows, ...closedRows].map((r) => Math.abs(r.value)), 10);
+  const maxRet = 100; // bars saturate at ±100% so one outlier doesn't flatten the rest
 
   const k = data?.kpis;
   const win = WINDOWS.find((w) => w.d === days)?.label;
