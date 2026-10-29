@@ -33,6 +33,10 @@
       "schedule": "0 14 * * *"
     },
     {
+      "path": "/api/cron/personal-dispatch?resume=1",
+      "schedule": "7,14 14 * * *"
+    },
+    {
       "path": "/api/cron/trade-tick?broker=alpaca",
       "schedule": "35 13 * * 1-5"
     },

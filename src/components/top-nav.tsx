@@ -14,7 +14,7 @@ type Product = 'signal' | 'trade';
 interface NavItem { href: string; label: string; locked?: boolean }
 
 // A route belongs to Trade if it starts with one of these; everything else is Signal.
-const TRADE_PREFIXES = ['/trade', '/trading', '/leaderboard', '/positions', '/trades'];
+const TRADE_PREFIXES = ['/trade', '/trading', '/leaderboard', '/positions', '/trades', '/top-calls'];
 
 export function TopNav() {
   const { data: session } = useSession();
@@ -56,6 +56,7 @@ export function TopNav() {
     { href: '/trade', label: 'Overview' },
     { href: '/leaderboard', label: 'Discover' },
     { href: '/trade/top-traders', label: 'HL Top 10' },
+    { href: '/top-calls', label: 'Top Calls' },
     { href: '/trades', label: 'Best Trades' },
     { href: '/positions', label: 'Positions' },
     { href: tradingUnlocked ? '/trading' : '/pricing', label: 'Mandates', locked: !tradingUnlocked },

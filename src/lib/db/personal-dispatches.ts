@@ -323,3 +323,42 @@ export async function getPersonalDispatchById(id: string, userId: string): Promi
   const delivery = await fetchDeliveryTimestamps([id]);
   return runToPersonalDispatch(run as RunRow, userId, delivery.get(id));
 }
+
+/**
+ * Which of these users already have a stored personal dispatch for `date`?
+ * Lets the personal-dispatch cron resume across ticks without regenerating (and
+ * re-sending) a user who was already handled earlier in the day. Fail-open: on a
+ * lookup error returns an empty set, i.e. the old "process everyone" behaviour.
+ */
+export async function getUserIdsWithDispatchOnDate(userIds: string[], date: string): Promise<Set<string>> {
+  const done = new Set<string>();
+  if (userIds.length === 0) return done;
+  const supabase = getSupabase();
+  try {
+    for (let i = 0; i < userIds.length; i += 100) {
+      const chunk = userIds.slice(i, i + 100);
+      const { data: nls, error: nlErr } = await supabase
+        .from('newsletters_v2')
+        .select('id, admin_user_id')
+        .eq('is_personal', true)
+        .in('admin_user_id', chunk);
+      if (nlErr) throw nlErr;
+      const userByNl = new Map<string, string>(((nls || []) as any[]).map((n) => [n.id, n.admin_user_id]));
+      if (userByNl.size === 0) continue;
+      const { data: runs, error: runErr } = await supabase
+        .from('newsletter_runs')
+        .select('newsletter_id')
+        .in('newsletter_id', [...userByNl.keys()])
+        .eq('dispatch_date', date);
+      if (runErr) throw runErr;
+      for (const r of (runs || []) as any[]) {
+        const u = userByNl.get(r.newsletter_id);
+        if (u) done.add(u);
+      }
+    }
+  } catch (err) {
+    console.error('[personal-dispatch] done-today lookup failed; processing everyone', err);
+    return new Set();
+  }
+  return done;
+}

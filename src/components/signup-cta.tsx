@@ -7,12 +7,17 @@ import { useSession } from 'next-auth/react';
 // organic traffic lands, and they had no way in). Only shown to signed-out visitors.
 // Clicks are logged as a virtual page view at /cta/<context>/<subject> through the
 // existing first-party tracker, so conversion = those rows ÷ views of the host pages.
-export function SignupCTA({ context, subject }: { context: 'ticker' | 'analyst'; subject: string }) {
+export function SignupCTA({ context, subject }: { context: 'ticker' | 'analyst' | 'calls'; subject: string }) {
   const { status } = useSession();
   if (status !== 'unauthenticated') return null;
 
   const copy =
-    context === 'ticker'
+    context === 'calls'
+      ? {
+          title: 'Get the best calls in your inbox',
+          blurb: 'Pick the accounts you trust and myJunto sends one short brief a day: what they said, what changed, and how their calls have played out.',
+        }
+      : context === 'ticker'
       ? {
           title: `Get the $${subject} read every morning`,
           blurb: `Pick the accounts you trust and myJunto sends one short brief a day: what they said about $${subject} and everything else you track, and what changed.`,
