@@ -3,9 +3,9 @@ import { getSupabase } from '@/lib/db/client';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, twitter_handle } = await request.json();
+    const { email, twitter_handle, source, subject } = await request.json();
 
-    if (!email || !email.includes('@')) {
+    if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
       return NextResponse.json(
         { error: 'Valid email required' },
         { status: 400 }
@@ -18,7 +18,9 @@ export async function POST(request: NextRequest) {
       .from('waitlist')
       .insert({ 
         email: email.toLowerCase().trim(),
-        twitter_handle: twitter_handle || null
+        twitter_handle: twitter_handle || null,
+        source: typeof source === 'string' ? source.slice(0, 40) : null,
+        subject: typeof subject === 'string' ? subject.slice(0, 80) : null,
       });
 
     if (error) {
