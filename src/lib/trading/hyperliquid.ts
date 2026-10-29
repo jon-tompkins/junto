@@ -20,6 +20,7 @@ import {
 } from './alpaca';
 import { signL1Action, formatPrice, formatSize } from './hyperliquid-sign';
 import { perfRefsFromCloses, type PerfRefs } from './pnl';
+import { gateClient, type OrderGate } from './live-guard';
 
 // Marketable-limit slippage cushion. HL has no true market order; a "market"
 // buy is an IOC limit priced through the book. 5% guarantees a fill at the
@@ -133,11 +134,15 @@ export interface HyperliquidConfig {
   // Leverage cap applied (cross) to an asset before opening — so positions
   // don't inherit the asset's max leverage. Default 3x.
   maxLeverage?: number | null;
+  // Live-mode order guard (see live-guard.ts). A mode='live' client without one refuses to open risk.
+  orderGate?: OrderGate;
 }
 
-export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient & {
+export type HyperliquidClient = AlpacaClient & {
   submitTrailingStop(params: { symbol: string; qty: number; side: 'buy' | 'sell'; retracementPct?: number; retracementPx?: number }): Promise<string>;
-} {
+};
+
+export function makeHyperliquid(cfg: HyperliquidConfig): HyperliquidClient {
   const url = baseUrl(cfg.mode);
   const user = cfg.walletAddress;
   if (!user) throw new Error('Hyperliquid wallet address not configured');
@@ -172,7 +177,7 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient & {
     return info<HlFrontendOrder[]>(url, { type: 'frontendOpenOrders', user });
   }
 
-  return {
+  const client: HyperliquidClient = {
     async getAccount(): Promise<AlpacaAccount> {
       // Unified accounts: USDC collateral lives in the SPOT balance and is drawn
       // for perps at order time, so the perp clearinghouseState reads $0 until a
@@ -579,6 +584,9 @@ export function makeHyperliquid(cfg: HyperliquidConfig): AlpacaClient & {
       throw new Error('Hyperliquid: bracket entries unsupported — use market order + submitOcoExit.');
     },
   };
+
+  // Every risk-opening order path goes through the live-mode guard (live-guard.ts).
+  return gateClient(client, { mode: cfg.mode, gate: cfg.orderGate });
 }
 
 interface HlOrderStatus {

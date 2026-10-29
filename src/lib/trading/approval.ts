@@ -1,3 +1,4 @@
+import { OrderBlockedError } from './live-guard';
 import { sendTelegramMessage, type InlineKeyboardMarkup } from '@/lib/telegram/client';
 import { getUserTelegramChatId } from '@/lib/telegram/link';
 import { sendMandateCard } from '@/lib/telegram/mandate-card';
@@ -346,6 +347,12 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web' |
 
     return { ok: true, message: `📤 Submitted ${trade.ticker} — awaiting fill confirmation.${protectedNote}` };
   } catch (err: any) {
+    if (err instanceof OrderBlockedError) {
+      // Refused by the live-mode guard BEFORE reaching the venue: nothing was placed.
+      await updateTrade(tradeId, { status: 'cancelled' });
+      await addJournalEntry({ tradeId, kind: 'entry', content: `[not submitted: ${err.message}]` });
+      return { ok: false, message: `🛑 ${trade.ticker}: not submitted — ${err.message.replace(/^Order blocked by live-mode guard /, '')}` };
+    }
     await updateTrade(tradeId, { status: 'rejected' });
     await addJournalEntry({
       tradeId,

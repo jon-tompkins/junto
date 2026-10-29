@@ -2,6 +2,7 @@
 // v1 will accept per-mandate keys via OAuth.
 
 import { perfRefsFromCloses, type PerfRefs } from './pnl';
+import { gateClient, type OrderGate } from './live-guard';
 
 interface AlpacaCreds {
   keyId: string;
@@ -117,10 +118,10 @@ export interface AlpacaClock {
   next_close: string;
 }
 
-export function makeAlpaca(override?: { keyId?: string | null; secret?: string | null; mode?: 'paper' | 'live' | null }) {
+export function makeAlpaca(override?: { keyId?: string | null; secret?: string | null; mode?: 'paper' | 'live' | null; orderGate?: OrderGate }) {
   const creds = getCreds(override);
 
-  return {
+  const client = {
     getAccount: () => call<AlpacaAccount>(creds, 'GET', '/v2/account'),
 
     getClock: () => call<AlpacaClock>(creds, 'GET', '/v2/clock'),
@@ -256,6 +257,9 @@ export function makeAlpaca(override?: { keyId?: string | null; secret?: string |
       });
     },
   };
+
+  // Every risk-opening order path goes through the live-mode guard (live-guard.ts).
+  return gateClient(client, { mode: override?.mode, gate: override?.orderGate });
 }
 
 export type AlpacaClient = ReturnType<typeof makeAlpaca>;

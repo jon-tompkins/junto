@@ -6,6 +6,8 @@ import { makeAlpaca, assertLiveAllowed, type AlpacaClient, type AlpacaAccount, t
 import { makeHyperliquid } from './hyperliquid';
 import { decryptSecret } from './crypto';
 import { perfRefsFromCloses, type PerfRefs } from './pnl';
+import { gateClient, type OrderGate } from './live-guard';
+import { makeMandateGate } from './live-guard-store';
 
 interface BrokerAuth {
   basic: string;
@@ -42,10 +44,13 @@ async function brokerFetch<T>(
   return res.status === 204 ? (null as unknown as T) : ((await res.json()) as T);
 }
 
-export function makeManagedAlpaca(accountId: string): AlpacaClient {
+export function makeManagedAlpaca(
+  accountId: string,
+  opts?: { mode?: 'paper' | 'live' | null; orderGate?: OrderGate },
+): AlpacaClient {
   const acct = `/v1/trading/accounts/${accountId}`;
 
-  return {
+  const client: AlpacaClient = {
     getAccount: () => brokerFetch<AlpacaAccount>('GET', `${acct}/account`),
 
     getClock: () => brokerFetch<AlpacaClock>('GET', '/v1/clock'),
@@ -149,9 +154,12 @@ export function makeManagedAlpaca(accountId: string): AlpacaClient {
       });
     },
   };
+
+  return gateClient(client, { mode: opts?.mode, gate: opts?.orderGate });
 }
 
 export interface MandateAlpacaCreds {
+  id?: string | null;
   broker?: string | null;
   account_kind?: string | null;
   alpaca_account_id?: string | null;
@@ -173,6 +181,7 @@ export function alpacaForMandate(mandate: MandateAlpacaCreds): AlpacaClient {
     }
     assertLiveAllowed(mandate.mode);
     return makeHyperliquid({
+      orderGate: makeMandateGate(mandate.id, mandate.mode),
       walletAddress: mandate.hl_wallet_address,
       mode: mandate.mode ?? null,
       agentPrivateKey: decryptSecret(mandate.hl_agent_secret) as `0x${string}` | null,
@@ -181,9 +190,17 @@ export function alpacaForMandate(mandate: MandateAlpacaCreds): AlpacaClient {
   }
   if (mandate.alpaca_account_id) {
     assertLiveAllowed(mandate.mode);
-    return makeManagedAlpaca(mandate.alpaca_account_id);
+    // mandate.mode doesn't describe the endpoint for managed accounts: the Broker
+    // API base URL does. Anything that isn't the Alpaca sandbox is treated as live.
+    const base = process.env.BROKER_API_BASE_URL || 'https://broker-api.sandbox.alpaca.markets';
+    const effectiveMode = mandate.mode === 'live' || !base.includes('sandbox') ? 'live' : 'paper';
+    return makeManagedAlpaca(mandate.alpaca_account_id, {
+      mode: effectiveMode,
+      orderGate: makeMandateGate(mandate.id, effectiveMode),
+    });
   }
   return makeAlpaca({
+    orderGate: makeMandateGate(mandate.id, mandate.mode),
     keyId: mandate.alpaca_key_id ?? null,
     secret: decryptSecret(mandate.alpaca_secret),
     mode: mandate.mode ?? null,
