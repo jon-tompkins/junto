@@ -125,11 +125,14 @@ export async function buildPositionsMessage(userId: string, chatId?: number | st
     lines.push(`<b>${escapeHtml(m.name)}</b>`);
 
     for (const t of mTrades) {
-      const live = livePosByMandate.get(mId)?.get(t.ticker.toUpperCase());
+      // Pending proposals aren't positions: matching them to the live position by
+      // ticker showed one real position several times and double-counted P&L.
+      const isPending = t.status === 'pending';
+      const live = isPending ? undefined : livePosByMandate.get(mId)?.get(t.ticker.toUpperCase());
       const entry = t.entry_price ?? t.proposal_price;
       const sideLabel = t.side === 'long' ? 'LONG' : 'SHORT';
 
-      const pp = perpsByMandate.get(mId)?.positions.find((x: any) => x.coin.toUpperCase() === t.ticker.toUpperCase());
+      const pp = isPending ? undefined : perpsByMandate.get(mId)?.positions.find((x: any) => x.coin.toUpperCase() === t.ticker.toUpperCase());
       let plLine = '';
       if (pp) {
         totalUnrealized += pp.unrealized_pnl;
@@ -143,7 +146,7 @@ export async function buildPositionsMessage(userId: string, chatId?: number | st
         const sign = live.pl >= 0 ? '+' : '';
         plLine = `  Last $${live.price.toFixed(2)}  P&L ${sign}$${live.pl.toFixed(2)}`;
       } else if (t.status === 'pending') {
-        plLine = `  <i>pending approval</i>`;
+        plLine = `  <i>pending approval${t.proposal_price ? ` · proposed @ $${Number(t.proposal_price).toFixed(2)}` : ''}</i>`;
       } else if (t.status === 'submitted') {
         plLine = `  <i>submitted — awaiting fill</i>`;
       } else {
