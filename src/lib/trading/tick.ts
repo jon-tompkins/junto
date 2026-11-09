@@ -116,7 +116,10 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
 
   // A trade closed this tick → refresh the engine's trading-thoughts doc so its
   // self-authored lessons stay current. Best-effort; never breaks the tick.
-  if (result.monitored.closed > 0) {
+  // Full-auto HL mandates regenerate on a weekly cron instead (so the weekly
+  // changelog tweet reflects one coherent diff).
+  const weeklyLearnings = mandate.broker === 'hyperliquid' && mandate.execution_mode === 'full_auto';
+  if (result.monitored.closed > 0 && !weeklyLearnings) {
     try {
       const { regenerateLearnings } = await import('./learnings');
       await regenerateLearnings(mandate);

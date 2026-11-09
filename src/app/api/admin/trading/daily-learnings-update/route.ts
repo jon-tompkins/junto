@@ -13,7 +13,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const mandates = await getActiveMandates();
+  // Optional ?mandate_id=<uuid> limits the run to one mandate (weekly autopilot cron).
+  const only = req.nextUrl.searchParams.get('mandate_id');
+  const mandates = (await getActiveMandates()).filter((m) => !only || m.id === only);
   const results: any[] = [];
 
   for (const mandate of mandates) {
