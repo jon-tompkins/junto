@@ -1,0 +1,374 @@
+{
+  "generated_from": "src/lib/state/machines.ts",
+  "machines": [
+    {
+      "name": "trade",
+      "storage": "trades.status",
+      "initial": "pending",
+      "entries": [],
+      "terminal": [
+        "closed",
+        "cancelled",
+        "rejected"
+      ],
+      "states": [
+        {
+          "id": "pending",
+          "label": "Awaiting approval",
+          "next": [
+            "submitted",
+            "cancelled",
+            "rejected"
+          ]
+        },
+        {
+          "id": "submitted",
+          "label": "Order sent",
+          "next": [
+            "open",
+            "rejected"
+          ]
+        },
+        {
+          "id": "open",
+          "label": "Open",
+          "next": [
+            "closed"
+          ]
+        },
+        {
+          "id": "closed",
+          "label": "Closed",
+          "next": []
+        },
+        {
+          "id": "cancelled",
+          "label": "Skipped",
+          "next": []
+        },
+        {
+          "id": "rejected",
+          "label": "Rejected",
+          "next": []
+        }
+      ],
+      "writers": [
+        "approval.ts (approve/skip)",
+        "monitor.ts (fill detection)",
+        "stops.ts (synthetic stops)",
+        "telegram-commands.ts (/close, /kill)",
+        "api/trades"
+      ],
+      "notes": "Only claimTradeForSubmit() is compare-and-set. All other writes go through updateTrade() unguarded; see docs/STATE_MACHINES.md."
+    },
+    {
+      "name": "mandate",
+      "storage": "trading_mandates.status",
+      "initial": "active",
+      "entries": [],
+      "terminal": [
+        "archived"
+      ],
+      "states": [
+        {
+          "id": "active",
+          "label": "Active",
+          "next": [
+            "paused",
+            "archived"
+          ]
+        },
+        {
+          "id": "paused",
+          "label": "Paused",
+          "next": [
+            "active",
+            "archived"
+          ]
+        },
+        {
+          "id": "archived",
+          "label": "Archived",
+          "next": []
+        }
+      ],
+      "writers": [
+        "autopilot.ts (daily-loss trip → paused)",
+        "telegram-commands.ts (/pause /resume /kill)",
+        "mandate settings UI"
+      ],
+      "notes": "paused via daily-loss also sets daily_loss_tripped_at (a timestamp-as-state); resume must clear it + day_start_date."
+    },
+    {
+      "name": "amendment",
+      "storage": "trade_amendments.status",
+      "initial": "pending",
+      "entries": [],
+      "terminal": [
+        "applied",
+        "skipped",
+        "rejected"
+      ],
+      "states": [
+        {
+          "id": "pending",
+          "label": "Proposed",
+          "next": [
+            "applied",
+            "skipped",
+            "rejected"
+          ]
+        },
+        {
+          "id": "applied",
+          "label": "Applied",
+          "next": []
+        },
+        {
+          "id": "skipped",
+          "label": "Skipped",
+          "next": []
+        },
+        {
+          "id": "rejected",
+          "label": "Rejected",
+          "next": []
+        }
+      ],
+      "writers": [
+        "amendment.ts"
+      ],
+      "notes": ""
+    },
+    {
+      "name": "dispatch_tweet",
+      "storage": "pending_dispatch_tweets.status",
+      "initial": "pending",
+      "entries": [],
+      "terminal": [
+        "rejected",
+        "posted"
+      ],
+      "states": [
+        {
+          "id": "pending",
+          "label": "Needs approval",
+          "next": [
+            "approved",
+            "rejected",
+            "posted"
+          ]
+        },
+        {
+          "id": "approved",
+          "label": "Approved",
+          "next": [
+            "posted",
+            "rejected"
+          ]
+        },
+        {
+          "id": "rejected",
+          "label": "Rejected",
+          "next": []
+        },
+        {
+          "id": "posted",
+          "label": "Posted",
+          "next": []
+        }
+      ],
+      "writers": [
+        "scripts/dispatch-tweet.mjs",
+        "admin approval route"
+      ],
+      "notes": ""
+    },
+    {
+      "name": "apify_run",
+      "storage": "apify_pending_runs.status",
+      "initial": "pending",
+      "entries": [],
+      "terminal": [
+        "completed",
+        "failed"
+      ],
+      "states": [
+        {
+          "id": "pending",
+          "label": "pending",
+          "next": [
+            "completed",
+            "failed"
+          ]
+        },
+        {
+          "id": "completed",
+          "label": "completed",
+          "next": []
+        },
+        {
+          "id": "failed",
+          "label": "failed",
+          "next": []
+        }
+      ],
+      "writers": [
+        "collect-twitter cron"
+      ],
+      "notes": "No timeout/recovery for runs stuck in pending (see docs/STATE_MACHINES.md hazards)."
+    },
+    {
+      "name": "newsletter_run",
+      "storage": "newsletter_runs.status",
+      "initial": "generated",
+      "entries": [
+        "skipped",
+        "error",
+        "delivered"
+      ],
+      "terminal": [
+        "delivered",
+        "partial_delivered",
+        "generated_not_delivered",
+        "skipped",
+        "error"
+      ],
+      "states": [
+        {
+          "id": "generated",
+          "label": "generated",
+          "next": [
+            "delivered",
+            "partial_delivered",
+            "generated_not_delivered"
+          ]
+        },
+        {
+          "id": "delivered",
+          "label": "delivered",
+          "next": []
+        },
+        {
+          "id": "partial_delivered",
+          "label": "partial_delivered",
+          "next": []
+        },
+        {
+          "id": "generated_not_delivered",
+          "label": "generated_not_delivered",
+          "next": []
+        },
+        {
+          "id": "skipped",
+          "label": "skipped",
+          "next": []
+        },
+        {
+          "id": "error",
+          "label": "error",
+          "next": []
+        }
+      ],
+      "writers": [
+        "api/cron/generate-newsletters",
+        "lib/db/newsletter-runs.ts"
+      ],
+      "notes": "DB default is 'delivered' (migration 017) — a row inserted without status silently claims delivery. 'skipped'/'error' are entered directly (no 'generated' phase)."
+    },
+    {
+      "name": "junto",
+      "storage": "juntos.status",
+      "initial": "active",
+      "entries": [],
+      "terminal": [],
+      "states": [
+        {
+          "id": "active",
+          "label": "active",
+          "next": [
+            "paused",
+            "archived"
+          ]
+        },
+        {
+          "id": "paused",
+          "label": "paused",
+          "next": [
+            "active",
+            "archived"
+          ]
+        },
+        {
+          "id": "archived",
+          "label": "archived",
+          "next": [
+            "active"
+          ]
+        }
+      ],
+      "writers": [
+        "junto settings UI",
+        "admin"
+      ],
+      "notes": ""
+    },
+    {
+      "name": "thesis",
+      "storage": "theses.status",
+      "initial": "active",
+      "entries": [],
+      "terminal": [
+        "exited"
+      ],
+      "states": [
+        {
+          "id": "active",
+          "label": "active",
+          "next": [
+            "validated",
+            "invalidated",
+            "dormant",
+            "exited"
+          ]
+        },
+        {
+          "id": "validated",
+          "label": "validated",
+          "next": [
+            "active",
+            "invalidated",
+            "dormant",
+            "exited"
+          ]
+        },
+        {
+          "id": "invalidated",
+          "label": "invalidated",
+          "next": [
+            "active",
+            "dormant",
+            "exited"
+          ]
+        },
+        {
+          "id": "dormant",
+          "label": "dormant",
+          "next": [
+            "active",
+            "exited"
+          ]
+        },
+        {
+          "id": "exited",
+          "label": "exited",
+          "next": []
+        }
+      ],
+      "writers": [
+        "theses/*"
+      ],
+      "notes": "Transitions inferred from enum only (human-driven); tighten once writers are audited."
+    }
+  ]
+}

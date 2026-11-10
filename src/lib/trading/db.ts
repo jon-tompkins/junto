@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/db/client';
+import { TRADE, AMENDMENT, guardTransition, type TradeStatus, type AmendmentStatus } from '@/lib/state';
 import type { Mandate, ExtractedSignal, TradeDecision, SignalDecision, AmendmentKind } from './types';
 
 export async function getActiveMandates(): Promise<Mandate[]> {
@@ -37,7 +38,7 @@ export interface TradeRow {
   alpaca_order_id: string | null;
   stop_order_id: string | null;
   target_order_id: string | null;
-  status: 'pending' | 'submitted' | 'open' | 'closed' | 'cancelled' | 'rejected';
+  status: TradeStatus;
   realized_pnl_usd: number | null;
   leverage?: number | null;
 }
@@ -50,7 +51,7 @@ export interface AmendmentRow {
   new_value: number | null;
   rationale: string;
   source_urls: string[] | null;
-  status: 'pending' | 'applied' | 'skipped' | 'rejected';
+  status: AmendmentStatus;
   applied_at: string | null;
   applied_note: string | null;
   created_at: string;
@@ -142,6 +143,15 @@ export async function updateTrade(
   id: string,
   patch: Partial<TradeRow>,
 ): Promise<void> {
+  // Warn-only lifecycle check (src/lib/state). Never blocks or throws in prod.
+  if (patch.status) {
+    try {
+      const { data: cur } = await getSupabase().from('trades').select('status').eq('id', id).maybeSingle();
+      if (cur) guardTransition(TRADE, cur.status as TradeStatus, patch.status, `trade ${id}`);
+    } catch (e) {
+      if (process.env.STATE_MACHINE_STRICT === '1') throw e;
+    }
+  }
   const { error } = await getSupabase()
     .from('trades')
     .update({ ...patch, updated_at: new Date().toISOString() })
@@ -306,6 +316,14 @@ export async function updateAmendment(
   id: string,
   patch: Partial<AmendmentRow>,
 ): Promise<void> {
+  if (patch.status) {
+    try {
+      const { data: cur } = await getSupabase().from('trade_amendments').select('status').eq('id', id).maybeSingle();
+      if (cur) guardTransition(AMENDMENT, cur.status as AmendmentStatus, patch.status, `amendment ${id}`);
+    } catch (e) {
+      if (process.env.STATE_MACHINE_STRICT === '1') throw e;
+    }
+  }
   const { error } = await getSupabase()
     .from('trade_amendments')
     .update({ ...patch, updated_at: new Date().toISOString() })
