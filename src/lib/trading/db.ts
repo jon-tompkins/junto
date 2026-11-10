@@ -159,6 +159,30 @@ export async function updateTrade(
   if (error) throw error;
 }
 
+// Compare-and-set status transition. Applies `patch` + `status: to` ONLY if the
+// row is currently in a state the TRADE machine allows to move to `to` (or in
+// `opts.from` when given). Returns false when another writer already moved the
+// trade, so callers can skip side effects (journal, post-mortem, notifications)
+// instead of double-firing them. Never throws on a lost race, only on DB errors.
+export async function transitionTrade(
+  id: string,
+  to: TradeStatus,
+  patch: Partial<TradeRow> = {},
+  opts: { from?: readonly TradeStatus[] } = {},
+): Promise<boolean> {
+  const from = opts.from ?? (TRADE.states.filter((s) => TRADE.transitions[s].includes(to)) as TradeStatus[]);
+  const { data, error } = await getSupabase()
+    .from('trades')
+    .update({ ...patch, status: to, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .in('status', from as string[])
+    .select('id');
+  if (error) throw error;
+  const won = Array.isArray(data) && data.length > 0;
+  if (!won) console.warn(`[state] lost race: trade ${id} not in [${from.join(',')}] -> ${to}; skipped`);
+  return won;
+}
+
 // Atomically reserve a pending trade for submission. Returns true if this
 // caller won the race; false if another caller already claimed it (e.g.
 // double-click on the Telegram Approve button). Claim is signaled by
