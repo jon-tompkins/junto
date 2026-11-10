@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/db/client';
+import { checkTransition } from '../state-machines/registry';
 import type { Mandate, ExtractedSignal, TradeDecision, SignalDecision, AmendmentKind } from './types';
 
 export async function getActiveMandates(): Promise<Mandate[]> {
@@ -142,6 +143,13 @@ export async function updateTrade(
   id: string,
   patch: Partial<TradeRow>,
 ): Promise<void> {
+  // Shadow state-machine check (logs only; never blocks). See src/lib/state-machines.
+  if (patch.status) {
+    try {
+      const { data: cur } = await getSupabase().from('trades').select('status').eq('id', id).maybeSingle();
+      checkTransition('trade', cur?.status, patch.status, `updateTrade ${id}`);
+    } catch { /* shadow only */ }
+  }
   const { error } = await getSupabase()
     .from('trades')
     .update({ ...patch, updated_at: new Date().toISOString() })
