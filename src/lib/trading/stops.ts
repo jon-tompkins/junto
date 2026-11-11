@@ -4,7 +4,7 @@
 
 import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
 import { recordCost, anthropicHaikuCostCents } from '@/lib/costs';
-import { updateTrade, addJournalEntry, getJournalEntries } from './db';
+import { transitionTrade, addJournalEntry, getJournalEntries } from './db';
 import { isCryptoTicker, findPosition, baseSymbol } from './asset';
 import type { AlpacaClient, AlpacaPosition } from './alpaca';
 import type { Mandate } from './types';
@@ -84,12 +84,12 @@ export async function enforceSyntheticStops(
     const realized = trade.entry_price
       ? (isLong ? price - trade.entry_price : trade.entry_price - price) * trade.qty
       : null;
-    await updateTrade(trade.id, {
-      status: 'closed',
+    const won = await transitionTrade(trade.id, 'closed', {
       exit_price: price,
       exit_at: new Date().toISOString(),
       realized_pnl_usd: realized,
     });
+    if (!won) continue; // already closed by another writer: skip duplicate journal/post-mortem
     await addJournalEntry({
       tradeId: trade.id,
       kind: 'daily',

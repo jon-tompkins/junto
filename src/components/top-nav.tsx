@@ -47,6 +47,7 @@ export function TopNav() {
 
   const signalNav: NavItem[] = [
     ...(session?.user ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
+    { href: '/pulse', label: 'Pulse' },
     { href: '/explore', label: 'Dispatches' },
     { href: '/sources', label: 'Sources' },
     { href: '/juntos', label: 'Juntos' },

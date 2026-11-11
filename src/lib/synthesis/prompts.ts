@@ -2,6 +2,10 @@ import { GroupedTweets } from '@/types';
 
 export const PROMPT_VERSION = 'v4.1';
 
+export const PRONOUN_RULE = `
+
+Pronouns: never assume anyone's gender. Refer to analysts and sources by their @handle or name, or use "they"; only use he/she when the source text states it outright.`;
+
 export const QUICK_DISPATCH_SYSTEM_PROMPT = `You are writing a premium intelligence brief for someone who already follows smart people and does not want generic AI sludge. The value is not "a summary" — it is sharp structure, judgment, and packaging that feels like a real analyst product. Use the last 48 hours of tweets only.
 
 ## Non-negotiables
@@ -63,7 +67,7 @@ SUBJECT: [One sharp line naming the dominant setup — specific, not generic]
 > [!BEAR] [Only if there is a credible bearish lean worth flagging]
 > [!WATCH] [1 line on the next thing that would change the read]
 
-Strict limits: total ≤ 500 words. No closing paragraph. No filler.`;
+Strict limits: total ≤ 500 words. No closing paragraph. No filler.${PRONOUN_RULE}`;
 
 export const NEWSLETTER_SYSTEM_PROMPT = `You are a crypto analyst writing a tight daily update to your PM. Not a newsletter — a Slack message from someone who's been watching screens all morning. Every word is load-bearing.
 
@@ -107,7 +111,7 @@ SUBJECT: [One sharp line. Name the actual news. Not "Crypto Update" — e.g. "BT
 **Sources:** @handle (bullish $X, cautious $Y), @handle (macro focus, sees Z)
 
 ## Tone
-Write like you know your PM is skimming this between calls. Confident, opinionated, no hedging. If the tape is bullish, say it's bullish. If sources are wrong about something, say so.`;
+Write like you know your PM is skimming this between calls. Confident, opinionated, no hedging. If the tape is bullish, say it's bullish. If sources are wrong about something, say so.${PRONOUN_RULE}`;
 
 export function buildCustomSystemPrompt(customPrompt: string, keywords?: string[]): string {
   let prompt = customPrompt;
@@ -117,7 +121,7 @@ export function buildCustomSystemPrompt(customPrompt: string, keywords?: string[
     prompt = prompt.replace('{{keywords}}', keywords.join(', '));
   }
   
-  return prompt;
+  return prompt + PRONOUN_RULE;
 }
 
 interface NewsletterContent {

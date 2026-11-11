@@ -1,7 +1,7 @@
 import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
 import { recordCost, anthropicHaikuCostCents } from '@/lib/costs';
 import { alpacaForMandate } from './client';
-import { getOpenTrades, updateTrade, addJournalEntry, getJournalEntries } from './db';
+import { getOpenTrades, updateTrade, transitionTrade, addJournalEntry, getJournalEntries } from './db';
 import { findPosition } from './asset';
 import { enforceSyntheticStops, writeExitAndPostMortem } from './stops';
 import type { Mandate } from './types';
@@ -74,7 +74,7 @@ export async function monitorMandate(mandate: Mandate): Promise<{
 
           opened++;
         } else if (['canceled', 'rejected', 'expired'].includes(order.status)) {
-          await updateTrade(trade.id, { status: 'rejected' });
+          await transitionTrade(trade.id, 'rejected'); // only from pending/submitted — never clobber an open trade
         }
       } catch {
         // ignore — try again next tick
@@ -120,12 +120,12 @@ export async function monitorMandate(mandate: Mandate): Promise<{
             ? (exitPrice - trade.entry_price) * trade.qty
             : (trade.entry_price - exitPrice) * trade.qty)
         : null;
-      await updateTrade(trade.id, {
-        status: 'closed',
+      const won = await transitionTrade(trade.id, 'closed', {
         exit_price: exitPrice,
         exit_at: new Date().toISOString(),
         realized_pnl_usd: realized,
       });
+      if (!won) continue; // another writer (stops/telegram) already closed it: no double post-mortem
       await writeExitAndPostMortem(trade.id, mandate);
       closed++;
       continue;
