@@ -11,6 +11,33 @@ function escapeHtml(s: string): string {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// "Open" = any non-terminal trade (awaiting approval, submitted to broker, or filled and live).
+async function countOpenTrades(mandateId: string): Promise<number> {
+  const { count, error } = await getSupabase()
+    .from('trades')
+    .select('id', { count: 'exact', head: true })
+    .eq('mandate_id', mandateId)
+    .in('status', ['pending', 'submitted', 'open']);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const access = await getTradingAccess();
+  if (!access) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const { id } = await ctx.params;
+  const mandate = await getAccessibleMandate(id, access);
+  if (!mandate) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  let open: number;
+  try { open = await countOpenTrades(id); } catch (e: any) { return NextResponse.json({ error: e.message }, { status: 500 }); }
+  if (open > 0) {
+    return NextResponse.json({ error: `Close or cancel the ${open} open trade${open === 1 ? '' : 's'} first.`, open_trade_count: open }, { status: 409 });
+  }
+  const { error } = await getSupabase().from('trading_mandates').delete().eq('id', id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}
+
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const access = await getTradingAccess();
   if (!access) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -19,6 +46,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   if (!mandate) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const supabase = getSupabase();
   const viewerUserId = access.userId;
+  const openTradeCount = await countOpenTrades(id).catch(() => null);
 
   const [tradesRes, signalsRes, juntoRes, ticksRes] = await Promise.all([
     supabase
@@ -177,6 +205,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     },
     junto,
     broker,
+    open_trade_count: openTradeCount,
     trades: tradesRes.data || [],
     signals: signalsRes.data || [],
     ticks: ticksRes.data || [],

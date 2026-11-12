@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
 import { STYLE_OPTIONS } from '@/lib/trading/styles';
 import ReactMarkdown from 'react-markdown';
@@ -137,6 +138,9 @@ function dayPlFor(pos: DayPlPos, entryAt: string | null | undefined): number | n
 export default function MandateDetailPage({ params }: { params: Promise<{ mandateId: string }> }) {
   const { mandateId } = use(params);
   const { status } = useSession();
+  const router = useRouter();
+  const [openTradeCount, setOpenTradeCount] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [mandate, setMandate] = useState<Mandate | null>(null);
   const [junto, setJunto] = useState<{
     id: string;
@@ -344,6 +348,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
         setJunto(data.junto || null);
         setBroker(data.broker || null);
         setTrades(data.trades || []);
+        setOpenTradeCount(typeof data.open_trade_count === 'number' ? data.open_trade_count : null);
         setPositions(data.positions || {});
         setAgreement(data.agreement || {});
         setPerfRefs(data.perfRefs || {});
@@ -504,6 +509,21 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
     }
   }
 
+  async function deleteMandate() {
+    if (!mandate) return;
+    if (!window.confirm(`Delete "${mandate.name}"? This permanently removes the mandate and its trade history, signals and tick logs. This cannot be undone.`)) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/trading/mandates/${mandateId}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) { router.push('/trading'); return; }
+      window.alert(data.error || 'Delete failed');
+      if (typeof data.open_trade_count === 'number') setOpenTradeCount(data.open_trade_count);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   async function changeStatus(s: 'active' | 'paused' | 'archived') {
     const res = await fetch(`/api/admin/trading/mandates/${mandateId}`, {
       method: 'PATCH',
@@ -622,6 +642,12 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                 }`}
               >{s}</button>
             ))}
+            <button
+              onClick={deleteMandate}
+              disabled={deleting || openTradeCount === null || openTradeCount > 0}
+              title={openTradeCount === null ? 'Checking open trades…' : openTradeCount > 0 ? `Close or cancel the ${openTradeCount} open trade${openTradeCount === 1 ? '' : 's'} to enable delete` : 'Permanently delete this mandate'}
+              className="px-2 py-1 rounded text-xs font-[var(--font-oswald)] uppercase tracking-wide bg-surface border border-bear/40 text-bear hover:bg-bear/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface"
+            >{deleting ? 'Deleting…' : 'Delete'}</button>
           </div>
         </div>
 
