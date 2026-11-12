@@ -115,7 +115,7 @@ export async function fetchTweetsFromProfile(
   const runId = runData.data?.id;
   
   if (!runId) {
-    throw new Error('Failed to start Apify run');
+    throw new Error(`Failed to start Apify run (HTTP ${runRes.status}: ${runData?.error?.type || ''} ${runData?.error?.message || ''})`.trim());
   }
   
   console.log(`[Apify] Run started: ${runId}`);
@@ -204,7 +204,7 @@ export async function startBatchRun(
   const runId = runData.data?.id;
 
   if (!runId) {
-    throw new Error('Failed to start Apify run');
+    throw new Error(`Failed to start Apify run (HTTP ${runRes.status}: ${runData?.error?.type || ''} ${runData?.error?.message || ''})`.trim());
   }
 
   console.log(`[Apify BATCH] Run started: ${runId} (will be collected later)`);
@@ -410,7 +410,7 @@ export async function searchTweets(
   const runId = runData.data?.id;
   
   if (!runId) {
-    throw new Error('Failed to start Apify run');
+    throw new Error(`Failed to start Apify run (HTTP ${runRes.status}: ${runData?.error?.type || ''} ${runData?.error?.message || ''})`.trim());
   }
   
   const tweets = await waitForRun(runId, token);
