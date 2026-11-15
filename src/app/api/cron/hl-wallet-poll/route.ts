@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/db/client';
+import { runTick } from '@/lib/trading/tick';
 import { getWalletState, diffWalletPositions, type WalletPosition } from '@/lib/trading/hl-wallets';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 300; // poll (~10s) + an event-driven HL tick (LLM decide) when signals land
 
 // Polls each tracked Hyperliquid wallet, diffs its positions against the last
 // snapshot, and logs position-change events. First run per wallet just seeds
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest) {
 
   const results: Record<string, unknown> = {};
   let totalEvents = 0;
+  let entrySignals = 0; // opened / increased / flipped — the events a copy-trade can act on
 
   for (const w of wallets || []) {
     try {
@@ -63,13 +65,26 @@ export async function POST(req: NextRequest) {
       }
 
       totalEvents += events.length;
+      entrySignals += events.filter((e) => e.kind === 'opened' || e.kind === 'increased' || e.kind === 'flipped').length;
       results[w.label || w.address] = { positions: state.positions.length, events: events.length, seeded };
     } catch (err: any) {
       results[w.label || w.address] = { error: String(err.message).slice(0, 160) };
     }
   }
 
-  return NextResponse.json({ ok: true, wallets: (wallets || []).length, events: totalEvents, results });
+  // Event-driven tick: don't wait for the hourly cron when a followed trader
+  // just opened/added/flipped a position. The tick's own gates (cooldown, chase,
+  // exposure, staleness) decide whether to copy it.
+  let tick: unknown = null;
+  if (entrySignals > 0 && req.nextUrl.searchParams.get('no_tick') !== '1') {
+    try {
+      tick = await runTick('midday', { broker: 'hyperliquid' });
+    } catch (err: any) {
+      tick = { error: String(err?.message || err).slice(0, 200) };
+    }
+  }
+
+  return NextResponse.json({ ok: true, wallets: (wallets || []).length, events: totalEvents, entrySignals, tick, results });
 }
 
 export async function GET(req: NextRequest) {
