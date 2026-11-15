@@ -410,7 +410,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
       if (mandate.broker === 'hyperliquid' && autoEntries(mandate)) {
         // Full auto: execute now, then tell the group what happened.
         const res = await approveTrade(tradeId, 'auto');
-        await notifyMandate(mandate, `🤖 <b>${mandate.name}</b> auto-${res.ok ? 'entered' : 'skipped'} ${decision.side.toUpperCase()} ${decision.ticker} (~$${(qty * lastPrice).toFixed(0)}, ${decision.stop_pct}% trail)\n${res.message}\n\n${decision.entry_thesis.slice(0, 600)}`);
+        await notifyMandate(mandate, `🤖 <b>${mandate.name}</b> auto-${res.ok ? 'entered' : 'skipped'} ${decision.side.toUpperCase()} ${decision.ticker} (~$${(qty * lastPrice).toFixed(0)}, ${isTrailing(mandate) ? `${Number(mandate.trailing_stop_pct)}% margin trail, tightens if trader exits` : `${decision.stop_pct}% stop`})\n${res.message}\n\n${decision.entry_thesis.slice(0, 600)}`);
       } else {
         await requestApproval({
           userId: mandate.user_id,

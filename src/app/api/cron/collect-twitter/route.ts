@@ -57,6 +57,14 @@ export async function GET(req: NextRequest) {
 
     for (const run of pending) {
       const handles = Object.keys(run.handle_source_map);
+      // Cap: a run still pending after 6h is dead (Apify results expire) — fail it
+      // instead of polling it forever.
+      if (Date.now() - new Date(run.started_at).getTime() > 6 * 3.6e6) {
+        await markRunFailed(run.id, 'timed out: still pending after 6h');
+        summary.push({ run_id: run.run_id, status: 'failed', handles: handles.length, error: 'timed out after 6h' });
+        processedCount += 1;
+        continue;
+      }
       try {
         const result = await collectBatchResults(run.run_id, handles);
 

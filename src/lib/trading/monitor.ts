@@ -114,15 +114,20 @@ export async function monitorMandate(mandate: Mandate): Promise<{
 
     // Position disappeared = closed (stop/target hit, manual close, etc.)
     if (!livePosition) {
-      const exitPrice = await alpaca.getLastTrade(trade.ticker);
-      const realized = exitPrice && trade.entry_price
-        ? (trade.side === 'long'
-            ? (exitPrice - trade.entry_price) * trade.qty
-            : (trade.entry_price - exitPrice) * trade.qty)
-        : null;
+      // Hyperliquid: use the actual closing fills (price/time/PnL net of fees)
+      // rather than the current mark, which can be minutes off the real exit.
+      const hlFill = await hlCloseFill(mandate, trade);
+      const exitPrice = hlFill?.price ?? await alpaca.getLastTrade(trade.ticker);
+      const realized = hlFill
+        ? hlFill.pnl
+        : exitPrice && trade.entry_price
+          ? (trade.side === 'long'
+              ? (exitPrice - trade.entry_price) * trade.qty
+              : (trade.entry_price - exitPrice) * trade.qty)
+          : null;
       const won = await transitionTrade(trade.id, 'closed', {
         exit_price: exitPrice,
-        exit_at: new Date().toISOString(),
+        exit_at: hlFill?.at ?? new Date().toISOString(),
         realized_pnl_usd: realized,
       });
       if (!won) continue; // another writer (stops/telegram) already closed it: no double post-mortem
@@ -188,4 +193,27 @@ async function writeDailyEntry(
     .trim();
 
   await addJournalEntry({ tradeId, kind: 'daily', content });
+}
+
+// Actual closing fills for a Hyperliquid trade since entry: size-weighted avg
+// price, last fill time, and closedPnl net of fees. Null if unavailable.
+async function hlCloseFill(mandate: any, trade: any): Promise<{ price: number; at: string; pnl: number } | null> {
+  if (mandate.broker !== 'hyperliquid' || !mandate.hl_wallet_address) return null;
+  try {
+    const url = mandate.mode === 'live' ? 'https://api.hyperliquid.xyz/info' : 'https://api.hyperliquid-testnet.xyz/info';
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'userFills', user: mandate.hl_wallet_address }) });
+    if (!res.ok) return null;
+    const fills = await res.json();
+    if (!Array.isArray(fills)) return null;
+    const since = new Date(trade.entry_at || trade.created_at).getTime();
+    const coin = String(trade.ticker).toUpperCase();
+    const closes = fills.filter((f: any) => String(f.coin).toUpperCase() === coin && Number(f.time) >= since && /close/i.test(String(f.dir || '')));
+    if (!closes.length) return null;
+    const sz = closes.reduce((a: number, f: any) => a + Number(f.sz), 0);
+    if (!(sz > 0)) return null;
+    const price = closes.reduce((a: number, f: any) => a + Number(f.px) * Number(f.sz), 0) / sz;
+    const pnl = closes.reduce((a: number, f: any) => a + Number(f.closedPnl) - Number(f.fee || 0), 0);
+    const at = new Date(Math.max(...closes.map((f: any) => Number(f.time)))).toISOString();
+    return { price, at, pnl };
+  } catch { return null; }
 }
