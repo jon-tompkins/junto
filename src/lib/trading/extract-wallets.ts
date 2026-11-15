@@ -63,8 +63,22 @@ export async function loadWalletSignals(
   const processed = await getProcessedTweetIds(mandate.id, allIds);
   const fresh = all.filter((e: any) => !processed.has(e.id));
 
+  // Latest exit per wallet+coin. An entry signal that a later 'closed' event
+  // already undid is stale — copying it would open a position the trader no
+  // longer holds (Nov 15: ETH short copied 20 min after the trader had closed it).
+  const lastClose = new Map<string, string>();
+  for (const e of all) {
+    if (e.kind !== 'closed') continue;
+    const k = `${e.address}|${e.coin}`;
+    if (!lastClose.has(k) || e.detected_at > lastClose.get(k)!) lastClose.set(k, e.detected_at);
+  }
+
   const signals: ExtractedSignal[] = [];
   for (const e of fresh) {
+    if (e.kind !== 'closed' && e.kind !== 'decreased') {
+      const closedAt = lastClose.get(`${e.address}|${e.coin}`);
+      if (closedAt && closedAt > e.detected_at) continue; // superseded by a later exit
+    }
     let direction: ExtractedSignal['direction'];
     if (e.kind === 'closed') {
       // Trailing-stop mandates handle a trader's exit by tightening the trail
