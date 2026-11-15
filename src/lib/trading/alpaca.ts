@@ -210,6 +210,7 @@ export function makeAlpaca(override?: { keyId?: string | null; secret?: string |
       qty: number;
       side: 'buy' | 'sell';
       clientOrderId?: string;
+      reduceOnly?: boolean; // Hyperliquid only; ignored here
     }) {
       return call<AlpacaOrder>(creds, 'POST', '/v2/orders', {
         symbol: params.symbol,

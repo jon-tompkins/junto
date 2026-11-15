@@ -314,7 +314,7 @@ export function makeHyperliquid(cfg: HyperliquidConfig): HyperliquidClient {
       // match HL's Rust msgpack encoder.
       const action = {
         type: 'order',
-        orders: [{ a: asset.index, b: isBuy, p: px, s: sz, r: false, t: { limit: { tif: 'Ioc' } } }],
+        orders: [{ a: asset.index, b: isBuy, p: px, s: sz, r: params.reduceOnly === true, t: { limit: { tif: 'Ioc' } } }],
         grouping: 'na',
       };
       const nonce = Date.now();

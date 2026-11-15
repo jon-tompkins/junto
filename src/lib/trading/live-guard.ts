@@ -158,8 +158,9 @@ export function gateClient<T extends GuardableClient>(
   };
   return {
     ...raw,
-    async submitMarketOrder(p: { symbol: string; qty: number; side: 'buy' | 'sell' }) {
-      await check({ kind: 'market', symbol: p.symbol, qty: p.qty, side: p.side });
+    async submitMarketOrder(p: { symbol: string; qty: number; side: 'buy' | 'sell'; reduceOnly?: boolean }) {
+      // Reduce-only orders can only shrink an existing position — never opens risk.
+      if (p.reduceOnly !== true) await check({ kind: 'market', symbol: p.symbol, qty: p.qty, side: p.side });
       return raw.submitMarketOrder(p);
     },
     async submitBracketOrder(p: { symbol: string; qty: number; side: 'buy' | 'sell' }) {

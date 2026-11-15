@@ -23,6 +23,7 @@ import { decideAmendments } from './decide-amendments';
 import { reviewPositions } from './review-positions';
 import { monitorMandate } from './monitor';
 import { protectMandate } from './protection';
+import { rebalanceMandate } from './rebalance';
 import { trailMandateStops, isTrailing, trailPricePct } from './trailing-stops';
 import { checkDailyLoss, loadEntryContext, gateEntry, convictionFraction, autoEntries, autoExits, notifyMandate, type EntryContext } from './autopilot';
 import { approveTrade } from './approval';
@@ -519,6 +520,22 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     }
   } catch (err: any) {
     result.errors.push(`amend: ${err.message}`);
+  }
+
+  // Scale open HL positions up/down as aggregate roster conviction changes.
+  // Runs before the trailing pass so an add's stop is re-placed at full size.
+  try {
+    if (mandate.broker === 'hyperliquid' && mandate.execution_mode === 'full_auto') {
+      const rb = await rebalanceMandate(mandate, accountEquity);
+      for (const r of rb) {
+        if (r.action === 'error') result.errors.push(`rebalance ${r.ticker}: ${r.detail}`);
+        else if (r.action === 'scaled_up' || r.action === 'scaled_down') {
+          await notifyMandate(mandate, `📐 ${r.action === 'scaled_up' ? 'Scaled up' : 'Scaled down'} ${r.ticker} — ${r.detail}`).catch(() => {});
+        }
+      }
+    }
+  } catch (err: any) {
+    result.errors.push(`rebalance: ${err.message}`);
   }
 
   // Trailing stops ratchet stop_price first so the protector re-attaches at the
