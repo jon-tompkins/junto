@@ -167,10 +167,27 @@ export async function computeRoster(
       if (s.median != null && s.median < o.minMedianHoldHours) { reject(`median hold ${s.median.toFixed(1)}h`); continue; }
       if (s.maker >= o.mmMakerRatio && (s.median == null || s.median < o.mmHoldHours)) { reject(`market maker (maker ${Math.round(s.maker * 100)}%)`); continue; }
       const st = await info({ type: 'clearinghouseState', user: c.address });
+      // Perp-only performance: we only copy the perp book, so a wallet whose
+      // profit is spot-bag marks (or whose perp book is losing) doesn't qualify.
+      // Unified accounts make the combined window misleading in both directions.
+      const pf = Object.fromEntries((await info({ type: 'portfolio', user: c.address }).catch(() => [])) || []);
+      const perp = (k: string) => {
+        const w = pf[k] || {};
+        const h = w.pnlHistory || []; const av = w.accountValueHistory || [];
+        const pnl = h.length ? Number(h[h.length - 1][1]) : null;
+        const base = av.length ? Math.max(Number(av[0][1]), 1) : null;
+        return { pnl, roi: pnl != null && base ? pnl / base : null };
+      };
+      const pw = perp('perpWeek'), pm = perp('perpMonth');
+      if (pw.pnl != null && pw.pnl <= 0) { reject(`perp-only 7d PnL $${Math.round(pw.pnl).toLocaleString()}`); continue; }
+      if (pm.pnl != null && pm.pnl <= 0) { reject(`perp-only 30d PnL $${Math.round(pm.pnl).toLocaleString()}`); continue; }
       // no completed trip in the window — only keep if they hold positions now
       if (s.roundTrips === 0 && !(st?.assetPositions || []).length) { reject('no round trips, no positions'); continue; }
       passed.push({
-        ...c, label: '', rank: 0, score: scores.get(c)!,
+        ...c,
+        ...(pw.pnl != null ? { weekPnl: pw.pnl, weekRoi: pw.roi ?? c.weekRoi } : {}),
+        ...(pm.pnl != null ? { monthPnl: pm.pnl, monthRoi: pm.roi ?? c.monthRoi } : {}),
+        label: '', rank: 0, score: scores.get(c)!,
         fillsPerDay: Number(s.fillsPerDay.toFixed(1)), makerRatio: Number(s.maker.toFixed(2)),
         roundTrips: s.roundTrips, medianHoldHours: s.median != null ? Number(s.median.toFixed(1)) : null,
         openPositions: (st?.assetPositions || []).length, incumbent: inc.has(c.address),
@@ -180,6 +197,10 @@ export async function computeRoster(
     }
   }
 
+  // Re-rank the survivors on their perp-only numbers (the earlier score used
+  // the leaderboard's combined figures, only to decide who gets deep-checked).
+  const perpScores = rankAverage(passed, [(c) => c.weekRoi, (c) => c.weekPnl, (c) => c.monthRoi, (c) => c.monthPnl]);
+  passed.forEach((p) => { p.score = perpScores.get(p)!; });
   passed.sort((a, b) => a.score - b.score);
   passed.forEach((p, i) => { p.rank = i + 1; });
   // Hysteresis: incumbents within keepIncumbentWithinRank keep their seat; fill
