@@ -253,6 +253,8 @@ export default function SourceProfilePage() {
   const [closedCalls, setClosedCalls] = useState<ClosedCall[]>([]);
   const [trackRecord, setTrackRecord] = useState<TrackRecord | null>(null);
   const [callView, setCallView] = useState<'open' | 'portfolio' | 'closed'>('open');
+  // Hide positions not mentioned within N days (null = show all).
+  const [maxStaleDays, setMaxStaleDays] = useState<number | null>(null);
   const [starred, setStarred] = useState(false);
 
   useEffect(() => {
@@ -353,6 +355,10 @@ export default function SourceProfilePage() {
   const positions = Object.entries(profile.positions).sort(
     ([, a], [, b]) => new Date(a.since).getTime() - new Date(b.since).getTime(),
   );
+
+  const shownPositions = maxStaleDays == null
+    ? positions
+    : positions.filter(([, pos]) => daysHeld(pos.last_mentioned || pos.since) <= maxStaleDays);
 
   const perfRaw = positions.reduce(
     (acc, [ticker, pos]) => {
@@ -560,11 +566,29 @@ export default function SourceProfilePage() {
             </div>
           </div>
 
+          {callView !== 'closed' && positions.length > 0 && (
+            <div className="flex items-center gap-2 mb-3 text-[11px] text-parchment/60">
+              <span className="uppercase tracking-wider font-[var(--font-oswald)]">Last mentioned</span>
+              <div className="inline-flex rounded overflow-hidden border border-[rgb(var(--t-brass) / 0.28)]">
+                {([[null, 'All'], [7, '7d'], [14, '14d'], [30, '30d'], [90, '90d']] as const).map(([d, label], i) => (
+                  <button
+                    key={label}
+                    onClick={() => setMaxStaleDays(d)}
+                    className={`px-2.5 py-1 font-medium transition ${i > 0 ? 'border-l border-[rgb(var(--t-brass) / 0.28)]' : ''} ${maxStaleDays === d ? 'bg-[rgb(var(--t-brass) / 0.18)] text-brass' : 'hover:text-parchment/70'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {maxStaleDays != null && <span>{shownPositions.length} of {positions.length}</span>}
+            </div>
+          )}
+
           {callView === 'closed' ? (
             <ClosedCallsTable calls={closedCalls} />
           ) : callView === 'portfolio' ? (
             <PortfolioView
-              positions={positions.map(([ticker, pos]) => {
+              positions={shownPositions.map(([ticker, pos]) => {
                 const quote = quotes[ticker];
                 const stanceSign = pos.stance === 'bearish' ? -1 : 1;
                 const returnPct =
@@ -587,11 +611,13 @@ export default function SourceProfilePage() {
             />
           ) : positions.length === 0 ? (
             <p className="text-parchment/60 text-sm">No positions tracked yet — will populate on next content pull.</p>
+          ) : shownPositions.length === 0 ? (
+            <p className="text-parchment/60 text-sm">No positions mentioned in the last {maxStaleDays} days.</p>
           ) : (
             <>
             {/* Phones: card stack so Return/Status aren't hidden behind a 760px horizontal scroll */}
             <div className="sm:hidden bg-surface border border-[rgb(var(--t-brass) / 0.28)] rounded divide-y divide-[rgb(var(--t-brass) / 0.08)]">
-              {positions.map(([ticker, pos]) => {
+              {shownPositions.map(([ticker, pos]) => {
                 const days = daysHeld(pos.last_mentioned || pos.since);
                 const quote = quotes[ticker];
                 const stanceSign = pos.stance === 'bearish' ? -1 : 1;
@@ -653,7 +679,7 @@ export default function SourceProfilePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {positions.map(([ticker, pos]) => {
+                  {shownPositions.map(([ticker, pos]) => {
                     // Staleness day-count must use the SAME clock as stalenessLevel()
                     // — days since the position was last mentioned, not days since entry.
                     // (Entry age via `since` made an actively-tweeted name look 37d stale.)
