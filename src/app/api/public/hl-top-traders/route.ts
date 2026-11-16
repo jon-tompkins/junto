@@ -47,16 +47,25 @@ export async function GET() {
         info({ type: 'portfolio', user: address }).catch(() => []),
       ]);
       const spotUsdc = (spot.balances || []).filter((b: any) => b.coin === 'USDC').reduce((s: number, b: any) => s + Number(b.total || 0), 0);
-      const accountUsd = Number(state?.marginSummary?.accountValue || 0) + spotUsdc;
+      const perpEquity = Number(state?.marginSummary?.accountValue || 0);
       const windows = Object.fromEntries(Array.isArray(portfolio) ? portfolio : []);
-      const month = windows.month || {};
-      const week = windows.week || {};
+      // Unified accounts borrow spot USDC (negative balance) and hold spot bags
+      // (PURR, HYPE…). HL's combined week/month windows mark those bags to market,
+      // so a trader with a great PERP record can read deeply red. What we copy is
+      // the perp book, so show perpWeek/perpMonth PnL (fall back to combined).
+      const month = windows.perpMonth || windows.month || {};
+      const week = windows.perpWeek || windows.week || {};
+      // Account size = total equity per HL's own portfolio series (matches the leaderboard).
+      const lastVal = (w: any) => { const h = w?.accountValueHistory || []; return h.length ? Number(h[h.length - 1][1]) : null; };
+      const accountUsd = lastVal(windows.week) ?? lastVal(windows.month) ?? perpEquity + Math.max(spotUsdc, 0);
+      // % of book is measured against what actually backs the perp positions.
+      const bookUsd = perpEquity + Math.max(spotUsdc, 0);
       const lastPnl = (w: any) => { const h = w.pnlHistory || []; return h.length ? Number(h[h.length - 1][1]) : null; };
       const positions: TopTraderPosition[] = (state?.assetPositions || []).map((ap: any) => {
         const p = ap.position; const szi = Number(p.szi); const value = Number(p.positionValue) || 0;
         return {
           coin: String(p.coin), side: szi >= 0 ? 'long' : 'short', value,
-          pctOfAccount: accountUsd > 0 ? (value / accountUsd) * 100 : 0,
+          pctOfAccount: bookUsd > 0 ? (value / bookUsd) * 100 : 0,
           leverage: Number(p.leverage?.value) || 0,
           roePct: Number(p.returnOnEquity) * 100 || 0,
           entryPx: p.entryPx != null ? Number(p.entryPx) : null,
