@@ -129,6 +129,7 @@ export async function monitorMandate(mandate: Mandate): Promise<{
         exit_price: exitPrice,
         exit_at: hlFill?.at ?? new Date().toISOString(),
         realized_pnl_usd: realized,
+        ...(hlFill ? { fees_usd: hlFill.fees } : {}),
       });
       if (!won) continue; // another writer (stops/telegram) already closed it: no double post-mortem
       await writeExitAndPostMortem(trade.id, mandate);
@@ -197,7 +198,7 @@ async function writeDailyEntry(
 
 // Actual closing fills for a Hyperliquid trade since entry: size-weighted avg
 // price, last fill time, and closedPnl net of fees. Null if unavailable.
-async function hlCloseFill(mandate: any, trade: any): Promise<{ price: number; at: string; pnl: number } | null> {
+async function hlCloseFill(mandate: any, trade: any): Promise<{ price: number; at: string; pnl: number; fees: number } | null> {
   if (mandate.broker !== 'hyperliquid' || !mandate.hl_wallet_address) return null;
   try {
     const url = mandate.mode === 'live' ? 'https://api.hyperliquid.xyz/info' : 'https://api.hyperliquid-testnet.xyz/info';
@@ -212,8 +213,12 @@ async function hlCloseFill(mandate: any, trade: any): Promise<{ price: number; a
     const sz = closes.reduce((a: number, f: any) => a + Number(f.sz), 0);
     if (!(sz > 0)) return null;
     const price = closes.reduce((a: number, f: any) => a + Number(f.px) * Number(f.sz), 0) / sz;
-    const pnl = closes.reduce((a: number, f: any) => a + Number(f.closedPnl) - Number(f.fee || 0), 0);
+    // Fees on EVERY fill for this position (entry, scale-ins/outs, exit) — the
+    // entry fill is stamped slightly before entry_at, hence the 2-minute slack.
+    const mine = fills.filter((f: any) => String(f.coin).toUpperCase() === coin && Number(f.time) >= since - 120_000);
+    const fees = mine.reduce((a: number, f: any) => a + Number(f.fee || 0), 0);
+    const pnl = mine.reduce((a: number, f: any) => a + Number(f.closedPnl || 0), 0) - fees;
     const at = new Date(Math.max(...closes.map((f: any) => Number(f.time)))).toISOString();
-    return { price, at, pnl };
+    return { price, at, pnl, fees };
   } catch { return null; }
 }
