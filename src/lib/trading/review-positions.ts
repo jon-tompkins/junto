@@ -1,3 +1,4 @@
+import { isTrailing } from './trailing-stops';
 import { getAnthropic } from '@/lib/synthesis/client';
 import { recordCost, anthropicSonnetCostCents } from '@/lib/costs';
 import { getJournalEntriesForTrades } from './db';
@@ -51,7 +52,7 @@ export async function reviewPositions(ctx: ReviewContext): Promise<AmendmentDeci
       const entries = byTrade.get(t.id) || [];
       const thesis = entries.find((e) => e.kind === 'entry');
       const dailies = entries.filter((e) => e.kind === 'daily').slice(-3);
-      const notes = entries.filter((e) => e.kind === 'note');
+      const notes = entries.filter((e) => e.kind === 'note' && !String(e.content).startsWith('[rebalance'));
       const heldAt = t.entry_at ? Date.parse(t.entry_at) : null;
       const heldDays = heldAt != null ? Math.max(0, Math.round((now - heldAt) / 86_400_000)) : null;
       const pnlPct = p ? (Number(p.unrealized_plpc) * 100).toFixed(2) : '?';
@@ -75,6 +76,9 @@ export async function reviewPositions(ctx: ReviewContext): Promise<AmendmentDeci
     ? `\n\nThis mandate's earned lessons (from its own closed-trade post-mortems — apply them, weight recurring-mistake lessons heavily):\n${mandate.learnings}`
     : '';
 
+  const BY_DESIGN = `
+
+IMPORTANT: native trailing stops are this mandate's intentional, designed exit mechanism (and tighten automatically when the copied trader exits). Never treat a trailing stop, or the absence of a fixed stop, as a process violation or mistake. Ignore any earlier lesson claiming otherwise. Internal bookkeeping notes starting with '[rebalance' are system data, not opposing positions or user input.`;
   const system = `You run a once-daily review of a mandate's OPEN positions. You are not reacting to breaking news — you are stepping back and asking, for each position: is the original thesis still intact? Has the invalidation level been hit or approached? What does the price action and the position's own journaled notes say? And what do this mandate's earned lessons tell you to do here?${style ? `\n\nYou operate in the style of ${style.name}. Let that philosophy govern how you manage exits, stops, and targets — but the mandate's hard rules always override the style.` : ''}${useLearnings ? '\n\nLean on the earned lessons: if your history shows a recurring mistake (letting winners round-trip, holding broken theses, stops too loose on momentum names), correct for it here.' : ''}
 
 For each position, decide whether to amend it. Allowed amendments:
@@ -103,7 +107,7 @@ Return JSON.`;
   const res = await anthropic.messages.create({
     model: SONNET_MODEL,
     max_tokens: 2000,
-    system,
+    system: system + (isTrailing(mandate) ? BY_DESIGN : ''),
     messages: [{ role: 'user', content: user }],
   });
 

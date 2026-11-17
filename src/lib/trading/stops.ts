@@ -2,6 +2,7 @@
 // adapters, so the synthetic-stop logic and post-mortem writer live in exactly
 // one place (no divergence between the tick loop and the AlpacaAdapter).
 
+import { isTrailing } from './trailing-stops';
 import { getAnthropic, HAIKU_MODEL } from '@/lib/synthesis/client';
 import { recordCost, anthropicHaikuCostCents } from '@/lib/costs';
 import { transitionTrade, addJournalEntry, getJournalEntries } from './db';
@@ -120,7 +121,7 @@ The 2x2: good process + good outcome = skill. good process + bad outcome = bad l
 
 Be honest. Bad process with a winning outcome is still bad process.
 
-Output JSON only:
+${isTrailing(mandate) ? 'NOTE: native trailing stops are this mandate\'s intentional exit design; never score them as a process violation. Ignore bookkeeping notes.\n' : ''}Output JSON only:
 { "post_mortem": "string under 600 chars", "process_score": 1-5, "outcome_score": 1-5 }`,
     messages: [
       {

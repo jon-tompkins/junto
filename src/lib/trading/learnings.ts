@@ -1,3 +1,4 @@
+import { isTrailing } from './trailing-stops';
 import { getAnthropic } from '@/lib/synthesis/client';
 import { recordCost, anthropicSonnetCostCents } from '@/lib/costs';
 import {
@@ -18,6 +19,9 @@ const MIN_TRADES = 3;
 // Driven by post-mortems, user notes, and live book. Saved onto the mandate.
 // Manual REGENERATE (with 24h cooldown) and on-close auto-regen continue unchanged.
 // Daily cron at /api/admin/trading/daily-learnings-update (CRON_SECRET protected) ensures fresh synthesis.
+const BY_DESIGN = `
+
+IMPORTANT: native trailing stops are this mandate's intentional, designed exit mechanism (and tighten automatically when the copied trader exits). Never treat a trailing stop, or the absence of a fixed stop, as a process violation or mistake. Ignore any earlier lesson claiming otherwise. Internal bookkeeping notes starting with '[rebalance' are system data, not opposing positions or user input.`;
 export async function regenerateLearnings(mandate: Mandate): Promise<string> {
   const closed = await getClosedTrades(mandate.id, 40);
 
@@ -56,7 +60,7 @@ export async function regenerateLearnings(mandate: Mandate): Promise<string> {
     const entries = byTrade.get(t.id) || [];
     const pm = entries.find((e) => e.kind === 'post_mortem');
     const thesis = entries.find((e) => e.kind === 'entry');
-    const notes = entries.filter((e) => e.kind === 'note');
+    const notes = entries.filter((e) => e.kind === 'note' && !String(e.content).startsWith('[rebalance'));
     const pnl = t.realized_pnl_usd != null ? `$${t.realized_pnl_usd.toFixed(2)}` : 'n/a';
     const scores = pm && (pm.process_score || pm.outcome_score)
       ? ` [process ${pm.process_score ?? '?'}/5, outcome ${pm.outcome_score ?? '?'}/5]`
@@ -104,7 +108,7 @@ Write the trading thoughts document. Factor in live open positions when distilli
   const res = await anthropic.messages.create({
     model: SONNET_MODEL,
     max_tokens: 1500,
-    system,
+    system: system + (isTrailing(mandate) ? BY_DESIGN : ''),
     messages: [{ role: 'user', content: user }],
   });
 
