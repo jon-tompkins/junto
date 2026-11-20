@@ -9,6 +9,7 @@ import {
   OrderBlockedError,
   DEFAULT_MAX_ORDER_USD,
   DEFAULT_MAX_DAILY_LOSS_USD,
+  resolveCap,
   type OrderGate,
   type GuardLimits,
 } from './live-guard';
@@ -21,6 +22,18 @@ const num = (v: unknown): number | null => {
 function envNum(name: string, fallback: number): number {
   const n = Number(process.env[name]);
   return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+// Effective per-order notional cap for a LIVE mandate (smallest of mandate /
+// user / default), so sizing can clamp to it instead of tripping the guard.
+export async function effectiveOrderCapUsd(mandate: { id: string; user_id: string; mode: string }): Promise<number | null> {
+  if (mandate.mode !== 'live') return null;
+  const supabase = getSupabase();
+  const [{ data: m }, { data: ul }] = await Promise.all([
+    supabase.from('trading_mandates').select('max_order_notional_usd').eq('id', mandate.id).maybeSingle(),
+    supabase.from('trading_user_limits').select('max_order_notional_usd').eq('user_id', mandate.user_id).maybeSingle(),
+  ]);
+  return resolveCap(num(m?.max_order_notional_usd), num(ul?.max_order_notional_usd), envNum('TRADING_DEFAULT_MAX_ORDER_USD', DEFAULT_MAX_ORDER_USD));
 }
 
 export function envKillSwitch(env: NodeJS.ProcessEnv = process.env): boolean {

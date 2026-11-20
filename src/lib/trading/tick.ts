@@ -29,6 +29,7 @@ import { checkDailyLoss, loadEntryContext, gateEntry, convictionFraction, autoEn
 import { approveTrade } from './approval';
 import { handleAmendmentCallback } from './amendment';
 import { reconcileMandate } from './reconcile';
+import { effectiveOrderCapUsd } from './live-guard-store';
 import { sweepOrphans } from './orphans';
 import { getSupabase } from '@/lib/db/client';
 import { requestApproval } from './approval';
@@ -403,7 +404,17 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
           decision.notional_usd = decision.notional_usd * v.weight;
           decision.entry_thesis = `${decision.entry_thesis}\n\nSizing: conviction ${decision.conviction} → ${convPct}% of max × copy weight ${Math.round(v.weight * 100)}% (copied traders hold $${Math.round(v.copiedNotional).toLocaleString()}) = $${decision.notional_usd.toFixed(2)} margin.`;
         }
-        const exposureNotional = decision.notional_usd * leverage;
+        let exposureNotional = decision.notional_usd * leverage;
+        // Over the live per-order cap? Size down to the cap (2% headroom for
+        // price drift between sizing and the guard's own check) rather than
+        // having the guard reject the whole entry.
+        const orderCap = await effectiveOrderCapUsd(mandate).catch(() => null);
+        if (orderCap && exposureNotional > orderCap * 0.98) {
+          const capped = orderCap * 0.98;
+          decision.entry_thesis = `${decision.entry_thesis}\n\nSize capped: $${exposureNotional.toFixed(0)} → $${capped.toFixed(0)} notional (per-order cap $${orderCap.toFixed(0)}).`;
+          decision.notional_usd = capped / leverage;
+          exposureNotional = capped;
+        }
         if (exposureNotional < 10) {
           await logSignal({
             mandateId: mandate.id,
