@@ -96,7 +96,7 @@ export default function ApiKeysPage() {
         {revealed && (
           <div className="mb-6 p-4 rounded border border-bull/40 bg-bull/8">
             <div className="text-xs uppercase tracking-wider text-bull mb-2 font-[var(--font-oswald)]">
-              New key — copy now, you won't see it again
+              New key — copy now, you won&apos;t see it again
             </div>
             <div className="font-mono text-sm break-all bg-ink p-3 rounded border border-bull/30">
               {revealed.plaintext}
@@ -112,7 +112,7 @@ export default function ApiKeysPage() {
                 onClick={() => setRevealed(null)}
                 className="text-xs px-3 py-1.5 rounded border border-parchment/20 text-parchment/70"
               >
-                I've saved it
+                I&apos;ve saved it
               </button>
             </div>
           </div>

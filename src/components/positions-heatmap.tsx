@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { squarifiedTreemap, STANCE_LABEL } from '@/lib/positions/treemap';
 
@@ -54,14 +54,19 @@ export function PositionsHeatmap({
     return () => ro.disconnect();
   }, []);
 
-  const effectiveCount = (i: HeatmapPosition) =>
-    includeStale ? i.count : i.fresh_count ?? i.count;
+  const effectiveCount = useCallback(
+    (i: HeatmapPosition) => (includeStale ? i.count : i.fresh_count ?? i.count),
+    [includeStale],
+  );
   const maxCount = Math.max(...items.map(effectiveCount), 1);
-  const sizeOf = (i: HeatmapPosition) => (i.value != null ? i.value : effectiveCount(i));
+  const sizeOf = useCallback(
+    (i: HeatmapPosition) => (i.value != null ? i.value : effectiveCount(i)),
+    [effectiveCount],
+  );
 
   const sorted = useMemo(
     () => [...items].filter((i) => effectiveCount(i) > 0 && sizeOf(i) > 0).sort((a, b) => sizeOf(b) - sizeOf(a)),
-    [items, includeStale],
+    [items, effectiveCount, sizeOf],
   );
 
   const layout = useMemo(
@@ -70,7 +75,7 @@ export function PositionsHeatmap({
       width,
       height,
     ),
-    [sorted, width, height],
+    [sorted, width, height, sizeOf],
   );
 
   if (items.length === 0) {

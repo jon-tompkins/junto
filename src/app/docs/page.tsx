@@ -372,7 +372,7 @@ export default function DocsPage() {
                 <pre className="mt-2 bg-raised border border-[rgb(var(--t-brass) / 0.18)] rounded p-3 text-xs font-mono overflow-x-auto text-parchment/85">{`Authorization: Bearer mj_live_…`}</pre>
               </li>
               <li>
-                Call an endpoint. Calls debit credits from the key owner's
+                Call an endpoint. Calls debit credits from the key owner&apos;s
                 balance (1 credit for source/ticker reads, 5 for full dispatches).
                 <pre className="mt-2 bg-raised border border-[rgb(var(--t-brass) / 0.18)] rounded p-3 text-xs font-mono overflow-x-auto text-parchment/85">{`curl https://www.myjunto.xyz/api/public/v1/positions/BB \\
   -H "Authorization: Bearer mj_live_…"`}</pre>

@@ -1,0 +1,14 @@
+# Pre-existing findings so CI fails on new secrets only. Fingerprints are
+# commit:file:rule:line and do not contain the secret.
+#
+# Public 0x session-key addresses (42-char hex), still in tree. generic-api-key
+# false positives — these are addresses, not private keys:
+149981abe6d6bd63b32c0c116f3ec12a14d254dc:public/papertrade-link-7bf75697.html:generic-api-key:34
+149981abe6d6bd63b32c0c116f3ec12a14d254dc:src/app/api/papertrade/register/route.ts:generic-api-key:9
+#
+# Credentials in files already deleted from HEAD. Still in git history, so the
+# scan reports the commit that added them. Rotate them; do not rewrite history here:
+# - scripts/test-slice-collision.ts PAPER_SECRET (removed)
+# - test-direct-db.js SUPABASE_ANON_KEY (removed)
+bfb8f584b9635ede3fb961dfe4de42c9637781cf:scripts/test-slice-collision.ts:generic-api-key:17
+39f7cfc1347d9424cf20f87e1ac75c5f91f724f2:test-direct-db.js:jwt:11
