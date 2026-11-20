@@ -154,7 +154,7 @@ function PricingPageInner() {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-3 font-[var(--font-oswald)] uppercase tracking-wide">
-            Billing
+            Pricing
           </h1>
           <p className="text-parchment/55 max-w-lg mx-auto">
             Build your signal layer for free. Go Pro to automate, or top up credits as you go.

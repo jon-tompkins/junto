@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { TopNav } from '@/components/top-nav';
+import { callTabs } from '@/components/nav-tab-sets';
+import { NavTabs } from '@/components/nav-tabs';
 
 interface Trade {
   id: string;
@@ -168,6 +170,7 @@ export default function TradesPage() {
     <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <NavTabs label="Call views" tabs={callTabs('best')} />
         <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">Best Trades</h1>
         <p className="text-sm text-parchment/55 mt-1 mb-6">
           Every tracked position from every source, marked to market. Inferred from public posts — not real holdings.

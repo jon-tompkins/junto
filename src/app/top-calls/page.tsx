@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { unstable_noStore as noStore } from 'next/cache';
 import { TopNav } from '@/components/top-nav';
+import { callTabs } from '@/components/nav-tab-sets';
+import { NavTabs } from '@/components/nav-tabs';
 import { SignupCTA } from '@/components/signup-cta';
 import { getTopCalls, WINDOW_DAYS, type TopCall } from '@/lib/top-calls';
 
@@ -58,6 +60,7 @@ export default async function TopCallsPage() {
     <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <NavTabs label="Call views" tabs={callTabs('week')} />
         <h1 className="text-3xl font-bold font-[var(--font-oswald)] uppercase tracking-wide">Top calls this week</h1>
         <p className="text-sm text-parchment/55 mt-1 mb-6 max-w-2xl">
           The best-performing calls made in the last {WINDOW_DAYS} days. Entry is the close of the signal day, so a

@@ -43,7 +43,7 @@ Flagged on each entry that touches them. A flag means “change with care,” no
 
 ## How to read an entry
 
-- **Reach** is how a person gets there from the UI. Primary nav is `src/components/top-nav.tsx` (Signal links vs Trade links; the switcher follows the path). The account menu (signed in) has History, Theses, Flows, Settings, Billing.
+- **Reach** is how a person gets there from the UI. Primary nav is `src/components/top-nav.tsx`: Leaderboard, Top Calls, Markets, Dispatches, Pricing, plus Dashboard first when signed in. **More** holds Sources, Juntos, Trade hub, Positions, Mandates, How it works, Demo, and Docs. Tab headers sit on the leaderboard group (Analysts / Smart money / HL Top 10) and the calls group (This week / Best trades). The account menu (signed in) has History, Flows, Settings, Billing.
 - **Auth** is what the page itself enforces. APIs behind it can be stricter.
 - **Fed by** names the crons in `vercel.json` that fill the data, and the Supabase tables the page or its API reads. Table names are the ones in code (`trades`, not the older `trading_trades` name in `CLAUDE.md`).
 - **Working means** is one check an automated test can assert without a signed-in session, unless the line says a session is required.
@@ -58,7 +58,7 @@ The owner has not decided to freeze any of these. This table is the full proposa
 
 | Item | Where | Why it is on this list |
 |------|--------|------------------------|
-| Theses list | `/theses` | Long-form thesis tracker. Account menu only. Separate from scored calls. |
+| Theses list | `/theses` | Long-form thesis tracker. Direct URL; removed from the account menu. Separate from scored calls. |
 | New thesis | `/theses/new` | AI ingest into a thesis draft. |
 | Thesis detail | `/theses/[id]` | Criteria, trades, and sources for one thesis. |
 | Ailmanack reports | Panel on `/positions/[ticker]` via `GET /api/ailmanack/reports` | External equity-research embed. The positions page stays `core`; this panel does not. |
@@ -154,7 +154,7 @@ The owner has not decided to freeze any of these. This table is the full proposa
 - **Protected:** —
 - **Purpose:** Logged-out landing. A live market pulse is the first screen. A signed-in session is sent to the dashboard.
 - **URL:** `/`
-- **Reach:** Logo in the top nav. Sign-out returns here. Signal switcher sends signed-in users to `/dashboard` and signed-out users to `/explore`, so the logo is the reliable path back to this page.
+- **Reach:** Logo in the top nav. Sign-out returns here. The logo is the path back to this page.
 - **Auth:** Public. `useSession` then `router.replace('/dashboard')` when a session exists.
 - **Key elements:** Top nav, `PulseDashboard` (window chips 24H / 7D / 30D, asset filters, KPIs, heatmap), heading “Get this as a daily brief, built from the voices you pick.”, **Start free** (auth modal), **How it works** → `/about`.
 - **Fed by:** `GET /api/public/pulse` (RPC `public_pulse_summary`). Upstream crons: `pull-content`, `collect-twitter`, `mark-positions`. Tables: `source_positions`, `source_call_outcomes`, `sources`, `source_analyst_profiles` (inside the RPC).
@@ -166,7 +166,7 @@ The owner has not decided to freeze any of these. This table is the full proposa
 - **Protected:** —
 - **Purpose:** Old Signal landing path. Kept so existing links resolve.
 - **URL:** `/signal`
-- **Reach:** Direct URL. The product switcher is labeled Signal and does not point here.
+- **Reach:** Direct URL. No nav item points here.
 - **Auth:** Public redirect.
 - **Key elements:** None. Server `redirect('/')`.
 - **Fed by:** —
@@ -178,7 +178,7 @@ The owner has not decided to freeze any of these. This table is the full proposa
 - **Protected:** —
 - **Purpose:** Full-page version of the home pulse, with a compact header.
 - **URL:** `/pulse`
-- **Reach:** Signal nav → **Pulse**.
+- **Reach:** Primary nav → **Markets**.
 - **Auth:** Public. Session optional.
 - **Key elements:** Heading “What the analysts we track are doing”, same window chips, KPIs, heatmap, and links onward to the leaderboard, HL top traders, best trades, and dispatches.
 - **Fed by:** Same as `/`: `GET /api/public/pulse`, refreshed about once a minute. Crons `pull-content`, `collect-twitter`, `mark-positions`.
@@ -190,7 +190,7 @@ The owner has not decided to freeze any of these. This table is the full proposa
 - **Protected:** —
 - **Purpose:** Marketing page: what a dispatch is, popular dispatches, pricing sketch.
 - **URL:** `/about`
-- **Reach:** **How it works** on `/`. Not in the top nav. Signed-in visitors are replaced to `/dashboard`.
+- **Reach:** More → **How it works**. Also **How it works** on `/`. Signed-in visitors are replaced to `/dashboard`.
 - **Auth:** Public, then client redirect to `/dashboard` when a session exists.
 - **Key elements:** Hero “The signal, not the noise.”, **Get started** → `/onboarding`, **Browse dispatches** → `/explore`, ticker strip, dispatch cards, footer links.
 - **Fed by:** `GET /api/v2/newsletters/search?limit=8` (`newsletters_v2`). `TickerStrip` uses `GET /api/featured/ticker`. Subscribe posts to `/api/v2/newsletters/[id]/subscribe`.
@@ -202,7 +202,7 @@ The owner has not decided to freeze any of these. This table is the full proposa
 - **Protected:** `auth`
 - **Purpose:** OAuth entry for X and Google. New accounts receive 1,000 credits (`NEW_USER_BONUS_CREDITS`).
 - **URL:** `/login` (`?callbackUrl=` must be a relative path; default `/dashboard`).
-- **Reach:** Top nav **Sign In** / **Get Started**. Gated pages send people here.
+- **Reach:** Top nav **Sign in** / **Start free**. Both go to `/login`. Gated pages send people here.
 - **Auth:** Public. Buttons call `signIn('twitter' | 'google')` through `/api/auth/[...nextauth]`.
 - **Key elements:** Heading “Welcome Back”, **Continue with X**, **Continue with Google**.
 - **Fed by:** NextAuth. User row in `users` (`twitter_id` or `google_id`, `credit_balance`). No cron.
@@ -238,7 +238,7 @@ The owner has not decided to freeze any of these. This table is the full proposa
 - **Protected:** —
 - **Purpose:** Promo video and a sign-up link.
 - **URL:** `/demos`
-- **Reach:** Mobile nav **Demo**. Not in the desktop center nav.
+- **Reach:** More → **Demo** (desktop dropdown and mobile section).
 - **Auth:** Public.
 - **Key elements:** Video `src` `/demos/myjunto-promo.mp4`, link to `/login`.
 - **Fed by:** Static file. No cron, no table.
@@ -288,7 +288,7 @@ The owner has not decided to freeze any of these. This table is the full proposa
 - **Protected:** `credits`
 - **Purpose:** Signed-in home for Signal: today’s dispatch, primary junto, watchlist, subscriptions, created dispatches, credit balance, and the first-run generate button.
 - **URL:** `/dashboard`
-- **Reach:** Signal nav **Dashboard** (session only). `/` and `/about` replace here when signed in. Signal switcher home when signed in.
+- **Reach:** Primary nav **Dashboard**, first item, session only. `/` and `/about` replace here when signed in.
 - **Auth:** Unsigned → `/login`. `isOnboarded === false` → `/welcome`.
 - **Key elements:** Heading “Dashboard”, **Today's Dispatch**, **+ New Dispatch**, junto and watchlist panels, subscriptions, **Generate my first dispatch now**.
 - **Fed by:** `GET /api/v2/account` (`users`), `GET /api/v2/primary-junto`, `GET /api/v2/dashboard/subscriptions`, `GET /api/v2/dashboard/created`, `GET /api/v2/personal-dispatch`, `GET /api/v2/dispatches/received`, `GET /api/positions`, `POST /api/quick-dispatch`. Crons: `generate-newsletters`, `personal-dispatch`, `pull-content`, `collect-twitter`. Tables: `newsletters_v2`, `newsletter_runs`, `subscriptions`, `personal_dispatches`, `juntos`, `watchlists`, `watchlist_tickers`, `credit_transactions`.
@@ -300,7 +300,7 @@ The owner has not decided to freeze any of these. This table is the full proposa
 - **Protected:** —
 - **Purpose:** Search and subscribe to public dispatches.
 - **URL:** `/explore`
-- **Reach:** Signal nav **Dispatches**. Signed-out Signal switcher lands here.
+- **Reach:** Primary nav → **Dispatches**.
 - **Auth:** Public. Subscribe opens the auth modal when there is no session.
 - **Key elements:** Heading “Explore Dispatches”, search “Search dispatches...”, label pills, **+ Create Dispatch**, subscribe control.
 - **Fed by:** `GET /api/v2/newsletters/search` (`newsletters_v2`, curator `users`). With a session: `/api/v2/account`, `/api/telegram/link`, `/api/v2/dashboard/subscriptions`. Subscribe: `POST /api/v2/newsletters/[id]/subscribe` (`subscriptions`, credit RPC). Content arrives via `generate-newsletters`.
@@ -420,7 +420,7 @@ The owner has not decided to freeze any of these. This table is the full proposa
 - **Protected:** —
 - **Purpose:** In-app explanation of objects, schedule, credits, and FAQ.
 - **URL:** `/docs`
-- **Reach:** Signal nav **Docs**.
+- **Reach:** More → **Docs**.
 - **Auth:** Public.
 - **Key elements:** Prose sections, link to `/flows`, link to `/docs/api`, **Create a Dispatch** → `/create`.
 - **Fed by:** Static. Credit numbers in the prose are part of **Known broken** (subscriber price).
@@ -470,7 +470,7 @@ The owner has not decided to freeze any of these. This table is the full proposa
 - **Protected:** —
 - **Purpose:** Pick and browse tracked analysts: summary, inferred positions, freshness.
 - **URL:** `/sources`
-- **Reach:** Signal nav **Sources**.
+- **Reach:** More → **Sources**.
 - **Auth:** Public. Starring a source needs a session.
 - **Key elements:** Heading “Source Profiles”, search placeholder “Search sources...”, stance and junto filters, star control.
 - **Fed by:** `GET /api/sources` (`source_analyst_profiles`, `sources`), `GET /api/juntos/public`. Star: `/api/v2/junto-source-star` (`users.featured_junto_id`). Crons: `pull-content`, `collect-twitter` (profiles at most once per 24h).
@@ -494,7 +494,7 @@ The owner has not decided to freeze any of these. This table is the full proposa
 - **Protected:** —
 - **Purpose:** Browse public juntos (and your private ones when signed in). A junto is the source list a dispatch is generated from.
 - **URL:** `/juntos`
-- **Reach:** Signal nav **Juntos**.
+- **Reach:** More → **Juntos**.
 - **Auth:** Public.
 - **Key elements:** Heading “Juntos”, **+ New Junto**, source filter, table of name / description / sources / dispatches.
 - **Fed by:** `GET /api/juntos/public`. Tables: `juntos`, `junto_sources`, `sources`, `newsletters_v2`.
@@ -546,7 +546,7 @@ These screens are the scored book. They do not place orders. Order placement is 
 - **Protected:** —
 - **Purpose:** Front door for the Trade product: discovery links plus a locked door to mandates.
 - **URL:** `/trade`
-- **Reach:** Product switcher **Trade**. Trade nav **Overview**.
+- **Reach:** More → **Trade hub**.
 - **Auth:** Public. A session is used only to decide whether the Mandates card is locked (`subscriptionTier === 'operator'`).
 - **Key elements:** “Find the best traders. Trade alongside them.” Cards: Discover Traders, Hyperliquid Top 10, Best Trades, Live Positions, Mandates, Portfolio Tool.
 - **Fed by:** Optional `GET /api/v2/account` (`users.subscription_tier`). The cards themselves are links.
@@ -558,7 +558,7 @@ These screens are the scored book. They do not place orders. Order placement is 
 - **Protected:** —
 - **Purpose:** Live book of the dynamic HL roster: consensus coins and 30-day PnL.
 - **URL:** `/trade/top-traders`
-- **Reach:** Trade nav **HL Top 10**. Card on `/trade`.
+- **Reach:** **HL Top 10** tab on `/leaderboard` and on this page. Card on `/trade`.
 - **Auth:** Public.
 - **Key elements:** Consensus bars, trader cards, empty copy “Roster unavailable right now.”, loading “Loading live positions…”.
 - **Fed by:** `GET /api/public/hl-top-traders`. Roster membership is written by cron `hl-roster` into `sources` (`type = hyperliquid_wallet`) and `junto_sources` for `ROSTER_JUNTO_ID`. Positions are read live from Hyperliquid, not stored by this request.
@@ -570,7 +570,7 @@ These screens are the scored book. They do not place orders. Order placement is 
 - **Protected:** —
 - **Purpose:** Rank tracked analysts by closed-call hit rate. Sample gate: 20+ tracked positions, or at least one scored closed call.
 - **URL:** `/leaderboard`
-- **Reach:** Trade nav **Discover**. Linked from `/top-calls` and `/trade`.
+- **Reach:** Primary nav → **Leaderboard**. Tabs on this page: **Analysts** and **Smart money** (`#smart`). **HL Top 10** links to `/trade/top-traders`. Linked from `/top-calls` and `/trade`.
 - **Auth:** Public. Server-rendered (`force-dynamic`). There is no `/api/leaderboard`.
 - **Key elements:** Heading “Analyst track-record leaderboard”, sortable table (hit rate, calls, avg return, conviction). Empty: “Nothing to rank yet”.
 - **Fed by:** `getSourceHitRates` in `src/lib/leaderboard.ts`. Tables: `source_positions`, `source_call_outcomes`, `sources`. Crons: `collect-twitter` (positions), `mark-positions` (daily marks that feed “vs mkt” / smart-money).
@@ -582,7 +582,7 @@ These screens are the scored book. They do not place orders. Order placement is 
 - **Protected:** —
 - **Purpose:** Best scored analyst calls over the last 7 days, using stored marks (no live price fetch on this page).
 - **URL:** `/top-calls`
-- **Reach:** Trade nav **Top Calls**.
+- **Reach:** Primary nav → **Top Calls**.
 - **Auth:** Public. ISR `revalidate = 3600`.
 - **Key elements:** Heading “Top calls this week”, call table, links to `/trades` and `/leaderboard`. Empty: “No scored calls this week yet. Check back soon.”
 - **Fed by:** `getTopCalls()` in `src/lib/top-calls.ts`. Tables: `source_positions`, `sources`. Cron: `mark-positions`.
@@ -594,7 +594,7 @@ These screens are the scored book. They do not place orders. Order placement is 
 - **Protected:** —
 - **Purpose:** Filterable book of every inferred position (active, stale, closed), 200 per page.
 - **URL:** `/trades`
-- **Reach:** Trade nav **Best Trades**. Card on `/trade`. Footer link on `/top-calls`.
+- **Reach:** **Best trades** tab on `/top-calls` and on this page. Card on `/trade`. Footer link on `/top-calls`.
 - **Auth:** Public.
 - **Key elements:** Filters, sortable table, “Loading trades…”, a “{n} trades” count.
 - **Fed by:** `GET /api/trades`. Tables: `sources`, `source_analyst_profiles`, `junto_sources`, `juntos`, `source_call_outcomes`. Live marks on the client: `POST /api/prices/batch` (Yahoo; no table). Crons: `collect-twitter`, `mark-positions`.
@@ -618,7 +618,7 @@ These screens are the scored book. They do not place orders. Order placement is 
 - **Protected:** —
 - **Purpose:** Aggregate stance across every tracked source: who is long or short, how many, how fresh.
 - **URL:** `/positions`
-- **Reach:** Trade nav **Positions**. Card on `/trade`.
+- **Reach:** More → **Positions**. Card on `/trade`.
 - **Auth:** Public. Starring a ticker needs a session (`/api/v2/star` → `user_watchlist`).
 - **Key elements:** Heading “Positions”, heatmap and table toggle, junto / category / stance filters, search. Phones default to the table. Empty: “No positions yet.”
 - **Fed by:** `GET /api/positions` (`source_analyst_profiles`, `sources`, `source_call_outcomes`; optional `junto_id` via `junto_sources`). `GET /api/juntos/public`. Crons: `collect-twitter`, `mark-positions`.
@@ -658,7 +658,7 @@ These screens are the scored book. They do not place orders. Order placement is 
 - **Protected:** `trading`
 - **Purpose:** List mandates, show a portfolio snapshot, create a mandate (Alpaca equities/crypto or Hyperliquid perps).
 - **URL:** `/trading`
-- **Reach:** Trade nav **Mandates** when `subscriptionTier === 'operator'`. Otherwise that nav item points at `/pricing` and shows a lock. Card on `/trade`. Link on the dashboard.
+- **Reach:** More → **Mandates** when `subscriptionTier === 'operator'`. Otherwise that item points at `/pricing` and shows a lock. Card on `/trade`. Link on the dashboard.
 - **Auth:** Operator or admin, via the layout. APIs use the same `getTradingAccess()` check.
 - **Key elements:** Portfolio stats, mandate cards, Telegram-link warning, create form, link to `/account/open`, link **Portfolio tool**.
 - **Fed by:** `GET /api/admin/trading/mandates`, `GET /api/admin/trading/portfolio-snapshot`, `GET /api/admin/trading/telegram-status`, `GET /api/broker/accounts`. Tables: `trading_mandates`, `trades`, `users` (Alpaca account fields, Telegram). Crons: `trade-tick`, `trade-reconcile`, `hl-wallet-poll`.
@@ -714,17 +714,17 @@ These screens are the scored book. They do not place orders. Order placement is 
 
 ### Pricing, credits, settings
 
-#### `/pricing` — Billing
+#### `/pricing` — Pricing
 
 - **Tag:** `core`
 - **Protected:** `billing`, `credits`
 - **Purpose:** Plans and credit packs. Free, Pro ($5/mo or $50/yr, 500 credits/mo), Operator ($20/mo or $200/yr, 2,000 credits/mo), plus one-time packs.
 - **URL:** `/pricing` (`?purchase=`, `?sub=`, `?upgrade=operator` drive banners).
-- **Reach:** Account menu **Billing**. Locked **Mandates** nav item. Upgrade links on settings and junto edit.
+- **Reach:** Primary nav → **Pricing**. Account menu **Billing**. Locked **Mandates** item in More. Upgrade links on settings and junto edit.
 - **Auth:** Public to read. Subscribe and top-up redirect to `/login` when unsigned.
-- **Key elements:** Heading “Billing”, plan cards, pack ids `credits_500`, `credits_1000`, `credits_5000`, `credits_10000`. The on-page cost grid lists “Dispatch send (per subscriber)” as “2 credits” — see **Known broken**.
+- **Key elements:** Heading “Pricing”, plan cards, pack ids `credits_500`, `credits_1000`, `credits_5000`, `credits_10000`. The on-page cost grid lists “Dispatch send (per subscriber)” as “2 credits” — see **Known broken**.
 - **Fed by:** `GET /api/v2/account` (`users`). `POST /api/v2/billing/subscribe` → Stripe Checkout URL. `POST /api/v2/credits/checkout` → Stripe Checkout URL. Webhook `POST /api/v2/credits/webhook` writes `users.subscription_tier`, credit RPCs, and `credit_transactions`. Monthly reset cron: `reset-subscription-credits`.
-- **Working means:** `GET /pricing` returns 200 and the HTML contains `Billing`, `$5`, and `$20`. With `?purchase=success` the banner text is `Credits added. Balance updated.` `POST /api/v2/billing/subscribe` without a session returns 401.
+- **Working means:** `GET /pricing` returns 200 and the HTML contains `Pricing`, `$5`, and `$20`. With `?purchase=success` the banner text is `Credits added. Balance updated.` `POST /api/v2/billing/subscribe` without a session returns 401.
 
 #### `/credits` — Credits alias
 
@@ -782,7 +782,7 @@ These screens are the scored book. They do not place orders. Order placement is 
 - **Protected:** `auth`
 - **Purpose:** List of the user’s investment theses with conviction and counts.
 - **URL:** `/theses`
-- **Reach:** Account menu **Theses**.
+- **Reach:** Direct URL. Removed from the account menu. The page stays live.
 - **Auth:** The shell is public. The list loads only with a session; unsigned users see a sign-in CTA.
 - **Key elements:** Tabbed list, **+ New Thesis**.
 - **Fed by:** `GET /api/theses?status=`. Table: `theses`. No cron.
@@ -974,7 +974,7 @@ Shared cron auth is documented once in **How to read an entry**. These routes ar
 - **Protected:** —
 - **Purpose:** There is no HTTP leaderboard API. The board is server-rendered.
 - **URL:** Page `/leaderboard`. Function `getSourceHitRates` in `src/lib/leaderboard.ts`.
-- **Reach:** Trade nav **Discover**.
+- **Reach:** Primary nav → **Leaderboard**.
 - **Auth:** Public page.
 - **Fed by:** `source_positions`, `source_call_outcomes`, `sources`. Crons `collect-twitter`, `mark-positions`.
 - **Working means:** Use the `/leaderboard` screen check. A row appears only after 20 tracked positions or one scored closed call (`MIN_POSITIONS = 20` on the page; the query also keeps sources that already have a scored call).

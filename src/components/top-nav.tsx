@@ -7,56 +7,14 @@ import { useEffect, useState } from 'react';
 import { ThemeToggle } from './theme-toggle';
 import { SearchBar } from './search-bar';
 
-// Two products under one roof: Signal (intelligence/dispatches) and Trade
-// (discover traders + mandates). The nav swaps its links by product and a
-// switcher toggles between them. Backend/account/billing are shared.
-type Product = 'signal' | 'trade';
 interface NavItem { href: string; label: string; locked?: boolean }
 
-// A route belongs to Trade if it starts with one of these; everything else is Signal.
-const TRADE_PREFIXES = ['/trade', '/trading', '/leaderboard', '/positions', '/trades', '/top-calls'];
-
-function ProductSwitcher({
-  full = false,
-  product,
-  signalHome,
-  onNavigate,
-}: {
-  full?: boolean;
-  product: Product;
-  signalHome: string;
-  onNavigate: () => void;
-}) {
-  return (
-    <div
-      className={`flex items-center rounded-sm p-0.5 ${full ? 'w-full' : ''}`}
-      style={{ background: 'rgb(var(--t-raised))', border: '1px solid rgb(var(--t-brass) / 0.28)' }}
-    >
-      {([
-        { key: 'signal' as Product, label: 'Signal', href: signalHome },
-        { key: 'trade' as Product, label: 'Trade', href: '/trade' },
-      ]).map(({ key, label, href }) => {
-        const on = product === key;
-        return (
-          <Link
-            key={key}
-            href={href}
-            onClick={onNavigate}
-            className={`text-[13px] rounded-sm text-center transition ${full ? 'flex-1 py-1.5' : 'px-3 py-1'}`}
-            style={{
-              fontFamily: 'var(--font-oswald)',
-              color: on ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.6)',
-              background: on ? 'rgb(var(--t-brass))' : 'transparent',
-              fontWeight: on ? 600 : 400,
-            }}
-          >
-            {label}
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
+const ACCOUNT_LINKS: Array<{ href: string; label: string; brass?: boolean }> = [
+  { href: '/history', label: 'History' },
+  { href: '/flows', label: 'Flows' },
+  { href: '/settings', label: 'Settings' },
+  { href: '/pricing', label: 'Billing', brass: true },
+];
 
 export function TopNav() {
   const { data: session } = useSession();
@@ -64,7 +22,15 @@ export function TopNav() {
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [tier, setTier] = useState<'free' | 'pro' | 'operator' | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [menuPath, setMenuPath] = useState(pathname);
+  if (menuPath !== pathname) {
+    setMenuPath(pathname);
+    setMenuOpen(false);
+    setMoreOpen(false);
+    setMobileOpen(false);
+  }
 
   useEffect(() => {
     if (session?.user) {
@@ -84,27 +50,31 @@ export function TopNav() {
 
   // '/trade' is the hub — don't light it up on its sub-pages.
   const navActive = (path: string) => (path === '/trade' ? pathname === '/trade' : isActive(path));
-  const product: Product = TRADE_PREFIXES.some((p) => isActive(p)) ? 'trade' : 'signal';
-  const signalHome = session?.user ? '/dashboard' : '/explore';
 
-  const signalNav: NavItem[] = [
+  const primary: NavItem[] = [
     ...(session?.user ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
-    { href: '/pulse', label: 'Pulse' },
+    { href: '/leaderboard', label: 'Leaderboard' },
+    { href: '/top-calls', label: 'Top Calls' },
+    { href: '/pulse', label: 'Markets' },
     { href: '/explore', label: 'Dispatches' },
+    { href: '/pricing', label: 'Pricing' },
+  ];
+
+  // Locked Mandates still sends people to /pricing. Don't mark it current there —
+  // the primary Pricing link is the match.
+  const moreLinks: NavItem[] = [
     { href: '/sources', label: 'Sources' },
     { href: '/juntos', label: 'Juntos' },
-    { href: '/docs', label: 'Docs' },
-  ];
-  const tradeNav: NavItem[] = [
-    { href: '/trade', label: 'Overview' },
-    { href: '/leaderboard', label: 'Discover' },
-    { href: '/trade/top-traders', label: 'HL Top 10' },
-    { href: '/top-calls', label: 'Top Calls' },
-    { href: '/trades', label: 'Best Trades' },
+    { href: '/trade', label: 'Trade hub' },
     { href: '/positions', label: 'Positions' },
     { href: tradingUnlocked ? '/trading' : '/pricing', label: 'Mandates', locked: !tradingUnlocked },
+    { href: '/about', label: 'How it works' },
+    { href: '/demos', label: 'Demo' },
+    { href: '/docs', label: 'Docs' },
   ];
-  const navLinks = product === 'trade' ? tradeNav : signalNav;
+
+  const linkActive = (item: NavItem) => (item.locked ? false : navActive(item.href));
+  const moreActive = moreLinks.some((item) => linkActive(item));
 
   const creditColor =
     creditBalance !== null && creditBalance <= 50
@@ -119,50 +89,89 @@ export function TopNav() {
     </svg>
   );
 
+  const linkStyle = (item: NavItem) => {
+    const active = linkActive(item);
+    return {
+      color: item.locked
+        ? 'rgb(var(--t-parchment) / 0.3)'
+        : active ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.5)',
+      fontWeight: active && !item.locked ? 500 : undefined,
+    } as const;
+  };
+
   return (
-    <nav className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
-      {/* Logo + product switcher */}
-      <div className="flex items-center gap-4 shrink-0">
-        <Link href="/" className="text-2xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-oswald)' }}>
-          <span style={{ color: 'rgb(var(--t-parchment))' }}>my</span>
-          <span style={{ color: 'rgb(var(--t-brass))' }}>junto</span>
-        </Link>
-        <div className="hidden md:block">
-          <ProductSwitcher product={product} signalHome={signalHome} onNavigate={() => setMobileOpen(false)} />
+    <nav data-testid="top-nav-bar" className="container mx-auto px-3 sm:px-4 py-3 flex flex-nowrap items-center gap-2 sm:gap-3 min-w-0">
+      <Link href="/" className="text-xl lg:text-2xl font-bold tracking-tight shrink-0" style={{ fontFamily: 'var(--font-oswald)' }}>
+        <span style={{ color: 'rgb(var(--t-parchment))' }}>my</span>
+        <span style={{ color: 'rgb(var(--t-brass))' }}>junto</span>
+      </Link>
+
+      <div className="hidden md:flex flex-nowrap items-center gap-x-2.5 lg:gap-x-3 xl:gap-x-5 min-w-0">
+        {primary.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="text-[13px] xl:text-sm whitespace-nowrap transition"
+            style={linkStyle(item)}
+          >
+            {item.label}
+          </Link>
+        ))}
+
+        <div className="relative">
+          <button
+            type="button"
+            aria-expanded={moreOpen}
+            aria-haspopup="menu"
+            onClick={() => { setMoreOpen((open) => !open); setMenuOpen(false); }}
+            className="text-[13px] xl:text-sm whitespace-nowrap transition flex items-center gap-1 bg-transparent p-0"
+            style={{
+              color: moreOpen || moreActive ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.5)',
+              fontWeight: moreActive ? 500 : undefined,
+            }}
+          >
+            More
+            <svg className={`w-3 h-3 transition ${moreOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {moreOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setMoreOpen(false)} />
+              <div
+                role="menu"
+                className="absolute left-0 mt-2 w-52 rounded-sm shadow-xl z-50 py-1"
+                style={{ background: 'rgb(var(--t-surface))', border: '1px solid rgb(var(--t-brass) / 0.28)' }}
+              >
+                {moreLinks.map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    role="menuitem"
+                    title={item.locked ? 'Upgrade to Operator to unlock' : undefined}
+                    onClick={() => setMoreOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm transition hover:opacity-80"
+                    style={linkStyle(item)}
+                  >
+                    {item.locked && <LockIcon cls="w-3 h-3 shrink-0" />}
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Center nav links — desktop, per active product */}
-      <div className="hidden md:flex items-center gap-6">
-        {navLinks.map(({ href, label, locked }) => (
-          <Link
-            key={href}
-            href={href}
-            title={locked ? 'Upgrade to Operator to unlock' : undefined}
-            className="text-sm transition flex items-center gap-1.5"
-            style={{
-              color: locked
-                ? 'rgb(var(--t-parchment) / 0.3)'
-                : navActive(href) ? 'rgb(var(--t-parchment))' : 'rgb(var(--t-parchment) / 0.5)',
-              fontWeight: navActive(href) && !locked ? 500 : undefined,
-            }}
-          >
-            {locked && <LockIcon cls="w-3 h-3" />}
-            {label}
-          </Link>
-        ))}
-      </div>
-
-      {/* Right side: search + account */}
-      <div className="flex items-center gap-3">
-        <SearchBar className="hidden lg:block w-56" />
+      <div className="ml-auto flex flex-nowrap items-center gap-2 xl:gap-3 shrink-0">
+        <SearchBar className="hidden lg:block w-36 xl:w-52 2xl:w-56" />
         <ThemeToggle />
         {session?.user ? (
           <>
             {creditBalance !== null && (
               <Link
                 href="/settings"
-                className="text-xs font-medium transition hover:opacity-80 hidden sm:inline"
+                className="text-xs font-medium transition hover:opacity-80 hidden sm:inline whitespace-nowrap"
                 style={{ color: creditColor, fontFamily: 'var(--font-mono)' }}
               >
                 {creditBalance.toLocaleString()} credits
@@ -170,7 +179,8 @@ export function TopNav() {
             )}
             <div className="relative">
               <button
-                onClick={() => setMenuOpen(!menuOpen)}
+                type="button"
+                onClick={() => { setMenuOpen(!menuOpen); setMoreOpen(false); }}
                 className="w-8 h-8 rounded-sm flex items-center justify-center text-sm transition"
                 style={{ background: 'rgb(var(--t-raised))', color: 'rgb(var(--t-parchment) / 0.7)', border: '1px solid rgb(var(--t-brass) / 0.28)' }}
               >
@@ -190,25 +200,20 @@ export function TopNav() {
                         </p>
                       )}
                     </div>
-                    {[
-                      { href: '/history', label: 'History' },
-                      { href: '/theses', label: 'Theses' },
-                      { href: '/flows', label: 'Flows' },
-                      { href: '/settings', label: 'Settings' },
-                      { href: '/pricing', label: 'Billing', brass: true },
-                    ].map(({ href, label, brass }) => (
+                    {ACCOUNT_LINKS.map(({ href, label, brass }) => (
                       <Link
                         key={href}
                         href={href}
                         onClick={() => setMenuOpen(false)}
                         className="block px-3 py-2 text-sm transition hover:opacity-80"
-                        style={{ color: (brass as boolean) ? 'rgb(var(--t-brass))' : 'rgb(var(--t-parchment) / 0.7)' }}
+                        style={{ color: brass ? 'rgb(var(--t-brass))' : 'rgb(var(--t-parchment) / 0.7)' }}
                       >
                         {label}
                       </Link>
                     ))}
                     <div className="mt-1 pt-1" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.18)' }}>
                       <button
+                        type="button"
                         onClick={() => signOut({ callbackUrl: '/' })}
                         className="block w-full text-left px-3 py-2 text-sm transition"
                         style={{ color: 'rgb(var(--t-parchment) / 0.35)' }}
@@ -224,22 +229,22 @@ export function TopNav() {
             </div>
           </>
         ) : (
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm transition hidden sm:inline" style={{ color: 'rgb(var(--t-parchment) / 0.5)' }}>
-              Sign In
+          <div className="flex items-center gap-2 xl:gap-3">
+            <Link href="/login" className="text-sm transition hidden sm:inline whitespace-nowrap" style={{ color: 'rgb(var(--t-parchment) / 0.5)' }}>
+              Sign in
             </Link>
             <Link
               href="/login"
-              className="px-4 py-2 rounded-sm text-sm font-semibold transition uppercase tracking-wide"
+              className="px-3 py-1.5 xl:px-4 xl:py-2 rounded-sm text-sm font-semibold transition tracking-wide whitespace-nowrap"
               style={{ background: 'rgb(var(--t-brass))', color: 'rgb(var(--t-ink))', fontFamily: 'var(--font-oswald)' }}
             >
-              Get Started
+              Start free
             </Link>
           </div>
         )}
 
-        {/* Mobile menu toggle */}
         <button
+          type="button"
           onClick={() => setMobileOpen(!mobileOpen)}
           className="md:hidden transition p-1"
           style={{ color: 'rgb(var(--t-parchment) / 0.5)' }}
@@ -257,9 +262,8 @@ export function TopNav() {
         </button>
       </div>
 
-      {/* Mobile nav — full-screen overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-[100] md:hidden">
+        <div className="fixed inset-0 z-[100] md:hidden" data-testid="mobile-nav">
           <div className="absolute inset-0" style={{ background: 'rgb(var(--t-ink) / 0.85)', backdropFilter: 'blur(8px)' }} onClick={() => setMobileOpen(false)} />
           <div className="absolute top-0 right-0 bottom-0 w-full max-w-xs z-10 flex flex-col" style={{ background: 'rgb(var(--t-surface))', borderLeft: '1px solid rgb(var(--t-brass) / 0.2)' }}>
             <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgb(var(--t-brass) / 0.12)' }}>
@@ -267,7 +271,7 @@ export function TopNav() {
                 <span style={{ color: 'rgb(var(--t-parchment))' }}>my</span>
                 <span style={{ color: 'rgb(var(--t-brass))' }}>junto</span>
               </Link>
-              <button onClick={() => setMobileOpen(false)} className="p-1 transition" style={{ color: 'rgb(var(--t-parchment) / 0.4)' }} aria-label="Close">
+              <button type="button" onClick={() => setMobileOpen(false)} className="p-1 transition" style={{ color: 'rgb(var(--t-parchment) / 0.4)' }} aria-label="Close">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -275,36 +279,45 @@ export function TopNav() {
             </div>
 
             <nav className="flex-1 overflow-y-auto px-2 py-3">
-              {/* Search */}
               <div className="px-1 pb-3"><SearchBar onNavigate={() => setMobileOpen(false)} /></div>
-              {/* Product switcher */}
-              <div className="px-1 pb-3">
-                <ProductSwitcher full product={product} signalHome={signalHome} onNavigate={() => setMobileOpen(false)} />
-              </div>
 
-              {/* Active product's links */}
               <div className="space-y-0.5">
-                {navLinks.map(({ href, label, locked }) => (
-                  <MobileNavLink key={href} href={href} label={label} active={navActive(href) && !locked} onClick={() => setMobileOpen(false)} locked={locked} />
+                {primary.map((item) => (
+                  <MobileNavLink key={item.href} href={item.href} label={item.label} active={linkActive(item)} onClick={() => setMobileOpen(false)} />
                 ))}
-                <MobileNavLink href="/demos" label="Demo" active={isActive('/demos')} onClick={() => setMobileOpen(false)} />
               </div>
 
-              {/* Account section */}
+              <div className="mt-4 pt-3" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.12)' }}>
+                <p className="px-3 pb-1 text-[10px] uppercase tracking-[0.18em]" style={{ color: 'rgb(var(--t-brass))', fontFamily: 'var(--font-oswald)' }}>More</p>
+                <div className="space-y-0.5">
+                  {moreLinks.map((item) => (
+                    <MobileNavLink
+                      key={item.label}
+                      href={item.href}
+                      label={item.label}
+                      active={linkActive(item)}
+                      locked={item.locked}
+                      onClick={() => setMobileOpen(false)}
+                    />
+                  ))}
+                </div>
+              </div>
+
               {session?.user && (
-                <div className="mt-6 space-y-0.5" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.12)', paddingTop: '0.75rem' }}>
-                  <MobileNavLink href="/history" label="History" active={isActive('/history')} onClick={() => setMobileOpen(false)} muted />
-                  <MobileNavLink href="/theses" label="Theses" active={isActive('/theses')} onClick={() => setMobileOpen(false)} muted />
-                  <MobileNavLink href="/flows" label="Flows" active={isActive('/flows')} onClick={() => setMobileOpen(false)} muted />
-                  <MobileNavLink href="/settings" label="Settings" active={isActive('/settings')} onClick={() => setMobileOpen(false)} muted />
-                  <MobileNavLink href="/pricing" label="Billing" active={isActive('/pricing')} onClick={() => setMobileOpen(false)} muted />
+                <div className="mt-4 pt-3" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.12)' }}>
+                  <p className="px-3 pb-1 text-[10px] uppercase tracking-[0.18em]" style={{ color: 'rgb(var(--t-brass))', fontFamily: 'var(--font-oswald)' }}>Account</p>
+                  <div className="space-y-0.5">
+                    {ACCOUNT_LINKS.map(({ href, label }) => (
+                      <MobileNavLink key={href} href={href} label={label} active={isActive(href)} onClick={() => setMobileOpen(false)} muted />
+                    ))}
+                  </div>
                 </div>
               )}
             </nav>
 
             {session?.user && (
               <div className="px-5 py-4" style={{ borderTop: '1px solid rgb(var(--t-brass) / 0.12)' }}>
-                <button onClick={() => { setMobileOpen(false); signOut({ callbackUrl: '/' }); }} className="text-sm transition" style={{ color: 'rgb(var(--t-parchment) / 0.35)' }}>
+                <button type="button" onClick={() => { setMobileOpen(false); signOut({ callbackUrl: '/' }); }} className="text-sm transition" style={{ color: 'rgb(var(--t-parchment) / 0.35)' }}>
                   Sign Out
                 </button>
               </div>
