@@ -159,17 +159,37 @@ Return JSON.`;
     const parsed = JSON.parse(jsonMatch[0]);
     const decisions = Array.isArray(parsed.decisions) ? parsed.decisions : [];
     const maxNotional = (accountEquity * mandate.max_position_pct) / 100;
+    // The model may only act on the candidates it was shown: ticker must be a
+    // candidate, side must match that candidate's direction, one decision per
+    // ticker, and cited URLs must come from that ticker's signals.
+    const dirByTicker = new Map<string, Set<string>>();
+    for (const s of candidates) {
+      const k = s.ticker.toUpperCase();
+      if (!dirByTicker.has(k)) dirByTicker.set(k, new Set());
+      dirByTicker.get(k)!.add(s.direction);
+    }
+    const seenTickers = new Set<string>();
     const mapped = decisions
-      .filter(
-        (d: any) =>
-          typeof d.ticker === 'string' &&
-          ['long', 'short'].includes(d.side) &&
-          Number(d.notional_usd) > 0 &&
-          typeof d.entry_thesis === 'string',
-      )
+      .filter((d: any) => {
+        if (
+          typeof d.ticker !== 'string' ||
+          !['long', 'short'].includes(d.side) ||
+          !(Number(d.notional_usd) > 0) ||
+          typeof d.entry_thesis !== 'string'
+        ) return false;
+        const k = d.ticker.toUpperCase();
+        if (!dirByTicker.get(k)?.has(d.side)) {
+          console.warn(`[decide] dropping ${d.ticker} ${d.side} — not a candidate signal / direction mismatch`);
+          return false;
+        }
+        if (seenTickers.has(k)) return false;
+        seenTickers.add(k);
+        return true;
+      })
       .map((d: any) => {
         const ticker = d.ticker.toUpperCase();
-        const fromModel = Array.isArray(d.source_urls) ? d.source_urls.filter((u: any) => typeof u === 'string' && u) : [];
+        const allowedUrls = new Set(signalUrlsByTicker.get(ticker) || []);
+        const fromModel = Array.isArray(d.source_urls) ? d.source_urls.filter((u: any) => typeof u === 'string' && allowedUrls.has(u)) : [];
         // Backfill from the originating signal when the model omitted sources.
         // Dedupe so the same post/author doesn't repeat in the attribution.
         const source_urls = [...new Set(fromModel.length ? fromModel : (signalUrlsByTicker.get(ticker) || []))];
@@ -183,7 +203,7 @@ Return JSON.`;
           target_pct: Math.max(5, Math.min(50, Number(d.target_pct) || 15)),
           expected_hold_days: Math.max(1, Math.min(365, Number(d.expected_hold_days) || 14)),
           source_urls,
-          conviction: Number(d.conviction) || 3,
+          conviction: Math.max(1, Math.min(5, Math.round(Number(d.conviction) || 3))),
         };
       }) as TradeDecision[];
 

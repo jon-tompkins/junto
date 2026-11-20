@@ -25,6 +25,8 @@ async function info(mode: 'paper' | 'live', body: unknown): Promise<any> {
   return r.json();
 }
 
+export const WALLET_STATE_MAX_AGE_MS = 60 * 60_000;
+
 export const autoExits = (m: Mandate) => m.execution_mode === 'auto_exit' || m.execution_mode === 'full_auto';
 export const autoEntries = (m: Mandate) => m.execution_mode === 'full_auto';
 
@@ -116,14 +118,21 @@ export async function loadEntryContext(mandate: Mandate, equity: number, positio
     if (t.status !== 'pending' && String(t.created_at).slice(0, 10) === today) entriesToday++;
     lastEntryByCoin.set(sym, Math.max(lastEntryByCoin.get(sym) || 0, ts));
   }
+  // Fail CLOSED: if HL meta or wallet state can't be loaded, throw — the tick
+  // then skips entries this round rather than trading with the filters off.
   const dayVolume = new Map<string, number>();
-  try {
-    const [meta, ctxs] = await info(mandate.mode, { type: 'metaAndAssetCtxs' });
-    (meta?.universe || []).forEach((a: any, i: number) => dayVolume.set(String(a.name).toUpperCase(), Number(ctxs?.[i]?.dayNtlVlm) || 0));
-  } catch { /* volume filter skipped if HL meta is unavailable */ }
+  const [meta, ctxs] = await info(mandate.mode, { type: 'metaAndAssetCtxs' });
+  (meta?.universe || []).forEach((a: any, i: number) => dayVolume.set(String(a.name).toUpperCase(), Number(ctxs?.[i]?.dayNtlVlm) || 0));
+  if (dayVolume.size === 0) throw new Error('HL meta returned an empty universe');
   const walletPositions = new Map<string, any[]>();
-  const { data: states } = await supabase.from('hl_wallet_state').select('address, positions');
-  for (const s of states || []) walletPositions.set(String(s.address).toLowerCase(), (s.positions as any[]) || []);
+  const { data: states, error: stErr } = await supabase.from('hl_wallet_state').select('address, positions, updated_at');
+  if (stErr) throw new Error(`hl_wallet_state: ${stErr.message}`);
+  // Snapshots older than this are ignored (treated as unknown → entry rejected).
+  const maxAge = WALLET_STATE_MAX_AGE_MS;
+  for (const s of states || []) {
+    if (Date.now() - new Date(s.updated_at).getTime() > maxAge) continue;
+    walletPositions.set(String(s.address).toLowerCase(), (s.positions as any[]) || []);
+  }
   const openNotional = positions.reduce((n: number, p: any) => n + Math.abs(Number(p.market_value) || 0), 0);
   return { equity, openNotional, entriesToday, lastEntryByCoin, dayVolume, walletPositions };
 }
@@ -165,6 +174,12 @@ export function gateEntry(
     .filter(Boolean) as any[];
   const copiedNotional = holders.reduce((n, p) => n + (Number(p.positionValue) || 0), 0);
   const isWalletCopy = wallets.length > 0;
+  // A wallet-copy entry must still be backed by a fresh snapshot showing a
+  // copied trader in this coin+side. Otherwise sizing (weight 1) and the chase
+  // check would silently fall back to "full size, no check".
+  if (isWalletCopy && holders.length === 0) {
+    return { ok: false, reason: `no fresh wallet snapshot shows a copied trader holding ${coin} ${decision.side}`, weight: 0, copiedNotional: 0 };
+  }
   const weight = isWalletCopy ? sqrtWeight(copiedNotional, Number(mandate.sizing_ref_notional_usd) || 1_000_000) : 1;
   const verdict = (ok: boolean, reason?: string): EntryVerdict => ({ ok, reason, weight, copiedNotional });
 
@@ -182,6 +197,7 @@ export function gateEntry(
 
   const minVol = Number(mandate.min_coin_volume_usd);
   const vol = ctx.dayVolume.get(coin);
+  if (minVol > 0 && vol == null) return verdict(false, `${coin} 24h volume unknown`);
   if (minVol > 0 && vol != null && vol < minVol) return verdict(false, `${coin} 24h volume $${(vol / 1e6).toFixed(1)}M < $${(minVol / 1e6).toFixed(0)}M`);
 
   // Chase check: price already ran away from the copied traders' entry.

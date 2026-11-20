@@ -353,6 +353,15 @@ export async function approveTrade(tradeId: string, source: 'telegram' | 'web' |
       await addJournalEntry({ tradeId, kind: 'entry', content: `[not submitted: ${err.message}]` });
       return { ok: false, message: `🛑 ${trade.ticker}: not submitted — ${err.message.replace(/^Order blocked by live-mode guard /, '')}` };
     }
+    // Hyperliquid: a network/timeout error AFTER the order was sent is
+    // ambiguous — it may have filled. Only mark rejected on a definitive venue
+    // refusal; otherwise leave the claim in place and let the orphan sweep
+    // (next tick) adopt the position or clear the ghost.
+    const definitive = /order rejected|Unknown Hyperliquid asset|No price for|private key|not configured/i.test(String(err?.message));
+    if (mandate.broker === 'hyperliquid' && !definitive) {
+      await addJournalEntry({ tradeId, kind: 'entry', content: `[submit outcome unknown: ${String(err?.message).slice(0, 200)} — orphan sweep will reconcile against HL]` });
+      return { ok: false, message: `⚠️ ${trade.ticker}: couldn't confirm the order (${String(err?.message).slice(0, 120)}). It will be reconciled against Hyperliquid on the next tick — it will be adopted if it filled.` };
+    }
     await updateTrade(tradeId, { status: 'rejected' });
     await addJournalEntry({
       tradeId,

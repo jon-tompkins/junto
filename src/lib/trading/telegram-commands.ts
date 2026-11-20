@@ -262,7 +262,10 @@ export async function closeTickerCommand(userId: string, ticker: string, chatId?
       if (cancelled > 0) await new Promise((r) => setTimeout(r, 2000));
       await alp.closePosition(sym);
       for (const t of matching) {
-        await updateTrade(t.id, { status: 'closed' });
+        // HL: leave the row open — the monitor sees the position vanish and
+        // finalizes it with the real exit fill, P/L and fees (setting 'closed'
+        // here dropped all three). Other brokers keep the direct close.
+        if (m.broker !== 'hyperliquid') await updateTrade(t.id, { status: 'closed' });
         await addJournalEntry({
           tradeId: t.id,
           kind: 'exit',

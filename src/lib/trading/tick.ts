@@ -29,6 +29,8 @@ import { checkDailyLoss, loadEntryContext, gateEntry, convictionFraction, autoEn
 import { approveTrade } from './approval';
 import { handleAmendmentCallback } from './amendment';
 import { reconcileMandate } from './reconcile';
+import { sweepOrphans } from './orphans';
+import { getSupabase } from '@/lib/db/client';
 import { requestApproval } from './approval';
 import { requestAmendmentApproval } from './amendment';
 import type { Mandate, TickWindow } from './types';
@@ -70,9 +72,45 @@ export async function runTick(window: TickWindow, opts?: { broker?: string; mand
   }
   const results: TickResult[] = [];
   for (const mandate of mandates) {
-    results.push(await tickMandate(mandate, window));
+    results.push(await tickMandateLocked(mandate, window));
   }
   return results;
+}
+
+// Per-mandate lock so the hourly cron, the ws-listener and the wallet-poll
+// (all of which call runTick) can't run the same mandate concurrently — that
+// is how two ticks could each approve the same entry or double-count caps.
+// Lease expires after 8 min (cron maxDuration is 5), so a crashed tick can't
+// wedge a mandate. If the lock itself errors we proceed (don't stall trading).
+const TICK_LOCK_MS = 8 * 60_000;
+async function tickMandateLocked(mandate: Mandate, window: TickWindow): Promise<TickResult> {
+  const supabase = getSupabase();
+  let locked = false;
+  try {
+    const now = new Date();
+    const { data, error } = await supabase
+      .from('trading_mandates')
+      .update({ tick_lock_until: new Date(now.getTime() + TICK_LOCK_MS).toISOString() })
+      .eq('id', mandate.id)
+      .or(`tick_lock_until.is.null,tick_lock_until.lt.${now.toISOString()}`)
+      .select('id');
+    if (!error) {
+      if (!data?.length) {
+        return {
+          mandateId: mandate.id, mandateName: mandate.name,
+          monitored: { opened: 0, closed: 0, journaled: 0 }, tweetsReviewed: 0, signals: 0, decisions: 0,
+          proposed: 0, amendments_proposed: 0, position_review_suggested: 0, adjustments: 0,
+          note: 'tick_locked', errors: [],
+        };
+      }
+      locked = true;
+    }
+  } catch { /* proceed unlocked */ }
+  try {
+    return await tickMandate(mandate, window);
+  } finally {
+    if (locked) await supabase.from('trading_mandates').update({ tick_lock_until: null }).eq('id', mandate.id).then(() => {}, () => {});
+  }
 }
 
 async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickResult> {
@@ -137,6 +175,14 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
     await reconcileMandate(mandate.id);
   } catch (err: any) {
     result.errors.push(`reconcile: ${err.message}`);
+  }
+
+  // HL: recover ghost trades and adopt orphan positions so nothing is naked.
+  try {
+    const notes = await sweepOrphans(mandate);
+    if (notes.length) result.errors.push(`orphans: ${notes.join(', ')}`);
+  } catch (err: any) {
+    result.errors.push(`orphans: ${err.message}`);
   }
 
   // Hard daily-loss gate (HL): flattens + pauses before anything new happens.
@@ -306,6 +352,16 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
         });
         continue;
       }
+      if (mandate.broker === 'hyperliquid' && !entryCtx) {
+        // Entry gates couldn't load (HL meta / wallet state down): fail closed.
+        await logSignal({
+          mandateId: mandate.id,
+          signal: { ticker: decision.ticker, direction: decision.side, conviction: decision.conviction, source_urls: decision.source_urls },
+          decision: 'skipped_guideline',
+          decisionReason: 'gate: entry context unavailable (failing closed)',
+        });
+        continue;
+      }
       const lastPrice = await alpaca.getLastTrade(decision.ticker);
       if (!lastPrice || lastPrice <= 0) {
         await logSignal({
@@ -442,6 +498,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
   try {
     const openTrades = await getOpenTrades(mandate.id);
     if (openTrades.length > 0) {
+      const reviewDriven = new Set<object>(); // LLM daily-review amendments: never auto-executed
       const amendments = await decideAmendments({
         mandate,
         signals,
@@ -459,6 +516,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
         try {
           const reviewAmendments = await reviewPositions({ mandate, openTrades, positions });
           result.position_review_suggested = reviewAmendments.length;
+          for (const r of reviewAmendments) reviewDriven.add(r);
           amendments.push(...reviewAmendments);
         } catch (err: any) {
           result.errors.push(`review: ${err.message}`);
@@ -493,7 +551,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
             sourceUrls: amend.source_urls,
           });
 
-          if (amend.kind === 'close' && mandate.broker === 'hyperliquid' && autoExits(mandate)) {
+          if (amend.kind === 'close' && mandate.broker === 'hyperliquid' && autoExits(mandate) && !reviewDriven.has(amend)) {
             const res = await handleAmendmentCallback({ data: `amend_approve:${amendmentId}` });
             await notifyMandate(mandate, `🤖 <b>${mandate.name}</b> auto-closed ${trade.ticker}: ${res.message}\nWhy: ${amend.rationale.slice(0, 500)}`);
             result.amendments_proposed++;

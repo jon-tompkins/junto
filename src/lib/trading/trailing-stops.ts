@@ -11,6 +11,7 @@ import { addJournalEntry } from './db';
 import type { Mandate } from './types';
 
 const INFO = { paper: 'https://api.hyperliquid-testnet.xyz/info', live: 'https://api.hyperliquid.xyz/info' };
+const STATE_MAX_AGE_MS = 60 * 60_000;
 const ADDR_RE = /address\/(0x[0-9a-fA-F]{40})/;
 
 export interface TrailResult { ticker: string; action: string; stop?: number; pct?: number; detail?: string }
@@ -73,8 +74,12 @@ async function traderStillIn(juntoId: string | null, wallets: string[], coin: st
   const roster = new Set((srcs || []).map((r: any) => String(r.sources.handle_or_url).toLowerCase()));
   const onRoster = wallets.filter((w) => roster.has(w));
   if (!onRoster.length) return false;
-  const { data: states } = await supabase.from('hl_wallet_state').select('address, positions').in('address', onRoster);
-  return (states || []).some((s: any) =>
+  const { data: states } = await supabase.from('hl_wallet_state').select('address, positions, updated_at').in('address', onRoster);
+  // Missing or stale snapshot for any followed wallet = we can't tell whether
+  // the trader exited. Keep the normal trail rather than tightening on no data.
+  const fresh = (states || []).filter((s: any) => Date.now() - new Date(s.updated_at).getTime() <= STATE_MAX_AGE_MS);
+  if (fresh.length < onRoster.length) return true;
+  return fresh.some((s: any) =>
     ((s.positions as any[]) || []).some((p) => String(p.coin).toUpperCase() === coin.toUpperCase() && (side === 'long' ? p.szi > 0 : p.szi < 0)),
   );
 }
