@@ -20,6 +20,7 @@ interface Row {
   pnl: number;
   roePct: number | null;
   lev: number | null;
+  stopPx: number | null;
   stopAwayPct: number | null;
   noStop: boolean;
 }
@@ -62,6 +63,7 @@ async function loadRows(userId: string, chatId?: number | string | null): Promis
         pnl: pp ? pp.unrealized_pnl : lp ? Number(lp.unrealized_pl) || 0 : 0,
         roePct: pp ? pp.roe_pct : null,
         lev: pp ? pp.leverage : null,
+        stopPx: pp?.stop_px ?? null,
         stopAwayPct: pp?.stop_px != null ? pp.stop_away_pct ?? null : null,
         noStop: !!pp && pp.stop_px == null,
       });
@@ -74,7 +76,7 @@ export async function buildPositionsCard(userId: string, chatId?: number | strin
   const rows = await loadRows(userId, chatId);
   if (!rows.length) return null;
   const total = rows.reduce((n, r) => n + r.pnl, 0);
-  const W = 1100, ROW = 74, HEAD = 120, FOOT = 40;
+  const W = 1200, ROW = 74, HEAD = 120, FOOT = 40;
   const H = HEAD + 44 + rows.length * ROW + FOOT;
   const green = '#3ddc84', red = '#ff5a5f', dim = '#8b93a1';
   const col = (w: number, align: 'flex-start' | 'flex-end' = 'flex-start') =>
@@ -91,7 +93,7 @@ export async function buildPositionsCard(userId: string, chatId?: number | strin
       </div>
       <div style={{ display: 'flex', fontSize: 16, color: dim, height: 44, alignItems: 'center', borderBottom: '1px solid #232a35' }}>
         <div style={col(220)}>POSITION</div><div style={col(110, 'flex-end')}>SIZE</div><div style={col(110, 'flex-end')}>MARGIN</div>
-        <div style={col(120, 'flex-end')}>ENTRY</div><div style={col(120, 'flex-end')}>MARK</div><div style={col(190, 'flex-end')}>P&L</div><div style={col(90, 'flex-end')}>STOP</div>
+        <div style={col(120, 'flex-end')}>ENTRY</div><div style={col(120, 'flex-end')}>MARK</div><div style={col(190, 'flex-end')}>P&L</div><div style={col(190, 'flex-end')}>STOP</div>
       </div>
       {rows.map((r, i) => {
         const c = r.pnl >= 0 ? green : red;
@@ -111,8 +113,9 @@ export async function buildPositionsCard(userId: string, chatId?: number | strin
               <div style={{ display: 'flex', fontWeight: 700 }}>{usd(r.pnl)}</div>
               {r.roePct != null && <div style={{ display: 'flex', fontSize: 15 }}>{r.roePct >= 0 ? '+' : ''}{r.roePct.toFixed(1)}% ROE</div>}
             </div>
-            <div style={{ ...col(90, 'flex-end'), fontSize: 20, color: r.noStop ? red : dim }}>
-              {r.noStop ? 'NONE' : r.stopAwayPct != null ? `${r.stopAwayPct.toFixed(1)}%` : '—'}
+            <div style={{ ...col(190, 'flex-end'), flexDirection: 'column', alignItems: 'flex-end', color: r.noStop ? red : '#e8ebf0' }}>
+              <div style={{ display: 'flex', fontSize: 22 }}>{r.noStop ? 'NONE' : fmtPx(r.stopPx)}</div>
+              {r.stopAwayPct != null && <div style={{ display: 'flex', fontSize: 15, color: dim }}>{r.stopAwayPct.toFixed(1)}% away</div>}
             </div>
           </div>
         );
