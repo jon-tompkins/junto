@@ -40,9 +40,41 @@ export interface FetchedTweet {
 }
 
 import { recordCost, apifyCostCents } from '../costs';
+import { sendAlert } from '../alerts';
 
 const APIFY_ACTOR_ID = 'kaitoeasyapi~twitter-x-data-tweet-scraper-pay-per-result-cheapest';
 const APIFY_BASE_URL = 'https://api.apify.com/v2';
+
+async function requireApifyToken(route: string): Promise<string> {
+  const token = process.env.APIFY_API_KEY;
+  if (token) return token;
+  await sendAlert({
+    key: 'apify:start',
+    route,
+    status: 'config',
+    reason: 'APIFY_API_KEY not configured',
+  });
+  throw new Error('APIFY_API_KEY not configured');
+}
+
+async function readApifyRunId(runRes: Response, route: string): Promise<string> {
+  let runData: { data?: { id?: string }; error?: { type?: string; message?: string } } | null = null;
+  try {
+    runData = (await runRes.json()) as { data?: { id?: string }; error?: { type?: string; message?: string } };
+  } catch {
+    runData = null;
+  }
+  const runId = runData?.data?.id;
+  if (runRes.ok && runId) return runId;
+  const reason = `Failed to start Apify run (HTTP ${runRes.status}: ${runData?.error?.type || ''} ${runData?.error?.message || ''})`.trim();
+  await sendAlert({
+    key: 'apify:start',
+    route,
+    status: runRes.status,
+    reason,
+  });
+  throw new Error(reason);
+}
 
 async function waitForRun(runId: string, token: string, maxWaitMs = 60000): Promise<any[]> {
   const startTime = Date.now();
@@ -79,10 +111,7 @@ export async function fetchTweetsFromProfile(
   maxTweets = 30,
   sinceDate?: string // ISO date string — minute-precision via Twitter's since_time operator
 ): Promise<FetchedTweet[]> {
-  const token = process.env.APIFY_API_KEY;
-  if (!token) {
-    throw new Error('APIFY_API_KEY not configured');
-  }
+  const token = await requireApifyToken('src/lib/twitter/apify-client.ts');
 
   const cleanHandle = handle.replace('@', '');
 
@@ -111,13 +140,8 @@ export async function fetchTweetsFromProfile(
     }
   );
   
-  const runData = await runRes.json();
-  const runId = runData.data?.id;
-  
-  if (!runId) {
-    throw new Error(`Failed to start Apify run (HTTP ${runRes.status}: ${runData?.error?.type || ''} ${runData?.error?.message || ''})`.trim());
-  }
-  
+  const runId = await readApifyRunId(runRes, 'src/lib/twitter/apify-client.ts');
+
   console.log(`[Apify] Run started: ${runId}`);
   
   // Wait for results
@@ -167,11 +191,9 @@ export async function startBatchRun(
   handles: string[],
   maxTweetsPerHandle = 30,
   sinceDate?: string,
+  alertRoute = 'src/lib/twitter/apify-client.ts',
 ): Promise<{ runId: string; cleanHandles: string[] }> {
-  const token = process.env.APIFY_API_KEY;
-  if (!token) {
-    throw new Error('APIFY_API_KEY not configured');
-  }
+  const token = await requireApifyToken(alertRoute);
   if (handles.length === 0) {
     throw new Error('startBatchRun called with no handles');
   }
@@ -200,12 +222,7 @@ export async function startBatchRun(
     },
   );
 
-  const runData = await runRes.json();
-  const runId = runData.data?.id;
-
-  if (!runId) {
-    throw new Error(`Failed to start Apify run (HTTP ${runRes.status}: ${runData?.error?.type || ''} ${runData?.error?.message || ''})`.trim());
-  }
+  const runId = await readApifyRunId(runRes, alertRoute);
 
   console.log(`[Apify BATCH] Run started: ${runId} (will be collected later)`);
   return { runId, cleanHandles };
@@ -251,8 +268,27 @@ export async function collectBatchResults(
   const statusRes = await fetch(
     `${APIFY_BASE_URL}/actor-runs/${runId}?token=${token}`,
   );
-  const statusData = await statusRes.json();
-  const status = statusData.data?.status;
+  let statusData: { data?: { status?: string }; error?: { type?: string; message?: string } } | null = null;
+  try {
+    statusData = (await statusRes.json()) as {
+      data?: { status?: string };
+      error?: { type?: string; message?: string };
+    };
+  } catch {
+    statusData = null;
+  }
+
+  // HTTP 401 (dead token) used to surface as "missing data.status" and the
+  // collect cron logged it without paging anyone. Keep the vendor code.
+  if (!statusRes.ok) {
+    const detail = [statusData?.error?.type, statusData?.error?.message].filter(Boolean).join(' ');
+    return {
+      status: 'failed',
+      reason: `Apify HTTP ${statusRes.status}${detail ? `: ${detail}` : ''}`,
+    };
+  }
+
+  const status = statusData?.data?.status;
 
   if (!status) {
     return { status: 'failed', reason: 'Apify status response missing data.status' };
@@ -381,10 +417,7 @@ export async function searchTweets(
   maxTweets = 30,
   sinceDate?: string,
 ): Promise<FetchedTweet[]> {
-  const token = process.env.APIFY_API_KEY;
-  if (!token) {
-    throw new Error('APIFY_API_KEY not configured');
-  }
+  const token = await requireApifyToken('src/lib/twitter/apify-client.ts');
 
   let searchQuery = query;
   if (sinceDate) {
@@ -406,13 +439,8 @@ export async function searchTweets(
     }
   );
   
-  const runData = await runRes.json();
-  const runId = runData.data?.id;
-  
-  if (!runId) {
-    throw new Error(`Failed to start Apify run (HTTP ${runRes.status}: ${runData?.error?.type || ''} ${runData?.error?.message || ''})`.trim());
-  }
-  
+  const runId = await readApifyRunId(runRes, 'src/lib/twitter/apify-client.ts');
+
   const tweets = await waitForRun(runId, token);
   console.log(`[Apify] Got ${tweets.length} tweets for "${query}"`);
 

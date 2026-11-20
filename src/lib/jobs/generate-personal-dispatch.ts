@@ -13,6 +13,7 @@ import {
   setDispatchAudio,
 } from '@/lib/db/personal-dispatches';
 import { recordCost, openaiTtsCostCents, anthropicHaikuCostCents } from '@/lib/costs';
+import { sendAlert } from '@/lib/alerts';
 
 const FEATURED_LOOKBACK_HOURS = 24;
 const MAX_TWEETS_FOR_PROMPT = 40;
@@ -365,6 +366,17 @@ export async function generatePersonalDispatchForUser(
         });
       } catch (err) {
         console.error('[personal-dispatch] audio pipeline failed', user.id, err);
+        const message = err instanceof Error ? err.message : String(err);
+        const tooLong = /TTS input too long|>\s*4000/.test(message);
+        const rateLimited = /\b429\b/.test(message);
+        if (tooLong || rateLimited) {
+          await sendAlert({
+            key: tooLong ? 'tts:over-4000' : 'tts:429',
+            route: 'src/lib/jobs/generate-personal-dispatch.ts',
+            status: tooLong ? 400 : 429,
+            reason: message,
+          });
+        }
       }
     }
 

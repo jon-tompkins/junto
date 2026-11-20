@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronAlert } from '@/lib/cron-alert';
 import {
   generatePersonalDispatchForUser,
   getProUsersForDispatch,
@@ -13,7 +14,7 @@ const BUDGET_MS = 210_000;
 // Users are independent; PERSONAL_DISPATCH_CONCURRENCY=1 restores the old sequential loop.
 const concurrency = () => Math.max(1, Number(process.env.PERSONAL_DISPATCH_CONCURRENCY) || 4);
 
-export async function GET(request: NextRequest) {
+async function cronGet(request: NextRequest) {
   const startedAt = Date.now();
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
@@ -61,3 +62,5 @@ export async function GET(request: NextRequest) {
     results,
   });
 }
+
+export const GET = withCronAlert('/api/cron/personal-dispatch', cronGet);

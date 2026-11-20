@@ -1,6 +1,8 @@
 // OpenAI TTS wrapper. Returns MP3 bytes for a given script.
 // https://platform.openai.com/docs/api-reference/audio/createSpeech
 
+import { sendAlert } from '@/lib/alerts';
+
 const OPENAI_TTS_URL = 'https://api.openai.com/v1/audio/speech';
 const MAX_INPUT_CHARS = 4000; // safe under the 4096 hard limit
 
@@ -17,7 +19,14 @@ export async function synthesizeSpeech(args: {
 
   const text = args.text.trim();
   if (text.length > MAX_INPUT_CHARS) {
-    throw new Error(`TTS input too long: ${text.length} > ${MAX_INPUT_CHARS}`);
+    const reason = `TTS input too long: ${text.length} > ${MAX_INPUT_CHARS}`;
+    await sendAlert({
+      key: 'tts:over-4000',
+      route: 'src/lib/audio/tts.ts',
+      status: 400,
+      reason,
+    });
+    throw new Error(reason);
   }
   const model = args.model || 'tts-1';
 
@@ -38,7 +47,16 @@ export async function synthesizeSpeech(args: {
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    throw new Error(`OpenAI TTS failed: ${res.status} ${body.slice(0, 300)}`);
+    const reason = `OpenAI TTS failed: ${res.status} ${body.slice(0, 300)}`;
+    if (res.status === 429) {
+      await sendAlert({
+        key: 'tts:429',
+        route: 'src/lib/audio/tts.ts',
+        status: 429,
+        reason,
+      });
+    }
+    throw new Error(reason);
   }
 
   const ab = await res.arrayBuffer();

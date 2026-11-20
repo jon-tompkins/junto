@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sendAlert } from '@/lib/alerts';
+import { withCronAlert } from '@/lib/cron-alert';
 import { collectBatchResults } from '@/lib/twitter/apify-client';
 import {
   listPendingRuns,
@@ -9,6 +11,7 @@ import { storeTwitterContent, getRecentContentForSources, selectProfileSynthesis
 import { updateSourceProfile } from '@/lib/synthesis/profile-updater';
 import { getSourcesMissingOrStaleProfiles, getSourceProfile } from '@/lib/db/source-analyst-profiles';
 import { getSupabase } from '@/lib/db/client';
+import { countRecentTwitterIngests, twitterIngestStaleHours } from '@/lib/twitter/ingest-freshness';
 
 export const maxDuration = 300; // 5 minutes
 
@@ -21,7 +24,7 @@ const PROFILE_RESYNTH_MS = 24 * 60 * 60 * 1000; // 24 hours
 // any that have finished. Pairs with /api/cron/pull-content which only kicks
 // off the Apify run; this endpoint does the storage half asynchronously so we
 // don't blow Vercel's function-timeout budget on long Apify scrapes.
-export async function GET(req: NextRequest) {
+async function cronGet(req: NextRequest) {
   try {
     const cronSecret = process.env.CRON_SECRET;
     if (!cronSecret) {
@@ -61,6 +64,7 @@ export async function GET(req: NextRequest) {
       // instead of polling it forever.
       if (Date.now() - new Date(run.started_at).getTime() > 6 * 3.6e6) {
         await markRunFailed(run.id, 'timed out: still pending after 6h');
+        await alertApifyCollectFailure('timed out: still pending after 6h');
         summary.push({ run_id: run.run_id, status: 'failed', handles: handles.length, error: 'timed out after 6h' });
         processedCount += 1;
         continue;
@@ -76,6 +80,7 @@ export async function GET(req: NextRequest) {
         if (result.status === 'failed') {
           await markRunFailed(run.id, result.reason);
           console.error(`[collect-twitter] Run ${run.run_id} failed: ${result.reason}`);
+          await alertApifyCollectFailure(result.reason);
           summary.push({
             run_id: run.run_id,
             status: 'failed',
@@ -150,6 +155,7 @@ export async function GET(req: NextRequest) {
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : 'Unknown error';
         console.error(`[collect-twitter] Error for run ${run.run_id}:`, errMsg);
+        await alertApifyCollectFailure(errMsg);
         summary.push({
           run_id: run.run_id,
           status: 'error',
@@ -214,6 +220,11 @@ export async function GET(req: NextRequest) {
       `[collect-twitter] Done. Processed ${processedCount}/${pending.length} runs. ${totalFetched} tweets fetched, ${totalStored} stored.`,
     );
 
+    // Dead-man's switch. collect-twitter already runs every 10 minutes, so this
+    // does not need a new vercel.json cron. Pages when no real tweet has been
+    // posted into content_twitter within TWITTER_INGEST_STALE_HOURS (default 3).
+    await alertIfNoRecentTwitterIngest(supabase);
+
     return NextResponse.json({
       success: true,
       pending: pending.length,
@@ -230,3 +241,42 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+async function alertApifyCollectFailure(reason: string): Promise<void> {
+  const http = reason.match(/\bHTTP\s+([1-5]\d{2})\b/i);
+  const runStatus = reason.match(/Apify run ([A-Za-z0-9_-]+)/);
+  await sendAlert({
+    key: 'apify:collect',
+    route: '/api/cron/collect-twitter',
+    status: http ? Number(http[1]) : runStatus ? runStatus[1] : 'failed',
+    reason,
+  });
+}
+
+async function alertIfNoRecentTwitterIngest(
+  supabase: ReturnType<typeof getSupabase>,
+): Promise<void> {
+  try {
+    const hours = twitterIngestStaleHours();
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+    const { count, error } = await countRecentTwitterIngests(supabase, since);
+    if (error) {
+      console.warn('[collect-twitter] ingest freshness check failed:', error);
+      return;
+    }
+    if (count > 0) return;
+    await sendAlert({
+      key: 'twitter:ingest-stale',
+      route: '/api/cron/collect-twitter',
+      status: 'stale',
+      reason: `No non-YouTube content_twitter rows with posted_at in the last ${hours}h`,
+    });
+  } catch (err) {
+    console.warn(
+      '[collect-twitter] ingest freshness check failed:',
+      err instanceof Error ? err.message : err,
+    );
+  }
+}
+
+export const GET = withCronAlert('/api/cron/collect-twitter', cronGet);

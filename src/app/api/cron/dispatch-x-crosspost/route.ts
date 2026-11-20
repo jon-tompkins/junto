@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronAlert } from '@/lib/cron-alert';
 import { queueDispatchTweets } from '@/lib/dispatch-x-crosspost';
 
 // GET /api/cron/dispatch-x-crosspost
 // Scans recently-delivered PUBLIC newsletter_runs and inserts a composed tweet
 // into the pending_dispatch_tweets REVIEW QUEUE for each new one found.
 // Does NOT post to X — a human must approve each tweet before posting.
-export async function GET(req: NextRequest) {
+async function cronGet(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
     console.error('[dispatch-x-crosspost] CRON_SECRET is not set');
@@ -25,3 +26,5 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: err?.message ?? 'Failed' }, { status: 500 });
   }
 }
+
+export const GET = withCronAlert('/api/cron/dispatch-x-crosspost', cronGet);

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronAlert } from '@/lib/cron-alert';
 import { getSupabase } from '@/lib/db/client';
 import { syncTradingViewForUser } from '@/lib/tradingview';
 
@@ -6,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
 // Daily: re-sync every user who linked a public TradingView watchlist.
-export async function GET(req: NextRequest) {
+async function cronGet(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return NextResponse.json({ error: 'Cron not configured' }, { status: 500 });
   if (req.headers.get('authorization') !== `Bearer ${secret}`) {
@@ -25,3 +26,5 @@ export async function GET(req: NextRequest) {
   }
   return NextResponse.json({ processed: (users || []).length, ok, failed });
 }
+
+export const GET = withCronAlert('/api/cron/tradingview-sync', cronGet);

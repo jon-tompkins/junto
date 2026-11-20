@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronAlert } from '@/lib/cron-alert';
 import { getAllWatchlistTickers } from '@/lib/db/watchlist';
 import { generateTickerReport } from '@/lib/jobs/generate-ticker-report';
 
 export const maxDuration = 300;
 
-export async function GET(request: NextRequest) {
+async function cronGet(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
     return NextResponse.json({ error: 'CRON_SECRET not set' }, { status: 500 });
@@ -32,3 +33,5 @@ export async function GET(request: NextRequest) {
     results,
   });
 }
+
+export const GET = withCronAlert('/api/cron/ticker-reports', cronGet);

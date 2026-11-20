@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronAlert } from '@/lib/cron-alert';
 import {
   getNewslettersDueForGeneration,
   getNewslettersForForcedGeneration,
@@ -36,7 +37,7 @@ const GENERATE_BUDGET_MS = 210_000; // stop starting new newsletters after this
 
 // GET /api/cron/generate-newsletters — generate due newsletters and deliver to subscribers
 // Triggered by Vercel cron every 5 minutes
-export async function GET(req: NextRequest) {
+async function cronGet(req: NextRequest) {
   const tickStartedAt = Date.now();
   try {
     const cronSecret = process.env.CRON_SECRET;
@@ -504,3 +505,5 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+export const GET = withCronAlert('/api/cron/generate-newsletters', cronGet);

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sendAlert } from '@/lib/alerts';
+import { withCronAlert } from '@/lib/cron-alert';
 import { getSourcesWithActiveNewsletters } from '@/lib/db/sources';
 import { storeNewsletterContent } from '@/lib/db/content-newsletter';
 import { startBatchRun } from '@/lib/twitter/apify-client';
@@ -23,7 +25,7 @@ const PULL_LOOKBACK_MS = 2 * 60 * 60 * 1000; // 2 hours
 const FIRST_PULL_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // GET /api/cron/pull-content — pull fresh content from all source types
-export async function GET(req: NextRequest) {
+async function cronGet(req: NextRequest) {
   try {
     const cronSecret = process.env.CRON_SECRET;
     if (!cronSecret) {
@@ -75,7 +77,12 @@ export async function GET(req: NextRequest) {
 
       if (stale.length > 0) {
         try {
-          const { runId } = await startBatchRun(staleHandles, 30, batchSinceDate);
+          const { runId } = await startBatchRun(
+            staleHandles,
+            30,
+            batchSinceDate,
+            '/api/cron/pull-content',
+          );
 
           // Map clean handle → source_id so the collector can write tweets back
           // to the right source even if `sources` rows change between now and
@@ -105,6 +112,12 @@ export async function GET(req: NextRequest) {
         } catch (err) {
           const errMsg = err instanceof Error ? err.message : 'Unknown error';
           console.error(`[pull-content] Apify start error:`, errMsg);
+          await sendAlert({
+            key: 'apify:start',
+            route: '/api/cron/pull-content',
+            status: httpStatusIn(errMsg),
+            reason: errMsg,
+          });
           for (const source of stale) {
             results[source.handle_or_url] = { fetched: 0, stored: 0, error: errMsg };
           }
@@ -262,3 +275,10 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+function httpStatusIn(text: string): number | string {
+  const match = text.match(/\bHTTP\s+([1-5]\d{2})\b/i);
+  return match ? Number(match[1]) : 'error';
+}
+
+export const GET = withCronAlert('/api/cron/pull-content', cronGet);
