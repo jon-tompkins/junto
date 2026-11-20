@@ -13,9 +13,13 @@ interface PositionEntry {
   target_price?: number;
 }
 
-function stalenessLevel(pos: PositionEntry): 'fresh' | 'warn' | 'stale' {
+function mentionAgeDays(pos: PositionEntry): number {
   const ref = pos.last_mentioned || pos.since;
-  const days = Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000);
+  return Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000);
+}
+
+function stalenessLevel(pos: PositionEntry): 'fresh' | 'warn' | 'stale' {
+  const days = mentionAgeDays(pos);
   if (days >= 30) return 'stale';
   if (days >= 14) return 'warn';
   return 'fresh';
@@ -171,8 +175,7 @@ function AnalystRow({
                 <div className="flex flex-wrap gap-2">
                   {positionEntries.map(([ticker, pos]) => {
                     const stale = stalenessLevel(pos);
-                    const ref = pos.last_mentioned || pos.since;
-                    const staleDays = Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000);
+                    const staleDays = mentionAgeDays(pos);
                     return (
                     <Link
                       key={ticker}

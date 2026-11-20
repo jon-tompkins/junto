@@ -16,6 +16,48 @@ interface NavItem { href: string; label: string; locked?: boolean }
 // A route belongs to Trade if it starts with one of these; everything else is Signal.
 const TRADE_PREFIXES = ['/trade', '/trading', '/leaderboard', '/positions', '/trades', '/top-calls'];
 
+function ProductSwitcher({
+  full = false,
+  product,
+  signalHome,
+  onNavigate,
+}: {
+  full?: boolean;
+  product: Product;
+  signalHome: string;
+  onNavigate: () => void;
+}) {
+  return (
+    <div
+      className={`flex items-center rounded-sm p-0.5 ${full ? 'w-full' : ''}`}
+      style={{ background: 'rgb(var(--t-raised))', border: '1px solid rgb(var(--t-brass) / 0.28)' }}
+    >
+      {([
+        { key: 'signal' as Product, label: 'Signal', href: signalHome },
+        { key: 'trade' as Product, label: 'Trade', href: '/trade' },
+      ]).map(({ key, label, href }) => {
+        const on = product === key;
+        return (
+          <Link
+            key={key}
+            href={href}
+            onClick={onNavigate}
+            className={`text-[13px] rounded-sm text-center transition ${full ? 'flex-1 py-1.5' : 'px-3 py-1'}`}
+            style={{
+              fontFamily: 'var(--font-oswald)',
+              color: on ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.6)',
+              background: on ? 'rgb(var(--t-brass))' : 'transparent',
+              fontWeight: on ? 600 : 400,
+            }}
+          >
+            {label}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 export function TopNav() {
   const { data: session } = useSession();
   const pathname = usePathname();
@@ -77,37 +119,6 @@ export function TopNav() {
     </svg>
   );
 
-  // Signal ⇄ Trade segmented switcher.
-  const Switcher = ({ full = false }: { full?: boolean }) => (
-    <div
-      className={`flex items-center rounded-sm p-0.5 ${full ? 'w-full' : ''}`}
-      style={{ background: 'rgb(var(--t-raised))', border: '1px solid rgb(var(--t-brass) / 0.28)' }}
-    >
-      {([
-        { key: 'signal' as Product, label: 'Signal', href: signalHome },
-        { key: 'trade' as Product, label: 'Trade', href: '/trade' },
-      ]).map(({ key, label, href }) => {
-        const on = product === key;
-        return (
-          <Link
-            key={key}
-            href={href}
-            onClick={() => setMobileOpen(false)}
-            className={`text-[13px] rounded-sm text-center transition ${full ? 'flex-1 py-1.5' : 'px-3 py-1'}`}
-            style={{
-              fontFamily: 'var(--font-oswald)',
-              color: on ? 'rgb(var(--t-ink))' : 'rgb(var(--t-parchment) / 0.6)',
-              background: on ? 'rgb(var(--t-brass))' : 'transparent',
-              fontWeight: on ? 600 : 400,
-            }}
-          >
-            {label}
-          </Link>
-        );
-      })}
-    </div>
-  );
-
   return (
     <nav className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
       {/* Logo + product switcher */}
@@ -116,7 +127,9 @@ export function TopNav() {
           <span style={{ color: 'rgb(var(--t-parchment))' }}>my</span>
           <span style={{ color: 'rgb(var(--t-brass))' }}>junto</span>
         </Link>
-        <div className="hidden md:block"><Switcher /></div>
+        <div className="hidden md:block">
+          <ProductSwitcher product={product} signalHome={signalHome} onNavigate={() => setMobileOpen(false)} />
+        </div>
       </div>
 
       {/* Center nav links — desktop, per active product */}
@@ -265,7 +278,9 @@ export function TopNav() {
               {/* Search */}
               <div className="px-1 pb-3"><SearchBar onNavigate={() => setMobileOpen(false)} /></div>
               {/* Product switcher */}
-              <div className="px-1 pb-3"><Switcher full /></div>
+              <div className="px-1 pb-3">
+                <ProductSwitcher full product={product} signalHome={signalHome} onNavigate={() => setMobileOpen(false)} />
+              </div>
 
               {/* Active product's links */}
               <div className="space-y-0.5">

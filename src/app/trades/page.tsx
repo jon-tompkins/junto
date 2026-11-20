@@ -43,6 +43,12 @@ const STANCE_LABEL: Record<string, string> = {
 // 3k+ rows is a ~180k-px page on phones; render in pages instead.
 const PAGE_SIZE = 200;
 
+function SortArrow({ k, sortKey, sortDir }: { k: SortKey; sortKey: SortKey; sortDir: 'asc' | 'desc' }) {
+  return (
+    <span className="text-[9px] ml-0.5">{sortKey === k ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}</span>
+  );
+}
+
 export default function TradesPage() {
   const router = useRouter();
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -157,9 +163,6 @@ export default function TradesPage() {
   const pill = 'text-[11px] px-2 py-0.5 rounded border transition';
   const on = 'border-brass text-brass bg-brass/10';
   const off = 'border-brass/20 text-parchment/60 hover:text-parchment/70';
-  const Arrow = ({ k }: { k: SortKey }) => (
-    <span className="text-[9px] ml-0.5">{sortKey === k ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}</span>
-  );
 
   return (
     <main className="min-h-screen bg-ink text-parchment">
@@ -293,14 +296,14 @@ export default function TradesPage() {
               <table className="w-full text-sm min-w-[880px] table-fixed">
                 <thead className="text-left text-xs uppercase text-parchment/45 border-b border-brass/28 font-[var(--font-oswald)]">
                   <tr>
-                    <th className="py-2.5 px-4 w-52"><button onClick={() => clickSort('source')}>Source<Arrow k="source" /></button></th>
-                    <th className="py-2.5 px-3 w-24"><button onClick={() => clickSort('ticker')}>Ticker<Arrow k="ticker" /></button></th>
+                    <th className="py-2.5 px-4 w-52"><button onClick={() => clickSort('source')}>Source<SortArrow k="source" sortKey={sortKey} sortDir={sortDir} /></button></th>
+                    <th className="py-2.5 px-3 w-24"><button onClick={() => clickSort('ticker')}>Ticker<SortArrow k="ticker" sortKey={sortKey} sortDir={sortDir} /></button></th>
                     <th className="py-2.5 px-3 w-20">Stance</th>
                     <th className="py-2.5 px-3 text-right w-24">Entry</th>
                     <th className="py-2.5 px-3 text-right w-24">Now</th>
-                    <th className="py-2.5 px-3 text-right w-24"><button onClick={() => clickSort('return')}>Return<Arrow k="return" /></button></th>
-                    <th className="py-2.5 px-3 text-right w-16"><button onClick={() => clickSort('conviction')}>Conv<Arrow k="conviction" /></button></th>
-                    <th className="py-2.5 px-3 text-right w-20"><button onClick={() => clickSort('days')}>Held<Arrow k="days" /></button></th>
+                    <th className="py-2.5 px-3 text-right w-24"><button onClick={() => clickSort('return')}>Return<SortArrow k="return" sortKey={sortKey} sortDir={sortDir} /></button></th>
+                    <th className="py-2.5 px-3 text-right w-16"><button onClick={() => clickSort('conviction')}>Conv<SortArrow k="conviction" sortKey={sortKey} sortDir={sortDir} /></button></th>
+                    <th className="py-2.5 px-3 text-right w-20"><button onClick={() => clickSort('days')}>Held<SortArrow k="days" sortKey={sortKey} sortDir={sortDir} /></button></th>
                     <th className="py-2.5 px-3 w-20">Status</th>
                   </tr>
                 </thead>

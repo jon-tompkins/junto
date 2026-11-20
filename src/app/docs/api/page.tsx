@@ -57,9 +57,9 @@ export default function ApiDocsPage() {
             <li><Mono>GET /dispatches/:id</Mono> — <strong>5 credits</strong></li>
           </ul>
           <p className="mt-4">
-            Credits debit from the key owner's balance. If you hit zero you'll get{' '}
+            Credits debit from the key owner&apos;s balance. If you hit zero you&apos;ll get{' '}
             <Mono>402 Insufficient credits</Mono>. Errors charged at the same rate as
-            successes — we don't retry on your behalf.
+            successes — we don&apos;t retry on your behalf.
           </p>
         </Section>
 

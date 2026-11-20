@@ -90,15 +90,19 @@ function Consensus({ traders }: { traders: Trader[] }) {
       .slice(0, 12);
   }, [traders]);
   const max = Math.max(1, ...rows.map((r) => Math.max(r.long.length, r.short.length)));
-  const [tip, setTip] = useState<{ x: number; y: number; text: string[] } | null>(null);
+  const [tip, setTip] = useState<{ left: number; top: number; text: string[] } | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const flat = traders.filter((t) => t.positions.length === 0).length;
 
   const show = (e: React.MouseEvent, t: Trader, p: Position) => {
     const box = boxRef.current?.getBoundingClientRect();
     if (!box) return;
+    const x = e.clientX - box.left;
+    const y = e.clientY - box.top;
+    const width = boxRef.current?.clientWidth || 400;
     setTip({
-      x: e.clientX - box.left, y: e.clientY - box.top,
+      left: Math.min(x + 12, width - 220),
+      top: y + 12,
       text: [`#${t.rank} ${short(t.address)}`, `${p.side === 'long' ? 'Long' : 'Short'} ${p.coin} · ${usd(p.value)}`, `${p.pctOfAccount.toFixed(0)}% of account · ${p.leverage}x · ${p.roePct >= 0 ? '+' : ''}${p.roePct.toFixed(0)}% ROE`],
     });
   };
@@ -137,7 +141,7 @@ function Consensus({ traders }: { traders: Trader[] }) {
         ))}
         {tip && (
           <div className="pointer-events-none absolute z-10 rounded border border-brass/40 bg-raised px-2.5 py-1.5 text-xs shadow-lg"
-            style={{ left: Math.min(tip.x + 12, (boxRef.current?.clientWidth || 400) - 220), top: tip.y + 12 }}>
+            style={{ left: tip.left, top: tip.top }}>
             {tip.text.map((l, i) => <div key={i} className={i === 0 ? 'text-parchment font-semibold' : 'text-parchment/70'}>{l}</div>)}
           </div>
         )}
