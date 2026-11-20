@@ -3,7 +3,7 @@
 
 import { recordCost, openaiTtsCostCents, anthropicHaikuCostCents } from '../costs';
 import { dispatchToAudioScript } from './script';
-import { synthesizeSpeech, estimateAudioDurationSec } from './tts';
+import { synthesizeChunkedSpeech, estimateAudioDurationSec } from './tts';
 import { uploadDispatchAudio } from './storage';
 
 export interface GenerateAudioArgs {
@@ -48,7 +48,8 @@ export async function generateDispatchAudio(args: GenerateAudioArgs): Promise<Ge
     });
   }
 
-  const tts = await synthesizeSpeech({ text: script, voice: 'onyx' });
+  // Chunk before synthesizeSpeech so a script over 4,000 chars does not throw.
+  const tts = await synthesizeChunkedSpeech({ text: script, voice: 'onyx' });
 
   recordCost({
     supplier: 'openai',
