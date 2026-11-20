@@ -48,11 +48,6 @@ export interface Mandate {
   style: string | null;
 
   // Portfolio risk settings (Phase 1)
-  max_single_position_pct: number | null;
-  max_top3_concentration_pct: number | null;
-  max_sector_concentration_pct: number | null;
-  idleness_days_threshold: number | null;
-  idleness_resuggest_days: number | null;
 }
 
 export interface ExtractedSignal {

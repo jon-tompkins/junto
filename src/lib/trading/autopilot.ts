@@ -168,6 +168,11 @@ export function gateEntry(
   const weight = isWalletCopy ? sqrtWeight(copiedNotional, Number(mandate.sizing_ref_notional_usd) || 1_000_000) : 1;
   const verdict = (ok: boolean, reason?: string): EntryVerdict => ({ ok, reason, weight, copiedNotional });
 
+  // Hard ticker allow/block lists (decide.ts only filters the signals the model
+  // sees; the model's output isn't trusted to respect them).
+  if (mandate.allowed_tickers?.length && !mandate.allowed_tickers.map((t) => t.toUpperCase()).includes(coin)) return verdict(false, `${coin} not in allowed tickers`);
+  if (mandate.blocked_tickers?.length && mandate.blocked_tickers.map((t) => t.toUpperCase()).includes(coin)) return verdict(false, `${coin} is blocked`);
+
   const maxDay = Number(mandate.max_new_positions_per_day);
   if (maxDay > 0 && ctx.entriesToday >= maxDay) return verdict(false, `daily entry cap (${maxDay}) reached`);
 

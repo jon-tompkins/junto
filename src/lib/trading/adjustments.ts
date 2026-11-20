@@ -30,7 +30,7 @@ export async function suggestPortfolioAdjustments(
   const deployedPct = (totalDeployed / accountEquity) * 100;
 
   // Single position concentration
-  const maxSingle = mandate.max_single_position_pct ?? 15;
+  const maxSingle = 15;
   if (sorted.length > 0) {
     const largest = sorted[0];
     const largestPct = (Number(largest.market_value) || 0) / accountEquity * 100;
@@ -47,7 +47,7 @@ export async function suggestPortfolioAdjustments(
   }
 
   // Top 3 concentration
-  const maxTop3 = mandate.max_top3_concentration_pct ?? 50;
+  const maxTop3 = 50;
   const top3Notional = sorted.slice(0, 3).reduce((sum, p) => sum + (Number(p.market_value) || 0), 0);
   const top3Pct = (top3Notional / accountEquity) * 100;
   if (top3Pct > maxTop3 && sorted.length >= 3) {
@@ -63,15 +63,6 @@ export async function suggestPortfolioAdjustments(
       });
     }
   }
-
-  // Idleness check (basic version - will be improved with real source activity)
-  const idlenessDays = mandate.idleness_days_threshold ?? 14;
-  // For now we use a simple heuristic: if unrealized P&L is flat/negative and position is old
-  // Real implementation will check last source mention timestamp per ticker
-
-  // Sector concentration placeholder (rough grouping)
-  const maxSector = mandate.max_sector_concentration_pct ?? 35;
-  // TODO: proper sector mapping + concentration calculation
 
   return suggestions;
 }
