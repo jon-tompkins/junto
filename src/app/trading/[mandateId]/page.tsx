@@ -993,7 +993,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                       <SettingGroup title="Risk limits" hint="Hard stops on how much can be lost or deployed.">
                         {!editingSettings ? (
                           <>
-                            <SettingRow label="Daily loss limit" value={`${mandate.daily_loss_limit_pct}%${isHl ? ' → flatten + pause' : ''}`} />
+                            <SettingRow label="Daily loss limit" value={`${mandate.daily_loss_limit_pct}%${isHl ? ` → pauses new entries ${10}h` : ''}`} />
                             {isHl && <SettingRow label="Max total exposure" value={`${mandate.max_total_leverage ?? '—'}x equity`} />}
                             {isHl && <SettingRow label="New positions / day" value={String(mandate.max_new_positions_per_day ?? '∞')} />}
                             {isHl && <SettingRow label="Per-coin cooldown" value={`${mandate.coin_cooldown_hours ?? 0}h`} />}

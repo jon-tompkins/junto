@@ -60,6 +60,12 @@ export async function flattenMandate(mandate: Mandate, reason: string): Promise<
 
 // ── Daily loss gate. Snapshots equity at the first check of each UTC day; if
 // equity falls daily_loss_limit_pct below it, flatten everything and pause.
+// Hitting the daily-loss limit pauses NEW entries (and position adds) for this
+// long. Open positions are left to their native trailing stops — no flatten.
+export const DAILY_LOSS_PAUSE_HOURS = 10;
+export const entriesPaused = (m: Pick<Mandate, 'entries_paused_until'>): boolean =>
+  !!m.entries_paused_until && new Date(m.entries_paused_until).getTime() > Date.now();
+
 export async function checkDailyLoss(mandate: Mandate): Promise<{ tripped: boolean; lossPct: number | null }> {
   const limit = Number(mandate.daily_loss_limit_pct);
   if (mandate.broker !== 'hyperliquid' || !(limit > 0)) return { tripped: false, lossPct: null };
@@ -82,12 +88,15 @@ export async function checkDailyLoss(mandate: Mandate): Promise<{ tripped: boole
   if (mandate.execution_mode === 'approval') return { tripped: false, lossPct };
   if (lossPct < limit) return { tripped: false, lossPct };
 
+  // Already paused this window: nothing more to do (and don't re-alert).
+  if (entriesPaused(mandate)) return { tripped: false, lossPct };
+
   const reason = `daily loss ${lossPct.toFixed(1)}% ≥ limit ${limit}% (equity $${start.toFixed(0)} → $${equity.toFixed(0)})`;
-  const closed = await flattenMandate(mandate, reason);
-  await supabase.from('trading_mandates').update({ status: 'paused', daily_loss_tripped_at: new Date().toISOString() }).eq('id', mandate.id);
-  mandate.status = 'paused';
-  await notifyMandate(mandate, `🛑 <b>${mandate.name}</b>: daily loss limit hit — ${reason}.\nClosed: ${closed.join(', ') || 'nothing open'}. Mandate PAUSED; /resume to restart.`);
-  return { tripped: true, lossPct };
+  const until = new Date(Date.now() + DAILY_LOSS_PAUSE_HOURS * 3_600_000).toISOString();
+  await supabase.from('trading_mandates').update({ entries_paused_until: until, daily_loss_tripped_at: new Date().toISOString() }).eq('id', mandate.id);
+  mandate.entries_paused_until = until;
+  await notifyMandate(mandate, `⏸ <b>${mandate.name}</b>: daily loss limit hit — ${reason}.\nNo new entries or adds for ${DAILY_LOSS_PAUSE_HOURS}h (until ${until.slice(11, 16)} UTC). Open positions stay on their trailing stops.`);
+  return { tripped: false, lossPct };
 }
 
 // ── Entry context: everything the per-decision gate needs, loaded once per tick.

@@ -63,7 +63,7 @@ function aggregate(states: { address: string; positions: any[] }[], roster: Set<
   return { alignedN, conflictN, netNotional: Math.max(0, aligned - conflict) };
 }
 
-export async function rebalanceMandate(mandate: Mandate, accountEquity: number): Promise<RebalanceResult[]> {
+export async function rebalanceMandate(mandate: Mandate, accountEquity: number, opts: { allowAdds?: boolean } = {}): Promise<RebalanceResult[]> {
   if (mandate.broker !== 'hyperliquid' || !mandate.junto_id) return [];
   const supabase = getSupabase();
   const { data: trades } = await supabase
@@ -134,6 +134,9 @@ export async function rebalanceMandate(mandate: Mandate, accountEquity: number):
       const dQty = dNotional / mark;
       const why = `aligned ${base.alignedN}→${now.alignedN}, conflicting ${base.conflictN}→${now.conflictN}, net notional $${Math.round(base.netNotional).toLocaleString()}→$${Math.round(now.netNotional).toLocaleString()}`;
 
+      if (adding && opts.allowAdds === false) {
+        out.push({ ticker: coin, action: 'add_blocked', detail: 'entries paused (daily loss limit)' }); continue;
+      }
       if (adding) {
         // Respect the total-exposure cap on adds.
         const maxLev = Number(mandate.max_total_leverage);

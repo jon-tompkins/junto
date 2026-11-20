@@ -25,7 +25,7 @@ import { monitorMandate } from './monitor';
 import { protectMandate } from './protection';
 import { rebalanceMandate } from './rebalance';
 import { trailMandateStops, isTrailing, trailPricePct } from './trailing-stops';
-import { checkDailyLoss, loadEntryContext, gateEntry, convictionFraction, autoEntries, autoExits, notifyMandate, type EntryContext } from './autopilot';
+import { entriesPaused, checkDailyLoss, loadEntryContext, gateEntry, convictionFraction, autoEntries, autoExits, notifyMandate, type EntryContext } from './autopilot';
 import { approveTrade } from './approval';
 import { handleAmendmentCallback } from './amendment';
 import { reconcileMandate } from './reconcile';
@@ -293,7 +293,9 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
   // Close-window ticks still extract + monitor + amend (so exit/flip signals
   // get acted on) but skip opening fresh entries — no time for thesis to play
   // out and overnight gap risk is real.
-  const allowNewEntries = window !== 'close';
+  const paused = mandate.broker === 'hyperliquid' && entriesPaused(mandate);
+  if (paused) result.note = `entries_paused_until ${String(mandate.entries_paused_until).slice(0, 16)}`;
+  const allowNewEntries = window !== 'close' && !paused;
   let decisions: import('./types').TradeDecision[] = [];
   if (allowNewEntries) {
     try {
@@ -595,7 +597,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
   // Runs before the trailing pass so an add's stop is re-placed at full size.
   try {
     if (mandate.broker === 'hyperliquid' && mandate.execution_mode === 'full_auto') {
-      const rb = await rebalanceMandate(mandate, accountEquity);
+      const rb = await rebalanceMandate(mandate, accountEquity, { allowAdds: !entriesPaused(mandate) });
       for (const r of rb) {
         if (r.action === 'error') result.errors.push(`rebalance ${r.ticker}: ${r.detail}`);
         else if (r.action === 'scaled_up' || r.action === 'scaled_down') {

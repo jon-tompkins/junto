@@ -38,6 +38,7 @@ export interface Mandate {
   day_start_equity: number | null;
   day_start_date: string | null;
   daily_loss_tripped_at: string | null;
+  entries_paused_until: string | null;
   // Optional per-mandate Telegram chat for suggestions (group/channel id as
   // text; negative for groups). Falls back to the user's DM when null.
   telegram_chat_id: string | null;

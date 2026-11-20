@@ -273,7 +273,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   for (const f of fields) if (body[f] !== undefined) patch[f] = body[f];
 
   // Resuming re-baselines the daily-loss gate (else it trips again at once).
-  if (body.status === 'active') { patch.day_start_date = null; patch.daily_loss_tripped_at = null; }
+  if (body.status === 'active') { patch.day_start_date = null; patch.daily_loss_tripped_at = null; patch.entries_paused_until = null; }
 
   // Autopilot settings (HL). Numbers: blank/<=0 = gate off.
   if (body.execution_mode !== undefined) {
