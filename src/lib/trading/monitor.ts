@@ -21,7 +21,16 @@ export async function monitorMandate(mandate: Mandate): Promise<{
   let closed = 0;
   let journaled = 0;
 
-  const positions = await alpaca.getPositions().catch(() => []);
+  // A failed positions read must NOT look like "no positions": every open trade
+  // would be marked closed (and post-mortemed) while the position is still live
+  // on the venue. Bail out and retry next tick instead.
+  let positions: any[];
+  try {
+    positions = await alpaca.getPositions();
+  } catch (e) {
+    console.error('[monitor] getPositions failed — skipping close detection this tick', e);
+    return { opened, closed, journaled };
+  }
 
   // Pre-pass: synthetic stop/target enforcement for crypto (no resting broker
   // stop on Alpaca). Flattens breached positions at market; skip them below.
