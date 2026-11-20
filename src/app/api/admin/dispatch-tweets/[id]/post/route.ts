@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isAdminSession } from '@/lib/admin';
+import { httpStatusFromText, sendAlert } from '@/lib/alerts';
 import { getPendingDispatchTweet, updatePendingDispatchTweet } from '@/lib/db/pending-dispatch-tweets';
 import { postTweet } from '@/lib/x/post';
 
@@ -41,6 +42,13 @@ export async function POST(
     return NextResponse.json({ ok: true, result });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Post failed';
+    const tooLong = /1–280|1-280/.test(message);
+    await sendAlert({
+      key: tooLong ? 'x:post:too-long' : 'x:post',
+      route: '/api/admin/dispatch-tweets/[id]/post',
+      status: httpStatusFromText(message),
+      reason: message,
+    });
     await updatePendingDispatchTweet(numericId, { error_message: message });
     return NextResponse.json({ error: message }, { status: 500 });
   }

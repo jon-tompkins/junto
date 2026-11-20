@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdminSession } from '@/lib/admin';
+import { httpStatusFromText, sendAlert } from '@/lib/alerts';
 import { postTweet, deleteTweet, inspectVideoUpload } from '@/lib/x/post';
 
 export const dynamic = 'force-dynamic';
@@ -64,7 +65,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, ...result });
   } catch (err: any) {
     console.error('[x/post] failed:', err?.message, err?.stack);
-    return NextResponse.json({ ok: false, error: err?.message || 'Post failed', stack: err?.stack?.split('\n').slice(0, 5) }, { status: 500 });
+    const message = err?.message || 'Post failed';
+    const tooLong = /1–280|1-280/.test(message);
+    await sendAlert({
+      key: tooLong ? 'x:post:too-long' : 'x:post',
+      route: '/api/admin/x/post',
+      status: httpStatusFromText(message),
+      reason: message,
+    });
+    return NextResponse.json({ ok: false, error: message, stack: err?.stack?.split('\n').slice(0, 5) }, { status: 500 });
   }
 }
 

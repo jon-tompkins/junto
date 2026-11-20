@@ -46,3 +46,7 @@ supabase/.temp/
 # transient entry-price backfill work files (batches + picks)
 scripts/backfill-work/
 scripts/.backfill-entry-prices.checkpoint.json
+
+# e2e verifier output and captured login state
+/verify-output/
+verify-storage.json

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/db/client';
+import { countTweetsPostedSince } from '@/lib/health/tweet-count';
 import dayjs from 'dayjs';
 
 export async function GET() {
@@ -10,41 +11,54 @@ export async function GET() {
   try {
     const supabase = getSupabase();
 
-    // Check 1: Tweets pulled in last 24 hours (V2 content_twitter)
+    // Check 1: Tweets pulled in last 24 hours (V2 content_twitter).
+    // The total is a head/exact count. A normal select is capped at 1,000 rows
+    // by PostgREST, which used to under-report busy days. The per-source
+    // breakdown still needs rows, so it is only filled when the exact count
+    // fits in one page.
     try {
       const since24h = dayjs().subtract(24, 'hour').toISOString();
+      const counted = await countTweetsPostedSince(supabase, since24h);
 
-      const { data: recentTweets, error: tweetsError } = await supabase
-        .from('content_twitter')
-        .select(`
-          posted_at,
-          sources!inner(handle_or_url)
-        `)
-        .gte('posted_at', since24h)
-        .order('posted_at', { ascending: false });
-
-      if (tweetsError) {
+      if (counted.error) {
         checks.tweets_last_24h = {
           count: 0,
           by_source: {},
           status: 'fail',
-          error: tweetsError.message
+          error: counted.error
         };
         overallStatus = 'failing';
       } else {
+        const totalCount = counted.count;
         const bySource: Record<string, number> = {};
-        for (const tweet of recentTweets || []) {
-          const sources = tweet.sources as any;
-          const handle = Array.isArray(sources)
-            ? sources[0]?.handle_or_url
-            : sources?.handle_or_url;
-          if (handle) {
-            bySource[handle] = (bySource[handle] || 0) + 1;
-          }
-        }
+        let bySourceOmitted = false;
 
-        const totalCount = recentTweets?.length || 0;
-        const sourceCount = Object.keys(bySource).length;
+        if (totalCount > 0 && totalCount <= 1000) {
+          const { data: recentTweets, error: tweetsError } = await supabase
+            .from('content_twitter')
+            .select(`
+              posted_at,
+              sources!inner(handle_or_url)
+            `)
+            .gte('posted_at', since24h)
+            .order('posted_at', { ascending: false });
+
+          if (tweetsError) {
+            console.warn('[health] tweet breakdown skipped:', tweetsError.message);
+          } else {
+            for (const tweet of recentTweets || []) {
+              const sources = tweet.sources as { handle_or_url?: string } | Array<{ handle_or_url?: string }> | null;
+              const handle = Array.isArray(sources)
+                ? sources[0]?.handle_or_url
+                : sources?.handle_or_url;
+              if (handle) {
+                bySource[handle] = (bySource[handle] || 0) + 1;
+              }
+            }
+          }
+        } else if (totalCount > 1000) {
+          bySourceOmitted = true;
+        }
 
         let status = 'ok';
         if (totalCount === 0) {
@@ -54,8 +68,9 @@ export async function GET() {
 
         checks.tweets_last_24h = {
           count: totalCount,
-          source_count: sourceCount,
+          source_count: bySourceOmitted ? null : Object.keys(bySource).length,
           by_source: bySource,
+          ...(bySourceOmitted ? { by_source_omitted: true } : {}),
           status
         };
       }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withCronAlert } from '@/lib/cron-alert';
 import { getSupabase } from '@/lib/db/client';
 
 export const maxDuration = 300; // 5 minutes max for Vercel
@@ -113,7 +114,7 @@ function processTweets(tweets: BirdTweet[], ticker: string): WatchlistTweet[] {
 }
 
 // POST: Receive tweets from external scraper (Ubuntu server with bird CLI)
-export async function POST(request: NextRequest) {
+async function cronPost(request: NextRequest) {
   try {
     // Verify cron secret
     const authHeader = request.headers.get('authorization');
@@ -178,7 +179,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET: Return list of tickers to scrape (for external scraper)
-export async function GET(request: NextRequest) {
+async function cronGet(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
@@ -227,7 +228,7 @@ export async function GET(request: NextRequest) {
 }
 
 // DELETE: Cleanup old tweets
-export async function DELETE(request: NextRequest) {
+async function cronDelete(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
@@ -269,3 +270,7 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
+
+export const POST = withCronAlert('/api/cron/watchlist-scrape', cronPost);
+export const GET = withCronAlert('/api/cron/watchlist-scrape', cronGet);
+export const DELETE = withCronAlert('/api/cron/watchlist-scrape', cronDelete);
