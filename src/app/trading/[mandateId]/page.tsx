@@ -912,7 +912,7 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                 </div>
               )}
 
-              {/* Mandate config */}
+              {/* Mandate config — grouped by purpose */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-xs uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)]">Mandate</h3>
@@ -925,131 +925,166 @@ export default function MandateDetailPage({ params }: { params: Promise<{ mandat
                     </div>
                   )}
                 </div>
-                {!editingSettings ? (
-                  <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 text-sm">
-                    <SettingRow label="Name" value={mandate.name} />
-                    <SettingRow label="Broker (locked)" value={mandate.broker || 'alpaca'} />
-                    <SettingRow label="Network (locked)" value={mandate.mode === 'live' ? 'mainnet · live' : 'testnet · paper'} />
-                    <SettingRow label="Status" value={mandate.status} />
-                    <SettingRow label="Capital" value={fmtUsd(mandate.capital_allotted_usd)} />
-                    <SettingRow label="Max position" value={`${mandate.max_position_pct}%`} />
-                    <SettingRow label="Daily loss limit" value={`${mandate.daily_loss_limit_pct}%`} />
-                    <SettingRow label="Telegram chat" value={mandate.telegram_chat_id || '— your DM —'} />
-                    {mandate.broker === 'hyperliquid' && (
-                      <>
-                        <SettingRow label="HL wallet" value={mandate.hl_wallet_address || '— none —'} wide />
-                        <SettingRow label="Max leverage" value={`${mandate.hl_max_leverage ?? 3}x`} />
-                        <SettingRow label="Execution" value={{ approval: 'Approval — every entry & exit needs a tap', auto_exit: 'Auto-exit — closes run automatically, entries need approval', full_auto: 'Full auto — entries & exits run automatically' }[mandate.execution_mode || 'approval']} wide />
-                        <SettingRow label="Risk gates" value={`daily loss ${mandate.daily_loss_limit_pct}% → flatten+pause · exposure ≤ ${mandate.max_total_leverage ?? '—'}x · ≤ ${mandate.max_new_positions_per_day ?? '∞'} entries/day · ${mandate.coin_cooldown_hours ?? 0}h coin cooldown · vol ≥ $${((mandate.min_coin_volume_usd ?? 0) / 1e6).toFixed(0)}M · chase ≤ ${mandate.max_entry_chase_pct ?? '—'}% · √ sizing ref $${((mandate.sizing_ref_notional_usd ?? 0) / 1e3).toFixed(0)}k`} wide />
-                        <SettingRow label="Trailing stop" value={mandate.trailing_stop_pct ? `${mandate.trailing_stop_pct}% of margin (${(mandate.trailing_stop_pct / (mandate.hl_max_leverage || 1)).toFixed(1)}% px) → ${mandate.trailing_stop_exit_pct ?? mandate.trailing_stop_pct}% when trader exits · no take-profit` : '— off —'} />
-                        <SettingRow label="Agent key" value={mandate.hl_has_agent_key ? '✓ set (suggestion+execute)' : '— not set (suggestion-only) —'} />
-                      </>
-                    )}
-                    <SettingRow
-                      label="Allowed tickers"
-                      value={mandate.allowed_tickers?.length ? mandate.allowed_tickers.join(', ') : '— any —'}
-                      wide
-                    />
-                    <SettingRow
-                      label="Blocked tickers"
-                      value={mandate.blocked_tickers?.length ? mandate.blocked_tickers.join(', ') : '— none —'}
-                      wide
-                    />
-                  </dl>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-[11px] text-parchment/45">
-                      Broker (<span className="font-mono">{mandate.broker || 'alpaca'}</span>) and network (<span className="font-mono">{mandate.mode === 'live' ? 'mainnet/live' : 'testnet/paper'}</span>) are fixed at creation and can&apos;t be changed here.
-                    </p>
-                    <p className="text-[11px] text-parchment/45">
-                      To route cards to a Telegram group: add the bot to the group, then send{' '}
-                      <code className="font-mono text-parchment/55">/bind {String(mandate.id).slice(0, 8)}</code> there and confirm the request that appears here.
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <SettingField label="Name">
-                        <input value={settingsDraft.name} onChange={e => setSettingsDraft({ ...settingsDraft, name: e.target.value })} className={settingInputCls} />
-                      </SettingField>
-                      <SettingField label="Junto">
-                        <select value={settingsDraft.junto_id} onChange={e => setSettingsDraft({ ...settingsDraft, junto_id: e.target.value })} className={settingInputCls}>
-                          <option value="">— none —</option>
-                          {juntos.map(j => <option key={j.id} value={j.id}>{j.name}</option>)}
-                        </select>
-                      </SettingField>
-                      <SettingField label="Capital (USD)">
-                        <input type="number" value={settingsDraft.capital_allotted_usd} onChange={e => setSettingsDraft({ ...settingsDraft, capital_allotted_usd: e.target.value })} className={settingInputCls} />
-                      </SettingField>
-                      <SettingField label="Max position %">
-                        <input type="number" value={settingsDraft.max_position_pct} onChange={e => setSettingsDraft({ ...settingsDraft, max_position_pct: e.target.value })} className={settingInputCls} />
-                      </SettingField>
-                      <SettingField label="Daily loss limit %">
-                        <input type="number" value={settingsDraft.daily_loss_limit_pct} onChange={e => setSettingsDraft({ ...settingsDraft, daily_loss_limit_pct: e.target.value })} className={settingInputCls} />
-                      </SettingField>
-                      <SettingField label="Telegram chat ID (blank = your DM)">
-                        <input value={settingsDraft.telegram_chat_id} onChange={e => setSettingsDraft({ ...settingsDraft, telegram_chat_id: e.target.value })} placeholder="-100… for a group" className={settingInputCls} />
-                      </SettingField>
-                      <SettingField label="Allowed tickers (comma-sep, blank = any)">
-                        <input value={settingsDraft.allowed_tickers} onChange={e => setSettingsDraft({ ...settingsDraft, allowed_tickers: e.target.value })} placeholder="AAPL, MSFT, NVDA" className={settingInputCls} />
-                      </SettingField>
-                      <SettingField label="Blocked tickers (comma-sep)">
-                        <input value={settingsDraft.blocked_tickers} onChange={e => setSettingsDraft({ ...settingsDraft, blocked_tickers: e.target.value })} placeholder="TSLA, GME" className={settingInputCls} />
-                      </SettingField>
+                {(() => {
+                  const isHl = mandate.broker === 'hyperliquid';
+                  const d = settingsDraft;
+                  const set = (k: string, v: string) => setSettingsDraft({ ...settingsDraft, [k]: v } as typeof settingsDraft);
+                  const num = (label: string, k: keyof typeof settingsDraft, ph?: string, extra: Record<string, number> = {}) => (
+                    <SettingField label={label}>
+                      <input type="number" {...extra} value={d[k] as string} placeholder={ph} onChange={e => set(k as string, e.target.value)} className={settingInputCls} />
+                    </SettingField>
+                  );
+                  const txt = (label: string, k: keyof typeof settingsDraft, ph?: string) => (
+                    <SettingField label={label}>
+                      <input value={d[k] as string} placeholder={ph} onChange={e => set(k as string, e.target.value)} className={settingInputCls} />
+                    </SettingField>
+                  );
+                  const modeLabel = { approval: 'Approval — every entry & exit needs a tap', auto_exit: 'Auto-exit — closes automatic, entries need approval', full_auto: 'Full auto — entries & exits automatic' }[mandate.execution_mode || 'approval'];
+                  const trailOn = !!mandate.trailing_stop_pct;
+                  const lev = mandate.hl_max_leverage || 1;
+                  const maxMargin = (mandate.capital_allotted_usd * mandate.max_position_pct) / 100;
+                  return (
+                    <div className="space-y-3">
+                      {editingSettings && (
+                        <p className="text-[11px] text-parchment/45">
+                          Broker (<span className="font-mono">{mandate.broker || 'alpaca'}</span>) and network (<span className="font-mono">{mandate.mode === 'live' ? 'mainnet/live' : 'testnet/paper'}</span>) are fixed at creation. To route cards to a Telegram group, add the bot and send{' '}
+                          <code className="font-mono text-parchment/55">/bind {String(mandate.id).slice(0, 8)}</code> there, then confirm here.
+                        </p>
+                      )}
+
+                      <SettingGroup title="General">
+                        {!editingSettings ? (
+                          <>
+                            <SettingRow label="Name" value={mandate.name} />
+                            <SettingRow label="Status" value={mandate.status} />
+                            <SettingRow label="Broker · network" value={`${mandate.broker || 'alpaca'} · ${mandate.mode === 'live' ? 'mainnet live' : 'testnet paper'}`} />
+                          </>
+                        ) : (
+                          <>
+                            {txt('Name', 'name')}
+                            <SettingField label="Junto">
+                              <select value={d.junto_id} onChange={e => set('junto_id', e.target.value)} className={settingInputCls}>
+                                <option value="">— none —</option>
+                                {juntos.map(j => <option key={j.id} value={j.id}>{j.name}</option>)}
+                              </select>
+                            </SettingField>
+                          </>
+                        )}
+                      </SettingGroup>
+
+                      <SettingGroup title="Capital & sizing" hint={!editingSettings ? `Largest single position = ${fmtUsd(maxMargin)} margin${isHl ? ` (≈ ${fmtUsd(maxMargin * lev)} notional at ${lev}x)` : ''}.` : 'Position size = capital × max position %, scaled by conviction and (HL) copied-trader size.'}>
+                        {!editingSettings ? (
+                          <>
+                            <SettingRow label="Capital" value={fmtUsd(mandate.capital_allotted_usd)} />
+                            <SettingRow label="Max position" value={`${mandate.max_position_pct}%`} />
+                            {isHl && <SettingRow label="Max leverage" value={`${lev}x`} />}
+                            {isHl && <SettingRow label="Full size at copied $" value={`$${((mandate.sizing_ref_notional_usd ?? 0) / 1e3).toFixed(0)}k (√ scaled)`} />}
+                          </>
+                        ) : (
+                          <>
+                            {num('Capital (USD)', 'capital_allotted_usd')}
+                            {num('Max position %', 'max_position_pct')}
+                            {isHl && num('Max leverage (x)', 'hl_max_leverage', undefined, { min: 1, max: 20 })}
+                            {isHl && num('√ sizing: full size at copied $ (k)', 'sizing_ref_notional_usd', '1000', { min: 0 })}
+                          </>
+                        )}
+                      </SettingGroup>
+
+                      <SettingGroup title="Risk limits" hint="Hard stops on how much can be lost or deployed.">
+                        {!editingSettings ? (
+                          <>
+                            <SettingRow label="Daily loss limit" value={`${mandate.daily_loss_limit_pct}%${isHl ? ' → flatten + pause' : ''}`} />
+                            {isHl && <SettingRow label="Max total exposure" value={`${mandate.max_total_leverage ?? '—'}x equity`} />}
+                            {isHl && <SettingRow label="New positions / day" value={String(mandate.max_new_positions_per_day ?? '∞')} />}
+                            {isHl && <SettingRow label="Per-coin cooldown" value={`${mandate.coin_cooldown_hours ?? 0}h`} />}
+                          </>
+                        ) : (
+                          <>
+                            {num('Daily loss limit %', 'daily_loss_limit_pct')}
+                            {isHl && num('Max total exposure (x equity)', 'max_total_leverage', '3', { min: 0.5, step: 0.5 })}
+                            {isHl && num('Max new positions / day', 'max_new_positions_per_day', '6', { min: 0 })}
+                            {isHl && num('Coin cooldown (hours)', 'coin_cooldown_hours', '12', { min: 0 })}
+                          </>
+                        )}
+                      </SettingGroup>
+
+                      <SettingGroup title="Entry filters" hint="What the mandate is allowed to open.">
+                        {!editingSettings ? (
+                          <>
+                            {isHl && <SettingRow label="Min 24h volume" value={`$${((mandate.min_coin_volume_usd ?? 0) / 1e6).toFixed(0)}M`} />}
+                            {isHl && <SettingRow label="Max chase past entry" value={`${mandate.max_entry_chase_pct ?? '—'}%`} />}
+                            <SettingRow label="Allowed tickers" value={mandate.allowed_tickers?.length ? mandate.allowed_tickers.join(', ') : '— any —'} wide />
+                            <SettingRow label="Blocked tickers" value={mandate.blocked_tickers?.length ? mandate.blocked_tickers.join(', ') : '— none —'} wide />
+                          </>
+                        ) : (
+                          <>
+                            {isHl && num('Min coin 24h volume ($M)', 'min_coin_volume_usd', '5', { min: 0 })}
+                            {isHl && num("Max chase past traders' entry (%)", 'max_entry_chase_pct', '2', { min: 0, step: 0.5 })}
+                            {txt('Allowed tickers (comma-sep, blank = any)', 'allowed_tickers', 'AAPL, MSFT, NVDA')}
+                            {txt('Blocked tickers (comma-sep)', 'blocked_tickers', 'TSLA, GME')}
+                          </>
+                        )}
+                      </SettingGroup>
+
+                      {isHl && (
+                        <SettingGroup title="Exits" hint="Trailing stops are the intended exit for copy mandates — no take-profit.">
+                          {!editingSettings ? (
+                            <>
+                              <SettingRow label="Trailing stop" value={trailOn ? `${mandate.trailing_stop_pct}% of margin (${(mandate.trailing_stop_pct! / lev).toFixed(1)}% price)` : '— off —'} />
+                              <SettingRow label="After trader exits" value={trailOn ? `${mandate.trailing_stop_exit_pct ?? mandate.trailing_stop_pct}% of margin` : '—'} />
+                            </>
+                          ) : (
+                            <>
+                              {num('Trailing stop, % of margin (blank = off)', 'trailing_stop_pct', 'e.g. 50', { min: 1, max: 95 })}
+                              {num('Trail % of margin after trader exits / drops', 'trailing_stop_exit_pct', 'e.g. 10', { min: 1, max: 95 })}
+                            </>
+                          )}
+                        </SettingGroup>
+                      )}
+
+                      <SettingGroup title="Execution & connection">
+                        {!editingSettings ? (
+                          isHl ? (
+                            <>
+                              <SettingRow label="Execution" value={modeLabel} wide />
+                              <SettingRow label="HL wallet" value={mandate.hl_wallet_address || '— none —'} wide />
+                              <SettingRow label="Agent key" value={mandate.hl_has_agent_key ? '✓ set (suggestion + execute)' : '— not set (suggestion-only) —'} />
+                            </>
+                          ) : (
+                            <SettingRow label="Account" value={broker?.alpaca_key_id_last4 ? `key …${broker.alpaca_key_id_last4}` : '—'} />
+                          )
+                        ) : isHl ? (
+                          <>
+                            <SettingField label="Execution mode">
+                              <select value={d.execution_mode} onChange={e => set('execution_mode', e.target.value)} className={settingInputCls}>
+                                <option value="approval">Approval — tap to enter &amp; exit</option>
+                                <option value="auto_exit">Auto-exit — closes automatic, entries need approval</option>
+                                <option value="full_auto">Full auto — entries &amp; exits automatic</option>
+                              </select>
+                            </SettingField>
+                            {txt('HL wallet address', 'hl_wallet_address', '0x…40 hex')}
+                            <SettingField label={mandate.hl_has_agent_key ? 'Replace agent key (blank = keep current)' : 'Agent key (blank = suggestion-only)'}>
+                              <input type="password" value={d.hl_agent_secret} onChange={e => set('hl_agent_secret', e.target.value)} placeholder={mandate.hl_has_agent_key ? '•••••• stored' : '0x… private key'} className={settingInputCls} />
+                            </SettingField>
+                          </>
+                        ) : broker?.account_kind === 'byo_keys' ? (
+                          <>
+                            {txt(`Alpaca key ID${broker?.alpaca_key_id_last4 ? ` (current …${broker.alpaca_key_id_last4})` : ''}`, 'alpaca_key_id', 'PK… / AK…  (blank = keep)')}
+                            <SettingField label="Alpaca secret (blank = keep current)">
+                              <input type="password" value={d.alpaca_secret} onChange={e => set('alpaca_secret', e.target.value)} placeholder="•••••• paste to rotate" className={settingInputCls} />
+                            </SettingField>
+                          </>
+                        ) : null}
+                      </SettingGroup>
+
+                      <SettingGroup title="Notifications">
+                        {!editingSettings
+                          ? <SettingRow label="Telegram chat" value={mandate.telegram_chat_id || '— your DM —'} />
+                          : txt('Telegram chat ID (blank = your DM)', 'telegram_chat_id', '-100… for a group')}
+                      </SettingGroup>
                     </div>
-                    {mandate.broker === 'hyperliquid' && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-brass/18">
-                        <SettingField label="HL wallet address">
-                          <input value={settingsDraft.hl_wallet_address} onChange={e => setSettingsDraft({ ...settingsDraft, hl_wallet_address: e.target.value })} placeholder="0x…40 hex" className={settingInputCls} />
-                        </SettingField>
-                        <SettingField label="Max leverage (x)">
-                          <input type="number" min={1} max={20} value={settingsDraft.hl_max_leverage} onChange={e => setSettingsDraft({ ...settingsDraft, hl_max_leverage: e.target.value })} className={settingInputCls} />
-                        </SettingField>
-                        <SettingField label="Execution mode">
-                          <select value={settingsDraft.execution_mode} onChange={e => setSettingsDraft({ ...settingsDraft, execution_mode: e.target.value })} className={settingInputCls}>
-                            <option value="approval">Approval — tap to enter &amp; exit</option>
-                            <option value="auto_exit">Auto-exit — closes automatic, entries need approval</option>
-                            <option value="full_auto">Full auto — entries &amp; exits automatic</option>
-                          </select>
-                        </SettingField>
-                        <SettingField label="Max total exposure (x equity)">
-                          <input type="number" min={0.5} step={0.5} value={settingsDraft.max_total_leverage} onChange={e => setSettingsDraft({ ...settingsDraft, max_total_leverage: e.target.value })} placeholder="3" className={settingInputCls} />
-                        </SettingField>
-                        <SettingField label="Max new positions / day">
-                          <input type="number" min={0} value={settingsDraft.max_new_positions_per_day} onChange={e => setSettingsDraft({ ...settingsDraft, max_new_positions_per_day: e.target.value })} placeholder="6" className={settingInputCls} />
-                        </SettingField>
-                        <SettingField label="Coin cooldown (hours)">
-                          <input type="number" min={0} value={settingsDraft.coin_cooldown_hours} onChange={e => setSettingsDraft({ ...settingsDraft, coin_cooldown_hours: e.target.value })} placeholder="12" className={settingInputCls} />
-                        </SettingField>
-                        <SettingField label="Min coin 24h volume ($M)">
-                          <input type="number" min={0} value={settingsDraft.min_coin_volume_usd} onChange={e => setSettingsDraft({ ...settingsDraft, min_coin_volume_usd: e.target.value })} placeholder="5" className={settingInputCls} />
-                        </SettingField>
-                        <SettingField label="Max chase past traders' entry (%)">
-                          <input type="number" min={0} step={0.5} value={settingsDraft.max_entry_chase_pct} onChange={e => setSettingsDraft({ ...settingsDraft, max_entry_chase_pct: e.target.value })} placeholder="2" className={settingInputCls} />
-                        </SettingField>
-                        <SettingField label="√ sizing: full size at copied $ (k)">
-                          <input type="number" min={0} value={settingsDraft.sizing_ref_notional_usd} onChange={e => setSettingsDraft({ ...settingsDraft, sizing_ref_notional_usd: e.target.value })} placeholder="1000" className={settingInputCls} />
-                        </SettingField>
-                        <SettingField label="Trailing stop, % of margin (blank = off)">
-                          <input type="number" min={1} max={95} value={settingsDraft.trailing_stop_pct} onChange={e => setSettingsDraft({ ...settingsDraft, trailing_stop_pct: e.target.value })} placeholder="e.g. 50" className={settingInputCls} />
-                        </SettingField>
-                        <SettingField label="Trail % of margin after trader exits / drops">
-                          <input type="number" min={1} max={95} value={settingsDraft.trailing_stop_exit_pct} onChange={e => setSettingsDraft({ ...settingsDraft, trailing_stop_exit_pct: e.target.value })} placeholder="e.g. 10" className={settingInputCls} />
-                        </SettingField>
-                        <SettingField label={mandate.hl_has_agent_key ? 'Replace agent key (blank = keep current)' : 'Agent key (blank = suggestion-only)'}>
-                          <input type="password" value={settingsDraft.hl_agent_secret} onChange={e => setSettingsDraft({ ...settingsDraft, hl_agent_secret: e.target.value })} placeholder={mandate.hl_has_agent_key ? '•••••• stored' : '0x… private key'} className={settingInputCls} />
-                        </SettingField>
-                      </div>
-                    )}
-                    {mandate.broker !== 'hyperliquid' && broker?.account_kind === 'byo_keys' && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-brass/18">
-                        <SettingField label={`Alpaca key ID${broker?.alpaca_key_id_last4 ? ` (current …${broker.alpaca_key_id_last4})` : ''}`}>
-                          <input value={settingsDraft.alpaca_key_id} onChange={e => setSettingsDraft({ ...settingsDraft, alpaca_key_id: e.target.value })} placeholder="PK… / AK…  (blank = keep)" className={settingInputCls} />
-                        </SettingField>
-                        <SettingField label="Alpaca secret (blank = keep current)">
-                          <input type="password" value={settingsDraft.alpaca_secret} onChange={e => setSettingsDraft({ ...settingsDraft, alpaca_secret: e.target.value })} placeholder="•••••• paste to rotate" className={settingInputCls} />
-                        </SettingField>
-                      </div>
-                    )}
-                  </div>
-                )}
+                  );
+                })()}
               </div>
 
               {/* Style */}
@@ -1299,9 +1334,19 @@ function SettingField({ label, children }: { label: string; children: React.Reac
   );
 }
 
+function SettingGroup({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded border border-brass/18 bg-ink/40 p-3">
+      <h4 className="text-[11px] uppercase tracking-wider text-brass/80 font-[var(--font-oswald)] mb-2">{title}</h4>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">{children}</div>
+      {hint && <p className="text-[11px] text-parchment/45 mt-2">{hint}</p>}
+    </section>
+  );
+}
+
 function SettingRow({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
   return (
-    <div className={wide ? 'col-span-2 sm:col-span-3' : ''}>
+    <div className={wide ? 'sm:col-span-2' : ''}>
       <dt className="text-[10px] uppercase tracking-wider text-parchment/60 font-[var(--font-oswald)] mb-0.5">{label}</dt>
       <dd className="font-mono text-sm text-parchment break-all">{value}</dd>
     </div>
