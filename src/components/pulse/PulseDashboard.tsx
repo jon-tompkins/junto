@@ -60,7 +60,7 @@ function Stat({ label, value, suffix = '', hint }: { label: string; value: numbe
 }
 
 /** Semicircle mood gauge: share of directional calls that are bullish. */
-function MoodGauge({ bull, bear }: { bull: number; bear: number }) {
+function MoodGauge({ bull, bear, captionClassName = 'text-[10px] uppercase tracking-[0.2em] text-parchment/50 mt-0.5' }: { bull: number; bear: number; captionClassName?: string }) {
   const total = Math.max(bull + bear, 1);
   const share = bull / total; // 0..1
   const animated = useCountUp(share * 100, 1100) / 100;
@@ -89,7 +89,7 @@ function MoodGauge({ bull, bear }: { bull: number; bear: number }) {
       </svg>
       <div className="-mt-1 text-center">
         <div className="font-mono text-3xl font-bold tabular-nums" style={{ color: `rgb(${color})` }}>{Math.round(animated * 100)}%</div>
-        <div className="text-[10px] uppercase tracking-[0.2em] text-parchment/50 mt-0.5">{label} · bullish share</div>
+        <div className={captionClassName}>{label} · bullish share</div>
       </div>
     </div>
   );
@@ -121,6 +121,34 @@ function Heatmap({ rows }: { rows: Mix[] }) {
                 {net >= 0 ? '+' : ''}{Math.round(net * 100)}<span className="text-parchment/50"> net</span>
               </div>
               <div className="text-[10px] text-parchment/60 tabular-nums">{r.sources} accts</div>
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Equal tiles for the homepage. The full heatmap stays on /pulse. */
+function CompactTiles({ rows }: { rows: Mix[] }) {
+  if (!rows.length) return <p className="text-sm text-parchment/60 py-6">Nothing in this window yet.</p>;
+  return (
+    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-1.5">
+      {rows.map((r) => {
+        const directional = Math.max(r.bullish + r.bearish, 1);
+        const net = (r.bullish - r.bearish) / directional;
+        const strength = Math.min(Math.abs(net) * 0.75 + 0.15, 0.9);
+        const tone = net >= 0.08 ? 'var(--t-bull)' : net <= -0.08 ? 'var(--t-bear)' : 'var(--t-neutral)';
+        return (
+          <Link
+            key={r.ticker}
+            href={`/tickers/${encodeURIComponent(r.ticker)}`}
+            className="rounded-sm p-2 min-h-16 flex flex-col justify-between hover:brightness-125"
+            style={{ background: `linear-gradient(145deg, rgb(${tone} / ${strength}), rgb(${tone} / ${strength * 0.45}))`, boxShadow: `inset 0 0 0 1px rgb(${tone} / 0.45)` }}
+          >
+            <div className="font-mono font-bold text-sm leading-none text-parchment">{r.ticker}</div>
+            <div className="font-mono text-xs tabular-nums text-parchment/90">
+              {net >= 0 ? '+' : ''}{Math.round(net * 100)} net
             </div>
           </Link>
         );
@@ -191,7 +219,7 @@ function Dots({ n }: { n: number | null }) {
   );
 }
 
-export function PulseDashboard({ compactHeader = false }: { compactHeader?: boolean }) {
+export function PulseDashboard({ compactHeader = false, variant = 'full' }: { compactHeader?: boolean; variant?: 'full' | 'compact' }) {
   const [days, setDays] = useState(7);
   const [asset, setAsset] = useState('');
   const [data, setData] = useState<Pulse | null>(null);
@@ -218,8 +246,10 @@ export function PulseDashboard({ compactHeader = false }: { compactHeader?: bool
     return () => clearInterval(t);
   }, [load]);
 
-  const chip = (on: boolean) =>
-    `px-3 py-1.5 text-[11px] tracking-widest rounded-sm border transition ${on ? 'bg-brass text-ink border-brass font-semibold' : 'border-brass/30 text-parchment/60 hover:text-parchment hover:border-brass/60'}`;
+  const chip = (on: boolean) => {
+    const size = variant === 'compact' ? 'text-xs' : 'text-[11px]';
+    return `px-3 py-1.5 ${size} tracking-widest rounded-sm border transition ${on ? 'bg-brass text-ink border-brass font-semibold' : 'border-brass/30 text-parchment/60 hover:text-parchment hover:border-brass/60'}`;
+  };
 
   // Heatmap pool: hot names first, then consensus names not already shown.
   const heat: Mix[] = [];
@@ -250,6 +280,53 @@ export function PulseDashboard({ compactHeader = false }: { compactHeader?: bool
 
   const k = data?.kpis;
   const win = WINDOWS.find((w) => w.d === days)?.label;
+
+  if (variant === 'compact') {
+    const tiles = heat.slice(0, 12);
+    return (
+      <section id="market-pulse" aria-labelledby="market-pulse-heading" className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-4">
+          <div className="max-w-xl">
+            <h2 id="market-pulse-heading" className="text-2xl sm:text-3xl font-bold" style={display}>Market pulse</h2>
+            <p className="text-sm text-parchment/65 mt-1">
+              Where tracked accounts are leaning right now.{' '}
+              <Link href="/pulse" className="text-brass hover:underline">Full market pulse →</Link>
+            </p>
+          </div>
+          <div className="flex flex-col items-start gap-2">
+            <div className="flex gap-1.5" role="group" aria-label="Time window">
+              {WINDOWS.map((w) => <button key={w.d} type="button" onClick={() => setDays(w.d)} className={chip(days === w.d)}>{w.label}</button>)}
+            </div>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Asset class">
+              {ASSETS.map((a) => <button key={a.k || 'all'} type="button" onClick={() => setAsset(a.k)} className={chip(asset === a.k)}>{a.label}</button>)}
+            </div>
+          </div>
+        </div>
+
+        {loading && !data && (
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-1.5" aria-hidden>
+            {Array.from({ length: 12 }, (_, i) => <div key={i} className="min-h-16 rounded-sm bg-raised animate-pulse" />)}
+          </div>
+        )}
+        {err && !data && <p className="text-sm text-parchment/65 py-6">The market pulse didn’t load. It will be on <Link href="/pulse" className="text-brass hover:underline">/pulse</Link> when the feed is back.</p>}
+        {data && (
+          <div className={loading ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
+            <div className="grid lg:grid-cols-[minmax(0,1fr)_240px] gap-4 items-center">
+              <CompactTiles rows={tiles} />
+              <div className="rounded-md p-4" style={{ background: 'rgb(var(--t-surface))', border: `1px solid ${brass(0.22)}` }}>
+                <h3 className="text-xs uppercase tracking-[0.18em] text-brass mb-2" style={display}>Market mood</h3>
+                <MoodGauge
+                  bull={poolBull}
+                  bear={poolBear}
+                  captionClassName="text-xs uppercase tracking-[0.16em] text-parchment/65 mt-1"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+    );
+  }
 
   return (
     <div className="relative">

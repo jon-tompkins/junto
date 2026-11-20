@@ -148,17 +148,17 @@ The owner has not decided to freeze any of these. This table is the full proposa
 
 ### Signal, home, and account entry
 
-#### `/` — Home pulse
+#### `/` — Logged-out homepage
 
 - **Tag:** `core`
 - **Protected:** —
-- **Purpose:** Logged-out landing. A live market pulse is the first screen. A signed-in session is sent to the dashboard.
+- **Purpose:** Sales page for a first-time visitor. It says what MyJunto does (tracks and scores callers, sends one daily brief), shows live proof, and offers **Start free**. A signed-in session is sent to the dashboard. The full market pulse, including the overall hit rate, stays on `/pulse`.
 - **URL:** `/`
 - **Reach:** Logo in the top nav. Sign-out returns here. Signal switcher sends signed-in users to `/dashboard` and signed-out users to `/explore`, so the logo is the reliable path back to this page.
 - **Auth:** Public. `useSession` then `router.replace('/dashboard')` when a session exists.
-- **Key elements:** Top nav, `PulseDashboard` (window chips 24H / 7D / 30D, asset filters, KPIs, heatmap), heading “Get this as a daily brief, built from the voices you pick.”, **Start free** (auth modal), **How it works** → `/about`.
-- **Fed by:** `GET /api/public/pulse` (RPC `public_pulse_summary`). Upstream crons: `pull-content`, `collect-twitter`, `mark-positions`. Tables: `source_positions`, `source_call_outcomes`, `sources`, `source_analyst_profiles` (inside the RPC).
-- **Working means:** Logged-out `GET /` returns 200 and the HTML contains `Live · Market Pulse`. `GET /api/public/pulse` returns 200 JSON with `kpis.tracked_sources` and array keys `hot`, `consensus`, `new_calls`.
+- **Key elements:** Headline “Signal from noise: we track every caller's record so you don't have to.”, subhead with the live tracked-account count, **Start free · 1,000 credits** (opens `AuthModal`), **See the leaderboard →**, proof strip (calls scored, accounts tracked, top-10 vs market), top callers, this week’s top calls, three how-it-works steps with a real dispatch excerpt, compact `PulseDashboard` (`variant="compact"`: about 12 sentiment tiles, market mood, 24H/7D/30D and asset chips, link to `/pulse`), pricing teaser, closing CTA. Site footer under the page carries the disclaimer.
+- **Fed by:** `GET /api/public/pulse` for tracked accounts and calls scored (the homepage does not render `kpis.hit_rate`). `GET /api/public/home` for the leaderboard slice (`getSourceHitRates`), top calls (`getTopCalls`), and the latest public dispatch excerpt (`newsletter_runs` where the parent newsletter is public). Upstream crons: `pull-content`, `collect-twitter`, `mark-positions`, `generate-newsletters`.
+- **Working means:** Logged-out `GET /` returns 200 and the HTML contains `Signal from noise` and `Start free`. `GET /api/public/pulse` returns 200 JSON with `kpis.tracked_sources` and array keys `hot`, `consensus`, `new_calls`. `GET /api/public/home` returns 200 JSON with `callers`, `calls`, and `dispatch` (each may be null if that read fails).
 
 #### `/signal` — Signal alias
 
@@ -176,12 +176,12 @@ The owner has not decided to freeze any of these. This table is the full proposa
 
 - **Tag:** `core`
 - **Protected:** —
-- **Purpose:** Full-page version of the home pulse, with a compact header.
+- **Purpose:** Full market pulse, including the overall hit rate. The homepage links here from a compact slice.
 - **URL:** `/pulse`
-- **Reach:** Signal nav → **Pulse**.
+- **Reach:** Signal nav → **Pulse**. Homepage “Full market pulse →”.
 - **Auth:** Public. Session optional.
-- **Key elements:** Heading “What the analysts we track are doing”, same window chips, KPIs, heatmap, and links onward to the leaderboard, HL top traders, best trades, and dispatches.
-- **Fed by:** Same as `/`: `GET /api/public/pulse`, refreshed about once a minute. Crons `pull-content`, `collect-twitter`, `mark-positions`.
+- **Key elements:** Heading “What the analysts we track are doing”, window chips, KPIs (including hit rate), heatmap, and links onward to the leaderboard, HL top traders, best trades, and dispatches.
+- **Fed by:** `GET /api/public/pulse`, refreshed about once a minute. Crons `pull-content`, `collect-twitter`, `mark-positions`.
 - **Working means:** `GET /pulse` returns 200 and the HTML contains `What the analysts we track are doing`.
 
 #### `/about` — How it works
@@ -190,7 +190,7 @@ The owner has not decided to freeze any of these. This table is the full proposa
 - **Protected:** —
 - **Purpose:** Marketing page: what a dispatch is, popular dispatches, pricing sketch.
 - **URL:** `/about`
-- **Reach:** **How it works** on `/`. Not in the top nav. Signed-in visitors are replaced to `/dashboard`.
+- **Reach:** Direct URL. Not in the top nav. The homepage explains the three steps inline. Signed-in visitors are replaced to `/dashboard`.
 - **Auth:** Public, then client redirect to `/dashboard` when a session exists.
 - **Key elements:** Hero “The signal, not the noise.”, **Get started** → `/onboarding`, **Browse dispatches** → `/explore`, ticker strip, dispatch cards, footer links.
 - **Fed by:** `GET /api/v2/newsletters/search?limit=8` (`newsletters_v2`). `TickerStrip` uses `GET /api/featured/ticker`. Subscribe posts to `/api/v2/newsletters/[id]/subscribe`.
@@ -1115,7 +1115,7 @@ Checked against the tree on 2026-11-20. These are observations, not fixes.
 
 2. **Alpaca trade-tick clock is still the EDT schedule, after the DST change.** `trade-tick/route.ts` labels `13:35 UTC` as `09:35 ET` and says to update `vercel.json` before the November 2026 flip. Those expressions are unchanged. On EST (now): the five slots fire at 8:35am, 10:00am, 11:30am, 1:00pm, and 2:55pm New York. `inferWindowFromEt()` then classifies 11:30am as `mid_morning` (the comment wanted a midday slot at 12:30pm EDT) and 2:55pm as `mid_afternoon`. The `close` window starts at 3:00pm New York, so the “no fresh entries” pass does not run until clocks spring forward. Hyperliquid’s hourly tick forces `window=midday` and is not affected.
 
-3. **Homepage Quick Dispatch is gone, and the docs still describe it.** `src/app/page.tsx` renders `PulseDashboard` and sends signed-in users to `/dashboard`. `src/components/quick-dispatch.tsx` is not imported by any page. `FEATURES.md` §5 and `/docs/flow` still call `/` the Quick Dispatch home. The API is alive and used by the dashboard’s first-run button and by the welcome sample.
+3. **Homepage Quick Dispatch is gone.** `/` is a sales page (`HomePage`) and still sends signed-in users to `/dashboard`. The full pulse, including overall hit rate, is `/pulse`; the homepage mounts `PulseDashboard` with `variant="compact"` only. `src/components/quick-dispatch.tsx` is not imported by any page. `FEATURES.md` §5 and `/docs/flow` still call `/` the Quick Dispatch home. The API is alive and used by the dashboard’s first-run button and by the welcome sample.
 
 4. **`/api/cron/watchlist-scrape` is never scheduled.** The route is real. `vercel.json` has no entry. Anything that expected `watchlist_tweets` to fill itself will stay empty.
 
@@ -1131,7 +1131,7 @@ Checked against the tree on 2026-11-20. These are observations, not fixes.
 
    | Route | How a person finds it today |
    |-------|------------------------------|
-   | `/about` | “How it works” on `/` |
+   | `/about` | Direct URL. The homepage explains the three steps inline. |
    | `/list-to-brief` | URL only |
    | `/prompt` | Its own sidebar, which no other page mounts |
    | `/style` | URL only |

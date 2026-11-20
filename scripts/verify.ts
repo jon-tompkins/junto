@@ -198,14 +198,15 @@ const PAGES: PageSpec[] = [
   {
     name: 'home',
     path: '/',
-    heading: /smartest voices/i,
-    also: /Live\s*·\s*Market Pulse|Start free/i,
+    heading: /Signal from noise/i,
+    also: /Start free/i,
   },
   {
     name: 'signal',
     path: '/signal',
-    heading: /smartest voices|signal/i,
-    also: /Live\s*·\s*Market Pulse|Start free|Market Pulse/i,
+    // /signal redirects to /. The landing headline is the homepage headline.
+    heading: /Signal from noise/i,
+    also: /Start free/i,
   },
   {
     name: 'leaderboard',
