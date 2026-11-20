@@ -2,6 +2,8 @@
 
 _Inventory by section. Generated 2026-07-06 from the route tree + lib subsystems._
 
+**Screen-by-screen contract:** [`docs/feature-map.md`](docs/feature-map.md) is the source of truth for every user-facing route, the key public APIs, the cron map, and what “working” means. This file stays the section inventory. Do not delete it.
+
 ## 1. Source / Analyst Tracking
 - Track fintwit/X analysts as **sources**; auto-built analyst profiles inferred from public posts.
 - Per-source **positions**: ticker, stance (bullish/bearish/cautious/neutral), conviction (1–5), entry price, notes, mention frequency.
