@@ -223,7 +223,7 @@ const PAGES: PageSpec[] = [
   {
     name: 'pricing',
     path: '/pricing',
-    heading: /billing/i,
+    heading: /pricing/i,
     also: /Quick synthesis/i,
   },
 ];

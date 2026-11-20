@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
+import { analystTabs } from '@/components/nav-tab-sets';
+import { NavTabs } from '@/components/nav-tabs';
 import { PositionsHeatmap, type HeatmapPosition } from '@/components/positions-heatmap';
 
 // HL Top Traders board: what the dynamic top-10 Hyperliquid roster holds right
@@ -43,6 +45,7 @@ export default function TopTradersPage() {
     <main className="min-h-screen bg-ink text-parchment">
       <TopNav />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+        <NavTabs label="Analyst views" tabs={analystTabs('hl')} />
         <p className="text-xs uppercase tracking-[0.2em] text-brass/70 font-[var(--font-oswald)] mb-3">Junto Trade · Hyperliquid</p>
         <h1 className="text-3xl sm:text-4xl font-bold font-[var(--font-oswald)] leading-tight max-w-3xl">
           What Hyperliquid&apos;s top 10 traders are holding

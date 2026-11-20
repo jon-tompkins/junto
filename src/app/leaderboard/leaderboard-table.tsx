@@ -37,10 +37,9 @@ function sortVal(r: SourceHitRateRow, key: SortKey): number | null {
   return v == null ? null : Number(v);
 }
 
-export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
+export function LeaderboardTable({ rows, smartOnly }: { rows: SourceHitRateRow[]; smartOnly: boolean }) {
   const [sortKey, setSortKey] = useState<SortKey>('wilson_score');
   const [desc, setDesc] = useState(true);
-  const [smartOnly, setSmartOnly] = useState(false);
   const smartCount = rows.filter((r) => r.is_smart_money).length;
 
   const sorted = [...(smartOnly ? rows.filter((r) => r.is_smart_money) : rows)].sort((a, b) => {
@@ -67,24 +66,10 @@ export function LeaderboardTable({ rows }: { rows: SourceHitRateRow[] }) {
 
   return (
     <>
-    <div className="flex items-center gap-1 mb-3 text-xs">
-      {[
-        { on: false, label: `All (${rows.length})` },
-        { on: true, label: `Smart money (${smartCount})` },
-      ].map((t) => (
-        <button
-          key={t.label}
-          onClick={() => setSmartOnly(t.on)}
-          className={`rounded px-3 py-1.5 border transition ${
-            smartOnly === t.on
-              ? 'border-brass/50 bg-brass/10 text-brass'
-              : 'border-parchment/10 text-parchment/60 hover:text-parchment'
-          }`}
-        >
-          {t.label}
-        </button>
-      ))}
-    </div>
+    <p className="text-xs text-parchment/45 mb-3">
+      {rows.length} analysts
+      {smartCount > 0 ? ` · ${smartCount} smart money` : ''}
+    </p>
     <div className="overflow-x-auto border border-parchment/10 rounded-lg">
       <table className="w-full text-sm">
         <thead>
