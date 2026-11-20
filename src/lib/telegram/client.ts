@@ -101,6 +101,17 @@ export async function setBotCommands(commands: { command: string; description: s
   await tgCall<boolean>('setChatMenuButton', { menu_button: { type: 'commands' } });
 }
 
+// Send a PNG as a photo (multipart upload).
+export async function sendTelegramPhoto(chatId: string | number, png: Buffer, caption?: string): Promise<void> {
+  const form = new FormData();
+  form.append('chat_id', String(chatId));
+  if (caption) { form.append('caption', caption); form.append('parse_mode', 'HTML'); }
+  form.append('photo', new Blob([new Uint8Array(png)], { type: 'image/png' }), 'positions.png');
+  const res = await fetch(`${TG_API}/bot${getToken()}/sendPhoto`, { method: 'POST', body: form });
+  const data = (await res.json()) as TgResponse<unknown>;
+  if (!data.ok) throw new Error(`Telegram sendPhoto failed: ${data.error_code} ${data.description}`);
+}
+
 // Send an MP3 audio file. Uses sendAudio so Telegram shows playable audio player + duration.
 export async function sendTelegramAudio(params: {
   chatId: string | number;

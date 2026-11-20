@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { consumeLinkCode, getUserIdByTelegramChatId } from '@/lib/telegram/link';
-import { sendTelegramMessage, answerCallbackQuery, editMessageReplyMarkup } from '@/lib/telegram/client';
+import { sendTelegramMessage, sendTelegramPhoto, answerCallbackQuery, editMessageReplyMarkup } from '@/lib/telegram/client';
 import { handleApprovalCallback } from '@/lib/trading/approval';
 import { handleAmendmentCallback } from '@/lib/trading/amendment';
 import { buildPositionsMessage } from '@/lib/trading/positions-command';
+import { buildPositionsCard } from '@/lib/trading/positions-card';
+
+// Image first; text fallback when nothing is open, rendering fails, or `/positions text`.
+async function sendPositions(userId: string, chatId: number | string, asText = false): Promise<void> {
+  if (!asText) {
+    try {
+      const card = await buildPositionsCard(userId, chatId);
+      if (card) { await sendTelegramPhoto(chatId, card.png, card.caption); return; }
+    } catch (err) { console.error('[positions card]', err); }
+  }
+  await sendTelegramMessage(chatId, await buildPositionsMessage(userId, chatId));
+}
 import {
   buildPnlMessage,
   buildMandatesMessage,
@@ -90,8 +102,9 @@ export async function POST(req: NextRequest) {
           try {
             const action = cb.data.slice('menu_'.length);
             let body: string;
+            if (action === 'positions') { await sendPositions(userId, chatId); return NextResponse.json({ ok: true }); }
             switch (action) {
-              case 'positions': body = await buildPositionsMessage(userId, chatId); break;
+              case 'positions': body = ''; break;
               case 'pnl':       body = await buildPnlMessage(userId, chatId); break;
               case 'mandates':  body = await buildMandatesMessage(userId, chatId); break;
               case 'ticks':     body = await buildTicksMessage(userId, chatId); break;
@@ -180,7 +193,7 @@ export async function POST(req: NextRequest) {
       chatId,
       `<b>Junto bot commands</b>\n\n` +
       `/menu — action buttons for common tasks\n` +
-      `/positions — open positions + unrealized P&amp;L\n` +
+      `/positions — open positions + unrealized P&amp;L (image; <code>/positions text</code> for detail)\n` +
       `/pnl — realized today/7d/all-time + equity\n` +
       `/mandates — list your mandates\n` +
       `/ticks — recent tick-run activity\n` +
@@ -241,8 +254,9 @@ export async function POST(req: NextRequest) {
     }
     try {
       let body: string;
+      if (cmd === 'positions') { await sendPositions(userId, chatId, /^text$/i.test(arg)); return NextResponse.json({ ok: true }); }
       switch (cmd) {
-        case 'positions': body = await buildPositionsMessage(userId, chatId); break;
+        case 'positions': body = ''; break;
         case 'pnl':       body = await buildPnlMessage(userId, chatId); break;
         case 'mandates':  body = await buildMandatesMessage(userId, chatId); break;
         case 'ticks':     body = await buildTicksMessage(userId, chatId); break;
