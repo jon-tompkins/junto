@@ -170,7 +170,7 @@ export function buildUserPrompt(
           .sort((a, b) => (b.likes || 0) - (a.likes || 0))
           .slice(0, 10)
           .map((t) => {
-            let line = `- [${citationNumber}] ${t.content}`;
+            const line = `- [${citationNumber}] ${t.content}`;
             citationNumber++;
             return line;
           })
@@ -219,7 +219,7 @@ export function buildUserPrompt(
       .map(([ticker, tweets]) => {
         const tweetList = tweets
           .map((t) => {
-            let line = `- [WL${citationNumber}] @${t.author_handle} (${t.author_followers} followers): ${t.content} [${t.likes} likes, ${t.retweets} retweets]`;
+            const line = `- [WL${citationNumber}] @${t.author_handle} (${t.author_followers} followers): ${t.content} [${t.likes} likes, ${t.retweets} retweets]`;
             citationNumber++;
             return line;
           })

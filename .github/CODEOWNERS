@@ -1,0 +1,28 @@
+# Protected paths. Reviews from @jon-tompkins are required once the main
+# ruleset enables "Require review from Code Owners".
+
+# Trading
+src/lib/trading/** @jon-tompkins
+src/app/trading/** @jon-tompkins
+src/app/api/admin/trading/** @jon-tompkins
+# `*` does not match `/`. Own both the trade-* directory entry and files inside it
+# (src/app/api/cron/trade-tick/route.ts, trade-reconcile/route.ts).
+src/app/api/cron/trade-* @jon-tompkins
+src/app/api/cron/trade-*/** @jon-tompkins
+
+# Stripe / billing
+src/lib/stripe/** @jon-tompkins
+src/app/api/v2/billing/** @jon-tompkins
+src/app/api/v2/credits/** @jon-tompkins
+
+# Credits
+src/lib/db/credits.ts @jon-tompkins
+
+# Auth
+src/lib/auth.ts @jon-tompkins
+src/app/api/auth/** @jon-tompkins
+
+# Migrations and deploy config
+migrations/** @jon-tompkins
+supabase/migrations/** @jon-tompkins
+vercel.json @jon-tompkins

@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     .eq('visibility', 'public')
     .order('date', { ascending: false });
 
-  let merged = local || [];
+  const merged = local || [];
 
   try {
     const r = await fetch(`${AILMANACK_BASE}/api/research`, { next: { revalidate: 300 } });
