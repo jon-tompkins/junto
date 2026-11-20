@@ -14,6 +14,7 @@ interface Row {
   ticker: string;
   side: 'long' | 'short';
   size: number; // notional USD
+  margin: number; // margin posted (= size for unlevered)
   entry: number | null;
   mark: number | null;
   pnl: number;
@@ -24,6 +25,7 @@ interface Row {
 }
 
 const fmtPx = (n: number | null) => (n == null ? '—' : n >= 1000 ? n.toFixed(1) : n >= 1 ? n.toFixed(2) : n.toPrecision(4));
+const money = (n: number) => `$${n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toFixed(0)}`;
 const usd = (n: number) => `${n >= 0 ? '+' : '-'}$${Math.abs(n).toFixed(2)}`;
 
 async function loadRows(userId: string, chatId?: number | string | null): Promise<Row[]> {
@@ -54,6 +56,7 @@ async function loadRows(userId: string, chatId?: number | string | null): Promis
       rows.push({
         mandate: m.name, ticker: sym, side: t.side,
         size: pp ? pp.value : lp ? Math.abs(Number(lp.market_value) || 0) : qty * (entry || 0),
+        margin: pp ? pp.margin_used : lp ? Math.abs(Number(lp.market_value) || 0) : qty * (entry || 0),
         entry,
         mark: pp ? pp.mark : lp ? Number(lp.current_price) || null : null,
         pnl: pp ? pp.unrealized_pnl : lp ? Number(lp.unrealized_pl) || 0 : 0,
@@ -71,7 +74,7 @@ export async function buildPositionsCard(userId: string, chatId?: number | strin
   const rows = await loadRows(userId, chatId);
   if (!rows.length) return null;
   const total = rows.reduce((n, r) => n + r.pnl, 0);
-  const W = 1000, ROW = 74, HEAD = 120, FOOT = 40;
+  const W = 1100, ROW = 74, HEAD = 120, FOOT = 40;
   const H = HEAD + 44 + rows.length * ROW + FOOT;
   const green = '#3ddc84', red = '#ff5a5f', dim = '#8b93a1';
   const col = (w: number, align: 'flex-start' | 'flex-end' = 'flex-start') =>
@@ -87,26 +90,28 @@ export async function buildPositionsCard(userId: string, chatId?: number | strin
         <div style={{ display: 'flex', fontSize: 18, color: dim }}>{new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC</div>
       </div>
       <div style={{ display: 'flex', fontSize: 16, color: dim, height: 44, alignItems: 'center', borderBottom: '1px solid #232a35' }}>
-        <div style={col(230)}>POSITION</div><div style={col(130, 'flex-end')}>SIZE</div>
-        <div style={col(210, 'flex-end')}>ENTRY → MARK</div><div style={col(240, 'flex-end')}>P&L</div><div style={col(130, 'flex-end')}>STOP</div>
+        <div style={col(220)}>POSITION</div><div style={col(110, 'flex-end')}>SIZE</div><div style={col(110, 'flex-end')}>MARGIN</div>
+        <div style={col(120, 'flex-end')}>ENTRY</div><div style={col(120, 'flex-end')}>MARK</div><div style={col(190, 'flex-end')}>P&L</div><div style={col(90, 'flex-end')}>STOP</div>
       </div>
       {rows.map((r, i) => {
         const c = r.pnl >= 0 ? green : red;
         return (
           <div key={i} style={{ display: 'flex', alignItems: 'center', height: ROW, borderBottom: '1px solid #1a2029', fontSize: 24 }}>
-            <div style={{ ...col(230), flexDirection: 'column' }}>
+            <div style={{ ...col(220), flexDirection: 'column' }}>
               <div style={{ display: 'flex', fontWeight: 700 }}>
                 {r.ticker}<span style={{ marginLeft: 10, fontSize: 16, color: r.side === 'long' ? green : red }}>{r.side.toUpperCase()}{r.lev ? ` ${r.lev}x` : ''}</span>
               </div>
-              <div style={{ display: 'flex', fontSize: 14, color: dim }}>{r.mandate.slice(0, 28)}</div>
+              <div style={{ display: 'flex', fontSize: 14, color: dim }}>{r.mandate.slice(0, 26)}</div>
             </div>
-            <div style={col(130, 'flex-end')}>${r.size >= 1000 ? `${(r.size / 1000).toFixed(1)}k` : r.size.toFixed(0)}</div>
-            <div style={{ ...col(210, 'flex-end'), fontSize: 20, color: dim }}>{fmtPx(r.entry)} → <span style={{ color: '#e8ebf0', marginLeft: 6 }}>{fmtPx(r.mark)}</span></div>
-            <div style={{ ...col(240, 'flex-end'), flexDirection: 'column', alignItems: 'flex-end', color: c }}>
+            <div style={col(110, 'flex-end')}>{money(r.size)}</div>
+            <div style={col(110, 'flex-end')}>{money(r.margin)}</div>
+            <div style={{ ...col(120, 'flex-end'), fontSize: 22, color: dim }}>{fmtPx(r.entry)}</div>
+            <div style={{ ...col(120, 'flex-end'), fontSize: 22 }}>{fmtPx(r.mark)}</div>
+            <div style={{ ...col(190, 'flex-end'), flexDirection: 'column', alignItems: 'flex-end', color: c }}>
               <div style={{ display: 'flex', fontWeight: 700 }}>{usd(r.pnl)}</div>
               {r.roePct != null && <div style={{ display: 'flex', fontSize: 15 }}>{r.roePct >= 0 ? '+' : ''}{r.roePct.toFixed(1)}% ROE</div>}
             </div>
-            <div style={{ ...col(130, 'flex-end'), fontSize: 20, color: r.noStop ? red : dim }}>
+            <div style={{ ...col(90, 'flex-end'), fontSize: 20, color: r.noStop ? red : dim }}>
               {r.noStop ? 'NONE' : r.stopAwayPct != null ? `${r.stopAwayPct.toFixed(1)}%` : '—'}
             </div>
           </div>
