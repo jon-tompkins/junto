@@ -1,6 +1,6 @@
 import { getSupabase } from '@/lib/db/client';
 import { getSourceHitRates } from '@/lib/leaderboard';
-import { getTopCalls } from '@/lib/top-calls';
+import { getTopCalls, REPORTER_HANDLES } from '@/lib/top-calls';
 import { dispatchExcerpt } from '@/lib/home/excerpt';
 import { averageOutperformance, rankByScore } from '@/lib/home/rank';
 
@@ -54,7 +54,12 @@ const EMPTY: PublicHomePayload = {
 };
 
 async function loadCallers(): Promise<Pick<PublicHomePayload, 'callers' | 'top10_avg_alpha_pct'>> {
-  const ranked = rankByScore(await getSourceHitRates(20)).slice(0, CALLER_LIMIT);
+  // Reporter/wire accounts (lookonchain, unusual_whales...) repost headlines rather than make
+  // calls, so they don't belong in a "top callers" list or the top-10 vs-market stat.
+  const callers = (await getSourceHitRates(20)).filter(
+    (r) => !REPORTER_HANDLES.has(r.handle.toLowerCase()),
+  );
+  const ranked = rankByScore(callers).slice(0, CALLER_LIMIT);
   return {
     callers: ranked.map((r) => ({
       handle: r.handle,
