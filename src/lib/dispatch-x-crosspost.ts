@@ -1,10 +1,10 @@
 import { getSupabase } from '@/lib/db/client';
+import { truncateToWeighted, tweetBudget, xWeightedLength } from '@/lib/x/text';
 
 const APP_BASE_URL =
   process.env.APP_BASE_URL ||
   process.env.NEXT_PUBLIC_APP_URL ||
   'https://www.myjunto.xyz';
-const MAX_TWEET_LEN = 270;
 const DISPATCH_TWEET_NEWSLETTER_IDS = [
   '231f1b52-7b26-4401-b8ee-85421062a72d', // CC Research
   '01f445f0-243c-4bcf-8178-02629ebc7a5c', // VC Activity
@@ -32,18 +32,24 @@ function extractSummary(content: string | null): string {
 /**
  * Compose a tweet for a newsletter run.
  * Format: "<summary> $TKR1 $TKR2 <permalink>"
- * Never exceeds MAX_TWEET_LEN characters.
+ * Stays inside tweetBudget().draftLimit so postTweet can append 🤖 without
+ * crossing X's weighted cap. Failed rows are not retried here — a human still
+ * approves each post. To truncate old length failures back to pending, run
+ * scripts/requeue-failed-dispatch-tweets.ts (it does not post).
  */
-function composeTweet(
+export function composeTweet(
   summary: string,
   tickers: string[],
   permalink: string,
 ): string {
   const cashtags = tickers.slice(0, 3).map((t) => `$${t}`).join(' ');
-  const suffix = `${cashtags ? ' ' + cashtags : ''} ${permalink}`.trimEnd();
-  const budget = MAX_TWEET_LEN - suffix.length - 1;
-  const lead = summary.length > budget ? summary.slice(0, budget - 1) + '…' : summary;
-  return `${lead}${suffix}`;
+  const tail = `${cashtags ? ` ${cashtags}` : ''} ${permalink}`;
+  const limit = tweetBudget(`${summary}${tail}`).draftLimit;
+  const leadBudget = limit - xWeightedLength(tail);
+  const lead = leadBudget > 0 ? truncateToWeighted(summary, leadBudget) : '';
+  const tweet = `${lead}${tail}`.trim();
+  if (xWeightedLength(tweet) <= limit) return tweet;
+  return truncateToWeighted(tweet, limit);
 }
 
 interface QueuedRun {

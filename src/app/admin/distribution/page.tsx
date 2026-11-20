@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TopNav } from '@/components/top-nav';
+import { tweetBudget } from '@/lib/x/text';
 
 type RowStatus = 'pending' | 'approved' | 'rejected' | 'posted';
 
@@ -165,7 +166,10 @@ export default function DistributionAdminPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {rows.map((row) => (
+            {rows.map((row) => {
+              const draft = drafts[row.id] ?? row.tweet_text;
+              const budget = tweetBudget(draft);
+              return (
               <article
                 key={row.id}
                 className="bg-surface border border-[rgb(var(--t-brass) / 0.22)] rounded-2xl p-5"
@@ -224,7 +228,7 @@ export default function DistributionAdminPage() {
                 )}
 
                 <textarea
-                  value={drafts[row.id] ?? row.tweet_text}
+                  value={draft}
                   onChange={(event) => {
                     const next = event.target.value;
                     setDrafts((current) => ({ ...current, [row.id]: next }));
@@ -234,33 +238,38 @@ export default function DistributionAdminPage() {
 
                 <div className="flex items-center justify-between gap-4 mt-3 flex-wrap">
                   <div className="text-xs text-parchment/45">
-                    {(drafts[row.id] ?? row.tweet_text).length}/280
+                    <span
+                      className={budget.used > budget.max ? 'text-bear' : undefined}
+                      title="X weighted length, including the robot tag postTweet adds. Emoji count as 2 and links count as 23."
+                    >
+                      {budget.used}/{budget.max}
+                    </span>
                     {row.error_message ? ` · last error: ${row.error_message}` : ''}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <button
-                      onClick={() => void patchRow(row.id, { tweet_text: (drafts[row.id] ?? row.tweet_text).trim() })}
+                      onClick={() => void patchRow(row.id, { tweet_text: draft.trim() })}
                       disabled={busyId === row.id}
                       className="px-3 py-1.5 rounded border border-[rgb(var(--t-brass) / 0.22)] text-parchment/70 hover:text-parchment transition disabled:opacity-50"
                     >
                       Save copy
                     </button>
                     <button
-                      onClick={() => void patchRow(row.id, { status: 'pending', tweet_text: (drafts[row.id] ?? row.tweet_text).trim() })}
+                      onClick={() => void patchRow(row.id, { status: 'pending', tweet_text: draft.trim() })}
                       disabled={busyId === row.id}
                       className="px-3 py-1.5 rounded border border-[rgb(var(--t-brass) / 0.22)] text-parchment/60 hover:text-parchment transition disabled:opacity-50"
                     >
                       Reset
                     </button>
                     <button
-                      onClick={() => void patchRow(row.id, { status: 'rejected', tweet_text: (drafts[row.id] ?? row.tweet_text).trim() })}
+                      onClick={() => void patchRow(row.id, { status: 'rejected', tweet_text: draft.trim() })}
                       disabled={busyId === row.id || row.status === 'posted'}
                       className="px-3 py-1.5 rounded border border-bear/35 text-bear hover:bg-bear/10 transition disabled:opacity-50"
                     >
                       Reject
                     </button>
                     <button
-                      onClick={() => void patchRow(row.id, { status: 'approved', tweet_text: (drafts[row.id] ?? row.tweet_text).trim() })}
+                      onClick={() => void patchRow(row.id, { status: 'approved', tweet_text: draft.trim() })}
                       disabled={busyId === row.id || row.status === 'posted'}
                       className="px-3 py-1.5 rounded border border-brass/40 text-brass hover:bg-brass/10 transition disabled:opacity-50"
                     >
@@ -268,7 +277,7 @@ export default function DistributionAdminPage() {
                     </button>
                     <button
                       onClick={() => void postRow(row.id)}
-                      disabled={busyId === row.id || row.status === 'posted' || !(drafts[row.id] ?? row.tweet_text).trim()}
+                      disabled={busyId === row.id || row.status === 'posted' || !draft.trim()}
                       className="px-4 py-1.5 rounded bg-bull text-ink font-semibold hover:bg-bull/80 transition disabled:opacity-50"
                     >
                       {busyId === row.id ? 'Working…' : row.status === 'posted' ? 'Posted' : 'Post to X'}
@@ -276,7 +285,8 @@ export default function DistributionAdminPage() {
                   </div>
                 </div>
               </article>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

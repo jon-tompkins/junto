@@ -7,6 +7,19 @@
 // app permissions to Read+Write and regenerating the access token pair.
 
 import crypto from 'crypto';
+import { fitTweetText } from './text';
+
+export {
+  AGENT_TWEET_MARKER,
+  AGENT_TWEET_SUFFIX,
+  X_TWEET_MAX_WEIGHTED,
+  fitTweetText,
+  truncateToWeighted,
+  truncateTweetDraft,
+  tweetBudget,
+  isTweetLengthError,
+  xWeightedLength,
+} from './text';
 
 interface XCreds {
   consumerKey: string;
@@ -83,11 +96,10 @@ export async function postTweet(
     video?: { data: Buffer; mimeType: string };
   },
 ): Promise<PostTweetResult> {
-  // Auto-tag every agent-posted tweet with 🤖 so the feed makes it obvious
-  // which posts came from automation vs. a human at the keyboard. Skipped if
-  // the caller already included the emoji.
-  const tagged = /🤖/.test(text) ? text : `${text.trimEnd()} 🤖`;
-  if (!tagged || tagged.length > 280) throw new Error(`Tweet text must be 1–280 chars (got ${tagged.length})`);
+  // Tag agent posts with 🤖. The fitter counts that emoji as 2 (X's weight)
+  // and truncates on a word boundary when the tag would otherwise push the
+  // tweet past 280, instead of failing the post.
+  const tagged = fitTweetText(text);
   const creds = getCreds();
   const url = 'https://api.x.com/2/tweets';
 

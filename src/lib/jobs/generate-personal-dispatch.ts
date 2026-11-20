@@ -5,7 +5,7 @@ import { getUserTelegramChatId } from '@/lib/telegram/link';
 import { sendNewsletter } from '@/lib/email/sender';
 import { sendTelegramNewsletter, sendTelegramAudio } from '@/lib/telegram/client';
 import { dispatchToAudioScript } from '@/lib/audio/script';
-import { synthesizeSpeech, estimateAudioDurationSec } from '@/lib/audio/tts';
+import { synthesizeChunkedSpeech, estimateAudioDurationSec } from '@/lib/audio/tts';
 import { uploadDispatchAudio } from '@/lib/audio/storage';
 import {
   upsertPersonalDispatch,
@@ -322,7 +322,8 @@ export async function generatePersonalDispatchForUser(
           });
         }
 
-        const tts = await synthesizeSpeech({ text: script, voice: 'onyx' });
+        // Chunk before synthesizeSpeech so a script over 4,000 chars does not throw.
+        const tts = await synthesizeChunkedSpeech({ text: script, voice: 'onyx' });
         ttsAudio = tts.audio;
 
         recordCost({
