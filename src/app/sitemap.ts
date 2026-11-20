@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
 import { getSupabase } from '@/lib/db/client';
 import { getPublicDeliveredRuns } from '@/lib/db/newsletter-runs';
+import { buildSourcePages, buildTickerPages, buildDispatchPages } from '@/lib/seo/sitemap';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://www.myjunto.xyz';
@@ -61,22 +62,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .eq('sources.is_active', true)
       .limit(1000);
 
-    const seen = new Set<string>();
-    sourcePages = (profiles || [])
-      .map((row: any) => row.sources?.handle_or_url as string | undefined)
-      .filter((h): h is string => {
-        if (!h) return false;
-        const k = h.toLowerCase();
-        if (seen.has(k)) return false;
-        seen.add(k);
-        return true;
-      })
-      .map((handle) => ({
-        url: `${baseUrl}/sources/${encodeURIComponent(handle)}`,
-        lastModified: new Date(),
-        changeFrequency: 'daily' as const,
-        priority: 0.7,
-      }));
+    sourcePages = buildSourcePages(
+      (profiles || []).map((row: any) => row.sources?.handle_or_url as string | undefined),
+      baseUrl,
+    );
   } catch {
     // Don't fail sitemap generation if DB is unavailable
   }
@@ -89,21 +78,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // coverage pages they generate. One query feeds both surfaces.
     const runs = await getPublicDeliveredRuns(2000);
 
-    dispatchPages = runs.map((r) => ({
-      url: `${baseUrl}/newsletter/${r.newsletter_id}/${r.id}`,
-      lastModified: r.generated_at ? new Date(r.generated_at) : new Date(),
-      changeFrequency: 'monthly' as const,
-      priority: 0.6,
-    }));
-
-    const tickers = new Set<string>();
-    for (const r of runs) for (const t of r.tickers || []) tickers.add(t);
-    tickerPages = [...tickers].map((t) => ({
-      url: `${baseUrl}/tickers/${encodeURIComponent(t)}`,
-      lastModified: new Date(),
-      changeFrequency: 'daily' as const,
-      priority: 0.7,
-    }));
+    dispatchPages = buildDispatchPages(runs, baseUrl);
+    tickerPages = buildTickerPages(runs, baseUrl);
   } catch {
     // Don't fail sitemap generation if DB is unavailable
   }
