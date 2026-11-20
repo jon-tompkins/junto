@@ -1,16 +1,6 @@
 import { getSupabase } from '@/lib/db/client';
 import { isPriceable, type AssetClass } from '@/lib/prices';
 
-// Handles whose "positions" are mostly headline reposts / scanner output, not first-person
-// calls (Oct 16 position audit, plus x-growth/wire-accounts.json). They feed dispatches but
-// are never ranked as callers. Lowercase. Replace with a DB-backed reporter flag once it exists.
-export const REPORTER_HANDLES = new Set([
-  'lookonchain', 'unusual_whales', 'deitaone', 'cryptorank_io', 'breakoutstocks',
-  'messaricrypto', 'defillama', 'm_mcdonough', 'maverickny', 'allthingsapx',
-  'zerohedge_', 'zerohedge', 'wallstreetbets', 'bespokeinvest', 'theaigrid',
-  'ai_explained_', 'biologyaidaily',
-]);
-
 export const WINDOW_DAYS = 7;
 const MAX_MARK_AGE_DAYS = 3; // ignore marks the daily mark-positions cron hasn't refreshed
 const MAX_ABS_RETURN = 400; // beyond this it's almost certainly a split / bad print
@@ -57,7 +47,7 @@ export async function getTopCalls(): Promise<{ calls: TopCall[]; updatedAt: stri
 
   const ids = Array.from(new Set(rows.map((p: any) => p.source_id)));
   const { data: srcs } = ids.length
-    ? await supabase.from('sources').select('id, handle_or_url, display_name, avatar_url').in('id', ids)
+    ? await supabase.from('sources').select('id, handle_or_url, display_name, avatar_url, is_reporter').in('id', ids)
     : { data: [] as any[] };
   const byId = new Map<string, any>((srcs || []).map((s: any) => [s.id, s]));
 
@@ -65,7 +55,7 @@ export async function getTopCalls(): Promise<{ calls: TopCall[]; updatedAt: stri
   const calls: TopCall[] = [];
   for (const p of rows as any[]) {
     const s = byId.get(p.source_id);
-    if (!s || REPORTER_HANDLES.has(String(s.handle_or_url).toLowerCase())) continue;
+    if (!s || s.is_reporter) continue;
     calls.push({
       source_id: p.source_id,
       handle: s.handle_or_url,

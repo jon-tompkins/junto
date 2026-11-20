@@ -337,10 +337,11 @@ export async function getSourceHitRates(minPositions = 20): Promise<SourceHitRat
     handle_or_url: string;
     display_name: string | null;
     avatar_url: string | null;
+    is_reporter: boolean | null;
   }>(() =>
     supabase
       .from('sources')
-      .select('id, handle_or_url, display_name, avatar_url')
+      .select('id, handle_or_url, display_name, avatar_url, is_reporter')
       .in('id', [...candidateIds]),
   );
   const meta = new Map(srcs.map((s) => [s.id, s]));
@@ -350,6 +351,7 @@ export async function getSourceHitRates(minPositions = 20): Promise<SourceHitRat
   for (const source_id of candidateIds) {
     const m = meta.get(source_id);
     if (!m?.handle_or_url) continue; // only rank sources we can actually link to
+    if (m.is_reporter) continue; // wire/news accounts report, they don't make calls
 
     const pa = posAgg.get(source_id) ?? { total: 0, convSum: 0, convCount: 0, convByTicker: new Map<string, number>() };
     const oa = outAgg.get(source_id);

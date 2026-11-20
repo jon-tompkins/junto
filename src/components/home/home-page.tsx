@@ -217,23 +217,19 @@ export function HomePage() {
             <p className="mt-2 text-xs text-parchment/60">No card. Sign in with X or Google.</p>
           </div>
 
-          <aside className="rounded-md p-4 min-h-[240px]" style={{ background: 'rgb(var(--t-surface))', border: '1px solid rgb(var(--t-brass) / 0.28)' }} aria-labelledby="top-callers-heading">
+          <aside className="rounded-md p-4 min-h-[240px]" style={{ background: 'rgb(var(--t-surface))', border: '1px solid rgb(var(--t-brass) / 0.28)' }} aria-labelledby="best-call-heading">
             <div className="flex items-baseline justify-between gap-3 mb-3">
-              <h2 id="top-callers-heading" className="text-base font-semibold" style={display}>Top callers this month</h2>
-              <span className="text-xs text-parchment/50">Score · hit · vs mkt</span>
+              <h2 id="best-call-heading" className="text-base font-semibold" style={display}>Best call this week</h2>
+              <span className="text-xs text-parchment/50">Scored vs market</span>
             </div>
-            {callerState === 'loading' && (
-              <div className="space-y-3" aria-hidden>
-                {Array.from({ length: 3 }, (_, i) => <Bone key={i} className="h-10 w-full" />)}
-              </div>
-            )}
-            {callerState === 'error' && (
+            {callState === 'loading' && <Bone className="h-32 w-full" />}
+            {callState === 'error' && (
               <p className="text-sm text-parchment/70">
-                Caller scores didn’t load.{' '}
-                <Link href="/leaderboard" className="text-brass hover:underline">See the leaderboard →</Link>
+                This week’s calls didn’t load.{' '}
+                <Link href="/top-calls" className="text-brass hover:underline">See top calls →</Link>
               </p>
             )}
-            {callerState === 'ready' && callers && <CallerRows callers={callers} limit={3} />}
+            {callState === 'ready' && calls && <BestCall call={calls[0] ?? null} />}
           </aside>
         </div>
       </section>
@@ -349,6 +345,23 @@ function ProofStat({ label, status, value, className = '' }: { label: string; st
         {status === 'ready' && (value ?? '—')}
       </dd>
     </div>
+  );
+}
+
+function BestCall({ call: c }: { call: PublicTopCall | null }) {
+  if (!c) return <p className="text-sm text-parchment/70">No scored calls this week yet.</p>;
+  return (
+    <Link href={`/trades/${encodeURIComponent(c.source_id)}/${encodeURIComponent(c.ticker)}`} className="block group">
+      <div className="flex items-baseline gap-2">
+        <span className="font-mono text-3xl font-bold text-parchment group-hover:text-brass">{c.ticker}</span>
+        <span className={`text-sm font-semibold uppercase tracking-wide ${c.stance === 'bullish' ? 'text-bull' : 'text-bear'}`}>
+          {c.stance === 'bullish' ? 'Long' : 'Short'}
+        </span>
+      </div>
+      <p className="mt-1 text-sm text-parchment/65">Called by @{c.handle}</p>
+      <p className={`mt-4 font-mono text-4xl font-bold tabular-nums ${tone(c.return_pct)}`}>{signedPct(c.return_pct)}</p>
+      <p className={`mt-1 font-mono text-sm tabular-nums ${tone(c.alpha_pct)}`}>{c.alpha_pct == null ? 'since the call' : `${signedPct(c.alpha_pct)} vs market`}</p>
+    </Link>
   );
 }
 
