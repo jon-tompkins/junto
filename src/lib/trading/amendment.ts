@@ -104,6 +104,10 @@ export async function handleAmendmentCallback(params: {
 
   const trade = await getTradeById(amendment.trade_id);
   if (!trade) return { message: 'Trade not found.' };
+  if (trade.status !== 'open') {
+    await updateAmendment(amendmentId, { status: 'skipped' });
+    return { message: `${trade.ticker} is already ${trade.status} — nothing to ${amendment.kind}.` };
+  }
   const mandate = await getMandateById(trade.mandate_id);
   if (!mandate) return { message: 'Mandate missing.' };
 

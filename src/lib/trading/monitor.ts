@@ -4,6 +4,8 @@ import { alpacaForMandate } from './client';
 import { getOpenTrades, updateTrade, transitionTrade, addJournalEntry, getJournalEntries } from './db';
 import { findPosition } from './asset';
 import { enforceSyntheticStops, writeExitAndPostMortem } from './stops';
+import { notifyMandate } from './autopilot';
+import { getSupabase } from '@/lib/db/client';
 import type { Mandate } from './types';
 
 // For every open trade: detect fills/closes against Alpaca and write a daily
@@ -143,6 +145,12 @@ export async function monitorMandate(mandate: Mandate): Promise<{
       if (!won) continue; // another writer (stops/telegram) already closed it: no double post-mortem
       await writeExitAndPostMortem(trade.id, mandate);
       closed++;
+      // Any approval card still waiting on this trade is now moot.
+      await getSupabase().from('trade_amendments').update({ status: 'skipped' }).eq('trade_id', trade.id).eq('status', 'pending');
+      try {
+        const pnl = realized != null ? `${realized >= 0 ? '+' : '-'}$${Math.abs(realized).toFixed(2)}` : 'n/a';
+        await notifyMandate(mandate, `🔔 <b>${mandate.name}</b>: ${trade.ticker} ${String(trade.side).toUpperCase()} closed${exitPrice ? ` @ ${Number(exitPrice) >= 1000 ? Number(exitPrice).toFixed(1) : Number(exitPrice) >= 1 ? Number(exitPrice).toFixed(2) : Number(exitPrice).toPrecision(4)}` : ''} · P&amp;L <b>${pnl}</b>\n<i>stop / exit filled on the exchange</i>`);
+      } catch { /* notification is best-effort */ }
       continue;
     }
 
