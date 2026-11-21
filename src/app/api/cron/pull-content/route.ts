@@ -73,7 +73,17 @@ async function cronGet(req: NextRequest) {
       const hasFirstTimeSources = stale.some((s) => !s.updated_at);
       const batchSinceDate = hasFirstTimeSources
         ? new Date(now - FIRST_PULL_LOOKBACK_MS).toISOString()
-        : defaultSinceDate;
+        : (() => {
+            // Outage catch-up: if sources haven't ingested for longer than the
+            // normal lookback (e.g. Apify upstream down), reach back to the
+            // most recent success across ALL sources (so one dormant account
+            // can't force a permanent 48h lookback) and the gap backfills. Capped at 48h; storing
+            // is idempotent on twitter_id.
+            const lastOk = Math.max(0, ...twitterSources.map((s) => (s.updated_at ? new Date(s.updated_at).getTime() : 0)));
+            const oldest = lastOk || now;
+            const reach = Math.min(Math.max(now - oldest + 30 * 60 * 1000, PULL_LOOKBACK_MS), 48 * 60 * 60 * 1000);
+            return new Date(now - reach).toISOString();
+          })();
 
       if (stale.length > 0) {
         try {
