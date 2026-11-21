@@ -178,7 +178,22 @@ export function HomePage() {
     return () => ac.abort();
   }, []);
 
-  const openAuth = () => setShowAuth(true);
+  // Logged as a virtual /cta/home/<spot> view so /api/admin/visitor-funnel counts homepage CTA clicks
+  // (same scheme as SignupCTA). Best-effort; never blocks opening the sign-in modal.
+  const openAuth = (spot: 'hero' | 'bottom') => {
+    try {
+      fetch('/api/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: `/cta/home/${spot}`, referrer: window.location.pathname }),
+        keepalive: true,
+        credentials: 'same-origin',
+      }).catch(() => {});
+    } catch {
+      // tracking is best-effort
+    }
+    setShowAuth(true);
+  };
   const callers = home?.callers ?? null;
   const calls = home?.calls ?? null;
   const dispatch = home?.dispatch ?? null;
@@ -209,7 +224,7 @@ export function HomePage() {
                   )}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-              <StartButton onClick={openAuth} />
+              <StartButton onClick={() => openAuth('hero')} />
               <Link href="/leaderboard" className="text-sm font-medium text-brass hover:underline">
                 See the leaderboard →
               </Link>
@@ -320,7 +335,7 @@ export function HomePage() {
           <h2 className="text-2xl sm:text-3xl font-bold" style={display}>Follow the callers who are actually right.</h2>
           <p className="mt-2 text-sm text-parchment/70">One brief a day. Every call scored.</p>
           <div className="mt-5">
-            <StartButton onClick={openAuth} />
+            <StartButton onClick={() => openAuth('bottom')} />
           </div>
           <p className="mt-2 text-xs text-parchment/60">No card. Sign in with X or Google.</p>
         </div>
