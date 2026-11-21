@@ -77,6 +77,15 @@ export function httpStatusFromText(text: string): number | string {
   return 'error';
 }
 
+/**
+ * Stateless throttle for crons that fire every ~30 min in fresh isolates (the
+ * in-process dedupe never holds there). True only in the first 30 minutes of
+ * every Nth UTC hour, so a persistent condition pages once per N hours.
+ */
+export function isPageSlot(now: Date = new Date(), everyHours = 6): boolean {
+  return now.getUTCHours() % everyHours === 0 && now.getUTCMinutes() < 30;
+}
+
 export function alertDedupeWindowMs(override?: number): number {
   if (typeof override === 'number' && Number.isFinite(override) && override > 0) return override;
   const raw = Number(process.env.ALERT_DEDUPE_WINDOW_MS);

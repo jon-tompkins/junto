@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendAlert } from '@/lib/alerts';
+import { isPageSlot, sendAlert } from '@/lib/alerts';
 import { withCronAlert } from '@/lib/cron-alert';
 import { collectBatchResults } from '@/lib/twitter/apify-client';
 import {
@@ -243,6 +243,11 @@ async function cronGet(req: NextRequest) {
 }
 
 async function alertApifyCollectFailure(reason: string): Promise<void> {
+  // Hourly Apify failures used to page every run; page once per 6h instead.
+  if (!isPageSlot()) {
+    console.warn('[collect-twitter] apify failure (alert throttled):', reason);
+    return;
+  }
   const http = reason.match(/\bHTTP\s+([1-5]\d{2})\b/i);
   const runStatus = reason.match(/Apify run ([A-Za-z0-9_-]+)/);
   await sendAlert({
@@ -265,11 +270,23 @@ async function alertIfNoRecentTwitterIngest(
       return;
     }
     if (count > 0) return;
+    // Page at onset (newest tweet only just crossed the threshold), then once
+    // per 6h while it stays stale, instead of every 30-minute run.
+    const { data: newest } = await supabase
+      .from('content_twitter')
+      .select('posted_at')
+      .not('twitter_id', 'like', 'yt-%')
+      .order('posted_at', { ascending: false })
+      .limit(1);
+    const newestMs = newest?.[0]?.posted_at ? new Date(newest[0].posted_at).getTime() : 0;
+    const ageH = newestMs ? (Date.now() - newestMs) / 3_600_000 : Infinity;
+    const onset = ageH < hours + 0.6;
+    if (!onset && !isPageSlot()) return;
     await sendAlert({
       key: 'twitter:ingest-stale',
       route: '/api/cron/collect-twitter',
       status: 'stale',
-      reason: `No non-YouTube content_twitter rows with posted_at in the last ${hours}h`,
+      reason: `No non-YouTube content_twitter rows with posted_at in the last ${hours}h` + (Number.isFinite(ageH) ? ` (newest ${ageH.toFixed(1)}h ago)` : ''),
     });
   } catch (err) {
     console.warn(
