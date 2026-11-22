@@ -248,9 +248,15 @@ export async function syncRosterToJunto(juntoId: string, roster: RosterEntry[]) 
     }
     // Roster stats ride along in metadata so the public Top Traders board can
     // show rank / hold time / 7d-30d figures without recomputing.
+    const { data: prevSrc } = await supabase.from('sources').select('metadata').eq('id', sourceId).maybeSingle();
+    const prevMeta = (prevSrc?.metadata || {}) as Record<string, unknown>;
+    const rejoined = added.includes(addr);
     await supabase.from('sources').update({
       display_name: r.label,
       metadata: {
+        // keep since-added P&L etc.; (re)start the inclusion clock when we (re)add a wallet
+        ...prevMeta,
+        ...(rejoined ? { included_at: new Date().toISOString(), removed_at: null, since_added: null } : {}),
         roster: true, rank: r.rank, account_usd: r.accountUsd,
         week_pnl: r.weekPnl, week_roi: r.weekRoi, month_pnl: r.monthPnl, month_roi: r.monthRoi,
         median_hold_hours: r.medianHoldHours, round_trips: r.roundTrips, fills_per_day: r.fillsPerDay,
@@ -265,6 +271,10 @@ export async function syncRosterToJunto(juntoId: string, roster: RosterEntry[]) 
     if (want.has(addr)) continue;
     await supabase.from('junto_sources').delete().eq('id', cur.linkId);
     removed.push(addr);
+    {
+      const { data: rs } = await supabase.from('sources').select('metadata').eq('id', cur.sourceId).maybeSingle();
+      await supabase.from('sources').update({ metadata: { ...((rs?.metadata || {}) as Record<string, unknown>), removed_at: new Date().toISOString() } }).eq('id', cur.sourceId);
+    }
     // still followed by some other wallet junto? keep polling it.
     const { data: other } = await supabase.from('junto_sources').select('id').eq('source_id', cur.sourceId).limit(1);
     if (!other?.length) await supabase.from('hl_tracked_wallets').update({ is_active: false }).eq('address', addr);

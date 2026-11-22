@@ -79,6 +79,10 @@
     {
       "path": "/api/cron/hl-roster",
       "schedule": "5 0 * * *"
+    },
+    {
+      "path": "/api/cron/hl-roster-pnl",
+      "schedule": "30 0 * * *"
     }
   ]
 }
