@@ -40,9 +40,16 @@ async function loadUserMandates(userId: string, opts: { activeOnly?: boolean; ch
 }
 
 // /pnl — realized today / 7d / all-time + total unrealized across all mandates.
-export async function buildPnlMessage(userId: string, chatId?: number | string | null): Promise<string> {
+export interface PnlSummary {
+  realizedToday: number; realized7d: number; realizedAll: number;
+  unrealized: number; equity: number | null;
+  closedCount: number; wins: number;
+  recent: Array<{ ticker: string; side: string; pnl: number; exitAt: string | null }>;
+}
+
+export async function computePnl(userId: string, chatId?: number | string | null): Promise<PnlSummary | null> {
   const mandates = await loadUserMandates(userId, { chatId });
-  if (!mandates.length) return '<b>No mandates.</b>';
+  if (!mandates.length) return null;
 
   const ids = mandates.map(m => m.id);
   const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -50,14 +57,15 @@ export async function buildPnlMessage(userId: string, chatId?: number | string |
 
   const { data: closed } = await getSupabase()
     .from('trades')
-    .select('realized_pnl_usd, exit_at, mandate_id')
+    .select('realized_pnl_usd, exit_at, mandate_id, ticker, side')
     .in('mandate_id', ids)
     .eq('status', 'closed');
 
-  let realizedToday = 0, realized7d = 0, realizedAll = 0;
+  let realizedToday = 0, realized7d = 0, realizedAll = 0, wins = 0;
   for (const t of (closed || []) as any[]) {
     const pnl = Number(t.realized_pnl_usd) || 0;
     realizedAll += pnl;
+    if (pnl > 0) wins++;
     if (t.exit_at && t.exit_at >= since7d) realized7d += pnl;
     if (t.exit_at && new Date(t.exit_at) >= sinceToday) realizedToday += pnl;
   }
@@ -96,15 +104,31 @@ export async function buildPnlMessage(userId: string, chatId?: number | string |
     } catch { /* skip */ }
   }));
 
+  const recent = ((closed || []) as any[])
+    .filter((t) => t.exit_at)
+    .sort((a, b) => String(b.exit_at).localeCompare(String(a.exit_at)))
+    .slice(0, 6)
+    .map((t) => ({ ticker: String(t.ticker).toUpperCase(), side: t.side, pnl: Number(t.realized_pnl_usd) || 0, exitAt: t.exit_at }));
+
+  return {
+    realizedToday, realized7d, realizedAll, unrealized: totalUnrealized,
+    equity: equityKnown ? totalEquity : null,
+    closedCount: (closed || []).length, wins, recent,
+  };
+}
+
+export async function buildPnlMessage(userId: string, chatId?: number | string | null): Promise<string> {
+  const p = await computePnl(userId, chatId);
+  if (!p) return '<b>No mandates.</b>';
   const lines = [
     '<b>📈 P&amp;L</b>',
     '',
-    `Today realized:    <b>${fmtUsd(realizedToday)}</b>`,
-    `7d realized:       <b>${fmtUsd(realized7d)}</b>`,
-    `All-time realized: <b>${fmtUsd(realizedAll)}</b>`,
-    `Unrealized (open): <b>${fmtUsd(totalUnrealized)}</b>`,
+    `Today realized:    <b>${fmtUsd(p.realizedToday)}</b>`,
+    `7d realized:       <b>${fmtUsd(p.realized7d)}</b>`,
+    `All-time realized: <b>${fmtUsd(p.realizedAll)}</b>`,
+    `Unrealized (open): <b>${fmtUsd(p.unrealized)}</b>`,
   ];
-  if (equityKnown) lines.push(`Equity:            <b>$${totalEquity.toFixed(2)}</b>`);
+  if (p.equity != null) lines.push(`Equity:            <b>$${p.equity.toFixed(2)}</b>`);
   return lines.join('\n');
 }
 

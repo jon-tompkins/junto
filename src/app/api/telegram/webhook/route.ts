@@ -5,6 +5,17 @@ import { handleApprovalCallback } from '@/lib/trading/approval';
 import { handleAmendmentCallback } from '@/lib/trading/amendment';
 import { buildPositionsMessage } from '@/lib/trading/positions-command';
 import { buildPositionsCard } from '@/lib/trading/positions-card';
+import { buildPnlCard } from '@/lib/trading/pnl-card';
+
+async function sendPnl(userId: string, chatId: number | string, asText = false): Promise<void> {
+  if (!asText) {
+    try {
+      const card = await buildPnlCard(userId, chatId);
+      if (card) { await sendTelegramPhoto(chatId, card.png, card.caption); return; }
+    } catch (err) { console.error('[pnl card]', err); }
+  }
+  await sendTelegramMessage(chatId, await buildPnlMessage(userId, chatId));
+}
 
 // Image first; text fallback when nothing is open, rendering fails, or `/positions text`.
 async function sendPositions(userId: string, chatId: number | string, asText = false): Promise<void> {
@@ -103,6 +114,7 @@ export async function POST(req: NextRequest) {
             const action = cb.data.slice('menu_'.length);
             let body: string;
             if (action === 'positions') { await sendPositions(userId, chatId); return NextResponse.json({ ok: true }); }
+            if (action === 'pnl') { await sendPnl(userId, chatId); return NextResponse.json({ ok: true }); }
             switch (action) {
               case 'positions': body = ''; break;
               case 'pnl':       body = await buildPnlMessage(userId, chatId); break;
@@ -255,9 +267,10 @@ export async function POST(req: NextRequest) {
     try {
       let body: string;
       if (cmd === 'positions') { await sendPositions(userId, chatId, /^text$/i.test(arg)); return NextResponse.json({ ok: true }); }
+      if (cmd === 'pnl') { await sendPnl(userId, chatId, /^text$/i.test(arg)); return NextResponse.json({ ok: true }); }
       switch (cmd) {
         case 'positions': body = ''; break;
-        case 'pnl':       body = await buildPnlMessage(userId, chatId); break;
+        case 'pnl':       body = ''; break;
         case 'mandates':  body = await buildMandatesMessage(userId, chatId); break;
         case 'ticks':     body = await buildTicksMessage(userId, chatId); break;
         case 'pause':     body = await setMandateStatus(userId, arg, 'paused', chatId); break;
