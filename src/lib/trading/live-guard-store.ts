@@ -26,14 +26,19 @@ function envNum(name: string, fallback: number): number {
 
 // Effective per-order notional cap for a LIVE mandate (smallest of mandate /
 // user / default), so sizing can clamp to it instead of tripping the guard.
-export async function effectiveOrderCapUsd(mandate: { id: string; user_id: string; mode: string }): Promise<number | null> {
+// Hyperliquid mandates: the per-order cap scales with the live account instead
+// of a fixed dollar figure (the mandate's max_order_notional_usd is ignored).
+export const HL_ORDER_CAP_EQUITY_MULT = 2;
+
+export async function effectiveOrderCapUsd(mandate: { id: string; user_id: string; mode: string; broker?: string }, equity?: number | null): Promise<number | null> {
   if (mandate.mode !== 'live') return null;
+  const hlCap = mandate.broker === 'hyperliquid' && equity && equity > 0 ? equity * HL_ORDER_CAP_EQUITY_MULT : null;
   const supabase = getSupabase();
   const [{ data: m }, { data: ul }] = await Promise.all([
     supabase.from('trading_mandates').select('max_order_notional_usd').eq('id', mandate.id).maybeSingle(),
     supabase.from('trading_user_limits').select('max_order_notional_usd').eq('user_id', mandate.user_id).maybeSingle(),
   ]);
-  return resolveCap(num(m?.max_order_notional_usd), num(ul?.max_order_notional_usd), envNum('TRADING_DEFAULT_MAX_ORDER_USD', DEFAULT_MAX_ORDER_USD));
+  return resolveCap(hlCap ?? num(m?.max_order_notional_usd), num(ul?.max_order_notional_usd), envNum('TRADING_DEFAULT_MAX_ORDER_USD', DEFAULT_MAX_ORDER_USD));
 }
 
 export function envKillSwitch(env: NodeJS.ProcessEnv = process.env): boolean {
@@ -154,7 +159,7 @@ export function makeMandateGate(mandateId: string | null | undefined, effectiveM
     const supabase = getSupabase();
 
     const { data: m, error } = await supabase.from('trading_mandates')
-      .select('id, user_id, mode, live_armed, live_armed_until, max_order_notional_usd, max_daily_loss_usd, daily_loss_limit_pct, capital_allotted_usd, guard_day_date, guard_day_start_equity')
+      .select('id, user_id, mode, broker, live_armed, live_armed_until, max_order_notional_usd, max_daily_loss_usd, daily_loss_limit_pct, capital_allotted_usd, guard_day_date, guard_day_start_equity')
       .eq('id', mandateId).maybeSingle();
     if (error || !m) throw new OrderBlockedError('mandate_unreadable', 'could not load mandate guard state');
 
@@ -170,9 +175,11 @@ export function makeMandateGate(mandateId: string | null | undefined, effectiveM
     // today's loss (equity-based; snapshot at first check of the UTC day)
     const today = new Date().toISOString().slice(0, 10);
     let mandateLoss: number | null = null;
+    let liveEquity: number | null = null;
     try {
       const equity = Number((await probe.getAccount()).equity);
       if (equity > 0) {
+        liveEquity = equity;
         if (m.guard_day_date !== today || !(Number(m.guard_day_start_equity) > 0)) {
           await supabase.from('trading_mandates').update({
             guard_day_date: today, guard_day_start_equity: equity, guard_day_loss_usd: 0,
@@ -194,10 +201,11 @@ export function makeMandateGate(mandateId: string | null | undefined, effectiveM
     }
 
     // Default mandate daily-loss cap derives from the existing daily_loss_limit_pct when no USD cap is set.
-    const pct = num(m.daily_loss_limit_pct), cap = num(m.capital_allotted_usd);
+    const isHl = m.broker === 'hyperliquid' && liveEquity != null;
+    const pct = num(m.daily_loss_limit_pct), cap = isHl ? liveEquity : num(m.capital_allotted_usd);
     const derivedLoss = pct && cap ? (pct / 100) * cap : null;
     const limits: GuardLimits = {
-      mandateMaxOrderUsd: num(m.max_order_notional_usd),
+      mandateMaxOrderUsd: isHl ? (liveEquity as number) * HL_ORDER_CAP_EQUITY_MULT : num(m.max_order_notional_usd),
       mandateMaxDailyLossUsd: num(m.max_daily_loss_usd) ?? derivedLoss,
       userMaxOrderUsd: num(ul?.max_order_notional_usd),
       userMaxDailyLossUsd: num(ul?.max_daily_loss_usd),

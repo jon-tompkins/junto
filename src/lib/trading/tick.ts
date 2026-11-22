@@ -217,10 +217,11 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
       return result;
     }
     const account = await alpaca.getAccount();
-    accountEquity = Math.min(
-      mandate.capital_allotted_usd,
-      Number(account.equity) || mandate.capital_allotted_usd,
-    );
+    // HL sizes off the real account equity so positions scale as it grows;
+    // Alpaca keeps the allotted-capital ceiling.
+    accountEquity = mandate.broker === 'hyperliquid'
+      ? Number(account.equity) || mandate.capital_allotted_usd
+      : Math.min(mandate.capital_allotted_usd, Number(account.equity) || mandate.capital_allotted_usd);
     positions = await alpaca.getPositions();
   } catch (err: any) {
     result.errors.push(`alpaca: ${err.message}`);
@@ -410,7 +411,7 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
         // Over the live per-order cap? Size down to the cap (2% headroom for
         // price drift between sizing and the guard's own check) rather than
         // having the guard reject the whole entry.
-        const orderCap = await effectiveOrderCapUsd(mandate).catch(() => null);
+        const orderCap = await effectiveOrderCapUsd(mandate, accountEquity).catch(() => null);
         if (orderCap && exposureNotional > orderCap * 0.98) {
           const capped = orderCap * 0.98;
           decision.entry_thesis = `${decision.entry_thesis}\n\nSize capped: $${exposureNotional.toFixed(0)} → $${capped.toFixed(0)} notional (per-order cap $${orderCap.toFixed(0)}).`;
