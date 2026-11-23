@@ -6,6 +6,7 @@ import { handleAmendmentCallback } from '@/lib/trading/amendment';
 import { buildPositionsMessage } from '@/lib/trading/positions-command';
 import { buildPositionsCard } from '@/lib/trading/positions-card';
 import { buildPnlCard } from '@/lib/trading/pnl-card';
+import { buildRosterCard } from '@/lib/trading/roster-card';
 
 async function sendPnl(userId: string, chatId: number | string, asText = false): Promise<void> {
   if (!asText) {
@@ -207,6 +208,7 @@ export async function POST(req: NextRequest) {
       `/menu — action buttons for common tasks\n` +
       `/positions — open positions + unrealized P&amp;L (image; <code>/positions text</code> for detail)\n` +
       `/pnl — realized today/7d/all-time + equity\n` +
+      `/roster — followed HL traders heat map (positions by coin)\n` +
       `/mandates — list your mandates\n` +
       `/ticks — recent tick-run activity\n` +
       `/pause &lt;name&gt; — pause a mandate\n` +
@@ -248,7 +250,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const tradingCmdMatch = /^\/(positions|pnl|mandates|ticks|pause|resume|close|kill)(?:@\w+)?(?:\s+(.+))?$/i.exec(text);
+  const tradingCmdMatch = /^\/(positions|pnl|roster|mandates|ticks|pause|resume|close|kill)(?:@\w+)?(?:\s+(.+))?$/i.exec(text);
   if (tradingCmdMatch) {
     const cmd = tradingCmdMatch[1].toLowerCase();
     const arg = (tradingCmdMatch[2] || '').trim();
@@ -267,6 +269,12 @@ export async function POST(req: NextRequest) {
     try {
       let body: string;
       if (cmd === 'positions') { await sendPositions(userId, chatId, /^text$/i.test(arg)); return NextResponse.json({ ok: true }); }
+      if (cmd === 'roster') {
+        const card = await buildRosterCard().catch((e) => { console.error('[roster card]', e); return null; });
+        if (card) await sendTelegramPhoto(chatId, card.png, card.caption);
+        else await sendTelegramMessage(chatId, 'No roster data yet.');
+        return NextResponse.json({ ok: true });
+      }
       if (cmd === 'pnl') { await sendPnl(userId, chatId, /^text$/i.test(arg)); return NextResponse.json({ ok: true }); }
       switch (cmd) {
         case 'positions': body = ''; break;

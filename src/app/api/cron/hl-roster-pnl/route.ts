@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     const isLinked = linked.has(s.id);
     const removedAt = meta.removed_at ? new Date(meta.removed_at).getTime() : null;
     const stale = !meta.since_added || (removedAt != null && new Date(meta.since_added.as_of).getTime() < removedAt);
-    if (!isLinked && !stale) continue; // removed + already finalized
+    if (!isLinked && (removedAt == null || !stale)) continue; // removed + finalized (or pre-tracking removals)
     const includedMs = new Date(meta.included_at || s.created_at).getTime();
     try {
       const fills = await fetchFills(s.handle_or_url, includedMs - 60_000);
