@@ -1,4 +1,5 @@
 import { getAnthropic } from '@/lib/synthesis/client';
+import { NO_INVENTED_RULES } from './no-invented-rules';
 import { recordCost, anthropicSonnetCostCents } from '@/lib/costs';
 import type { Mandate, ExtractedSignal, AmendmentDecision } from './types';
 import type { AlpacaPosition } from './alpaca';
@@ -80,7 +81,7 @@ Return JSON.`;
   const res = await anthropic.messages.create({
     model: SONNET_MODEL,
     max_tokens: 2000,
-    system,
+    system: system + NO_INVENTED_RULES,
     messages: [{ role: 'user', content: user }],
   });
 

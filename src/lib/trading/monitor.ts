@@ -181,7 +181,7 @@ async function writeDailyEntry(
   const res = await anthropic.messages.create({
     model: HAIKU_MODEL,
     max_tokens: 400,
-    system: `You write daily check-in journal entries for an open trade. Tone: terse, honest, no fluff. 3-5 sentences max. Address: is the thesis still intact, what does today's price action say, any flag worth raising.`,
+    system: `You write daily check-in journal entries for an open trade. Tone: terse, honest, no fluff. 3-5 sentences max. Address: is the thesis still intact, what does today's price action say, any flag worth raising. Never state a day number or invent time-based rules — if the thesis mentions a time limit it is not a mandate rule; just report price action.`,
     messages: [
       {
         role: 'user',

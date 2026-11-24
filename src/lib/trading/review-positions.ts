@@ -1,4 +1,5 @@
 import { isTrailing } from './trailing-stops';
+import { NO_INVENTED_RULES } from './no-invented-rules';
 import { getAnthropic } from '@/lib/synthesis/client';
 import { recordCost, anthropicSonnetCostCents } from '@/lib/costs';
 import { getJournalEntriesForTrades } from './db';
@@ -54,10 +55,11 @@ export async function reviewPositions(ctx: ReviewContext): Promise<AmendmentDeci
       const dailies = entries.filter((e) => e.kind === 'daily').slice(-3);
       const notes = entries.filter((e) => e.kind === 'note' && !String(e.content).startsWith('[rebalance'));
       const heldAt = t.entry_at ? Date.parse(t.entry_at) : null;
-      const heldDays = heldAt != null ? Math.max(0, Math.round((now - heldAt) / 86_400_000)) : null;
+      const heldHrs = heldAt != null ? Math.max(0, (now - heldAt) / 3_600_000) : null;
+      const heldDays = heldHrs == null ? null : heldHrs < 48 ? `${heldHrs.toFixed(1)}h` : `${(heldHrs / 24).toFixed(1)}d`;
       const pnlPct = p ? (Number(p.unrealized_plpc) * 100).toFixed(2) : '?';
       const lines = [
-        `### ${t.ticker} ${t.side} qty=${t.qty} entry=${t.entry_price ?? '?'} stop=${t.stop_price ?? '?'} target=${t.target_price ?? '?'} now=${p?.current_price ?? '?'} pnl%=${pnlPct} held=${heldDays ?? '?'}d trade_id=${t.id}`,
+        `### ${t.ticker} ${t.side} qty=${t.qty} entry=${t.entry_price ?? '?'} stop=${t.stop_price ?? '?'} target=${t.target_price ?? '?'} now=${p?.current_price ?? '?'} pnl%=${pnlPct} held=${heldDays ?? '?'} trade_id=${t.id}`,
       ];
       if (thesis?.content) lines.push(`Thesis/invalidation: ${thesis.content.slice(0, 500)}`);
       for (const d of dailies) lines.push(`Daily note: ${String(d.content).slice(0, 300)}`);
@@ -107,7 +109,7 @@ Return JSON.`;
   const res = await anthropic.messages.create({
     model: SONNET_MODEL,
     max_tokens: 2000,
-    system: system + (isTrailing(mandate) ? BY_DESIGN : ''),
+    system: system + (isTrailing(mandate) ? BY_DESIGN : '') + NO_INVENTED_RULES,
     messages: [{ role: 'user', content: user }],
   });
 

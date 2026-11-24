@@ -1,4 +1,5 @@
 import { isTrailing } from './trailing-stops';
+import { NO_INVENTED_RULES } from './no-invented-rules';
 import { getAnthropic } from '@/lib/synthesis/client';
 import { recordCost, anthropicSonnetCostCents } from '@/lib/costs';
 import {
@@ -108,7 +109,7 @@ Write the trading thoughts document. Factor in live open positions when distilli
   const res = await anthropic.messages.create({
     model: SONNET_MODEL,
     max_tokens: 1500,
-    system: system + (isTrailing(mandate) ? BY_DESIGN : ''),
+    system: system + (isTrailing(mandate) ? BY_DESIGN : '') + NO_INVENTED_RULES,
     messages: [{ role: 'user', content: user }],
   });
 
