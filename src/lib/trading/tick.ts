@@ -25,6 +25,7 @@ import { monitorMandate } from './monitor';
 import { protectMandate } from './protection';
 import { rebalanceMandate } from './rebalance';
 import { enforceStaleExits } from './stale-exit';
+import { loadCatchUpSignals } from './catch-up';
 import { trailMandateStops, isTrailing, trailPricePct } from './trailing-stops';
 import { entriesPaused, checkDailyLoss, loadEntryContext, gateEntry, convictionFraction, autoEntries, autoExits, notifyMandate, type EntryContext } from './autopilot';
 import { approveTrade } from './approval';
@@ -272,6 +273,15 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
       result.tweetsReviewed = ws.eventCount;
       reviewedTwitterIds = ws.reviewedEventIds;
       signals = ws.signals;
+      // Consensus-based catch-up entries for coins we're flat on (see catch-up.ts).
+      // Only when new entries are possible this tick.
+      if (window !== 'close' && !(mandate.broker === 'hyperliquid' && entriesPaused(mandate))) {
+        try {
+          const freshCoins = new Set(signals.map((x) => x.ticker.toUpperCase()));
+          const cu = (await loadCatchUpSignals(mandate, ownTickers)).filter((x) => !freshCoins.has(x.ticker.toUpperCase()));
+          signals = [...signals, ...cu];
+        } catch (err: any) { result.errors.push(`catch_up: ${err.message}`); }
+      }
       result.signals = signals.length;
     } else if (await isWebhookJunto(mandate.junto_id)) {
       const ws = await loadWebhookSignals(mandate);
