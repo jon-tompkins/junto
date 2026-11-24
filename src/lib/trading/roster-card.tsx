@@ -15,6 +15,7 @@ const compact = (n: number) => {
   return a >= 1e6 ? `${(a / 1e6).toFixed(1)}M` : a >= 1e3 ? `${Math.round(a / 1e3)}k` : `${Math.round(a)}`;
 };
 const usd = (n: number) => `${n >= 0 ? '+' : '-'}$${compact(n)}`;
+const pct = (n: number) => { const a = Math.abs(n); return `${a >= 10 ? Math.round(a) : a.toFixed(1)}%`; };
 
 interface TraderRow {
   label: string; rank: number; account: number; pos: Map<string, WalletPosition>;
@@ -64,11 +65,13 @@ export async function buildRosterCard(): Promise<{ png: Buffer; caption: string 
   const H = 150 + 44 + rows.length * ROW + ROW + 46;
 
   const cell = (p?: WalletPosition, account?: number) => {
-    if (!p) return { bg: 'transparent', txt: '' , fg: dim };
-    const pct = account ? Math.min(1, Math.abs(p.positionValue) / account / 0.6) : 0.5;
-    return { bg: `rgba(${p.side === 'long' ? green : red},${(0.18 + pct * 0.6).toFixed(2)})`, txt: `${p.side === 'long' ? '' : '-'}${compact(p.positionValue)}`, fg: '#fff' };
+    if (!p) return { bg: 'transparent', txt: '', sub: '', fg: dim };
+    const frac = account ? Math.abs(p.positionValue) / account : 0;
+    const inten = account ? Math.min(1, frac / 0.6) : 0.5;
+    return { bg: `rgba(${p.side === 'long' ? green : red},${(0.18 + inten * 0.6).toFixed(2)})`, txt: `${p.side === 'long' ? '' : '-'}${compact(p.positionValue)}`, sub: account ? pct(frac * 100) : '', fg: '#fff' };
   };
 
+  const rosterAccount = rows.reduce((n, r) => n + r.account, 0);
   const net = coins.map((coin) => {
     let n = 0, l = 0, s = 0;
     for (const r of rows) { const p = r.pos.get(coin); if (!p) continue; n += p.side === 'long' ? p.positionValue : -p.positionValue; p.side === 'long' ? l++ : s++; }
@@ -80,7 +83,7 @@ export async function buildRosterCard(): Promise<{ png: Buffer; caption: string 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', height: 100 }}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', fontSize: 22, color: dim }}>Followed traders · {rows.length} · position heat map</div>
-          <div style={{ display: 'flex', fontSize: 16, color: dim, marginTop: 6 }}>cell = notional · colour intensity = size as % of the trader's account · green long / red short</div>
+          <div style={{ display: 'flex', fontSize: 16, color: dim, marginTop: 6 }}>cell = notional + % of the trader's account · colour intensity = same % · green long / red short</div>
         </div>
         <div style={{ display: 'flex', fontSize: 18, color: dim }}>{new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC</div>
       </div>
@@ -97,23 +100,26 @@ export async function buildRosterCard(): Promise<{ png: Buffer; caption: string 
           </div>
           {coins.map((c) => {
             const p = r.pos.get(c); const k = cell(p, r.account);
-            return <div key={c} style={{ display: 'flex', width: CELL - 6, height: ROW - 14, margin: '0 3px', borderRadius: 8, background: k.bg, color: k.fg, alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700 }}>{k.txt}</div>;
+            return <div key={c} style={{ display: 'flex', width: CELL - 6, height: ROW - 14, margin: '0 3px', borderRadius: 8, background: k.bg, color: k.fg, alignItems: 'center', justifyContent: 'center', flexDirection: 'column', fontWeight: 700 }}>
+              <div style={{ display: 'flex', fontSize: 18 }}>{k.txt}</div>
+              {k.sub && <div style={{ display: 'flex', fontSize: 12, fontWeight: 400, opacity: 0.85 }}>{k.sub}</div>}
+            </div>;
           })}
           <div style={{ display: 'flex', width: 190, justifyContent: 'flex-end', flexDirection: 'column', alignItems: 'flex-end', color: r.sincePnl == null ? dim : r.sincePnl >= 0 ? '#3ddc84' : '#ff5a5f' }}>
             <div style={{ display: 'flex', fontSize: 20, fontWeight: 700 }}>{r.sincePnl == null ? '—' : usd(r.sincePnl)}</div>
-            {r.sincePnl != null && <div style={{ display: 'flex', fontSize: 13, color: dim }}>{r.sinceTrades} new trades</div>}
+            {r.sincePnl != null && <div style={{ display: 'flex', fontSize: 13, color: dim }}>{r.account > 0 ? `${Math.abs(r.sincePnl) / r.account < 0.0005 ? '' : r.sincePnl >= 0 ? '+' : '-'}${pct(r.sincePnl / r.account * 100)} · ` : ''}{r.sinceTrades} new trades</div>}
           </div>
         </div>
       ))}
       <div style={{ display: 'flex', alignItems: 'center', height: ROW + 4, marginTop: 6 }}>
         <div style={{ display: 'flex', flexDirection: 'column', width: LABEL }}>
           <div style={{ display: 'flex', fontSize: 20, fontWeight: 700 }}>NET ROSTER</div>
-          <div style={{ display: 'flex', fontSize: 13, color: dim }}>long − short notional · #L / #S</div>
+          <div style={{ display: 'flex', fontSize: 13, color: dim }}>long − short notional · % of roster equity · #L / #S</div>
         </div>
         {net.map((x) => (
           <div key={x.coin} style={{ display: 'flex', flexDirection: 'column', width: CELL, alignItems: 'center', color: x.n >= 0 ? '#3ddc84' : '#ff5a5f' }}>
             <div style={{ display: 'flex', fontSize: 20, fontWeight: 700 }}>{x.n >= 0 ? '+' : '-'}{compact(x.n)}</div>
-            <div style={{ display: 'flex', fontSize: 13, color: dim }}>{x.l}L / {x.s}S</div>
+            <div style={{ display: 'flex', fontSize: 13, color: dim }}>{rosterAccount > 0 ? `${pct(x.n / rosterAccount * 100)} · ` : ''}{x.l}L / {x.s}S</div>
           </div>
         ))}
       </div>
