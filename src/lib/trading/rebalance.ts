@@ -36,7 +36,7 @@ export function aggFraction(s: AggState, refNotional: number): number {
   return convictionFraction(eff) * (s.netNotional > 0 ? sqrtWeight(s.netNotional, refNotional) : 0.5);
 }
 
-async function rosterAddresses(juntoId: string): Promise<Set<string>> {
+export async function rosterAddresses(juntoId: string): Promise<Set<string>> {
   const { data } = await getSupabase()
     .from('junto_sources')
     .select('sources!inner(handle_or_url, type)')
@@ -50,7 +50,7 @@ async function rosterAddresses(juntoId: string): Promise<Set<string>> {
   return out;
 }
 
-function aggregate(states: { address: string; positions: any[] }[], roster: Set<string>, coin: string, side: string): AggState {
+export function aggregate(states: { address: string; positions: any[] }[], roster: Set<string>, coin: string, side: string): AggState {
   let alignedN = 0, conflictN = 0, aligned = 0, conflict = 0;
   for (const s of states) {
     if (!roster.has(String(s.address).toLowerCase())) continue;

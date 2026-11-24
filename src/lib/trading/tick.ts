@@ -24,6 +24,7 @@ import { reviewPositions } from './review-positions';
 import { monitorMandate } from './monitor';
 import { protectMandate } from './protection';
 import { rebalanceMandate } from './rebalance';
+import { enforceStaleExits } from './stale-exit';
 import { trailMandateStops, isTrailing, trailPricePct } from './trailing-stops';
 import { entriesPaused, checkDailyLoss, loadEntryContext, gateEntry, convictionFraction, autoEntries, autoExits, notifyMandate, type EntryContext } from './autopilot';
 import { approveTrade } from './approval';
@@ -593,6 +594,9 @@ async function tickMandate(mandate: Mandate, window: TickWindow): Promise<TickRe
   } catch (err: any) {
     result.errors.push(`amend: ${err.message}`);
   }
+
+  // Deterministic staleness limit (48h, <2 aligned roster traders) — code-enforced.
+  try { await enforceStaleExits(mandate); } catch (err: any) { result.errors.push(`stale_exit: ${err.message}`); }
 
   // Scale open HL positions up/down as aggregate roster conviction changes.
   // Runs before the trailing pass so an add's stop is re-placed at full size.
