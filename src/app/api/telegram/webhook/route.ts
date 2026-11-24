@@ -7,6 +7,7 @@ import { buildPositionsMessage } from '@/lib/trading/positions-command';
 import { buildPositionsCard } from '@/lib/trading/positions-card';
 import { buildPnlCard } from '@/lib/trading/pnl-card';
 import { buildRosterCard } from '@/lib/trading/roster-card';
+import { buildPortfolioCard } from '@/lib/trading/portfolio-card';
 
 async function sendPnl(userId: string, chatId: number | string, asText = false): Promise<void> {
   if (!asText) {
@@ -16,6 +17,14 @@ async function sendPnl(userId: string, chatId: number | string, asText = false):
     } catch (err) { console.error('[pnl card]', err); }
   }
   await sendTelegramMessage(chatId, await buildPnlMessage(userId, chatId));
+}
+
+async function sendPortfolio(userId: string, chatId: number | string): Promise<void> {
+  try {
+    const card = await buildPortfolioCard(userId, chatId);
+    if (card) { await sendTelegramPhoto(chatId, card.png, card.caption); return; }
+  } catch (err) { console.error('[portfolio card]', err); }
+  await sendTelegramMessage(chatId, 'No portfolio data yet — no active mandates with equity.');
 }
 
 // Image first; text fallback when nothing is open, rendering fails, or `/positions text`.
@@ -116,6 +125,7 @@ export async function POST(req: NextRequest) {
             let body: string;
             if (action === 'positions') { await sendPositions(userId, chatId); return NextResponse.json({ ok: true }); }
             if (action === 'pnl') { await sendPnl(userId, chatId); return NextResponse.json({ ok: true }); }
+            if (action === 'portfolio') { await sendPortfolio(userId, chatId); return NextResponse.json({ ok: true }); }
             switch (action) {
               case 'positions': body = ''; break;
               case 'pnl':       body = await buildPnlMessage(userId, chatId); break;
@@ -175,6 +185,7 @@ export async function POST(req: NextRequest) {
             [
               { text: '📊 Positions', callback_data: 'menu_positions' },
               { text: '💰 P&L',        callback_data: 'menu_pnl' },
+              { text: '🗂 Portfolio', callback_data: 'menu_portfolio' },
             ],
             [
               { text: '🎯 Mandates',  callback_data: 'menu_mandates' },
@@ -207,6 +218,7 @@ export async function POST(req: NextRequest) {
       `<b>Junto bot commands</b>\n\n` +
       `/menu — action buttons for common tasks\n` +
       `/positions — open positions + unrealized P&amp;L (image; <code>/positions text</code> for detail)\n` +
+      `/portfolio — allocation: equity, exposure %, margin, position weights (image)\n` +
       `/pnl — realized today/7d/all-time + equity\n` +
       `/roster — followed HL traders heat map (positions by coin)\n` +
       `/mandates — list your mandates\n` +
@@ -250,7 +262,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const tradingCmdMatch = /^\/(positions|pnl|roster|mandates|ticks|pause|resume|close|kill)(?:@\w+)?(?:\s+(.+))?$/i.exec(text);
+  const tradingCmdMatch = /^\/(positions|pnl|portfolio|roster|mandates|ticks|pause|resume|close|kill)(?:@\w+)?(?:\s+(.+))?$/i.exec(text);
   if (tradingCmdMatch) {
     const cmd = tradingCmdMatch[1].toLowerCase();
     const arg = (tradingCmdMatch[2] || '').trim();
@@ -269,6 +281,7 @@ export async function POST(req: NextRequest) {
     try {
       let body: string;
       if (cmd === 'positions') { await sendPositions(userId, chatId, /^text$/i.test(arg)); return NextResponse.json({ ok: true }); }
+      if (cmd === 'portfolio') { await sendPortfolio(userId, chatId); return NextResponse.json({ ok: true }); }
       if (cmd === 'roster') {
         const card = await buildRosterCard().catch((e) => { console.error('[roster card]', e); return null; });
         if (card) await sendTelegramPhoto(chatId, card.png, card.caption);

@@ -5,7 +5,7 @@ import { sliceUnrealized } from './pnl';
 import type { Mandate } from './types';
 
 // Stable key for the underlying broker account (dedupe shared accounts).
-function acctKey(m: any): string {
+export function acctKey(m: any): string {
   if (m.broker === 'hyperliquid') return `h:${m.hl_wallet_address || m.id}`;
   if (m.account_kind === 'managed') return `m:${m.alpaca_account_id || m.id}`;
   return `a:${m.alpaca_key_id || m.id}`;
