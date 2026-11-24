@@ -11,7 +11,7 @@ import type { Mandate } from './types';
 // P&L % of equity). Shared accounts are shown once. Returns null with no mandates.
 
 interface Pos { sym: string; side: 'long' | 'short'; value: number; pnl: number; lev: number | null }
-interface Acct { names: string[]; kind: string; equity: number; free: number; marginUsed: number | null; positions: Pos[] }
+interface Acct { ids: string[]; names: string[]; kind: string; equity: number; free: number; marginUsed: number | null; positions: Pos[] }
 
 const MAX_ROWS = 10;
 const compact = (n: number) => { const a = Math.abs(n); return a >= 1e6 ? `${(a / 1e6).toFixed(1)}M` : a >= 1e3 ? `${(a / 1e3).toFixed(1)}k` : a.toFixed(0); };
@@ -26,18 +26,19 @@ async function load(userId: string, chatId?: number | string | null): Promise<Ac
   const out = await Promise.all([...groups.values()].map(async (ms): Promise<Acct | null> => {
     const m = ms[0];
     const names = ms.map((x) => x.name);
+    const ids = ms.map((x) => x.id);
     try {
       if (m.broker === 'hyperliquid' && m.hl_wallet_address) {
         const p = await hlPerps(m.hl_wallet_address, m.mode);
         return {
-          names, kind: 'Hyperliquid', equity: p.collateral, free: p.free_collateral, marginUsed: p.margin_used,
+          ids, names, kind: 'Hyperliquid', equity: p.collateral, free: p.free_collateral, marginUsed: p.margin_used,
           positions: p.positions.map((x: any) => ({ sym: x.coin, side: x.side, value: x.value, pnl: x.unrealized_pnl, lev: x.leverage || null })),
         };
       }
       const alp = alpacaForMandate(m);
       const [acct, pos] = await Promise.all([alp.getAccount(), alp.getPositions().catch(() => [])]);
       return {
-        names, kind: 'Alpaca', equity: Number(acct.equity) || 0, free: Number(acct.cash) || 0, marginUsed: null,
+        ids, names, kind: 'Alpaca', equity: Number(acct.equity) || 0, free: Number(acct.cash) || 0, marginUsed: null,
         positions: (pos as any[]).map((x) => ({
           sym: String(x.symbol), side: Number(x.qty) < 0 || x.side === 'short' ? 'short' : 'long',
           value: Math.abs(Number(x.market_value) || 0), pnl: Number(x.unrealized_pl) || 0, lev: null,
@@ -51,6 +52,9 @@ async function load(userId: string, chatId?: number | string | null): Promise<Ac
 export async function buildPortfolioCard(userId: string, chatId?: number | string | null): Promise<{ png: Buffer; caption: string } | null> {
   const accts = await load(userId, chatId);
   if (!accts.length) return null;
+  // Realized P&L only for the mandates on this card, so hidden/paper mandates don't distort the total.
+  const { data: closed } = await getSupabase().from('trades').select('realized_pnl_usd').in('mandate_id', accts.flatMap((a) => a.ids)).eq('status', 'closed');
+  const realized = (closed || []).reduce((n: number, t: any) => n + (Number(t.realized_pnl_usd) || 0), 0);
 
   const green = '#3ddc84', red = '#ff5a5f', dim = '#8b93a1';
   const W = 1200, ROW = 52, HEAD = 128, BLOCKHEAD = 150;
@@ -66,6 +70,8 @@ export async function buildPortfolioCard(userId: string, chatId?: number | strin
   const H = HEAD + blocks.reduce((n, b) => n + BLOCKHEAD + Math.max(1, b.shown.length) * ROW + (b.more > 0 ? 30 : 0) + 24, 0) + 20;
   const totalEq = accts.reduce((n, a) => n + a.equity, 0);
   const totalUpnl = blocks.reduce((n, b) => n + b.upnl, 0);
+  const totalPnl = realized + totalUpnl;
+  const usd = (n: number) => `${n >= 0 ? '+' : '-'}$${Math.abs(n).toFixed(2)}`;
 
   const stat = (label: string, value: string, color = '#e8ebf0') => (
     <div key={label} style={{ display: 'flex', flexDirection: 'column', flex: 1, background: '#151a22', borderRadius: 12, padding: '12px 16px', marginRight: 10 }}>
@@ -82,7 +88,8 @@ export async function buildPortfolioCard(userId: string, chatId?: number | strin
           <div style={{ display: 'flex', fontSize: 52, fontWeight: 700 }}>${totalEq.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-          <div style={{ display: 'flex', fontSize: 26, fontWeight: 700, color: totalUpnl >= 0 ? green : red }}>{spct(totalUpnl / totalEq * 100)} open P&L</div>
+          {<div style={{ display: 'flex', fontSize: 30, fontWeight: 700, color: totalPnl >= 0 ? green : red }}>Total P&L {usd(totalPnl)} ({spct(totalPnl / totalEq * 100)})</div>}
+          <div style={{ display: 'flex', fontSize: 20, color: totalUpnl >= 0 ? green : red }}>{spct(totalUpnl / totalEq * 100)} open{` · ${usd(realized)} realized`}</div>
           <div style={{ display: 'flex', fontSize: 18, color: dim }}>{new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC</div>
         </div>
       </div>
@@ -126,5 +133,5 @@ export async function buildPortfolioCard(userId: string, chatId?: number | strin
 
   const png = Buffer.from(await img.arrayBuffer());
   const gross = blocks.reduce((n, b) => n + b.long + b.short, 0);
-  return { png, caption: `🗂 Portfolio $${compact(totalEq)} · gross ${pct(gross / totalEq * 100, 0)} of equity · open P&L ${spct(totalUpnl / totalEq * 100)}` };
+  return { png, caption: `🗂 Portfolio $${compact(totalEq)} · total P&L ${usd(totalPnl)} · gross ${pct(gross / totalEq * 100, 0)} of equity · open P&L ${spct(totalUpnl / totalEq * 100)}` };
 }
