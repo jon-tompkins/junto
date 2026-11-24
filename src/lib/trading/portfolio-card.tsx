@@ -94,7 +94,7 @@ export async function buildPortfolioCard(userId: string, chatId?: number | strin
           </div>
           <div style={{ display: 'flex', marginTop: 10 }}>
             {stat('GROSS EXPOSURE', pct((long + short) / a.equity * 100, 0))}
-            {stat('NET', spct((long - short) / a.equity * 100), long >= short ? green : red)}
+            {stat(long >= short ? 'NET LONG' : 'NET SHORT', `${pct(Math.abs(long - short) / a.equity * 100, 0)}`, '#e8ebf0')}
             {stat('LONG / SHORT', `${pct(long / a.equity * 100, 0)} / ${pct(short / a.equity * 100, 0)}`)}
             {stat(a.marginUsed != null ? 'MARGIN USED' : 'CASH', a.marginUsed != null ? pct(a.marginUsed / a.equity * 100, 0) : pct(a.free / a.equity * 100, 0))}
             {stat('FREE', pct(a.free / a.equity * 100, 0))}
