@@ -1,5 +1,6 @@
 import { getAnthropic } from '@/lib/synthesis/client';
 import { NO_INVENTED_RULES } from './no-invented-rules';
+import { getJournalEntriesForTrades } from './db';
 import { recordCost, anthropicSonnetCostCents } from '@/lib/costs';
 import type { Mandate, ExtractedSignal, AmendmentDecision } from './types';
 import type { AlpacaPosition } from './alpaca';
@@ -28,11 +29,20 @@ export async function decideAmendments(ctx: AmendContext): Promise<AmendmentDeci
   const relevant = signals.filter((s) => tradesBySymbol.has(s.ticker.toUpperCase()));
   if (relevant.length === 0) return [];
 
+  // Conviction the position was opened with (written into the entry journal as
+  // "conviction N"), so an opposing signal can be compared against it.
+  const entryJournal = await getJournalEntriesForTrades(openTrades.map((t) => t.id), ['entry']).catch(() => [] as any[]);
+  const convByTrade = new Map<string, number>();
+  for (const e of entryJournal as any[]) {
+    const m = /conviction\s+(\d)/i.exec(String(e.content || ''));
+    if (m && !convByTrade.has(e.trade_id)) convByTrade.set(e.trade_id, Number(m[1]));
+  }
+
   const tradesBlock = relevant
     .map((s) => {
       const t = tradesBySymbol.get(s.ticker.toUpperCase())!;
       const p = posBySymbol.get(s.ticker.toUpperCase());
-      return `${t.ticker} ${t.side} qty=${t.qty} entry=${t.entry_price ?? '?'} stop=${t.stop_price ?? '?'} target=${t.target_price ?? '?'} now=${p?.current_price ?? '?'} pnl%=${p ? (Number(p.unrealized_plpc) * 100).toFixed(2) : '?'} trade_id=${t.id}`;
+      return `${t.ticker} ${t.side} qty=${t.qty} entry=${t.entry_price ?? '?'} stop=${t.stop_price ?? '?'} target=${t.target_price ?? '?'} now=${p?.current_price ?? '?'} pnl%=${p ? (Number(p.unrealized_plpc) * 100).toFixed(2) : '?'} held_conviction=${convByTrade.get(t.id) ?? '?'} trade_id=${t.id}`;
     })
     .join('\n');
 
@@ -56,6 +66,8 @@ Allowed amendments:
 - "stop_move": raise (tighten) or lower (loosen) the stop price. Only propose if the new stop is meaningfully better risk management given the signal.
 - "target_move": move the take-profit limit price.
 - "close": exit the entire position at market. Use when a strong "exit" signal arrives or thesis is clearly broken.
+
+FLIPPING SIDE IS ALLOWED. When a signal points the OPPOSITE way to a held position (e.g. long signal on a held short) and its conviction is significantly higher than the position's held_conviction (at least 2 points higher, or held_conviction unknown and the signal is conviction 4-5), propose "close" with the rationale "flip to <new side>: conviction X vs held Y" — the engine opens the new side through its normal entry path afterwards. If the opposing signal is not significantly stronger, do NOT close just because it exists; a weak or equal opposing signal is not a reason to flip.
 
 Be conservative. It is fine to return an empty list. Do NOT propose the same value that's already in place, and do NOT propose a stop/target move smaller than 2% from its current level — small nudges aren't worth an amendment. Tightening stops in your favor is fine; loosening stops (giving more room to lose) requires a clear signal.
 
