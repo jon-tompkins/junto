@@ -68,7 +68,7 @@ export async function loadCatchUpSignals(mandate: Mandate, ownTickers: Set<strin
       ticker: c.coin,
       direction: c.side,
       conviction: Math.min(CATCH_UP_MAX_CONVICTION, Math.max(3, 2 + c.n - c.other)) as 3 | 4,
-      rationale: `${CATCH_UP_TAG} roster is ${c.n} ${c.side} vs ${c.other} opposite on ${c.coin} ($${(c.notional / 1e6).toFixed(1)}M vs $${(c.otherNotional / 1e6).toFixed(1)}M); we are flat — consensus-based entry, not an event`,
+      rationale: `${CATCH_UP_TAG} roster is ${c.n} ${c.side} vs ${c.other} opposite on ${c.coin} ($${(c.notional / 1e6).toFixed(1)}M vs $${(c.otherNotional / 1e6).toFixed(1)}M); we are flat — consensus entry`,
       source_urls: [],
     };
     signals.push(sig);
