@@ -18,6 +18,8 @@ export interface AmendContext {
 
 // Decide whether fresh source signals warrant amending an open position
 // (tighten/loosen stop, raise/lower target, or close).
+export const FLIP_MIN_DELTA = 2;
+
 export async function decideAmendments(ctx: AmendContext): Promise<AmendmentDecision[]> {
   const { mandate, signals, openTrades, positions } = ctx;
   if (openTrades.length === 0 || signals.length === 0) return [];
@@ -125,6 +127,21 @@ Return JSON.`;
         ['stop_move', 'target_move', 'close'].includes(a.kind) &&
         typeof a.rationale === 'string',
       )
+      .filter((a: any) => {
+        // Code-enforced flip threshold: the model only proposes; it does not get to
+        // decide that 1 point of conviction is "significant". A "flip" close needs an
+        // opposing signal at least FLIP_MIN_DELTA above the held conviction (or >=4
+        // when the held conviction is unknown).
+        if (a.kind !== 'close' || !/^\s*flip/i.test(String(a.rationale))) return true;
+        const t = openTrades.find((x) => x.id === a.trade_id);
+        if (!t) return false;
+        const held = convByTrade.get(t.id);
+        const opp = relevant
+          .filter((s) => s.ticker.toUpperCase() === t.ticker.toUpperCase() && (s.direction === 'long' || s.direction === 'short') && s.direction !== t.side)
+          .reduce((m, s) => Math.max(m, s.conviction), 0);
+        if (opp === 0) return false;
+        return held != null ? opp - held >= FLIP_MIN_DELTA : opp >= 4;
+      })
       .map((a: any) => ({
         trade_id: a.trade_id,
         ticker: String(a.ticker).toUpperCase(),
